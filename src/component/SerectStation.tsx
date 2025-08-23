@@ -1,6 +1,6 @@
 "use client";
 
-import Select, { components, ActionMeta, OptionProps, SingleValue } from "react-select";
+import Select, { components, OptionProps, SingleValue } from "react-select";
 import { useMemo, useState } from "react";
 import stationData from '@/data/station.json';
 
@@ -8,6 +8,12 @@ export interface OptionType {
     "id": number;
     "name": string;
     "kana": string;
+}
+
+interface SelectStationProps {
+    instanceId: string;
+    value: OptionType | null;
+    onChange: (newValue: SingleValue<OptionType>) => void;
 }
 
 const CustomOption = (props: OptionProps<OptionType>) => {
@@ -24,7 +30,7 @@ const CustomOption = (props: OptionProps<OptionType>) => {
     );
 };
 
-const SelectStation = () => {
+const SelectStation = ({ instanceId, value, onChange }: SelectStationProps) => {
     const allOptions: OptionType[] = stationData;
     const [selectedValue, setSelectedValue] = useState<OptionType | null>(null);
     const [inputValue, setInputValue] = useState<string>("");
@@ -32,26 +38,19 @@ const SelectStation = () => {
     const filterOption = (option: any, rawInput: string) => {
         const input = rawInput.toLowerCase();
         const target = option.data as OptionType;
-        // Check if the station name or kana starts with the input
         return (
             target.name.toLowerCase().startsWith(input) ||
             target.kana.toLowerCase().startsWith(input)
         );
     };
 
-    const handleChange = (
-        newValue: SingleValue<OptionType>,
-        actionMeta: ActionMeta<OptionType>
-    ) => {
-        setSelectedValue(newValue);
-    };
 
     return (
         <div style={{ width: "250px", margin: "25px" }}>
             <Select
-                instanceId="search-select-box"
-                value={selectedValue}
-                onChange={handleChange}
+                instanceId={instanceId}
+                value={value}
+                onChange={onChange}
                 isMulti={false}
                 options={inputValue ? allOptions : []}
                 onInputChange={(input) => setInputValue(input)}
@@ -60,10 +59,7 @@ const SelectStation = () => {
                 placeholder="駅名を入力してください"
                 isSearchable={true}
                 filterOption={filterOption}
-                noOptionsMessage={() =>
-                    inputValue ? "該当する駅がありません" : null
-                }
-
+                noOptionsMessage={() => inputValue ? "該当する駅がありません" : null}
                 components={{
                     DropdownIndicator: () => null,
                     IndicatorSeparator: () => null,
