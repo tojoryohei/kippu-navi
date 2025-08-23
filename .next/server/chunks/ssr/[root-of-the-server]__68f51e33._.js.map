@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 15, "column": 0}, "map": {"version":3,"sources":["file:///home/tojoryohei/my-app/src/app/page.tsx"],"sourcesContent":["import SelectStation from \"@/app/SerectStation\";\n\nexport default function Home() {\n  return (\n    <main>\n      <h1>JR運賃計算サイト</h1>\n      <p>出発駅を選択してください:</p>\n      <SelectStation /> {/* コンポーネントをHTMLタグのように配置 */}\n\n      <p>到着駅を選択してください:</p>\n      <SelectStation /> {/* 同じものを複数配置することも可能 */}\n    </main>\n  );\n}\n"],"names":[],"mappings":";;;;;;;;;;;;AAEe,SAAS;IACtB,qBACE,2PAAC;;0BACC,2PAAC;0BAAG;;;;;;0BACJ,2PAAC;0BAAE;;;;;;0BACH,2PAAC;;;;;YAAgB;0BAEjB,2PAAC;0BAAE;;;;;;0BACH,2PAAC;;;;;YAAgB;;;;;;;AAGvB","debugId":null}}]
+}
