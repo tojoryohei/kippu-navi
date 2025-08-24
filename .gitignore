@@ -12,9 +12,9 @@ node_modules/
 .env.production.local
 
 # npm/yarn/pnpm lock files (if not committing them)
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # Logs
 npm-debug.log*
