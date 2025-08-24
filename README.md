@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# JR最安分割乗車券
 
-## Getting Started
+JRの乗車券を最も安く購入できる分割パターンを探索するWebアプリケーションです。
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 概要 📝
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+このプロジェクトは、中央大学での卒業研究として開発したものです。JRの複雑な運賃体系、特に「分割乗車券」を利用することで運賃を節約できる点に着目し、誰でも簡単に最安の切符を見つけられるツールを目指しています。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+利用者は出発駅と到着駅を入力するだけで、通常の通し運賃と、最も安くなる分割パターンの両方を瞬時に計算できます。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 主な機能 ✨
 
-To learn more about Next.js, take a look at the following resources:
+* **通常運賃計算**: 指定された経路の正確な片道・往復運賃を計算します。
+* **最安分割探索**: 独自のアルゴリズム（A*アルゴリズム）を用いて、最も安くなる切符の分割パターンと合計運賃を提示します。
+* **駅名検索**: インクリメンタルサーチ（逐次検索）に対応した、快適な駅名入力インターフェース。
+* **レスポンシブデザイン**: PCでもスマートフォンでも快適に利用可能です。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 使用技術 🛠️
 
-## Deploy on Vercel
+このプロジェクトは、以下の技術スタックで構築されています。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+* **フロントエンド**: Next.js (React), TypeScript
+* **UI**: Tailwind CSS, react-select
+* **運賃計算エンジン**: TypeScript (Node.js)
+* **データ管理**: JSONファイル
+* **ホスティング**: [Vercel, GCP]
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+※ 運賃計算の正確性を担保するため、営業キロは10倍して整数（`number`型）として管理し、浮動小数点数に起因する誤差を排除しています。
+
+---
+
+## 著作権 ©
+
+Copyright © 2025 TOJO Ryohei. All Rights Reserved.
