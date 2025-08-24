@@ -32,18 +32,16 @@ const CustomOption = (props: OptionProps<OptionType>) => {
 
 const SelectStation = ({ instanceId, value, onChange }: SelectStationProps) => {
     const allOptions: OptionType[] = stationData;
-    const [selectedValue, setSelectedValue] = useState<OptionType | null>(null);
     const [inputValue, setInputValue] = useState<string>("");
 
     const filterOption = (option: any, rawInput: string) => {
-        const input = rawInput.toLowerCase();
+        const input = rawInput;
         const target = option.data as OptionType;
         return (
-            target.name.toLowerCase().startsWith(input) ||
-            target.kana.toLowerCase().startsWith(input)
+            target.name.includes(input) ||
+            target.kana.includes(input)
         );
     };
-
 
     return (
         <div style={{ width: "250px", margin: "25px" }}>
