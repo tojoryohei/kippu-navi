@@ -18,6 +18,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <head><meta name="google-adsense-account" content="ca-pub-1214458177768834"></meta></head>
       <main className="max-w-xl mx-auto bg-white rounded-lg shadow-md p-6">
         <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
           JR運賃計算サイト（簡単検索）
