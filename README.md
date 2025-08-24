@@ -29,9 +29,14 @@ JRの乗車券を最も安く購入できる分割パターンを探索するWeb
 * **UI**: Tailwind CSS, react-select
 * **運賃計算エンジン**: TypeScript (Node.js)
 * **データ管理**: JSONファイル
-* **ホスティング**: [Vercel, GCP]
+* **ホスティング**: Vercel, GCP
 
 ※ 運賃計算の正確性を担保するため、営業キロは10倍して整数（`number`型）として管理し、浮動小数点数に起因する誤差を排除しています。
+
+---
+## 始め方 🚀
+
+[https://kippu-navi.com/](https://kippu-navi.com/)
 
 ---
 
