@@ -2,7 +2,7 @@
 
 import Select, { components, OptionProps, SingleValue } from "react-select";
 import { useMemo, useState } from "react";
-import stationData from '@/data/station.json';
+import stationData from '@/data/stations.json';
 
 export interface OptionType {
     "id": number;
@@ -38,8 +38,8 @@ const SelectStation = ({ instanceId, value, onChange }: SelectStationProps) => {
         const input = rawInput;
         const target = option.data as OptionType;
         return (
-            target.name.includes(input) ||
-            target.kana.includes(input)
+            target.name.startsWith(input) ||
+            target.kana.startsWith(input)
         );
     };
 

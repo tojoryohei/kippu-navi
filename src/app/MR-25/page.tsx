@@ -17,27 +17,24 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <main className="max-w-xl mx-auto bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          JR運賃計算サイト（簡単検索）
-        </h1>
-
-        <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-2">
-            出発駅を選択してください:
+    <div className="min-h-screen bg-yellow-50 py-10 px-4">
+      <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
+        JR運賃計算サイト（経路入力）
+      </h1>
+      <main className="max-w-xl mx-auto bg-gray-100 p-6">
+        <div className="flex items-center gap-2 sm:gap-4 mb-6">
+          <label htmlFor="start-station-select" className="w-12 sm:w-16 font-medium text-black flex-shrink-0">
+            出発
           </label>
-          <SelectStation
-            instanceId="start-station-select"
-            value={startStation}
-            onChange={handleStartChange}
-          />
+          <div className="flex-grow">
+            <SelectStation
+              instanceId="start-station-select"
+              value={startStation}
+              onChange={handleStartChange}
+            />
+          </div>
         </div>
-
         <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-2">
-            到着駅を選択してください:
-          </label>
           <SelectStation
             instanceId="end-station-select"
             value={endStation}
