@@ -1,0 +1,68 @@
+"use client";
+
+import Select, { components, OptionProps, SingleValue, FilterOptionOption } from "react-select";
+import { useState } from "react";
+import stationData from "@/data/stations.json";
+
+export interface Station {
+    id: number;
+    name: string;
+    kana: string;
+    lines: string[]
+}
+
+interface SelectStationProps {
+    instanceId: string;
+    value: Station | null;
+    onChange: (newValue: SingleValue<Station>) => void;
+    options?: Station[];
+    isDisabled?: boolean;
+}
+
+const CustomOption = (props: OptionProps<Station>) => (
+    <components.Option {...props}>
+        <div className="leading-tight text-black">
+            <span className="text-xs text-gray-500">{props.data.kana}</span>
+            <br />
+            {props.data.name}
+        </div>
+    </components.Option>
+);
+
+const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: SelectStationProps) => {
+    const stationOptions = options || stationData;
+    const [inputValue, setInputValue] = useState<string>("");
+
+    const filterOption = (option: FilterOptionOption<Station>, rawInput: string) => {
+        const target = option.data;
+        return target.name.startsWith(rawInput) || target.kana.startsWith(rawInput);
+    };
+
+    return (
+        <div className="w-64 m-6">
+            <Select
+                instanceId={instanceId}
+                value={value}
+                onChange={onChange}
+                isMulti={false}
+                options={stationOptions}
+                isDisabled={isDisabled}
+                onInputChange={(input) => setInputValue(input)}
+                getOptionLabel={(option) => option.name}
+                getOptionValue={(option) => option.id.toString()}
+                placeholder="駅名を入力してください"
+                isSearchable={true}
+                filterOption={filterOption}
+                noOptionsMessage={() => (inputValue ? "該当する駅がありません" : null)}
+                components={{
+                    DropdownIndicator: () => null,
+                    IndicatorSeparator: () => null,
+                    Option: CustomOption,
+                }}
+            />
+        </div>
+    );
+};
+
+
+export default SelectStation;
