@@ -2,1581 +2,2549 @@
     {
         "id": 130229,
         "name": "八軒",
-        "kana": "はちけん"
+        "kana": "はちけん",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130226,
         "name": "新川",
-        "kana": "しんかわ"
+        "kana": "しんかわ",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130201,
         "name": "新琴似",
-        "kana": "しんことに"
+        "kana": "しんことに",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130227,
         "name": "太平",
-        "kana": "たいへい"
+        "kana": "たいへい",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130225,
         "name": "百合が原",
-        "kana": "ゆりがはら"
+        "kana": "ゆりがはら",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130203,
         "name": "篠路",
-        "kana": "しのろ"
+        "kana": "しのろ",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130218,
         "name": "拓北",
-        "kana": "たくほく"
+        "kana": "たくほく",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130224,
         "name": "あいの里教育大",
-        "kana": "あいのさときょういくだい"
+        "kana": "あいのさときょういくだい",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130202,
         "name": "あいの里公園",
-        "kana": "あいのさとこうえん"
+        "kana": "あいのさとこうえん",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130230,
         "name": "ロイズタウン",
-        "kana": "ろいずたうん"
+        "kana": "ろいずたうん",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130204,
         "name": "太美",
-        "kana": "ふとみ"
+        "kana": "ふとみ",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130205,
         "name": "当別",
-        "kana": "とうべつ"
+        "kana": "とうべつ",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 130223,
         "name": "北海道医療大学",
-        "kana": "ほっかいどういりょうだいがく"
+        "kana": "ほっかいどういりょうだいがく",
+        "transfer": [
+            "satsushi"
+        ]
     },
     {
         "id": 132101,
         "name": "川端",
-        "kana": "かわばた"
+        "kana": "かわばた",
+        "transfer": [
+            "sekishi"
+        ]
     },
     {
         "id": 132103,
         "name": "新夕張",
-        "kana": "しんゆうばり"
+        "kana": "しんゆうばり",
+        "transfer": [
+            "sekishi"
+        ]
     },
     {
         "id": 132145,
         "name": "占冠",
-        "kana": "しむかっぷ"
+        "kana": "しむかっぷ",
+        "transfer": [
+            "sekishi"
+        ]
     },
     {
         "id": 132149,
         "name": "トマム",
-        "kana": "とまむ"
+        "kana": "とまむ",
+        "transfer": [
+            "sekishi"
+        ]
     },
     {
         "id": 122536,
         "name": "南永山",
-        "kana": "みなみながやま"
+        "kana": "みなみながやま",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122501,
         "name": "東旭川",
-        "kana": "ひがしあさひかわ"
+        "kana": "ひがしあさひかわ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122502,
         "name": "桜岡",
-        "kana": "さくらおか"
+        "kana": "さくらおか",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122503,
         "name": "当麻",
-        "kana": "とうま"
+        "kana": "とうま",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122504,
         "name": "伊香牛",
-        "kana": "いかうし"
+        "kana": "いかうし",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122505,
         "name": "愛別",
-        "kana": "あいべつ"
+        "kana": "あいべつ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122506,
         "name": "中愛別",
-        "kana": "なかあいべつ"
+        "kana": "なかあいべつ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122507,
         "name": "安足間",
-        "kana": "あんたろま"
+        "kana": "あんたろま",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122508,
         "name": "上川",
-        "kana": "かみかわ"
+        "kana": "かみかわ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122514,
         "name": "白滝",
-        "kana": "しらたき"
+        "kana": "しらたき",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122517,
         "name": "丸瀬布",
-        "kana": "まるせっぷ"
+        "kana": "まるせっぷ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122518,
         "name": "瀬戸瀬",
-        "kana": "せとせ"
+        "kana": "せとせ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122520,
         "name": "遠軽",
-        "kana": "えんがる"
+        "kana": "えんがる",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122521,
         "name": "安国",
-        "kana": "やすくに"
+        "kana": "やすくに",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122522,
         "name": "生田原",
-        "kana": "いくたはら"
+        "kana": "いくたはら",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122547,
         "name": "西留辺蘂",
-        "kana": "にしるべしべ"
+        "kana": "にしるべしべ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122525,
         "name": "留辺蘂",
-        "kana": "るべしべ"
+        "kana": "るべしべ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122526,
         "name": "相内",
-        "kana": "あいのない"
+        "kana": "あいのない",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122527,
         "name": "東相内",
-        "kana": "ひがしあいのない"
+        "kana": "ひがしあいのない",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122537,
         "name": "西北見",
-        "kana": "にしきたみ"
+        "kana": "にしきたみ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122528,
         "name": "北見",
-        "kana": "きたみ"
+        "kana": "きたみ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122546,
         "name": "柏陽",
-        "kana": "はくよう"
+        "kana": "はくよう",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122538,
         "name": "愛し野",
-        "kana": "いとしの"
+        "kana": "いとしの",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122529,
         "name": "端野",
-        "kana": "たんの"
+        "kana": "たんの",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122530,
         "name": "緋牛内",
-        "kana": "ひうしない"
+        "kana": "ひうしない",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122531,
         "name": "美幌",
-        "kana": "びほろ"
+        "kana": "びほろ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122532,
         "name": "西女満別",
-        "kana": "にしめまんべつ"
+        "kana": "にしめまんべつ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122533,
         "name": "女満別",
-        "kana": "めまんべつ"
+        "kana": "めまんべつ",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122534,
         "name": "呼人",
-        "kana": "よびと"
+        "kana": "よびと",
+        "transfer": [
+            "sekiho"
+        ]
     },
     {
         "id": 122535,
         "name": "網走",
-        "kana": "あばしり"
+        "kana": "あばしり",
+        "transfer": [
+            "sekiho",
+            "senmo"
+        ]
     },
     {
         "id": 111601,
         "name": "遠矢",
-        "kana": "とおや"
+        "kana": "とおや",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111624,
         "name": "釧路湿原",
-        "kana": "くしろしつげん"
+        "kana": "くしろしつげん",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111602,
         "name": "細岡",
-        "kana": "ほそおか"
+        "kana": "ほそおか",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111603,
         "name": "塘路",
-        "kana": "とうろ"
+        "kana": "とうろ",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111604,
         "name": "茅沼",
-        "kana": "かやぬま"
+        "kana": "かやぬま",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111606,
         "name": "標茶",
-        "kana": "しべちゃ"
+        "kana": "しべちゃ",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111607,
         "name": "磯分内",
-        "kana": "いそぶんない"
+        "kana": "いそぶんない",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111609,
         "name": "摩周",
-        "kana": "ましゅう"
+        "kana": "ましゅう",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111610,
         "name": "美留和",
-        "kana": "びるわ"
+        "kana": "びるわ",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111611,
         "name": "川湯温泉",
-        "kana": "かわゆおんせん"
+        "kana": "かわゆおんせん",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111612,
         "name": "緑",
-        "kana": "みどり"
+        "kana": "みどり",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111613,
         "name": "札弦",
-        "kana": "さっつる"
+        "kana": "さっつる",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111614,
         "name": "清里町",
-        "kana": "きよさとちょう"
+        "kana": "きよさとちょう",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111615,
         "name": "中斜里",
-        "kana": "なかしゃり"
+        "kana": "なかしゃり",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111616,
         "name": "知床斜里",
-        "kana": "しれとこしゃり"
+        "kana": "しれとこしゃり",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111617,
         "name": "止別",
-        "kana": "やむべつ"
+        "kana": "やむべつ",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111618,
         "name": "浜小清水",
-        "kana": "はまこしみず"
+        "kana": "はまこしみず",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111623,
         "name": "原生花園",
-        "kana": "げんせいかえん"
+        "kana": "げんせいかえん",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111619,
         "name": "北浜",
-        "kana": "きたはま"
+        "kana": "きたはま",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111620,
         "name": "藻琴",
-        "kana": "もこと"
+        "kana": "もこと",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 111621,
         "name": "鱒浦",
-        "kana": "ますうら"
+        "kana": "ますうら",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 121631,
         "name": "桂台",
-        "kana": "かつらだい"
+        "kana": "かつらだい",
+        "transfer": [
+            "senmo"
+        ]
     },
     {
         "id": 121853,
         "name": "旭川四条",
-        "kana": "あさひかわよじょう"
+        "kana": "あさひかわよじょう",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121801,
         "name": "新旭川",
-        "kana": "しんあさひかわ"
+        "kana": "しんあさひかわ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121803,
         "name": "永山",
-        "kana": "ながやま"
+        "kana": "ながやま",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121804,
         "name": "北永山",
-        "kana": "きたながやま"
+        "kana": "きたながやま",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121806,
         "name": "比布",
-        "kana": "ぴっぷ"
+        "kana": "ぴっぷ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121808,
         "name": "蘭留",
-        "kana": "らんる"
+        "kana": "らんる",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121809,
         "name": "塩狩",
-        "kana": "しおかり"
+        "kana": "しおかり",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121810,
         "name": "和寒",
-        "kana": "わっさむ"
+        "kana": "わっさむ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121812,
         "name": "剣淵",
-        "kana": "けんぶち"
+        "kana": "けんぶち",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121813,
         "name": "士別",
-        "kana": "しべつ"
+        "kana": "しべつ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121815,
         "name": "多寄",
-        "kana": "たよろ"
+        "kana": "たよろ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121855,
         "name": "瑞穂",
-        "kana": "みずほ"
+        "kana": "みずほ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121816,
         "name": "風連",
-        "kana": "ふうれん"
+        "kana": "ふうれん",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121817,
         "name": "名寄高校",
-        "kana": "なよろこうこう"
+        "kana": "なよろこうこう",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121818,
         "name": "名寄",
-        "kana": "なよろ"
+        "kana": "なよろ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121819,
         "name": "（宗）日進",
-        "kana": "にっしん"
+        "kana": "にっしん",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121822,
         "name": "智恵文",
-        "kana": "ちえぶん"
+        "kana": "ちえぶん",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121856,
         "name": "智北",
-        "kana": "ちほく"
+        "kana": "ちほく",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121824,
         "name": "美深",
-        "kana": "びふか"
+        "kana": "びふか",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121857,
         "name": "天塩川温泉",
-        "kana": "てしおがわおんせん"
+        "kana": "てしおがわおんせん",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121829,
         "name": "咲来",
-        "kana": "さっくる"
+        "kana": "さっくる",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121830,
         "name": "音威子府",
-        "kana": "おといねっぷ"
+        "kana": "おといねっぷ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121831,
         "name": "筬島",
-        "kana": "おさしま"
+        "kana": "おさしま",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121833,
         "name": "佐久",
-        "kana": "さく"
+        "kana": "さく",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121834,
         "name": "天塩中川",
-        "kana": "てしおなかがわ"
+        "kana": "てしおなかがわ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121837,
         "name": "問寒別",
-        "kana": "といかんべつ"
+        "kana": "といかんべつ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121859,
         "name": "糠南",
-        "kana": "ぬかなん"
+        "kana": "ぬかなん",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121842,
         "name": "幌延",
-        "kana": "ほろのべ"
+        "kana": "ほろのべ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121843,
         "name": "下沼",
-        "kana": "しもぬま"
+        "kana": "しもぬま",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121844,
         "name": "豊富",
-        "kana": "とよとみ"
+        "kana": "とよとみ",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121847,
         "name": "兜沼",
-        "kana": "かぶとぬま"
+        "kana": "かぶとぬま",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121848,
         "name": "勇知",
-        "kana": "ゆうち"
+        "kana": "ゆうち",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121850,
         "name": "南稚内",
-        "kana": "みなみわっかない"
+        "kana": "みなみわっかない",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 121851,
         "name": "稚内",
-        "kana": "わっかない"
+        "kana": "わっかない",
+        "transfer": [
+            "soya"
+        ]
     },
     {
         "id": 131416,
         "name": "平和",
-        "kana": "へいわ"
+        "kana": "へいわ",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131413,
         "name": "新札幌",
-        "kana": "しんさっぽろ"
+        "kana": "しんさっぽろ",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131404,
         "name": "上野幌",
-        "kana": "かみのっぽろ"
+        "kana": "かみのっぽろ",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131405,
         "name": "北広島",
-        "kana": "きたひろしま"
+        "kana": "きたひろしま",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131406,
         "name": "島松",
-        "kana": "しままつ"
+        "kana": "しままつ",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131415,
         "name": "恵み野",
-        "kana": "めぐみの"
+        "kana": "めぐみの",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131407,
         "name": "恵庭",
-        "kana": "えにわ"
+        "kana": "えにわ",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131417,
         "name": "サッポロビール庭園",
-        "kana": "さっぽろびーるていえん"
+        "kana": "さっぽろびーるていえん",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131409,
         "name": "長都",
-        "kana": "おさつ"
+        "kana": "おさつ",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131408,
         "name": "（千）千歳",
-        "kana": "ちとせ"
+        "kana": "ちとせ",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131414,
         "name": "南千歳",
-        "kana": "みなみちとせ"
+        "kana": "みなみちとせ",
+        "transfer": [
+            "chitose",
+            "sekishi",
+            "chitose2"
+        ]
     },
     {
         "id": 131411,
         "name": "植苗",
-        "kana": "うえなえ"
+        "kana": "うえなえ",
+        "transfer": [
+            "chitose"
+        ]
     },
     {
         "id": 131431,
         "name": "新千歳空港",
-        "kana": "しんちとせくうこう"
+        "kana": "しんちとせくうこう",
+        "transfer": [
+            "chitose2"
+        ]
     },
     {
         "id": 130402,
         "name": "赤平",
-        "kana": "あかびら"
+        "kana": "あかびら",
+        "transfer": [
+            "nemuro"
+        ]
     },
     {
         "id": 130403,
         "name": "茂尻",
-        "kana": "もしり"
+        "kana": "もしり",
+        "transfer": [
+            "nemuro"
+        ]
     },
     {
         "id": 130404,
         "name": "平岸",
-        "kana": "ひらぎし"
+        "kana": "ひらぎし",
+        "transfer": [
+            "nemuro"
+        ]
     },
     {
         "id": 130405,
         "name": "芦別",
-        "kana": "あしべつ"
+        "kana": "あしべつ",
+        "transfer": [
+            "nemuro"
+        ]
     },
     {
         "id": 130406,
         "name": "上芦別",
-        "kana": "かみあしべつ"
+        "kana": "かみあしべつ",
+        "transfer": [
+            "nemuro"
+        ]
     },
     {
         "id": 130407,
         "name": "野花南",
-        "kana": "のかなん"
+        "kana": "のかなん",
+        "transfer": [
+            "nemuro"
+        ]
     },
     {
         "id": 130410,
         "name": "富良野",
-        "kana": "ふらの"
+        "kana": "ふらの",
+        "transfer": [
+            "nemuro",
+            "furano"
+        ]
     },
     {
         "id": 110411,
         "name": "新得",
-        "kana": "しんとく"
+        "kana": "しんとく",
+        "transfer": [
+            "nemuro2",
+            "sekishi"
+        ]
     },
     {
         "id": 110412,
         "name": "十勝清水",
-        "kana": "とかちしみず"
+        "kana": "とかちしみず",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110414,
         "name": "御影",
-        "kana": "みかげ"
+        "kana": "みかげ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110415,
         "name": "芽室",
-        "kana": "めむろ"
+        "kana": "めむろ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110466,
         "name": "大成",
-        "kana": "たいせい"
+        "kana": "たいせい",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110416,
         "name": "西帯広",
-        "kana": "にしおびひろ"
+        "kana": "にしおびひろ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110467,
         "name": "柏林台",
-        "kana": "はくりんだい"
+        "kana": "はくりんだい",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110417,
         "name": "帯広",
-        "kana": "おびひろ"
+        "kana": "おびひろ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110418,
         "name": "札内",
-        "kana": "さつない"
+        "kana": "さつない",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110419,
         "name": "幕別",
-        "kana": "まくべつ"
+        "kana": "まくべつ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110420,
         "name": "利別",
-        "kana": "としべつ"
+        "kana": "としべつ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110421,
         "name": "池田",
-        "kana": "いけだ"
+        "kana": "いけだ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 114022,
         "name": "十弗",
-        "kana": "とおふつ"
+        "kana": "とおふつ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110423,
         "name": "豊頃",
-        "kana": "とよころ"
+        "kana": "とよころ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110424,
         "name": "新吉野",
-        "kana": "しんよしの"
+        "kana": "しんよしの",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110425,
         "name": "浦幌",
-        "kana": "うらほろ"
+        "kana": "うらほろ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110427,
         "name": "厚内",
-        "kana": "あつない"
+        "kana": "あつない",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 114030,
         "name": "音別",
-        "kana": "おんべつ"
+        "kana": "おんべつ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110432,
         "name": "白糠",
-        "kana": "しらぬか"
+        "kana": "しらぬか",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110433,
         "name": "西庶路",
-        "kana": "にししょろ"
+        "kana": "にししょろ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110434,
         "name": "庶路",
-        "kana": "しょろ"
+        "kana": "しょろ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110435,
         "name": "大楽毛",
-        "kana": "おたのしけ"
+        "kana": "おたのしけ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110470,
         "name": "新大楽毛",
-        "kana": "しんおたのしけ"
+        "kana": "しんおたのしけ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110436,
         "name": "（根）新富士",
-        "kana": "しんふじ"
+        "kana": "しんふじ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110437,
         "name": "釧路",
-        "kana": "くしろ"
+        "kana": "くしろ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110438,
         "name": "東釧路",
-        "kana": "ひがしくしろ"
+        "kana": "ひがしくしろ",
+        "transfer": [
+            "nemuro2",
+            "senmo"
+        ]
     },
     {
         "id": 110469,
         "name": "武佐",
-        "kana": "むさ"
+        "kana": "むさ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110439,
         "name": "別保",
-        "kana": "べっぽ"
+        "kana": "べっぽ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110440,
         "name": "上尾幌",
-        "kana": "かみおぼろ"
+        "kana": "かみおぼろ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110441,
         "name": "尾幌",
-        "kana": "おぼろ"
+        "kana": "おぼろ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110442,
         "name": "門静",
-        "kana": "もんしず"
+        "kana": "もんしず",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110443,
         "name": "厚岸",
-        "kana": "あっけし"
+        "kana": "あっけし",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110445,
         "name": "茶内",
-        "kana": "ちゃない"
+        "kana": "ちゃない",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110446,
         "name": "浜中",
-        "kana": "はまなか"
+        "kana": "はまなか",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110447,
         "name": "姉別",
-        "kana": "あねべつ"
+        "kana": "あねべつ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110448,
         "name": "厚床",
-        "kana": "あっとこ"
+        "kana": "あっとこ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110450,
         "name": "別当賀",
-        "kana": "べっとが"
+        "kana": "べっとが",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110451,
         "name": "落石",
-        "kana": "おちいし"
+        "kana": "おちいし",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110455,
         "name": "昆布盛",
-        "kana": "こんぶもり"
+        "kana": "こんぶもり",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110452,
         "name": "西和田",
-        "kana": "にしわだ"
+        "kana": "にしわだ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 110454,
         "name": "根室",
-        "kana": "ねむろ"
+        "kana": "ねむろ",
+        "transfer": [
+            "nemuro2"
+        ]
     },
     {
         "id": 140101,
         "name": "函館",
-        "kana": "はこだて"
+        "kana": "はこだて",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140102,
         "name": "五稜郭",
-        "kana": "ごりょうかく"
+        "kana": "ごりょうかく",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140103,
         "name": "桔梗",
-        "kana": "ききょう"
+        "kana": "ききょう",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140104,
         "name": "大中山",
-        "kana": "おおなかやま"
+        "kana": "おおなかやま",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140105,
         "name": "七飯",
-        "kana": "ななえ"
+        "kana": "ななえ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140106,
         "name": "新函館北斗",
-        "kana": "しんはこだてほくと"
+        "kana": "しんはこだてほくと",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140107,
         "name": "仁山",
-        "kana": "にやま"
+        "kana": "にやま",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140108,
         "name": "大沼",
-        "kana": "おおぬま"
+        "kana": "おおぬま",
+        "transfer": [
+            "hakota",
+            "hakota2"
+        ]
     },
     {
         "id": 140109,
         "name": "大沼公園",
-        "kana": "おおぬまこうえん"
+        "kana": "おおぬまこうえん",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140110,
         "name": "赤井川",
-        "kana": "あかいがわ"
+        "kana": "あかいがわ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140111,
         "name": "駒ヶ岳",
-        "kana": "こまがだけ"
+        "kana": "こまがだけ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140114,
         "name": "森",
-        "kana": "もり"
+        "kana": "もり",
+        "transfer": [
+            "hakota",
+            "hakota2"
+        ]
     },
     {
         "id": 140118,
         "name": "石倉",
-        "kana": "いしくら"
+        "kana": "いしくら",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140119,
         "name": "落部",
-        "kana": "おとしべ"
+        "kana": "おとしべ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140120,
         "name": "野田生",
-        "kana": "のだおい"
+        "kana": "のだおい",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140121,
         "name": "山越",
-        "kana": "やまこし"
+        "kana": "やまこし",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140122,
         "name": "八雲",
-        "kana": "やくも"
+        "kana": "やくも",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140124,
         "name": "（函）山崎",
-        "kana": "やまさき"
+        "kana": "やまさき",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140125,
         "name": "黒岩",
-        "kana": "くろいわ"
+        "kana": "くろいわ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140127,
         "name": "国縫",
-        "kana": "くんぬい"
+        "kana": "くんぬい",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140129,
         "name": "長万部",
-        "kana": "おしゃまんべ"
+        "kana": "おしゃまんべ",
+        "transfer": [
+            "hakota",
+            "murora"
+        ]
     },
     {
         "id": 140130,
         "name": "二股",
-        "kana": "ふたまた"
+        "kana": "ふたまた",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140132,
         "name": "黒松内",
-        "kana": "くろまつない"
+        "kana": "くろまつない",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140133,
         "name": "熱郛",
-        "kana": "ねっぷ"
+        "kana": "ねっぷ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130102,
         "name": "目名",
-        "kana": "めな"
+        "kana": "めな",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130103,
         "name": "蘭越",
-        "kana": "らんこし"
+        "kana": "らんこし",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130104,
         "name": "昆布",
-        "kana": "こんぶ"
+        "kana": "こんぶ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130105,
         "name": "ニセコ",
-        "kana": "にせこ"
+        "kana": "にせこ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130106,
         "name": "比羅夫",
-        "kana": "ひらふ"
+        "kana": "ひらふ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130107,
         "name": "倶知安",
-        "kana": "くっちゃん"
+        "kana": "くっちゃん",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130108,
         "name": "小沢",
-        "kana": "こざわ"
+        "kana": "こざわ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130109,
         "name": "銀山",
-        "kana": "ぎんざん"
+        "kana": "ぎんざん",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130110,
         "name": "然別",
-        "kana": "しかりべつ"
+        "kana": "しかりべつ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130111,
         "name": "仁木",
-        "kana": "にき"
+        "kana": "にき",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130112,
         "name": "余市",
-        "kana": "よいち"
+        "kana": "よいち",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130113,
         "name": "蘭島",
-        "kana": "らんしま"
+        "kana": "らんしま",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130114,
         "name": "塩谷",
-        "kana": "しおや"
+        "kana": "しおや",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130115,
         "name": "小樽",
-        "kana": "おたる"
+        "kana": "おたる",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130116,
         "name": "南小樽",
-        "kana": "みなみおたる"
+        "kana": "みなみおたる",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130117,
         "name": "小樽築港",
-        "kana": "おたるちっこう"
+        "kana": "おたるちっこう",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130118,
         "name": "朝里",
-        "kana": "あさり"
+        "kana": "あさり",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130120,
         "name": "銭函",
-        "kana": "ぜにばこ"
+        "kana": "ぜにばこ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130150,
         "name": "ほしみ",
-        "kana": "ほしみ"
+        "kana": "ほしみ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130144,
         "name": "星置",
-        "kana": "ほしおき"
+        "kana": "ほしおき",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130146,
         "name": "稲穂",
-        "kana": "いなほ"
+        "kana": "いなほ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130121,
         "name": "手稲",
-        "kana": "ていね"
+        "kana": "ていね",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130147,
         "name": "稲積公園",
-        "kana": "いなづみこうえん"
+        "kana": "いなづみこうえん",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 140145,
         "name": "発寒",
-        "kana": "はっさむ"
+        "kana": "はっさむ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130148,
         "name": "発寒中央",
-        "kana": "はっさむちゅうおう"
+        "kana": "はっさむちゅうおう",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130122,
         "name": "琴似",
-        "kana": "ことに"
+        "kana": "ことに",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130123,
         "name": "桑園",
-        "kana": "そうえん"
+        "kana": "そうえん",
+        "transfer": [
+            "hakota",
+            "satsushi"
+        ]
     },
     {
         "id": 130124,
         "name": "札幌",
-        "kana": "さっぽろ"
+        "kana": "さっぽろ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130125,
         "name": "苗穂",
-        "kana": "なえぼ"
+        "kana": "なえぼ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130126,
         "name": "（函）白石",
-        "kana": "しろいし"
+        "kana": "しろいし",
+        "transfer": [
+            "hakota",
+            "chitose"
+        ]
     },
     {
         "id": 130127,
         "name": "厚別",
-        "kana": "あつべつ"
+        "kana": "あつべつ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130143,
         "name": "森林公園",
-        "kana": "しんりんこうえん"
+        "kana": "しんりんこうえん",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130142,
         "name": "大麻",
-        "kana": "おおあさ"
+        "kana": "おおあさ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130128,
         "name": "野幌",
-        "kana": "のっぽろ"
+        "kana": "のっぽろ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130149,
         "name": "高砂",
-        "kana": "たかさご"
+        "kana": "たかさご",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130129,
         "name": "江別",
-        "kana": "えべつ"
+        "kana": "えべつ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130130,
         "name": "豊幌",
-        "kana": "とよほろ"
+        "kana": "とよほろ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130131,
         "name": "幌向",
-        "kana": "ほろむい"
+        "kana": "ほろむい",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130132,
         "name": "上幌向",
-        "kana": "かみほろむい"
+        "kana": "かみほろむい",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130133,
         "name": "岩見沢",
-        "kana": "いわみざわ"
+        "kana": "いわみざわ",
+        "transfer": [
+            "hakota",
+            "muroran"
+        ]
     },
     {
         "id": 130134,
         "name": "峰延",
-        "kana": "みねのぶ"
+        "kana": "みねのぶ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130135,
         "name": "光珠内",
-        "kana": "こうしゅない"
+        "kana": "こうしゅない",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130136,
         "name": "美唄",
-        "kana": "びばい"
+        "kana": "びばい",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130137,
         "name": "茶志内",
-        "kana": "ちゃしない"
+        "kana": "ちゃしない",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130138,
         "name": "奈井江",
-        "kana": "ないえ"
+        "kana": "ないえ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130139,
         "name": "豊沼",
-        "kana": "とよぬま"
+        "kana": "とよぬま",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130140,
         "name": "砂川",
-        "kana": "すながわ"
+        "kana": "すながわ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 130141,
         "name": "滝川",
-        "kana": "たきかわ"
+        "kana": "たきかわ",
+        "transfer": [
+            "hakota",
+            "nemuro"
+        ]
     },
     {
         "id": 120101,
         "name": "江部乙",
-        "kana": "えべおつ"
+        "kana": "えべおつ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 120102,
         "name": "妹背牛",
-        "kana": "もせうし"
+        "kana": "もせうし",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 120103,
         "name": "深川",
-        "kana": "ふかがわ"
+        "kana": "ふかがわ",
+        "transfer": [
+            "hakota",
+            "rumoi"
+        ]
     },
     {
         "id": 120104,
         "name": "納内",
-        "kana": "おさむない"
+        "kana": "おさむない",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 120107,
         "name": "近文",
-        "kana": "ちかぶみ"
+        "kana": "ちかぶみ",
+        "transfer": [
+            "hakota"
+        ]
     },
     {
         "id": 120108,
         "name": "旭川",
-        "kana": "あさひかわ"
+        "kana": "あさひかわ",
+        "transfer": [
+            "hakota",
+            "soya",
+            "furano"
+        ]
     },
     {
         "id": 140153,
         "name": "鹿部",
-        "kana": "しかべ"
+        "kana": "しかべ",
+        "transfer": [
+            "hakota2"
+        ]
     },
     {
         "id": 140154,
         "name": "渡島沼尻",
-        "kana": "おしまぬじり"
+        "kana": "おしまぬじり",
+        "transfer": [
+            "hakota2"
+        ]
     },
     {
         "id": 140155,
         "name": "渡島砂原",
-        "kana": "おしまさわら"
+        "kana": "おしまさわら",
+        "transfer": [
+            "hakota2"
+        ]
     },
     {
         "id": 140156,
         "name": "掛澗",
-        "kana": "かかりま"
+        "kana": "かかりま",
+        "transfer": [
+            "hakota2"
+        ]
     },
     {
         "id": 140157,
         "name": "尾白内",
-        "kana": "おしろない"
+        "kana": "おしろない",
+        "transfer": [
+            "hakota2"
+        ]
     },
     {
         "id": 140158,
         "name": "東森",
-        "kana": "ひがしもり"
+        "kana": "ひがしもり",
+        "transfer": [
+            "hakota2"
+        ]
     },
     {
         "id": 132201,
         "name": "勇払",
-        "kana": "ゆうふつ"
+        "kana": "ゆうふつ",
+        "transfer": [
+            "hitaka"
+        ]
     },
     {
         "id": 132202,
         "name": "浜厚真",
-        "kana": "はまあつま"
+        "kana": "はまあつま",
+        "transfer": [
+            "hitaka"
+        ]
     },
     {
         "id": 132204,
         "name": "鵡川",
-        "kana": "むかわ"
+        "kana": "むかわ",
+        "transfer": [
+            "hitaka"
+        ]
     },
     {
         "id": 121701,
         "name": "学田",
-        "kana": "がくでん"
+        "kana": "がくでん",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121702,
         "name": "鹿討",
-        "kana": "しかうち"
+        "kana": "しかうち",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121703,
         "name": "中富良野",
-        "kana": "なかふらの"
+        "kana": "なかふらの",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121716,
         "name": "ラベンダー畑",
-        "kana": "らべんだーばたけ"
+        "kana": "らべんだーばたけ",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121704,
         "name": "西中",
-        "kana": "にしなか"
+        "kana": "にしなか",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121705,
         "name": "上富良野",
-        "kana": "かみふらの"
+        "kana": "かみふらの",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121706,
         "name": "美馬牛",
-        "kana": "びばうし"
+        "kana": "びばうし",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121707,
         "name": "美瑛",
-        "kana": "びえい"
+        "kana": "びえい",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121708,
         "name": "北美瑛",
-        "kana": "きたびえい"
+        "kana": "きたびえい",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121709,
         "name": "千代ヶ岡",
-        "kana": "ちよがおか"
+        "kana": "ちよがおか",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121710,
         "name": "西聖和",
-        "kana": "にしせいわ"
+        "kana": "にしせいわ",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121711,
         "name": "西神楽",
-        "kana": "にしかぐら"
+        "kana": "にしかぐら",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121712,
         "name": "西瑞穂",
-        "kana": "にしみずほ"
+        "kana": "にしみずほ",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121713,
         "name": "西御料",
-        "kana": "にしごりょう"
+        "kana": "にしごりょう",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121715,
         "name": "緑が丘",
-        "kana": "みどりがおか"
+        "kana": "みどりがおか",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 121714,
         "name": "神楽岡",
-        "kana": "かぐらおか"
+        "kana": "かぐらおか",
+        "transfer": [
+            "furano"
+        ]
     },
     {
         "id": 140302,
         "name": "静狩",
-        "kana": "しずかり"
+        "kana": "しずかり",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 140306,
         "name": "小幌",
-        "kana": "こぼろ"
+        "kana": "こぼろ",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 140304,
         "name": "礼文",
-        "kana": "れぶん"
+        "kana": "れぶん",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130301,
         "name": "大岸",
-        "kana": "おおきし"
+        "kana": "おおきし",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130303,
         "name": "豊浦",
-        "kana": "とようら"
+        "kana": "とようら",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130304,
         "name": "洞爺",
-        "kana": "とうや"
+        "kana": "とうや",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130305,
         "name": "有珠",
-        "kana": "うす"
+        "kana": "うす",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130306,
         "name": "長和",
-        "kana": "ながわ"
+        "kana": "ながわ",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130307,
         "name": "伊達紋別",
-        "kana": "だてもんべつ"
+        "kana": "だてもんべつ",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130339,
         "name": "北舟岡",
-        "kana": "きたふなおか"
+        "kana": "きたふなおか",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130308,
         "name": "稀府",
-        "kana": "まれっぷ"
+        "kana": "まれっぷ",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130309,
         "name": "黄金",
-        "kana": "こがね"
+        "kana": "こがね",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130310,
         "name": "崎守",
-        "kana": "さきもり"
+        "kana": "さきもり",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130312,
         "name": "本輪西",
-        "kana": "もとわにし"
+        "kana": "もとわにし",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130313,
         "name": "東室蘭",
-        "kana": "ひがしむろらん"
+        "kana": "ひがしむろらん",
+        "transfer": [
+            "murora",
+            "murora2"
+        ]
     },
     {
         "id": 130314,
         "name": "鷲別",
-        "kana": "わしべつ"
+        "kana": "わしべつ",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130315,
         "name": "幌別",
-        "kana": "ほろべつ"
+        "kana": "ほろべつ",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130316,
         "name": "（室）富浦",
-        "kana": "とみうら"
+        "kana": "とみうら",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130317,
         "name": "登別",
-        "kana": "のぼりべつ"
+        "kana": "のぼりべつ",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130318,
         "name": "虎杖浜",
-        "kana": "こじょうはま"
+        "kana": "こじょうはま",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130319,
         "name": "竹浦",
-        "kana": "たけうら"
+        "kana": "たけうら",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130341,
         "name": "北吉原",
-        "kana": "きたよしはら"
+        "kana": "きたよしはら",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130320,
         "name": "萩野",
-        "kana": "はぎの"
+        "kana": "はぎの",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130321,
         "name": "白老",
-        "kana": "しらおい"
+        "kana": "しらおい",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130322,
         "name": "社台",
-        "kana": "しゃだい"
+        "kana": "しゃだい",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130323,
         "name": "錦岡",
-        "kana": "にしきおか"
+        "kana": "にしきおか",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130324,
         "name": "糸井",
-        "kana": "いとい"
+        "kana": "いとい",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130342,
         "name": "青葉",
-        "kana": "あおば"
+        "kana": "あおば",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130325,
         "name": "苫小牧",
-        "kana": "とまこまい"
+        "kana": "とまこまい",
+        "transfer": [
+            "murora",
+            "hitaka"
+        ]
     },
     {
         "id": 130326,
         "name": "沼ノ端",
-        "kana": "ぬまのはた"
+        "kana": "ぬまのはた",
+        "transfer": [
+            "murora",
+            "chitose"
+        ]
     },
     {
         "id": 130327,
         "name": "遠浅",
-        "kana": "とあさ"
+        "kana": "とあさ",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130328,
         "name": "早来",
-        "kana": "はやきた"
+        "kana": "はやきた",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130329,
         "name": "安平",
-        "kana": "あびら"
+        "kana": "あびら",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130330,
         "name": "（室）追分",
-        "kana": "おいわけ"
+        "kana": "おいわけ",
+        "transfer": [
+            "murora",
+            "sekishi"
+        ]
     },
     {
         "id": 130331,
         "name": "（室）三川",
-        "kana": "みかわ"
+        "kana": "みかわ",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130332,
         "name": "古山",
-        "kana": "ふるさん"
+        "kana": "ふるさん",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130333,
         "name": "由仁",
-        "kana": "ゆに"
+        "kana": "ゆに",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130334,
         "name": "栗山",
-        "kana": "くりやま"
+        "kana": "くりやま",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130335,
         "name": "栗丘",
-        "kana": "くりおか"
+        "kana": "くりおか",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130336,
         "name": "栗沢",
-        "kana": "くりさわ"
+        "kana": "くりさわ",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130337,
         "name": "志文",
-        "kana": "しぶん"
+        "kana": "しぶん",
+        "transfer": [
+            "murora"
+        ]
     },
     {
         "id": 130351,
         "name": "輪西",
-        "kana": "わにし"
+        "kana": "わにし",
+        "transfer": [
+            "murora2"
+        ]
     },
     {
         "id": 130352,
         "name": "御崎",
-        "kana": "みさき"
+        "kana": "みさき",
+        "transfer": [
+            "murora2"
+        ]
     },
     {
         "id": 130353,
         "name": "母恋",
-        "kana": "ぼこい"
+        "kana": "ぼこい",
+        "transfer": [
+            "murora2"
+        ]
     },
     {
         "id": 130354,
         "name": "室蘭",
-        "kana": "むろらん"
+        "kana": "むろらん",
+        "transfer": [
+            "murora2"
+        ]
     },
     {
         "id": 121501,
         "name": "北一已",
-        "kana": "きたいちやん"
+        "kana": "きたいちやん",
+        "transfer": [
+            "rumoi"
+        ]
     },
     {
         "id": 121502,
         "name": "秩父別",
-        "kana": "ちっぷべつ"
+        "kana": "ちっぷべつ",
+        "transfer": [
+            "rumoi"
+        ]
     },
     {
         "id": 121514,
         "name": "北秩父別",
-        "kana": "きたちっぷべつ"
+        "kana": "きたちっぷべつ",
+        "transfer": [
+            "rumoi"
+        ]
     },
     {
         "id": 121503,
         "name": "石狩沼田",
-        "kana": "いしかりぬまた"
+        "kana": "いしかりぬまた",
+        "transfer": [
+            "rumoi"
+        ]
     }
 ]
