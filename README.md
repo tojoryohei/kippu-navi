@@ -26,7 +26,7 @@ JRの乗車券を最も安く購入できる分割パターンを探索するWeb
 このプロジェクトは、以下の技術スタックで構築されています。
 
 * **フロントエンド**: Next.js (React), TypeScript
-* **UI**: Tailwind CSS, react-select
+* **UI**: Tailwind CSS, react-select, react-hook-form
 * **運賃計算エンジン**: TypeScript (Node.js)
 * **データ管理**: JSONファイル
 * **ホスティング**: Vercel, GCP
