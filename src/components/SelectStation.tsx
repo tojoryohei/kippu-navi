@@ -22,7 +22,7 @@ interface SelectStationProps {
 const CustomOption = (props: OptionProps<Station>) => (
     <components.Option {...props}>
         <div className="leading-tight text-black">
-            <span className="text-xs text-gray-500">{props.data.kana}</span>
+            <span className="text-xs text-black">{props.data.kana}</span>
             <br />
             {props.data.name}
         </div>
@@ -39,7 +39,7 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: Sel
     };
 
     return (
-        <div className="w-64 m-6">
+        <div className="my-2 w-47">
             <Select
                 instanceId={instanceId}
                 value={value}

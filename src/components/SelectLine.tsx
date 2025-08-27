@@ -24,7 +24,7 @@ const CustomOption = (props: OptionProps<Line>) => (
 
 const SelectLine = ({ instanceId, value, onChange, options, isDisabled }: SelectLineProps) => {
     return (
-        <div className="w-64 m-6">
+        <div className="my-2 w-47">
             <Select
                 instanceId={instanceId}
                 value={value}
