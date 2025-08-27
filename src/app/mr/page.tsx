@@ -16,6 +16,8 @@ interface IFormInput {
   }[];
 }
 
+const stationMap = new Map(stationData.map(s => [s.id, s]));
+
 export default function Home() {
   const { handleSubmit, control, watch, setValue, getValues, formState: { isValid } } = useForm<IFormInput>({
     mode: 'onChange',
@@ -113,7 +115,7 @@ export default function Home() {
 
             const stationsOnLine = selectedLine
               ? selectedLine.stations
-                .map(id => stationData.find(station => station.id === id))
+                .map(id => stationMap.get(id))
                 .filter((station): station is Station => station !== undefined)
               : [];
 
