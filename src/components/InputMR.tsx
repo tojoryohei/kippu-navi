@@ -73,7 +73,6 @@ export default function InputMR() {
 
     const onSubmit: SubmitHandler<IFormInput> = (data) => {
         console.log(data);
-
         alert(data.startStation?.name);
     };
 
@@ -106,9 +105,7 @@ export default function InputMR() {
                         const previousLine = index > 0 ? formValues.segments[index - 1]?.viaLine : null;
 
                         // 乗り換え可能な路線を計算
-                        const availableLineIds = useMemo(() => {
-                            return new Set(previousStation?.lines);
-                        }, [previousStation]);
+                        const availableLineIds = new Set(previousStation?.lines);
 
                         const availableLines = previousStation
                             ? lineData
