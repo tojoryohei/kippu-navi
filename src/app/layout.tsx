@@ -1,6 +1,8 @@
+import { GoogleTagManager } from '@next/third-parties/google'
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Header from '@/components/Header';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +15,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "JR運賃計算サイト",
-  description: "JRの経路を指定して運賃を計算するサイトです",
+  title: {
+    default: "きっぷナビ",
+    template: "%s | きっぷナビ",
+  },
+  description: "JR乗車券の分割運賃計算をするサイトです。",
+  metadataBase: new URL('https://kippu-navi.com'),
+  openGraph: {
+    title: "きっぷナビ",
+    description: "JR乗車券の分割運賃計算をするサイトです。",
+    url: "https://kippu-navi.com",
+    siteName: "きっぷナビ",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -24,9 +37,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
+      <GoogleTagManager gtmId="G-TXTRWDDZ33" />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Header />
         {children}
       </body>
     </html>
