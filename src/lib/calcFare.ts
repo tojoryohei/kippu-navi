@@ -5,8 +5,8 @@ import { RouteRequest, ApiResponse, PathStep } from '@/types';
 class FareCalculator {
     public processRouteAndCalculateFare(request: RouteRequest): ApiResponse {
         const userInputPath = request.path;
-        var departureStation: string = "出発駅";
-        var arrivalStation: string = "到着駅";
+        var departureStation: string = "鹿島";
+        var arrivalStation: string = "鹿島サッカースタジアム";
 
         // ステップ1: 経路の補正
         const correctedPath = this.correctPath(userInputPath);
@@ -33,7 +33,7 @@ class FareCalculator {
 
     private correctPath(path: PathStep[]): PathStep[] {
         // TODO: 大都市近郊区間などのルールに基づき、運賃計算用の最短経路を返すロジック
-        return path; // 今は補正せずそのまま返す
+        return path;
     }
 
     private calculateTotalEigyoKilo(path: PathStep[]): number {

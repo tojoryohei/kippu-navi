@@ -13,7 +13,7 @@ import { Station, Line, ApiResponse, IFormInput, PathStep, RouteRequest } from "
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 
-export default function InputMR() {
+export default function FormMR() {
     const { handleSubmit, control, watch, setValue, getValues, formState: { isValid } } = useForm<IFormInput>({
         mode: 'onChange',
         defaultValues: {
@@ -123,7 +123,8 @@ export default function InputMR() {
             setIsLoading(false);
         }
     };
-
+    const isLongDeparture: boolean | null = result && 6 < result.departureStation.length;
+    const isLongArrival: boolean | null = result && 6 < result.arrivalStation.length;
     return (
         <main className="max-w-xl mx-auto">
             <h1 className="text-xl font-bold m-4">JR運賃計算（経路入力）</h1>
@@ -204,7 +205,6 @@ export default function InputMR() {
                                         )}
                                     />
                                 </div>
-                                <div />
                             </div>
                         );
                     })}
@@ -230,13 +230,36 @@ export default function InputMR() {
                 {error && <p className="text-red-500">{error}</p>}
                 {result && (
                     <div>
-                        <h2 className="text-lg font-semibold">計算結果</h2>
-                        <p>営業キロ: {result.totalEigyoKilo} km</p>
-                        <p>運賃計算キロ（擬制キロ）: {result.totalGiseiKilo} km</p>
+                        <h2 className="pb-5 text-2xl">計算結果</h2>
+                        <div>営業キロ: {result.totalEigyoKilo} km</div>
+                        <div>運賃計算キロ（擬制キロ）: {result.totalGiseiKilo} km</div>
+                        <div className="flex justify-between items-center my-3 gap-2">
+                            <div className="flex-1 text-right break-words">
+                                <div className={`font-bold ${isLongDeparture ? 'text-xl break-words leading-tight' : 'text-2xl flex justify-around'}`}>
+                                    {isLongDeparture
+                                        ? result.departureStation
+                                        : result.departureStation.split('').map((char, idx) => (
+                                            <span key={idx}>{char}</span>
+                                        ))}
+                                </div>
+                            </div>
+                            <div className="text-2xl shrink-0 px-1 text-center">→</div>
+                            <div className="flex-1 text-left break-words">
+                                <div className={`font-bold ${isLongArrival ? 'text-xl break-words leading-tight' : 'text-2xl flex justify-around'}`}>
+                                    {isLongArrival
+                                        ? result.arrivalStation
+                                        : result.arrivalStation.split('').map((char, idx) => (
+                                            <span key={idx}>{char}</span>
+                                        ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div>経由：{result.via.length === 0 ? "ーーー" : result.via.join("・")}</div>
+                        <div className="flex justify-between">
+                            <div>{result.validDays === 1 ? "当日限り有効" : result.validDays + " 日間有効"}</div>
+                            <div className="text-xl">¥{result.fare}</div>
 
-                        <p>経由: {result.via.length === 0 ? "ーーー" : result.via.join("・")}</p>
-                        <p>{result.validDays === 1 ? "当日限り有効" : result.validDays + " 日間有効"}</p>
-                        <p className="text-2xl font-bold">運賃: {result.fare} 円</p>
+                        </div>
                     </div>
                 )}
             </div>

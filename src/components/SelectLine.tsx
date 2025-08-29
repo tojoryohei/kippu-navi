@@ -22,7 +22,7 @@ const SelectLine = ({ instanceId, value, onChange, options, isDisabled }: Select
                 isDisabled={isDisabled}
                 placeholder="経由路線を選択"
                 getOptionLabel={(option) => option.name}
-                getOptionValue={(option) => option.id}
+                getOptionValue={(option) => option.name}
                 isSearchable={false}
                 components={{
                     DropdownIndicator: () => null,
