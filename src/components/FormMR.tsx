@@ -66,16 +66,16 @@ export default function FormMR() {
         const path: PathStep[] = [];
 
         path.push({
-            station: data.startStation.name,
-            line: data.segments[0]?.viaLine?.name ?? null,
+            stationName: data.startStation.name,
+            lineName: data.segments[0]?.viaLine?.name ?? null,
         });
 
         data.segments.forEach((segment, index) => {
             if (segment.destinationStation) {
                 const nextLine = data.segments[index + 1]?.viaLine?.name ?? null;
                 path.push({
-                    station: segment.destinationStation.name,
-                    line: nextLine
+                    stationName: segment.destinationStation.name,
+                    lineName: nextLine
                 });
             }
         });
@@ -103,7 +103,7 @@ export default function FormMR() {
         }
 
         try {
-            const response = await fetch('/api', {
+            const response = await fetch('/api/mr', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(apiRequestBody),

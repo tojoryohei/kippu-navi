@@ -1,12 +1,15 @@
 import { loadMR } from '@/lib/loadMR';
 
-import { RouteRequest, ApiResponse, PathStep } from '@/types';
+import { Line, DetailedPathStep, RouteRequest, ApiResponse, PathStep } from '@/types';
 
-class FareCalculator {
+class MRCalculator {
     public processRouteAndCalculateFare(request: RouteRequest): ApiResponse {
         const userInputPath = request.path;
-        var departureStation: string = "鹿島";
-        var arrivalStation: string = "鹿島サッカースタジアム";
+        const detailedPath = this.reconstructPath(userInputPath);
+
+        // 出発駅と到着駅の名前を取得して変数に代入
+        let departureStation: string = detailedPath[0].station.name;
+        let arrivalStation: string = detailedPath[detailedPath.length - 1].station.name;
 
         // ステップ1: 経路の補正
         const correctedPath = this.correctPath(userInputPath);
@@ -31,6 +34,28 @@ class FareCalculator {
         };
     }
 
+    private reconstructPath(path: PathStep[]): DetailedPathStep[] {
+        const detailedPath: DetailedPathStep[] = [];
+
+        for (const step of path) {
+            const station = loadMR.getStationByName(step.stationName);
+            if (!station) {
+                throw new Error(`駅が見つかりません: Name ${step.stationName}`);
+            }
+
+            let lineToNext: Line | null = null;
+            if (step.lineName !== null) {
+                const line = loadMR.getLineByName(step.lineName);
+                if (!line) {
+                    throw new Error(`路線が見つかりません: Name ${step.lineName}`);
+                }
+                lineToNext = line;
+            }
+
+            detailedPath.push({ station, lineToNext });
+        }
+        return detailedPath;
+    }
     private correctPath(path: PathStep[]): PathStep[] {
         // TODO: 大都市近郊区間などのルールに基づき、運賃計算用の最短経路を返すロジック
         return path;
@@ -51,9 +76,8 @@ class FareCalculator {
     }
 
     private generateViaString(path: PathStep[]): string[] {
-        return ["札沼", "石勝"]; // 仮の値
+        return []; // 仮の値
     }
 }
 
-// シングルトンインスタンスとしてエクスポート
-export const calcFare = new FareCalculator();
+export const calcMR = new MRCalculator();

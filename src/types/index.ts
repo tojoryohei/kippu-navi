@@ -36,8 +36,8 @@ export interface IFormInput {
 }
 
 export interface PathStep {
-    station: string;
-    line: string | null;
+    stationName: string;
+    lineName: string | null;
 }
 
 export interface RouteRequest {
@@ -52,4 +52,17 @@ export interface ApiResponse {
     via: string[];
     fare: number;
     validDays: number;
+}
+
+export interface DetailedPathStep {
+    station: Station;
+    lineToNext: Line | null;
+}
+
+export interface RouteSegment {
+    stations: [string, string];
+    eigyoKilo: number;
+    giseiKilo?: number; // ? は省略可能なプロパティ
+    isLocal: boolean;
+    lineName: string;
 }

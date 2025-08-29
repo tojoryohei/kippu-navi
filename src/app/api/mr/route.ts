@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { calcFare } from '@/lib/calcFare';
+import { calcMR } from '@/lib/calcMR';
 
 import { RouteRequest } from '@/types';
 
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
         if (!body.path || body.path.length < 2) {
             return NextResponse.json({ error: 'Invalid path provided.' }, { status: 400 });
         }
-        const result = calcFare.processRouteAndCalculateFare(body);
+        const result = calcMR.processRouteAndCalculateFare(body);
         return NextResponse.json(result, { status: 200 });
 
     } catch (error) {
