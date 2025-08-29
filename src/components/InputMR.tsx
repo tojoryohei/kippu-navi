@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useForm, Controller, SubmitHandler, useFieldArray } from "react-hook-form";
 import type { SingleValue } from "react-select";
 
@@ -71,9 +70,58 @@ export default function InputMR() {
         append({ viaLine: null, destinationStation: null });
     };
 
+    // APIに送信するJSONの「ステップ」部分の型
+    interface PathStep {
+        stationCode: number;
+        lineCode: string | null;
+    }
+
+    // APIに送信するJSON全体の型
+    interface RouteRequest {
+        path: PathStep[];
+    }
+
+    const createApiRequestBody = (data: IFormInput): RouteRequest | null => {
+        // 出発駅が未選択の場合は処理を中断
+        if (!data.startStation) {
+            return null;
+        }
+
+        // path配列を組み立てる
+        const path: PathStep[] = [];
+
+        // 最初の要素として出発駅を追加
+        // この時点では次に乗る路線が不明なので、一時的にlineCodeをセットする
+        path.push({
+            stationCode: data.startStation.id,
+            lineCode: data.segments[0]?.viaLine?.id ?? null, // 最初の経由路線のID
+        });
+
+        // 経由地・到着地を追加
+        data.segments.forEach((segment, index) => {
+            if (segment.destinationStation) {
+                // 次のセグメント（乗り換え路線）があればそのIDを、なければnullを設定
+                const nextLineCode = data.segments[index + 1]?.viaLine?.id ?? null;
+                path.push({
+                    stationCode: segment.destinationStation.id,
+                    lineCode: nextLineCode
+                });
+            }
+        });
+
+        return { path };
+    };
+
     const onSubmit: SubmitHandler<IFormInput> = (data) => {
-        console.log(data);
-        alert(data.startStation?.name);
+        console.log("フォームから受け取ったデータ:", data);
+        const apiRequestBody = createApiRequestBody(data);
+        if (apiRequestBody) {
+            console.log("サーバーに送信するJSON:", JSON.stringify(apiRequestBody, null, 2));
+            // TODO: ここで fetch や axios を使ってサーバーにapiRequestBodyを送信する
+        } else {
+            alert("経路データが不完全なため、リクエストを作成できませんでした。");
+            alert(JSON.stringify(apiRequestBody, null, 2))
+        }
     };
 
     return (
