@@ -1,20 +1,8 @@
 "use client";
 
-import Select, { components, OptionProps, SingleValue } from "react-select";
+import Select, { components, OptionProps } from "react-select";
 
-export interface Line {
-    id: string;
-    name: string;
-    stations: number[];
-}
-
-interface SelectLineProps {
-    instanceId: string;
-    value: Line | null;
-    onChange: (newValue: SingleValue<Line>) => void;
-    options: Line[];
-    isDisabled?: boolean;
-}
+import { Line, SelectLineProps } from "@/types";
 
 const CustomOption = (props: OptionProps<Line>) => (
     <components.Option {...props}>

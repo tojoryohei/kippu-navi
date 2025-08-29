@@ -1,23 +1,10 @@
 "use client";
 
-import Select, { components, OptionProps, SingleValue, FilterOptionOption } from "react-select";
+import Select, { components, OptionProps, FilterOptionOption } from "react-select";
 import { useState } from "react";
 import stationData from "@/data/stations.json";
 
-export interface Station {
-    id: number;
-    name: string;
-    kana: string;
-    lines: string[]
-}
-
-interface SelectStationProps {
-    instanceId: string;
-    value: Station | null;
-    onChange: (newValue: SingleValue<Station>) => void;
-    options?: Station[];
-    isDisabled?: boolean;
-}
+import { Station, SelectStationProps } from '@/types';
 
 const CustomOption = (props: OptionProps<Station>) => (
     <components.Option {...props}>
@@ -49,7 +36,7 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: Sel
                 isDisabled={isDisabled}
                 onInputChange={(input) => setInputValue(input)}
                 getOptionLabel={(option) => option.name}
-                getOptionValue={(option) => option.id.toString()}
+                getOptionValue={(option) => option.name}
                 placeholder="駅名を入力してください"
                 isSearchable={true}
                 filterOption={filterOption}

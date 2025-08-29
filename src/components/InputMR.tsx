@@ -1,22 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { useForm, Controller, SubmitHandler, useFieldArray } from "react-hook-form";
 import type { SingleValue } from "react-select";
 
 import stationData from "@/data/stations.json";
 import lineData from "@/data/lines.json";
-import SelectStation, { Station } from "@/components/SelectStation";
-import SelectLine, { Line } from "@/components/SelectLine";
+import SelectStation from "@/components/SelectStation";
+import SelectLine from "@/components/SelectLine";
 
-interface IFormInput {
-    startStation: Station | null;
-    segments: {
-        viaLine: Line | null;
-        destinationStation: Station | null;
-    }[];
-}
+import { Station, Line, ApiResponse, IFormInput, PathStep, RouteRequest } from "@/types";
 
-const stationMap = new Map(stationData.map(s => [s.id, s]));
+const stationMap = new Map(stationData.map(s => [s.name, s]));
 
 export default function InputMR() {
     const { handleSubmit, control, watch, setValue, getValues, formState: { isValid } } = useForm<IFormInput>({
@@ -30,37 +25,29 @@ export default function InputMR() {
     const { fields, append } = useFieldArray({ control, name: "segments" });
     const formValues = watch();
 
-    // 「乗り換えを追加」ボタンの表示条件を計算
     const lastSegment = formValues.segments[formValues.segments.length - 1];
     const lastDestination = lastSegment?.destinationStation;
-    // 最後の到着駅が選択済みで、かつ乗り換え路線が複数あるか
     const canAddTransfer = lastDestination ? lastDestination.lines.length > 1 : false;
 
-    // フィールドが変更されたときに、それ以降をリセットする関数
     const handleFieldChange = (
         value: SingleValue<Station | Line>,
         fieldOnChange: (value: SingleValue<Station | Line>) => void,
         resetLogic: () => void
     ) => {
-        // まずはフィールド自体の値を更新
         fieldOnChange(value);
-        // 次に、指定されたリセットロジックを実行
         resetLogic();
     };
 
-    // 出発駅が変更されたときのリセット処理
     const resetOnStartStationChange = () => {
         setValue("segments", [{ viaLine: null, destinationStation: null }]);
     };
 
-    // 経由路線が変更されたときのリセット処理 (index指定)
     const resetOnViaLineChange = (index: number) => {
         setValue(`segments.${index}.destinationStation`, null);
         const newSegments = getValues("segments").slice(0, index + 1);
         setValue("segments", newSegments);
     };
 
-    // 到着駅が変更されたときのリセット処理 (index指定)
     const resetOnDestinationStationChange = (index: number) => {
         const newSegments = getValues("segments").slice(0, index + 1);
         setValue("segments", newSegments);
@@ -70,41 +57,25 @@ export default function InputMR() {
         append({ viaLine: null, destinationStation: null });
     };
 
-    // APIに送信するJSONの「ステップ」部分の型
-    interface PathStep {
-        stationCode: number;
-        lineCode: string | null;
-    }
-
-    // APIに送信するJSON全体の型
-    interface RouteRequest {
-        path: PathStep[];
-    }
-
     const createApiRequestBody = (data: IFormInput): RouteRequest | null => {
         // 出発駅が未選択の場合は処理を中断
         if (!data.startStation) {
             return null;
         }
 
-        // path配列を組み立てる
         const path: PathStep[] = [];
 
-        // 最初の要素として出発駅を追加
-        // この時点では次に乗る路線が不明なので、一時的にlineCodeをセットする
         path.push({
-            stationCode: data.startStation.id,
-            lineCode: data.segments[0]?.viaLine?.id ?? null, // 最初の経由路線のID
+            station: data.startStation.name,
+            line: data.segments[0]?.viaLine?.name ?? null,
         });
 
-        // 経由地・到着地を追加
         data.segments.forEach((segment, index) => {
             if (segment.destinationStation) {
-                // 次のセグメント（乗り換え路線）があればそのIDを、なければnullを設定
-                const nextLineCode = data.segments[index + 1]?.viaLine?.id ?? null;
+                const nextLine = data.segments[index + 1]?.viaLine?.name ?? null;
                 path.push({
-                    stationCode: segment.destinationStation.id,
-                    lineCode: nextLineCode
+                    station: segment.destinationStation.name,
+                    line: nextLine
                 });
             }
         });
@@ -112,15 +83,44 @@ export default function InputMR() {
         return { path };
     };
 
-    const onSubmit: SubmitHandler<IFormInput> = (data) => {
-        console.log("フォームから受け取ったデータ:", data);
+    const [result, setResult] = useState<ApiResponse | null>(null);
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    const [error, setError] = useState<string | null>(null);
+
+    const onSubmit: SubmitHandler<IFormInput> = async (data) => {
+        setIsLoading(true);
+        setError(null);
+        setResult(null);
+
         const apiRequestBody = createApiRequestBody(data);
-        if (apiRequestBody) {
-            console.log("サーバーに送信するJSON:", JSON.stringify(apiRequestBody, null, 2));
-            // TODO: ここで fetch や axios を使ってサーバーにapiRequestBodyを送信する
-        } else {
-            alert("経路データが不完全なため、リクエストを作成できませんでした。");
-            alert(JSON.stringify(apiRequestBody, null, 2))
+
+        if (!apiRequestBody) {
+            setError("経路が不完全です。");
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const response = await fetch('/api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(apiRequestBody),
+            });
+
+            if (!response.ok) {
+                throw new Error("サーバーでエラーが発生しました。");
+            }
+
+            const data: ApiResponse = await response.json();
+            setResult(data);
+
+        } catch (err) {
+            setError("計算に失敗しました。");
+            console.error(err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -152,20 +152,19 @@ export default function InputMR() {
 
                         const previousLine = index > 0 ? formValues.segments[index - 1]?.viaLine : null;
 
-                        // 乗り換え可能な路線を計算
-                        const availableLineIds = new Set(previousStation?.lines);
+                        const availableLineNames = new Set(previousStation?.lines);
 
                         const availableLines = previousStation
                             ? lineData
-                                .filter(line => availableLineIds.has(line.id))
-                                .filter(line => !previousLine || line.id !== previousLine.id)
+                                .filter(line => availableLineNames.has(line.name))
+                                .filter(line => !previousLine || line.name !== previousLine.name)
                             : [];
 
                         const selectedLine = formValues.segments[index]?.viaLine;
 
                         const stationsOnLine = selectedLine
                             ? selectedLine.stations
-                                .map(id => stationMap.get(id))
+                                .map(name => stationMap.get(name))
                                 .filter((station): station is Station => station !== undefined)
                             : [];
 
@@ -226,6 +225,21 @@ export default function InputMR() {
                     </div>
                 </div>
             </form>
+            <div className="mt-8 p-4 border-t">
+                {isLoading && <p>計算中です...</p>}
+                {error && <p className="text-red-500">{error}</p>}
+                {result && (
+                    <div>
+                        <h2 className="text-lg font-semibold">計算結果</h2>
+                        <p>営業キロ: {result.totalEigyoKilo} km</p>
+                        <p>運賃計算キロ（擬制キロ）: {result.totalGiseiKilo} km</p>
+
+                        <p>経由: {result.via.length === 0 ? "ーーー" : result.via.join("・")}</p>
+                        <p>{result.validDays === 1 ? "当日限り有効" : result.validDays + " 日間有効"}</p>
+                        <p className="text-2xl font-bold">運賃: {result.fare} 円</p>
+                    </div>
+                )}
+            </div>
         </main>
     );
 }
