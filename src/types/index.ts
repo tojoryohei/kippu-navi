@@ -1,4 +1,11 @@
+import { IconType } from "react-icons";
 import { SingleValue } from "react-select";
+
+export interface menuItem {
+    href: string;
+    icon: IconType;
+    label: string;
+}
 
 export interface Station {
     name: string;

@@ -226,7 +226,7 @@ export default function FormMR() {
                 </div>
             </form>
             <div className="mt-8 p-4 border-t">
-                {isLoading && <p>計算中です...</p>}
+                {isLoading && <p>計算中...</p>}
                 {error && <p className="text-red-500">{error}</p>}
                 {result && (
                     <div>
@@ -254,12 +254,11 @@ export default function FormMR() {
                                 </div>
                             </div>
                         </div>
-                        <div>経由：{result.via.length === 0 ? "ーーー" : result.via.join("・")}</div>
-                        <div className="flex justify-between">
-                            <div>{result.validDays === 1 ? "当日限り有効" : result.validDays + " 日間有効"}</div>
-                            <div className="text-xl">¥{result.fare}</div>
-
-                        </div>
+                        <span>経由：{result.via.length === 0 ? "ーーー" : result.via.join("・")}</span>
+                        <span className="flex justify-between items-center">
+                            <span>{result.validDays === 1 ? "当日限り有効" : result.validDays + " 日間有効"}</span>
+                            <span className="text-xl">¥{result.fare}</span>
+                        </span>
                     </div>
                 )}
             </div>

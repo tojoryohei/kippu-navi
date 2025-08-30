@@ -4,6 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { MdMenu, MdClear, MdHome, MdOutlineCalculate } from "react-icons/md";
 
+import { menuItem } from "@/types";
+
+const MENU_ITEMS: menuItem[] = [
+    { href: "/", icon: MdHome, label: "ホーム" },
+    { href: "/mr", icon: MdOutlineCalculate, label: "運賃計算(経路入力)" }
+];
+
 const Header = () => {
     const [openMenu, setOpenMenu] = useState(false);
 
@@ -12,10 +19,10 @@ const Header = () => {
     };
 
     return (
-        <header className="border-b flex items-center justify-between h-14 px-4">
+        <header className="sticky top-0 bg-white z-20 border-b flex items-center justify-between h-14 px-4">
             <h1>
-                <Link href="/">
-                    <div className="text-2xl font-logo">きっぷナビ</div>
+                <Link href="/" className="text-2xl font-logo">
+                    きっぷナビ
                 </Link>
             </h1>
 
@@ -35,35 +42,28 @@ const Header = () => {
                 />
             )}
             <nav
-                className={`fixed top-0 right-0 h-screen w-8/12 sm:w-6/12 bg-slate-100 shadow-lg transform transition-transform duration-300 ease-in-out z-40
+                className={`fixed top-0 right-0 h-screen w-8/12 sm:w-6/12 bg-slate-100 shadow-lg transform transition-transform duration-300 ease-out z-40
                 ${openMenu ? "translate-x-0" : "translate-x-full"}
                 md:static md:flex md:h-auto md:w-auto md:translate-x-0 md:bg-transparent md:shadow-none md:z-auto`}
             >
                 <ul className="mt-16 md:mt-0 flex flex-col md:flex-row">
-                    <li className="p-3">
-                        <Link
-                            href="/"
-                            onClick={handleMenuToggle}
-                            className="hover:opacity-50 flex items-center"
-                        >
-                            <MdHome className="mr-1" />
-                            <span className="text-base font-semibold sm:text-lg sm:font-bold text-black hover:underline underline-offset-8 decoration-2">
-                                ホーム
-                            </span>
-                        </Link>
-                    </li>
-                    <li className="p-3">
-                        <Link
-                            href="/mr"
-                            onClick={handleMenuToggle}
-                            className="hover:opacity-50 flex items-center"
-                        >
-                            <MdOutlineCalculate className="mr-1" />
-                            <span className="text-base font-semibold sm:text-lg sm:font-bold text-black hover:underline underline-offset-8 decoration-2">
-                                運賃計算(経路入力)
-                            </span>
-                        </Link>
-                    </li>
+                    {MENU_ITEMS.map((item) => {
+                        const IconComponent = item.icon;
+                        return (
+                            <li key={item.href} className="p-3">
+                                <Link
+                                    href={item.href}
+                                    onClick={handleMenuToggle}
+                                    className="hover:opacity-50 flex items-center"
+                                >
+                                    <IconComponent className="mr-1" />
+                                    <span className="text-base font-semibold sm:text-lg sm:font-bold text-black hover:underline underline-offset-8 decoration-2">
+                                        {item.label}
+                                    </span>
+                                </Link>
+                            </li>
+                        );
+                    })}
                 </ul>
             </nav>
         </header>
