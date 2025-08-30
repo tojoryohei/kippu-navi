@@ -18,7 +18,7 @@ class MRCalculator {
         const totalEigyoKilo = this.calculateTotalEigyoKilo(correctedPath);
         const totalGiseiKilo = this.calculateTotalGiseiKilo(correctedPath);
         const fare = this.calculateFareFromKilo(totalGiseiKilo);
-        const validDays = 2;
+        const validDays = this.calculateValidDaysFromKilo(totalGiseiKilo);
         // ステップ3: 経由文字列の生成 (ユーザー入力の経路を使用)
         const via = this.generateViaString(userInputPath);
 
@@ -57,26 +57,30 @@ class MRCalculator {
         return detailedPath;
     }
     private correctPath(path: PathStep[]): PathStep[] {
-        // TODO: 大都市近郊区間などのルールに基づき、運賃計算用の最短経路を返すロジック
         return path;
     }
 
     private calculateTotalEigyoKilo(path: PathStep[]): number {
-        let total = 0;
-        return 12.3; // 仮の値
+        let total: number = 11;
+        return total;
     }
 
     private calculateTotalGiseiKilo(path: PathStep[]): number {
-        let total = 0;
-        return 12.3; // 仮の値
+        let total: number = 1900;
+        return total;
     }
 
     private calculateFareFromKilo(GiseiKilo: number): number {
-        return 210; // 仮の値
+        let total: number = 0;
+        return total;
     }
 
     private generateViaString(path: PathStep[]): string[] {
-        return []; // 仮の値
+        return [];
+    }
+
+    private calculateValidDaysFromKilo(totalGiseiKilo: number): number {
+        return Math.ceil(totalGiseiKilo / 2000) + 1;
     }
 }
 

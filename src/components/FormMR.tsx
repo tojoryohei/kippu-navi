@@ -225,14 +225,14 @@ export default function FormMR() {
                     </div>
                 </div>
             </form>
-            <div className="mt-8 p-4 border-t">
-                {isLoading && <p>計算中...</p>}
-                {error && <p className="text-red-500">{error}</p>}
+            <div className="mt-8 p-4">
+                {isLoading && <p className="py-5 border-t">計算中...</p>}
+                {error && <p className="py-5 border-t"></p> && <p className="text-red-500">{error}</p>}
                 {result && (
                     <div>
-                        <h2 className="pb-5 text-2xl">計算結果</h2>
-                        <div>営業キロ: {result.totalEigyoKilo} km</div>
-                        <div>運賃計算キロ（擬制キロ）: {result.totalGiseiKilo} km</div>
+                        <h2 className="py-5 text-2xl border-t">計算結果</h2>
+                        <div>営業キロ: {(result.totalEigyoKilo / 10).toFixed(1)} km</div>
+                        <div>運賃計算キロ（擬制キロ）: {(result.totalGiseiKilo / 10).toFixed(1)} km</div>
                         <div className="flex justify-between items-center my-3 gap-2">
                             <div className="flex-1 text-right break-words">
                                 <div className={`font-bold ${isLongDeparture ? 'text-xl break-words leading-tight' : 'text-2xl flex justify-around'}`}>
