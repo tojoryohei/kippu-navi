@@ -40,10 +40,10 @@ export default function RootLayout({
     <html lang="ja">
       <GoogleTagManager gtmId="G-TXTRWDDZ33" />
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`flex flex-col min-h-screen ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Header />
-        {children}
+        <main className="flex-grow">{children}</main>
         <Footer />
       </body>
     </html>

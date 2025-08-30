@@ -7,7 +7,6 @@ export const metadata: Metadata = {
 
 export default function MrPage() {
   return (
-    <div className="min-h-screen"><FormMR /></div>
-
+    <FormMR />
   );
 }
