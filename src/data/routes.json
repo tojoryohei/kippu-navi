@@ -242,7 +242,7 @@
     {"stations": ["妹背牛", "深川"], "eigyoKilo": 72,"giseiKilo": 72, "isLocal": false, "company": 1},
     {"stations": ["深川", "納内"], "eigyoKilo": 74,"giseiKilo": 74, "isLocal": false, "company": 1},
     {"stations": ["納内", "近文"], "eigyoKilo": 188,"giseiKilo": 188, "isLocal": false, "company": 1},
-    {"stations": ["近文", "旭川"], "eigyoKilo": 40,"giseiKilo": 310, "isLocal": false, "company": 1},
+    {"stations": ["近文", "旭川"], "eigyoKilo": 40,"giseiKilo": 40, "isLocal": false, "company": 1},
     {"stations": ["大沼", "鹿部"], "eigyoKilo": 146,"giseiKilo": 146, "isLocal": false, "company": 1},
     {"stations": ["鹿部", "渡島沼尻"], "eigyoKilo": 54,"giseiKilo": 54, "isLocal": false, "company": 1},
     {"stations": ["渡島沼尻", "渡島砂原"], "eigyoKilo": 53,"giseiKilo": 53, "isLocal": false, "company": 1},
