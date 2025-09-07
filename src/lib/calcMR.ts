@@ -36,27 +36,43 @@ class MRCalculator {
     }
 
     private createFullPath(path: PathStep[]): PathStep[] {
+        if (path.length <= 1) {
+            return path;
+        }
+
         const fullPath: PathStep[] = [];
 
-        for (let i: number = 0; i < path.length; i++) {
-            const line = path[i].lineName;
-            if (line === null) {
-                fullPath.push(path[i]);
-                break;
+        // ループは「区間」を処理するため、最後の一つ手前まで
+        for (let i = 0; i < path.length - 1; i++) {
+            const startStep = path[i];
+            const endStep = path[i + 1];
+            const lineName = startStep.lineName!;
+            const line = loadMR.getLineByName(lineName);
+            const stationsOnLine = line.stations;
+            const startIdx = stationsOnLine.indexOf(startStep.stationName);
+            const endIdx = stationsOnLine.indexOf(endStep.stationName);
+
+            if (startIdx === -1 || endIdx === -1) {
+                throw new Error(`Station not found on line ${lineName}.`);
             }
-            const stationsOnLine: string[] = loadMR.getLineByName(line).stations;
-            const startStationIdx: number = stationsOnLine.findIndex(stationName => stationName === path[i].stationName);
-            const endStationIdx: number = stationsOnLine.findIndex(stationName => stationName === path[i + 1].stationName);
-            if (startStationIdx < endStationIdx) {
-                for (let j: number = startStationIdx; j < endStationIdx; j++) {
-                    fullPath.push({ stationName: stationsOnLine[j], lineName: line })
-                }
-            } else if (startStationIdx > endStationIdx) {
-                for (let j: number = endStationIdx; j < startStationIdx; j++) {
-                    fullPath.push({ stationName: stationsOnLine[j], lineName: line })
-                }
+            let segmentStations: string[];
+
+            if (startIdx < endIdx) {
+                // 正順の場合：始点から終点の一つ手前までを切り出す
+                segmentStations = stationsOnLine.slice(startIdx, endIdx);
+            } else {
+                // 逆順の場合：一度区間を切り出してから、進行方向に合わせて反転させる
+                segmentStations = stationsOnLine.slice(endIdx + 1, startIdx + 1).reverse();
+            }
+
+            for (const stationName of segmentStations) {
+                fullPath.push({ stationName: stationName, lineName: lineName });
             }
         }
+
+        // 最後に全体の終着駅を追加
+        fullPath.push(path[path.length - 1]);
+
         return fullPath;
     }
 
@@ -68,8 +84,8 @@ class MRCalculator {
     private calculateTotalEigyoKilo(path: PathStep[]): number {
         let totalEigyoKilo: number = 0;
         const fullPath: PathStep[] = this.createFullPath(path);
-        for (let i = 0; i < path.length - 1; i++) {
-            const routeSegment: RouteSegment = loadMR.getRouteSegment(path[i].stationName, path[i + 1].stationName);
+        for (let i = 0; i < fullPath.length - 1; i++) {
+            const routeSegment: RouteSegment = loadMR.getRouteSegment(fullPath[i].stationName, fullPath[i + 1].stationName);
             totalEigyoKilo += routeSegment.eigyoKilo;
         }
         return totalEigyoKilo;
@@ -78,8 +94,8 @@ class MRCalculator {
     private calculateTotalGiseiKilo(path: PathStep[]): number {
         let totalGiseiKilo: number = 0;
         const fullPath: PathStep[] = this.createFullPath(path);
-        for (let i = 0; i < path.length - 1; i++) {
-            const routeSegment: RouteSegment = loadMR.getRouteSegment(path[i].stationName, path[i + 1].stationName);
+        for (let i = 0; i < fullPath.length - 1; i++) {
+            const routeSegment: RouteSegment = loadMR.getRouteSegment(fullPath[i].stationName, fullPath[i + 1].stationName);
             totalGiseiKilo += routeSegment.giseiKilo;
         }
         return totalGiseiKilo;
