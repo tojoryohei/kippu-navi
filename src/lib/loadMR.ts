@@ -37,27 +37,39 @@ class LoadMR {
             }
 
         } catch (error) {
-            console.error('Failed to load JR data:', error);
+            console.error('データ読み込みエラー：', error);
         }
     }
 
     // --- 他のサービスからデータを取得するための公開メソッド ---
 
-    public getStationByName(name: string): Station | undefined {
-        return this.stations.get(name);
+    public getStationByName(name: string): Station {
+        const station = this.stations.get(name);
+        if (station === undefined) {
+            throw new Error(`${name} が見つかりません.`);
+        }
+        return station;
     }
 
-    public getLineByName(name: string): Line | undefined {
-        return this.lines.get(name);
+    public getLineByName(name: string): Line {
+        const line = this.lines.get(name);
+        if (line === undefined) {
+            throw new Error(` ${name} が見つかりません.`);
+        }
+        return line;
     }
 
     private createRouteKey(stationName1: string, stationName2: string): string {
         return [stationName1, stationName2].sort().join('-');
     }
 
-    public getRouteSegment(stationName1: string, stationName2: string): RouteSegment | undefined {
+    public getRouteSegment(stationName1: string, stationName2: string): RouteSegment {
         const key = this.createRouteKey(stationName1, stationName2);
-        return this.routes.get(key);
+        const routesSegment = this.routes.get(key);
+        if (routesSegment === undefined) {
+            throw new Error(` ${stationName1} と ${stationName2} の間にセグメントが見つかりません.`);
+        }
+        return routesSegment;
     }
 }
 

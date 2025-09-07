@@ -59,7 +59,7 @@ export default function FormMR() {
 
     const createApiRequestBody = (data: IFormInput): RouteRequest | null => {
         // 出発駅が未選択の場合は処理を中断
-        if (!data.startStation) {
+        if (data.startStation == null) {
             return null;
         }
 
@@ -123,10 +123,12 @@ export default function FormMR() {
             setIsLoading(false);
         }
     };
+
     const isLongDeparture: boolean | null = result && 6 < result.departureStation.length;
     const isLongArrival: boolean | null = result && 6 < result.arrivalStation.length;
+
     return (
-        <main className="max-w-xl mx-auto">
+        <main className="max-w-md mx-auto">
             <h1 className="text-xl font-bold m-4">JR運賃計算（経路入力）</h1>
             <form onSubmit={handleSubmit(onSubmit)} className="p-8">
                 <div className="flex flex-col">
@@ -243,7 +245,7 @@ export default function FormMR() {
                                         ))}
                                 </div>
                             </div>
-                            <div className="text-2xl shrink-0 px-1 text-center">→</div>
+                            <div className="text-2xl shrink-0 text-center">→</div>
                             <div className="flex-1 text-left break-words">
                                 <div className={`font-bold ${isLongArrival ? 'text-xl break-words leading-tight' : 'text-2xl flex justify-around'}`}>
                                     {isLongArrival
@@ -254,10 +256,10 @@ export default function FormMR() {
                                 </div>
                             </div>
                         </div>
-                        <span>経由：{result.via.length === 0 ? "ーーー" : result.via.join("・")}</span>
+                        <span>経由：{result.viaLines.length === 0 ? "ーーー" : result.viaLines.join("・")}</span>
                         <span className="flex justify-between items-center">
                             <span>{result.validDays === 1 ? "当日限り有効" : result.validDays + " 日間有効"}</span>
-                            <span className="text-xl">¥{result.fare}</span>
+                            <span className="text-xl">¥{result.fare > 0 ? result.fare : "***"}</span>
                         </span>
                     </div>
                 )}

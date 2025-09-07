@@ -56,20 +56,15 @@ export interface ApiResponse {
     totalGiseiKilo: number;
     departureStation: string;
     arrivalStation: string;
-    via: string[];
+    viaLines: string[];
     fare: number;
     validDays: number;
-}
-
-export interface DetailedPathStep {
-    station: Station;
-    lineToNext: Line | null;
 }
 
 export interface RouteSegment {
     stations: [string, string];
     eigyoKilo: number;
-    giseiKilo?: number; // ? は省略可能なプロパティ
+    giseiKilo: number;
     isLocal: boolean;
     lineName: string;
 }
