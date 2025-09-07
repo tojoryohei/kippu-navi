@@ -23,6 +23,7 @@ export interface SelectStationProps {
 
 export interface Line {
     name: string;
+    printedName: string | null;
     stations: string[];
 }
 
@@ -56,7 +57,7 @@ export interface ApiResponse {
     totalGiseiKilo: number;
     departureStation: string;
     arrivalStation: string;
-    viaLines: string[];
+    printedViaLines: string[];
     fare: number;
     validDays: number;
 }
@@ -66,5 +67,5 @@ export interface RouteSegment {
     eigyoKilo: number;
     giseiKilo: number;
     isLocal: boolean;
-    lineName: string;
+    company: number;
 }

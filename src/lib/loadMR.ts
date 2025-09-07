@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+
 import { Station, Line, RouteSegment } from '@/types';
 
 class LoadMR {
@@ -41,8 +42,6 @@ class LoadMR {
         }
     }
 
-    // --- 他のサービスからデータを取得するための公開メソッド ---
-
     public getStationByName(name: string): Station {
         const station = this.stations.get(name);
         if (station === undefined) {
@@ -59,6 +58,16 @@ class LoadMR {
         return line;
     }
 
+    public getPrintedViaStringByViaString(viaString: string): string | null {
+        const printedViaString = this.lines.get(viaString)?.printedName;
+        if (printedViaString === undefined) {
+            throw new Error(` ${printedViaString} が見つかりません.`);
+        }
+        else {
+            return printedViaString;
+        }
+    }
+
     private createRouteKey(stationName1: string, stationName2: string): string {
         return [stationName1, stationName2].sort().join('-');
     }
@@ -67,7 +76,7 @@ class LoadMR {
         const key = this.createRouteKey(stationName1, stationName2);
         const routesSegment = this.routes.get(key);
         if (routesSegment === undefined) {
-            throw new Error(` ${stationName1} と ${stationName2} の間にセグメントが見つかりません.`);
+            throw new Error(` ${stationName1} と ${stationName2} 間のデータが見つかりません.`);
         }
         return routesSegment;
     }

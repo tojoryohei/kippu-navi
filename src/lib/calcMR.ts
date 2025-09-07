@@ -21,7 +21,8 @@ class MRCalculator {
         const validDays = this.calculateValidDaysFromKilo(totalGiseiKilo);
 
         // 経由文字列の生成 (ユーザー入力の経路を使用)
-        const viaLines = this.generateViaString(correctedPath);
+        const viaLines = this.generateViaStrings(correctedPath);
+        const printedViaLines = this.generatePrintedViaStrings(viaLines);
 
         // 計算結果を返す
         return {
@@ -30,7 +31,7 @@ class MRCalculator {
             departureStation,
             arrivalStation,
             fare,
-            viaLines,
+            printedViaLines,
             validDays
         };
     }
@@ -39,10 +40,7 @@ class MRCalculator {
         if (path.length <= 1) {
             return path;
         }
-
         const fullPath: PathStep[] = [];
-
-        // ループは「区間」を処理するため、最後の一つ手前まで
         for (let i = 0; i < path.length - 1; i++) {
             const startStep = path[i];
             const endStep = path[i + 1];
@@ -51,28 +49,17 @@ class MRCalculator {
             const stationsOnLine = line.stations;
             const startIdx = stationsOnLine.indexOf(startStep.stationName);
             const endIdx = stationsOnLine.indexOf(endStep.stationName);
-
-            if (startIdx === -1 || endIdx === -1) {
-                throw new Error(`Station not found on line ${lineName}.`);
-            }
             let segmentStations: string[];
-
             if (startIdx < endIdx) {
-                // 正順の場合：始点から終点の一つ手前までを切り出す
                 segmentStations = stationsOnLine.slice(startIdx, endIdx);
             } else {
-                // 逆順の場合：一度区間を切り出してから、進行方向に合わせて反転させる
                 segmentStations = stationsOnLine.slice(endIdx + 1, startIdx + 1).reverse();
             }
-
             for (const stationName of segmentStations) {
                 fullPath.push({ stationName: stationName, lineName: lineName });
             }
         }
-
-        // 最後に全体の終着駅を追加
         fullPath.push(path[path.length - 1]);
-
         return fullPath;
     }
 
@@ -106,13 +93,24 @@ class MRCalculator {
         return total;
     }
 
-    private generateViaString(detailedPath: PathStep[]): string[] {
+    private generateViaStrings(detailedPath: PathStep[]): string[] {
         let viaLines: string[] = [];
         for (const path of detailedPath) {
             if (path.lineName !== null && (viaLines.length === 0 || viaLines[viaLines.length - 1] !== path.lineName))
                 viaLines.push(path.lineName);
         }
         return viaLines;
+    }
+
+    private generatePrintedViaStrings(viaStrings: string[]): string[] {
+        let printViaStrings: string[] = [];
+        for (const viaString of viaStrings) {
+            const viaPrintedString = loadMR.getPrintedViaStringByViaString(viaString);
+            if (viaPrintedString !== null) {
+                printViaStrings.push(viaPrintedString);
+            }
+        }
+        return printViaStrings;
     }
 
     private calculateValidDaysFromKilo(totalEigyoKilo: number): number {
