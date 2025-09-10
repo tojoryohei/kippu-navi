@@ -79,12 +79,9 @@ class MRCalculator {
     private correctSpecificSections(fullPath: PathStep[]): PathStep[] {
         for (const rule of loadMR.getSpecificSections()) {
             const fullPathStations = fullPath.map(p => p.stationName);
-            let straddling: boolean = false;
-            for (const path of rule.correctPath.slice(1)) {
-                if (path.stationName in fullPathStations)
-                    straddling = true;
-                break;
-            }
+            const straddling = rule.correctPath
+                .slice(1)
+                .some(path => fullPathStations.includes(path.stationName));
 
             const startIndex = this.findSubPathIndex(fullPathStations, rule.incorrectPath);
 
