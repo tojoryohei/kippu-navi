@@ -1,12 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 
-import { Station, Line, RouteSegment } from '@/types';
+import { Station, Line, RouteSegment, SpecificSection, ZoneInfo } from '@/types';
 
 class LoadMR {
     private stations: Map<string, Station> = new Map();
     private lines: Map<string, Line> = new Map();
     private routes: Map<string, RouteSegment> = new Map();
+    private specificSections: SpecificSection[] = [];
+    private zones: Map<string, ZoneInfo> = new Map();
+    private stationToZoneMap: Map<string, ZoneInfo> = new Map();
 
     constructor () {
         this.loadData();
@@ -35,6 +38,21 @@ class LoadMR {
                 // ★ 駅名のペアをソートして、常に一意なキーを作成する
                 const key = this.createRouteKey(route.stations[0], route.stations[1]);
                 this.routes.set(key, route);
+            }
+
+            // specificSections.jsonの読み込み
+            const sectionsPath = path.join(process.cwd(), 'src', 'data', 'specificSections.json');
+            this.specificSections = JSON.parse(fs.readFileSync(sectionsPath, 'utf-8'));
+
+            // zones.json (cities.json) の読み込み
+            const zonesPath = path.join(process.cwd(), 'src', 'data', 'cities.json');
+            const zonesData: Record<string, ZoneInfo> = JSON.parse(fs.readFileSync(zonesPath, 'utf-8'));
+            for (const zoneName in zonesData) {
+                const zone = zonesData[zoneName];
+                this.zones.set(zoneName, zone);
+                for (const stationName of zone.stations) {
+                    this.stationToZoneMap.set(stationName, zone);
+                }
             }
 
         } catch (error) {
@@ -79,6 +97,14 @@ class LoadMR {
             throw new Error(` ${stationName1} と ${stationName2} 間のデータが見つかりません.`);
         }
         return routesSegment;
+    }
+
+    public getSpecificSections(): SpecificSection[] {
+        return this.specificSections;
+    }
+
+    public findZoneForStation(stationName: string): ZoneInfo | undefined {
+        return this.stationToZoneMap.get(stationName);
     }
 }
 

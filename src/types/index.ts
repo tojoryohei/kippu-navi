@@ -69,3 +69,16 @@ export interface RouteSegment {
     isLocal: boolean;
     company: number;
 }
+
+export interface SpecificSection {
+    incorrectPath: string[];
+    correctPath: PathStep[];
+}
+
+export interface ZoneInfo {
+    name: string;
+    centerStation: string;
+    distanceThreshold: number;
+    stations: string[];
+    boundaries: Record<string, number>;
+}

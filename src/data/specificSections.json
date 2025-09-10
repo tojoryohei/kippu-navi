@@ -1,0 +1,20 @@
+[
+  {
+    "incorrectPath": ["大沼","鹿部","渡島沼尻","渡島砂原","掛澗","尾白内","東森","森"],
+    "correctPath": [
+    { "stationName": "大沼","lineName": "函館線" },
+    { "stationName": "大沼公園","lineName": "函館線" },
+    { "stationName": "赤井川","lineName": "函館線" },
+    { "stationName": "駒ヶ岳","lineName": "函館線" }
+    ]
+  },
+  {
+    "incorrectPath": ["森","東森","尾白内","掛澗","渡島砂原","渡島沼尻","鹿部","大沼"],
+    "correctPath": [
+      { "stationName": "森","lineName": "函館線" },
+      { "stationName": "駒ヶ岳","lineName": "函館線" },
+      { "stationName": "赤井川","lineName": "函館線" },
+      { "stationName": "大沼公園","lineName": "函館線" }
+    ]
+  }
+]

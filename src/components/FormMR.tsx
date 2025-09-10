@@ -256,7 +256,7 @@ export default function FormMR() {
                                 </div>
                             </div>
                         </div>
-                        <span>経由印字：{result.printedViaLines.length === 0 ? "ーーー" : result.printedViaLines.join("・")}</span>
+                        <span>経由：{result.printedViaLines.length === 0 ? "ーーー" : result.printedViaLines.join("・")}</span>
                         <span className="flex justify-between items-center">
                             <span>{result.validDays === 1 ? "当日限り有効" : result.validDays + " 日間有効"}</span>
                             <span className="text-xl">¥{result.fare > 0 ? result.fare : "***"}</span>

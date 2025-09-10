@@ -6,19 +6,21 @@ class MRCalculator {
     public processRouteAndCalculateFare(request: RouteRequest): ApiResponse {
         const userInputPath = request.path;
 
-
+        // 経路の展開
+        const fullPath = this.createFullPath(userInputPath);
+        console.log(fullPath);
         // 経路の補正
-        const correctedPath = this.correctPath(userInputPath);
-
+        const correctedPath = this.correctPath(fullPath);
+        console.log(correctedPath);
         // 出発駅と到着駅の名前を取得して変数に代入
-        let departureStation: string = userInputPath[0].stationName;
-        let arrivalStation: string = userInputPath[userInputPath.length - 1].stationName;
+        const departureStation: string = correctedPath[0].stationName;
+        const arrivalStation: string = correctedPath[correctedPath.length - 1].stationName;
 
-        // 営業キロと運賃の計算 (補正後の経路を使用)
+        // 営業キロと運賃の計算
         const totalEigyoKilo = this.calculateTotalEigyoKilo(correctedPath);
         const totalGiseiKilo = this.calculateTotalGiseiKilo(correctedPath);
         const fare = this.calculateFareFromKilo(totalGiseiKilo);
-        const validDays = this.calculateValidDaysFromKilo(totalGiseiKilo);
+        const validDays = this.calculateValidDaysFromKilo(totalEigyoKilo);
 
         // 経由文字列の生成 (ユーザー入力の経路を使用)
         const viaLines = this.generateViaStrings(correctedPath);
@@ -64,15 +66,93 @@ class MRCalculator {
     }
 
     private correctPath(path: PathStep[]): PathStep[] {
+        let correctedPath = path;
+
+        // 旅客営業規則第69条
+        correctedPath = this.correctSpecificSections(correctedPath);
+
+
+        correctedPath = this.applyCityZoneRules(correctedPath);
+        return correctedPath;
+    }
+
+    private correctSpecificSections(fullPath: PathStep[]): PathStep[] {
+        for (const rule of loadMR.getSpecificSections()) {
+            const fullPathStations = fullPath.map(p => p.stationName);
+            let straddling: boolean = false;
+            for (const path of rule.correctPath.slice(1)) {
+                if (path.stationName in fullPathStations)
+                    straddling = true;
+                break;
+            }
+
+            const startIndex = this.findSubPathIndex(fullPathStations, rule.incorrectPath);
+
+            if (straddling === false && startIndex !== -1) {
+                const correctPath = rule.correctPath;
+                const correctedPath = [
+                    ...fullPath.slice(0, startIndex),
+                    ...correctPath,
+                    ...fullPath.slice(startIndex + rule.incorrectPath.length - 1)
+                ];
+                return correctedPath;
+            }
+        }
+        return fullPath;
+    }
+
+    private findSubPathIndex(path: string[], subPath: string[]): number {
+        if (subPath.length > path.length) return -1;
+        for (let i = 0; i <= path.length - subPath.length; i++) {
+            let match = true;
+            for (let j = 0; j < subPath.length; j++) {
+                if (path[i + j] !== subPath[j]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) return i;
+        }
+        return -1;
+    }
+
+    private applyCityZoneRules(path: PathStep[]): PathStep[] {
+        const totalGiseiKilo: number = this.calculateTotalGiseiKilo(path);
+        const startStation = path[0];
+        const endStation = path[path.length - 1];
+
+        const startZone = loadMR.findZoneForStation(startStation.stationName);
+        const endZone = loadMR.findZoneForStation(endStation.stationName);
+
+        // 到着駅の判定
+        if (endZone && totalGiseiKilo >= endZone.distanceThreshold && !endZone.stations.includes(startStation.stationName)) {
+            const doesReEnter = path.slice(0, -1).some(p => endZone.stations.includes(p.stationName));
+            if (!doesReEnter) {
+                console.log(`到着駅に「${endZone.name}」を適用`);
+                const newPath = [...path];
+                newPath[newPath.length - 1] = { stationName: endZone.centerStation, lineName: null };
+            }
+        }
+
+        // 出発駅の判定
+        if (startZone && totalGiseiKilo >= startZone.distanceThreshold && !startZone.stations.includes(endStation.stationName)) {
+            // 途中でゾーンに再突入していないかチェック
+            const doesReEnter = path.slice(1).some(p => startZone.stations.includes(p.stationName));
+            if (!doesReEnter) {
+                console.log(`出発駅に「${startZone.name}」を適用`);
+                // 経路の始点を中心駅に書き換える（運賃計算用）
+                const newPath = [...path];
+                newPath[0] = { stationName: startZone.centerStation, lineName: startStation.lineName };
+            }
+        }
 
         return path;
     }
 
     private calculateTotalEigyoKilo(path: PathStep[]): number {
         let totalEigyoKilo: number = 0;
-        const fullPath: PathStep[] = this.createFullPath(path);
-        for (let i = 0; i < fullPath.length - 1; i++) {
-            const routeSegment: RouteSegment = loadMR.getRouteSegment(fullPath[i].stationName, fullPath[i + 1].stationName);
+        for (let i = 0; i < path.length - 1; i++) {
+            const routeSegment: RouteSegment = loadMR.getRouteSegment(path[i].stationName, path[i + 1].stationName);
             totalEigyoKilo += routeSegment.eigyoKilo;
         }
         return totalEigyoKilo;
@@ -80,9 +160,8 @@ class MRCalculator {
 
     private calculateTotalGiseiKilo(path: PathStep[]): number {
         let totalGiseiKilo: number = 0;
-        const fullPath: PathStep[] = this.createFullPath(path);
-        for (let i = 0; i < fullPath.length - 1; i++) {
-            const routeSegment: RouteSegment = loadMR.getRouteSegment(fullPath[i].stationName, fullPath[i + 1].stationName);
+        for (let i = 0; i < path.length - 1; i++) {
+            const routeSegment: RouteSegment = loadMR.getRouteSegment(path[i].stationName, path[i + 1].stationName);
             totalGiseiKilo += routeSegment.giseiKilo;
         }
         return totalGiseiKilo;
