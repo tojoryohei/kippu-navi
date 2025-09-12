@@ -319,5 +319,9 @@
     {"stations": ["深川", "北一已"], "eigyoKilo": 38,"giseiKilo": 42, "isLocal": true, "company": 1},
     {"stations": ["北一已", "秩父別"], "eigyoKilo": 50,"giseiKilo": 55, "isLocal": true, "company": 1},
     {"stations": ["秩父別", "北秩父別"], "eigyoKilo": 24,"giseiKilo": 26, "isLocal": true, "company": 1},
-    {"stations": ["北秩父別", "石狩沼田"], "eigyoKilo": 32,"giseiKilo": 35, "isLocal": true, "company": 1}
+    {"stations": ["北秩父別", "石狩沼田"], "eigyoKilo": 32,"giseiKilo": 35, "isLocal": true, "company": 1},
+    {"stations": ["札幌市内", "銭函"], "eigyoKilo": 182,"giseiKilo": 182, "isLocal": false, "company": 1},
+    {"stations": ["札幌市内", "大麻"], "eigyoKilo": 145,"giseiKilo": 145, "isLocal": false, "company": 1},
+    {"stations": ["札幌市内", "北広島"], "eigyoKilo": 218,"giseiKilo": 218, "isLocal": false, "company": 1},
+    {"stations": ["札幌市内", "ロイズタウン"], "eigyoKilo": 195,"giseiKilo": 213, "isLocal": false, "company": 1}
 ]

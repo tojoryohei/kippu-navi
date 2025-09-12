@@ -75,10 +75,7 @@ export interface SpecificSection {
     correctPath: PathStep[];
 }
 
-export interface ZoneInfo {
+export interface City {
     name: string;
-    centerStation: string;
-    distanceThreshold: number;
     stations: string[];
-    boundaries: Record<string, number>;
 }

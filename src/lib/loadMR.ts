@@ -1,15 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 
-import { Station, Line, RouteSegment, SpecificSection, ZoneInfo } from '@/types';
+import { Station, Line, RouteSegment, SpecificSection, City } from '@/types';
 
 class LoadMR {
     private stations: Map<string, Station> = new Map();
     private lines: Map<string, Line> = new Map();
     private routes: Map<string, RouteSegment> = new Map();
     private specificSections: SpecificSection[] = [];
-    private zones: Map<string, ZoneInfo> = new Map();
-    private stationToZoneMap: Map<string, ZoneInfo> = new Map();
+    private cities: City[] = [];
 
     constructor () {
         this.loadData();
@@ -44,16 +43,10 @@ class LoadMR {
             const sectionsPath = path.join(process.cwd(), 'src', 'data', 'specificSections.json');
             this.specificSections = JSON.parse(fs.readFileSync(sectionsPath, 'utf-8'));
 
-            // zones.json (cities.json) の読み込み
-            const zonesPath = path.join(process.cwd(), 'src', 'data', 'cities.json');
-            const zonesData: Record<string, ZoneInfo> = JSON.parse(fs.readFileSync(zonesPath, 'utf-8'));
-            for (const zoneName in zonesData) {
-                const zone = zonesData[zoneName];
-                this.zones.set(zoneName, zone);
-                for (const stationName of zone.stations) {
-                    this.stationToZoneMap.set(stationName, zone);
-                }
-            }
+            // cities.jsonの読み込み
+            const citiesPath = path.join(process.cwd(), 'src', 'data', 'cities.json');
+            this.cities = JSON.parse(fs.readFileSync(citiesPath, 'utf-8'));
+
 
         } catch (error) {
             console.error('データ読み込みエラー：', error);
@@ -103,8 +96,8 @@ class LoadMR {
         return this.specificSections;
     }
 
-    public findZoneForStation(stationName: string): ZoneInfo | undefined {
-        return this.stationToZoneMap.get(stationName);
+    public getCities(): City[] {
+        return this.cities;
     }
 }
 

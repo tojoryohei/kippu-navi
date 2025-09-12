@@ -38,7 +38,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <GoogleTagManager gtmId="G-TXTRWDDZ33" />
       <body
         className={`flex flex-col min-h-screen ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
