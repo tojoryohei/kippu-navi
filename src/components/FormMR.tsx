@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useForm, Controller, SubmitHandler, useFieldArray } from "react-hook-form";
 import type { SingleValue } from "react-select";
 
-import stationData from "@/data/stations.json";
-import lineData from "@/data/lines.json";
+import stationData from "@/data/mr/stations.json";
+import lineData from "@/data/mr/lines.json";
 import SelectStation from "@/components/SelectStation";
 import SelectLine from "@/components/SelectLine";
 
