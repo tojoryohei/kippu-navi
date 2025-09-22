@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 
-import { Station, Line, RouteSegment, SpecificSection, City } from '@/types';
+import { Station, Line, RouteSegment, SpecificSection, City } from '@/app/mr/types';
 
-class LoadMR {
+class Load {
     private stations: Map<string, Station> = new Map();
     private lines: Map<string, Line> = new Map();
     private routes: Map<string, RouteSegment> = new Map();
@@ -17,21 +17,21 @@ class LoadMR {
     private loadData() {
         try {
             // stations.jsonの読み込み
-            const stationPath = path.join(process.cwd(), 'src', 'data', 'mr', 'stations.json');
+            const stationPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'stations.json');
             const stationsData: Station[] = JSON.parse(fs.readFileSync(stationPath, 'utf-8'));
             for (const station of stationsData) {
                 this.stations.set(station.name, station);
             }
 
             // lines.jsonの読み込み
-            const linesPath = path.join(process.cwd(), 'src', 'data', 'mr', 'lines.json');
+            const linesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'lines.json');
             const linesData: Line[] = JSON.parse(fs.readFileSync(linesPath, 'utf-8'));
             for (const line of linesData) {
                 this.lines.set(line.name, line);
             }
 
             // routes.jsonの読み込み
-            const routesPath = path.join(process.cwd(), 'src', 'data', 'mr', 'routes.json');
+            const routesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'routes.json');
             const routesData: RouteSegment[] = JSON.parse(fs.readFileSync(routesPath, 'utf-8'));
             for (const route of routesData) {
                 // ★ 駅名のペアをソートして、常に一意なキーを作成する
@@ -40,11 +40,11 @@ class LoadMR {
             }
 
             // specificSections.jsonの読み込み
-            const sectionsPath = path.join(process.cwd(), 'src', 'data', 'mr', 'specificSections.json');
+            const sectionsPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'specificSections.json');
             this.specificSections = JSON.parse(fs.readFileSync(sectionsPath, 'utf-8'));
 
             // cities.jsonの読み込み
-            const citiesPath = path.join(process.cwd(), 'src', 'data', 'mr', 'cities.json');
+            const citiesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'cities.json');
             this.cities = JSON.parse(fs.readFileSync(citiesPath, 'utf-8'));
 
         } catch (error) {
@@ -101,4 +101,4 @@ class LoadMR {
 }
 
 // シングルトンインスタンスとしてエクスポートし、アプリ全体で一つのインスタンスを共有する
-export const loadMR = new LoadMR();
+export const load = new Load();

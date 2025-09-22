@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useForm, Controller, SubmitHandler, useFieldArray } from "react-hook-form";
 import type { SingleValue } from "react-select";
 
-import stationData from "@/data/mr/stations.json";
-import lineData from "@/data/mr/lines.json";
-import SelectStation from "@/components/SelectStation";
-import SelectLine from "@/components/SelectLine";
+import stationData from "@/app/mr/data/stations.json";
+import lineData from "@/app/mr/data/lines.json";
+import SelectStation from "@/app/mr/components/SelectStation";
+import SelectLine from "@/app/mr/components/SelectLine";
 
-import { Station, Line, ApiResponse, IFormInput, PathStep, RouteRequest } from "@/types";
+import { Station, Line, ApiResponse, IFormInput, PathStep, RouteRequest } from "@/app/mr/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 

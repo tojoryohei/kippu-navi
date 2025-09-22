@@ -2,7 +2,7 @@
 
 import Select, { components, OptionProps } from "react-select";
 
-import { Line, SelectLineProps } from "@/types";
+import { Line, SelectLineProps } from "@/app/mr/types";
 
 const CustomOption = (props: OptionProps<Line>) => (
     <components.Option {...props}>

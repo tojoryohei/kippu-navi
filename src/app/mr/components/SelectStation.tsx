@@ -2,9 +2,9 @@
 
 import Select, { components, OptionProps, FilterOptionOption } from "react-select";
 import { useState } from "react";
-import stationData from "@/data/mr/stations.json";
+import stationData from "@/app/mr/data/stations.json";
 
-import { Station, SelectStationProps } from '@/types';
+import { Station, SelectStationProps } from '@/app/mr/types';
 
 const CustomOption = (props: OptionProps<Station>) => (
     <components.Option {...props}>

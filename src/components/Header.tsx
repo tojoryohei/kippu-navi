@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { MdMenu, MdClear, MdHome, MdOutlineCalculate } from "react-icons/md";
 
-import { menuItem } from "@/types";
+import { menuItem } from "@/app/mr/types";
 
 const MENU_ITEMS: menuItem[] = [
     { href: "/", icon: MdHome, label: "ホーム" },

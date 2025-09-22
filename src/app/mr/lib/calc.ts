@@ -1,8 +1,8 @@
-import { loadMR } from '@/lib/loadMR';
+import { load } from '@/app/mr/lib/load';
 
-import { RouteRequest, ApiResponse, PathStep, RouteSegment, } from '@/types';
+import { RouteRequest, ApiResponse, PathStep, RouteSegment, } from '@/app/mr/types';
 
-class MRCalculator {
+class Calculator {
     public processRouteAndCalculateFare(request: RouteRequest): ApiResponse {
         const userInputPath = request.path;
 
@@ -42,7 +42,7 @@ class MRCalculator {
     private convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[] {
         let routeSegments: RouteSegment[] = [];
         for (let i = 0; i < path.length - 1; i++) {
-            const routeSegment: RouteSegment = loadMR.getRouteSegment(path[i].stationName, path[i + 1].stationName);
+            const routeSegment: RouteSegment = load.getRouteSegment(path[i].stationName, path[i + 1].stationName);
             routeSegments.push(routeSegment);
         }
         return routeSegments;
@@ -57,7 +57,7 @@ class MRCalculator {
             const startStep = path[i];
             const endStep = path[i + 1];
             const lineName = startStep.lineName!;
-            const line = loadMR.getLineByName(lineName);
+            const line = load.getLineByName(lineName);
             const stationsOnLine = line.stations;
             const startIdx = stationsOnLine.indexOf(startStep.stationName);
             const endIdx = stationsOnLine.indexOf(endStep.stationName);
@@ -89,7 +89,7 @@ class MRCalculator {
     }
 
     private correctSpecificSections(fullPath: PathStep[]): PathStep[] {
-        for (const rule of loadMR.getSpecificSections()) {
+        for (const rule of load.getSpecificSections()) {
             const fullPathStations = fullPath.map(p => p.stationName);
             const straddling = rule.correctPath
                 .slice(1)
@@ -126,7 +126,7 @@ class MRCalculator {
     }
 
     private applyCityRule(fullPath: PathStep[]): PathStep[] {
-        const cities = loadMR.getCities();
+        const cities = load.getCities();
         for (const city of cities) {
             const stationsInCity = new Set(city.stations);
             const cityPath: PathStep = {
@@ -206,7 +206,7 @@ class MRCalculator {
         const pathsByCompany: RouteSegment[][] = [[], [], [], [], [], [], []];
 
         for (let i = 0; i < correctedPath.length - 1; i++) {
-            const routeSegment: RouteSegment = loadMR.getRouteSegment(correctedPath[i].stationName, correctedPath[i + 1].stationName);
+            const routeSegment: RouteSegment = load.getRouteSegment(correctedPath[i].stationName, correctedPath[i + 1].stationName);
 
             //全ての駅間の駅名を取得
             allSections.add(routeSegment.stations.sort().join('-'));
@@ -416,7 +416,7 @@ class MRCalculator {
     private generatePrintedViaStrings(viaStrings: string[]): string[] {
         let printViaStrings: string[] = [];
         for (const viaString of viaStrings) {
-            const viaPrintedString = loadMR.getPrintedViaStringByViaString(viaString);
+            const viaPrintedString = load.getPrintedViaStringByViaString(viaString);
             if (viaPrintedString !== null) {
                 printViaStrings.push(viaPrintedString);
             }
@@ -429,4 +429,4 @@ class MRCalculator {
     }
 }
 
-export const calcMR = new MRCalculator();
+export const calc = new Calculator();

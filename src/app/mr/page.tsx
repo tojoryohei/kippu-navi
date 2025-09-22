@@ -1,4 +1,4 @@
-import FormMR from "@/components/FormMR"
+import FormMR from "@/app/mr/components/Form"
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
