@@ -13,7 +13,7 @@ import { Station, Line, ApiResponse, IFormInput, PathStep, RouteRequest } from "
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 
-export default function FormMR() {
+export default function Form() {
     const { handleSubmit, control, watch, setValue, getValues, formState: { isValid } } = useForm<IFormInput>({
         mode: 'onChange',
         defaultValues: {

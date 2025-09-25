@@ -1,4 +1,4 @@
-import FormMR from "@/app/mr/components/Form"
+import Form from "@/app/mr/components/Form"
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,6 +7,6 @@ export const metadata: Metadata = {
 
 export default function MrPage() {
   return (
-    <FormMR />
+    <Form />
   );
 }
