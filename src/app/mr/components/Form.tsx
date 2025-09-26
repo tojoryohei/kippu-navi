@@ -224,7 +224,7 @@ export default function Form() {
                     </div>
                 </div>
             </form>
-            <div className="mt-8 p-4">
+            <div className="my-8 p-4">
                 {isLoading && <p className="py-5 border-t">計算中...</p>}
                 {error && <p className="py-5 border-t"></p> && <p className="text-red-500">{error}</p>}
                 {result && (
