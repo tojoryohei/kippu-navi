@@ -124,9 +124,6 @@ export default function Form() {
         }
     };
 
-    const isLongDeparture: boolean | null = result && 6 < result.departureStation.length;
-    const isLongArrival: boolean | null = result && 6 < result.arrivalStation.length;
-
     return (
         <main className="max-w-md mx-auto">
             <h1 className="text-xl font-bold m-4">JR運賃計算（経路入力）</h1>
@@ -237,22 +234,18 @@ export default function Form() {
                         <div>運賃計算キロ（擬制キロ）: {(result.totalGiseiKilo / 10).toFixed(1)} km</div>
                         <div className="flex justify-between items-center my-3 gap-2">
                             <div className="flex-1 text-right break-words">
-                                <div className={`font-bold ${isLongDeparture ? 'text-xl break-words leading-tight' : 'text-2xl flex justify-around'}`}>
-                                    {isLongDeparture
-                                        ? result.departureStation
-                                        : result.departureStation.split('').map((char, idx) => (
-                                            <span key={idx}>{char}</span>
-                                        ))}
+                                <div className='font-bold text-2xl flex justify-around'>
+                                    {result.departureStation.split('').map((char, idx) => (
+                                        <span key={idx}>{char}</span>
+                                    ))}
                                 </div>
                             </div>
                             <div className="text-2xl shrink-0 text-center">→</div>
                             <div className="flex-1 text-left break-words">
-                                <div className={`font-bold ${isLongArrival ? 'text-xl break-words leading-tight' : 'text-2xl flex justify-around'}`}>
-                                    {isLongArrival
-                                        ? result.arrivalStation
-                                        : result.arrivalStation.split('').map((char, idx) => (
-                                            <span key={idx}>{char}</span>
-                                        ))}
+                                <div className='font-bold text-2xl flex justify-around'>
+                                    {result.arrivalStation.split('').map((char, idx) => (
+                                        <span key={idx}>{char}</span>
+                                    ))}
                                 </div>
                             </div>
                         </div>
