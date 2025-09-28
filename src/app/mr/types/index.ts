@@ -63,6 +63,7 @@ export interface ApiResponse {
 }
 
 export interface RouteSegment {
+    line: string;
     stations: [string, string];
     eigyoKilo: number;
     giseiKilo: number;
