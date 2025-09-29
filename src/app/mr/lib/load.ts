@@ -9,6 +9,7 @@ class Load {
     private routes: Map<string, RouteSegment> = new Map();
     private specificSections: SpecificSection[] = [];
     private cities: City[] = [];
+    private yamanote!: City;
 
     constructor () {
         this.loadData();
@@ -46,6 +47,10 @@ class Load {
             // cities.jsonの読み込み
             const citiesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'cities.json');
             this.cities = JSON.parse(fs.readFileSync(citiesPath, 'utf-8'));
+
+            // yamanote.jsonの読み込み
+            const yamanotePath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'yamanote.json');
+            this.yamanote = JSON.parse(fs.readFileSync(yamanotePath, 'utf-8'));
 
         } catch (error) {
             console.error('データ読み込みエラー：', error);
@@ -97,6 +102,10 @@ class Load {
 
     public getCities(): City[] {
         return this.cities;
+    }
+
+    public getYamanote(): City {
+        return this.yamanote;
     }
 }
 

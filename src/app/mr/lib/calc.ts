@@ -13,8 +13,8 @@ class Calculator {
         const correctedPath = this.correctPath(fullPath);
 
         // 出発駅と到着駅の名前を取得して変数に代入
-        const departureStation: string = correctedPath[0].stationName;
-        const arrivalStation: string = correctedPath[correctedPath.length - 1].stationName;
+        const departureStation = correctedPath[0].stationName;
+        const arrivalStation = correctedPath[correctedPath.length - 1].stationName;
 
         // 営業キロと運賃の計算
         const routeSegments = this.convertPathStepsToRouteSegments(correctedPath);
@@ -27,7 +27,6 @@ class Calculator {
         const viaLines = this.generateViaStrings(correctedPath);
         const printedViaLines = this.generatePrintedViaStrings(viaLines);
 
-        // 計算結果を返す
         return {
             totalEigyoKilo,
             totalGiseiKilo,
@@ -37,15 +36,6 @@ class Calculator {
             printedViaLines,
             validDays
         };
-    }
-
-    private convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[] {
-        let routeSegments: RouteSegment[] = [];
-        for (let i = 0; i < path.length - 1; i++) {
-            const routeSegment: RouteSegment = load.getRouteSegment(path[i].stationName, path[i + 1].stationName);
-            routeSegments.push(routeSegment);
-        }
-        return routeSegments;
     }
 
     private createFullPath(path: PathStep[]): PathStep[] {
@@ -129,10 +119,6 @@ class Calculator {
         const cities = load.getCities();
         for (const city of cities) {
             const stationsInCity = new Set(city.stations);
-            const cityPath: PathStep = {
-                "stationName": city.name,
-                "lineName": null
-            }
 
             // 着駅適用
             if (stationsInCity.has(fullPath[fullPath.length - 1].stationName)) {
@@ -144,7 +130,10 @@ class Calculator {
                 if (changingIdx.length === 1 || changingIdx.length === 2) {
                     const applyCityRulePath = [
                         ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
-                        cityPath
+                        {
+                            "stationName": city.name,
+                            "lineName": null
+                        }
                     ];
                     const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
                     if (this.calculateTotalEigyoKilo(routeSegments) > 2000)
@@ -161,7 +150,7 @@ class Calculator {
                 }
                 if (changingIdx.length === 1 || changingIdx.length === 2) {
                     const applyCityRulePath = [
-                        cityPath,
+                        { "stationName": city.name, "lineName": fullPath[changingIdx[changingIdx.length - 1]].lineName },
                         ...fullPath.slice(changingIdx[changingIdx.length - 1] + 1)
                     ];
                     const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
@@ -174,7 +163,56 @@ class Calculator {
     }
 
     private applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
+        const yamanote = load.getYamanote();
+        const stationsInYamanote = new Set(yamanote.stations);
+
+        // 着駅適用
+        if (stationsInYamanote.has(fullPath[fullPath.length - 1].stationName)) {
+            let changingIdx: number[] = [];
+            for (let i = 0; i < fullPath.length - 1; i++) {
+                if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
+                    changingIdx.push(i);
+            }
+            if (changingIdx.length === 1 || changingIdx.length === 2) {
+                const applyCityRulePath = [
+                    ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
+                    { "stationName": yamanote.name, "lineName": null }
+                ];
+                const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
+                if (this.calculateTotalEigyoKilo(routeSegments) > 1000)
+                    fullPath = applyCityRulePath;
+            }
+        }
+
+        // 発駅適用
+        if (stationsInYamanote.has(fullPath[0].stationName)) {
+            let changingIdx: number[] = [];
+            for (let i = 0; i < fullPath.length - 1; i++) {
+                if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
+                    changingIdx.push(i);
+            }
+            if (changingIdx.length === 1 || changingIdx.length === 2) {
+                const applyCityRulePath = [
+                    { "stationName": yamanote.name, "lineName": fullPath[changingIdx[0]].lineName },
+                    ...fullPath.slice(changingIdx[0] + 1)
+                ];
+                const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
+                if (this.calculateTotalEigyoKilo(routeSegments) > 1000)
+                    fullPath = applyCityRulePath;
+            }
+        }
         return fullPath;
+    }
+
+    private convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[] {
+        let routeSegments: RouteSegment[] = [];
+        for (let i = 0; i < path.length - 1; i++) {
+            const line = path[i].lineName;
+            if (line === null) continue;
+            const routeSegment: RouteSegment = load.getRouteSegment(path[i].stationName, path[i + 1].stationName, line);
+            routeSegments.push(routeSegment);
+        }
+        return routeSegments;
     }
 
     private calculateTotalEigyoKilo(routeSegments: RouteSegment[]): number {
@@ -205,11 +243,14 @@ class Calculator {
         const allSections = new Set<string>();
         const paths: RouteSegment[] = [];
         const pathsByCompany: RouteSegment[][] = [[], [], [], [], [], [], []];
+        // 0 = その他, 1 = JR北海道, 2 = JR東日本, 3 = JR東海, 4 = JR西日本, 5 = JR四国, 6 = JR九州
 
         for (let i = 0; i < correctedPath.length - 1; i++) {
-            const routeSegment: RouteSegment = load.getRouteSegment(correctedPath[i].stationName, correctedPath[i + 1].stationName);
+            const line = correctedPath[i].lineName;
+            if (line === null) continue;
+            const routeSegment = load.getRouteSegment(correctedPath[i].stationName, correctedPath[i + 1].stationName, line);
 
-            //全ての駅間の駅名を取得
+            // 全ての駅間の駅名を取得
             allSections.add(routeSegment.stations.sort().join('-'));
             paths.push(routeSegment);
 
@@ -217,11 +258,25 @@ class Calculator {
             pathsByCompany[routeSegment.company].push(routeSegment);
         }
 
-        let fare: number = 0;
-        fare += this.calculateFare2(paths);
-        fare += this.calculateFare1(pathsByCompany[1]) - this.calculateFare2(pathsByCompany[1]);
+        // 第85条 他の旅客鉄道会社線を連続して乗車する場合の大人片道普通旅客運賃
+        let fare: number = this.calculateFare(paths);
 
-        // 第85条の2 加算普通旅客運賃の適用区間及び額
+        // （1）北海道旅客鉄道会社線の乗車区間に対する普通旅客運賃の加算額
+        if (0 < pathsByCompany[1].length) {
+            fare += this.calculateFare1(pathsByCompany[1]) - this.calculateFare(pathsByCompany[1]);
+        }
+
+        // （2）四国旅客鉄道会社線の乗車区間に対する普通旅客運賃の加算額
+        if (0 < pathsByCompany[5].length) {
+            fare += this.calculateFare5(pathsByCompany[5]) - this.calculateFare(pathsByCompany[5]);
+        }
+
+        // （3）九州旅客鉄道会社線の乗車区間に対する普通旅客運賃の加算額
+        if (0 < pathsByCompany[6].length) {
+            fare += this.calculateFare6(pathsByCompany[6]) - this.calculateFare(pathsByCompany[6]);
+        }
+
+        // 第85条の２ 加算普通旅客運賃の適用区間及び額
         if (allSections.has(["南千歳", "新千歳空港"].sort().join('-'))) {
             fare += 20;
         }
@@ -281,8 +336,9 @@ class Calculator {
         throw new Error(`calculateSplitKiloOfKansenでエラーが発生しました.`);
     }
 
+    // 別表第２号イの４ 地方交通線の営業キロの区間
     private calculateSplitKiloOfLocal(totalKilo: number): number {
-        if (totalKilo <= 10) throw new Error(`calculateSplitKiroOfLocalで範囲外アクセスが発生しました.`);
+        if (totalKilo <= 10) return totalKilo;
         if (totalKilo <= 15) return 13;
         if (totalKilo <= 20) return 18;
         if (totalKilo <= 23) return 22;
@@ -340,33 +396,86 @@ class Calculator {
         if (totalKilo <= 1128) return 1110;
         if (totalKilo <= 1164) return 1146;
         if (totalKilo <= 1200) return 1182;
+        return totalKilo;
+    }
 
-        throw new Error(`calculateSplitKiroOfLocalでエラーが発生しました.`);
+    private calculateFare(routeSegments: RouteSegment[]): number {
+        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
+
+        // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
+        // （1）幹線内相互発着の場合
+        if (this.isAllKansen(routeSegments)) {
+            if (totalEigyoKilo <= 3) return 150;
+            if (totalEigyoKilo <= 6) return 190;
+            if (totalEigyoKilo <= 10) return 200;
+        }
+
+        // （3）地方交通線内相互発着の場合及び幹線と地方交通線を連続して乗車する場合
+        else {
+            if (totalEigyoKilo <= 3) return 150;
+            if (totalEigyoKilo <= 6) return 190;
+            if (totalEigyoKilo <= 10) return 210;
+        }
+
+        // 第77条 幹線内相互発着の大人片道普通旅客運賃
+        if (this.isAllKansen(routeSegments)) {
+            const splitKilo = this.calculateSplitKiloOfKansen(totalEigyoKilo);
+            if (totalEigyoKilo <= 100) return this.addTax(this.ceil10(16.20 * splitKilo));
+            if (totalEigyoKilo <= 300) return this.addTax(this.round100(16.20 * splitKilo));
+            if (totalEigyoKilo <= 600) return this.addTax(this.round100(16.20 * 300 + 12.85 * (splitKilo - 300)));
+            return this.addTax(this.round100(16.20 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
+        }
+
+        // 第77条の５ 地方交通線内相互発着の大人片道普通旅客運賃
+        if (this.isAllLocal(routeSegments)) {
+            if (11 <= totalEigyoKilo && totalEigyoKilo <= 15) return 240;
+            if (16 <= totalEigyoKilo && totalEigyoKilo <= 20) return 330;
+            if (21 <= totalEigyoKilo && totalEigyoKilo <= 23) return 420;
+            if (24 <= totalEigyoKilo && totalEigyoKilo <= 28) return 510;
+            if (33 <= totalEigyoKilo && totalEigyoKilo <= 37) return 680;
+            if (42 <= totalEigyoKilo && totalEigyoKilo <= 46) return 860;
+            if (47 <= totalEigyoKilo && totalEigyoKilo <= 55) return 990;
+            if (56 <= totalEigyoKilo && totalEigyoKilo <= 64) return 1170;
+            if (65 <= totalEigyoKilo && totalEigyoKilo <= 73) return 1340;
+            if (74 <= totalEigyoKilo && totalEigyoKilo <= 82) return 1520;
+            if (83 <= totalEigyoKilo && totalEigyoKilo <= 91) return 1690;
+            if (101 <= totalEigyoKilo && totalEigyoKilo <= 110) return 1980;
+            if (292 <= totalEigyoKilo && totalEigyoKilo <= 310) return 5720;
+
+            const splitKilo = this.calculateSplitKiloOfKansen(totalEigyoKilo);
+            if (totalEigyoKilo <= 273) return this.addTax(this.round100(17.80 * splitKilo));
+            if (totalEigyoKilo <= 546) return this.addTax(this.round100(17.80 * 273 + 14.10 * (splitKilo - 273)));
+            return this.addTax(this.round100(17.80 * 273 + 14.10 * 273 + 7.70 * (splitKilo - 546)));
+        }
+
+        // 第81条 幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
+        const totalGiseiKilo: number = Math.ceil(this.calculateTotalGiseiKilo(routeSegments) / 10);
+        const splitKilo = this.calculateSplitKiloOfKansen(totalGiseiKilo);
+        if (totalGiseiKilo <= 100) return this.addTax(this.ceil10(16.20 * splitKilo));
+        if (totalGiseiKilo <= 300) return this.addTax(this.round100(16.20 * splitKilo));
+        if (totalGiseiKilo <= 600) return this.addTax(this.round100(16.20 * 300 + 12.85 * (splitKilo - 300)));
+        return this.addTax(this.round100(16.20 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
     }
 
     private calculateFare1(routeSegments: RouteSegment[]): number {
         const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
-        if (totalEigyoKilo == 0 || routeSegments.length == 0) return 0;
 
-        // 第84条の2 北海道旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
-        if (totalEigyoKilo <= 10) {
-
-            // （1）幹線内相互発着の場合
-            if (this.isAllKansen(routeSegments)) {
-                if (totalEigyoKilo <= 3) return 210;
-                if (totalEigyoKilo <= 6) return 270;
-                return 310;
-            }
-
-            // （2）地方交通線内相互発着の場合及び幹線と地方交通線を連続して乗車する場合
-            else {
-                if (totalEigyoKilo <= 3) return 210;
-                if (totalEigyoKilo <= 6) return 270;
-                return 320;
-            }
+        // 第84条の２ 北海道旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
+        // （1）幹線内相互発着の場合
+        if (this.isAllKansen(routeSegments)) {
+            if (totalEigyoKilo <= 3) return 210;
+            if (totalEigyoKilo <= 6) return 270;
+            if (totalEigyoKilo <= 10) return 310;
         }
 
-        // 第77条の2 北海道旅客鉄道会社内の幹線内相互発着の大人片道普通旅客運賃
+        // （2）地方交通線内相互発着の場合及び幹線と地方交通線を連続して乗車する場合
+        else {
+            if (totalEigyoKilo <= 3) return 210;
+            if (totalEigyoKilo <= 6) return 270;
+            if (totalEigyoKilo <= 10) return 320;
+        }
+
+        // 第77条の２ 北海道旅客鉄道会社内の幹線内相互発着の大人片道普通旅客運賃
         if (this.isAllKansen(routeSegments)) {
 
             // 別表第２号イ 北海道旅客鉄道株式会社線の大人普通旅客運賃の特定額（幹線内相互発着となる場合）
@@ -393,10 +502,10 @@ class Calculator {
             if (totalEigyoKilo <= 200) return this.addTax(this.round100(21.16 * splitKilo));
             if (totalEigyoKilo <= 300) return this.addTax(this.round100(21.16 * 200 + 16.36 * (splitKilo - 200)));
             if (totalEigyoKilo <= 600) return this.addTax(this.round100(21.16 * 200 + 16.36 * 100 + 12.83 * (splitKilo - 300)));
-            else return this.addTax(this.round100(21.16 * 200 + 16.36 * 100 + 12.83 * 300 + 7.05 * (splitKilo - 600)));
+            return this.addTax(this.round100(21.16 * 200 + 16.36 * 100 + 12.83 * 300 + 7.05 * (splitKilo - 600)));
         }
 
-        // 第77条の6 北海道旅客鉄道会社内の地方交通線内相互発着の大人片道普通旅客運賃
+        // 第77条の６ 北海道旅客鉄道会社内の地方交通線内相互発着の大人片道普通旅客運賃
         if (this.isAllLocal(routeSegments)) {
 
             // 別表第2号イの5 北海道旅客鉄道株式会社線の大人普通旅客運賃の特定額（地方交通線内相互発着となる場合）
@@ -424,109 +533,281 @@ class Calculator {
             if (totalEigyoKilo <= 182) return this.addTax(this.round100(23.11 * splitKilo));
             if (totalEigyoKilo <= 273) return this.addTax(this.round100(23.11 * 182 + 18.35 * (splitKilo - 182)));
             if (totalEigyoKilo <= 546) return this.addTax(this.round100(23.11 * 182 + 18.35 * 91 + 14.02 * (splitKilo - 273)));
-            else return this.addTax(this.round100(23.11 * 182 + 18.35 * 91 + 14.02 * 273 + 7.72 * (splitKilo - 546)));
+            return this.addTax(this.round100(23.11 * 182 + 18.35 * 91 + 14.02 * 273 + 7.72 * (splitKilo - 546)));
         }
 
-        // 第81条の2 北海道旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
-        if (this.isAllKansen(routeSegments) === false && this.isAllLocal(routeSegments) === false) {
-            const totalGiseiKilo: number = Math.ceil(this.calculateTotalGiseiKilo(routeSegments) / 10);
+        // 第81条の２ 北海道旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
+        const totalGiseiKilo: number = Math.ceil(this.calculateTotalGiseiKilo(routeSegments) / 10);
 
-            // （1）運賃計算キロが11キロメートルから100キロメートルまでの場合
+        // （1）運賃計算キロが11キロメートルから100キロメートルまでの場合
+        if (totalGiseiKilo <= 15) return 360;
+        if (totalGiseiKilo <= 20) return 470;
+        if (totalGiseiKilo <= 25) return 580;
+        if (totalGiseiKilo <= 30) return 680;
+        if (totalGiseiKilo <= 35) return 800;
+        if (totalGiseiKilo <= 40) return 920;
+        if (totalGiseiKilo <= 45) return 1040;
+        if (totalGiseiKilo <= 50) return 1210;
+        if (totalGiseiKilo <= 60) return 1380;
+        if (totalGiseiKilo <= 70) return 1590;
+        if (totalGiseiKilo <= 80) return 1800;
+        if (totalGiseiKilo <= 90) return 2020;
+        if (totalGiseiKilo <= 100) return 2240;
 
-            if (totalGiseiKilo <= 15) return 360;
-            if (totalGiseiKilo <= 20) return 470;
-            if (totalGiseiKilo <= 25) return 580;
-            if (totalGiseiKilo <= 30) return 680;
-            if (totalGiseiKilo <= 35) return 800;
-            if (totalGiseiKilo <= 40) return 920;
-            if (totalGiseiKilo <= 45) return 1040;
-            if (totalGiseiKilo <= 50) return 1210;
-            if (totalGiseiKilo <= 60) return 1380;
-            if (totalGiseiKilo <= 70) return 1590;
-            if (totalGiseiKilo <= 80) return 1800;
-            if (totalGiseiKilo <= 90) return 2020;
-            if (totalGiseiKilo <= 100) return 2240;
-
-            // （2）運賃計算キロが100キロメートルを超える場合
-            const splitKilo = this.calculateSplitKiloOfKansen(totalGiseiKilo);
-            if (totalGiseiKilo <= 200) return this.addTax(this.round100(21.16 * splitKilo));
-            if (totalGiseiKilo <= 300) return this.addTax(this.round100(21.16 * 200 + 16.36 * (splitKilo - 200)));
-            if (totalGiseiKilo <= 600) return this.addTax(this.round100(21.16 * 200 + 16.36 * 100 + 12.83 * (splitKilo - 300)));
-            else return this.addTax(this.round100(21.16 * 200 + 16.36 * 100 + 12.83 * 300 + 7.05 * (splitKilo - 600)));
-        }
-
-        throw new Error(`calculateFare1でエラーが発生しました.`);
-
+        // （2）運賃計算キロが100キロメートルを超える場合
+        const splitKilo = this.calculateSplitKiloOfKansen(totalGiseiKilo);
+        if (totalGiseiKilo <= 200) return this.addTax(this.round100(21.16 * splitKilo));
+        if (totalGiseiKilo <= 300) return this.addTax(this.round100(21.16 * 200 + 16.36 * (splitKilo - 200)));
+        if (totalGiseiKilo <= 600) return this.addTax(this.round100(21.16 * 200 + 16.36 * 100 + 12.83 * (splitKilo - 300)));
+        return this.addTax(this.round100(21.16 * 200 + 16.36 * 100 + 12.83 * 300 + 7.05 * (splitKilo - 600)));
     }
 
-    private calculateFare2(routeSegments: RouteSegment[]): number {
+    private calculateFare5(routeSegments: RouteSegment[]): number {
         const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
-        if (totalEigyoKilo == 0 || routeSegments.length == 0) return 0;
+        const totalGiseiKilo: number = Math.ceil(this.calculateTotalGiseiKilo(routeSegments) / 10);
+        if (totalGiseiKilo == 0) return 0;
 
-        // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
+        // 第84条の３ 四国旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
         if (totalEigyoKilo <= 10) {
-
-            // （1）幹線内相互発着の場合
-            if (this.isAllKansen(routeSegments)) {
-                if (totalEigyoKilo <= 3) return 150;
-                if (totalEigyoKilo <= 6) return 190;
-                return 200;
-            }
-
-            // （3）地方交通線内相互発着の場合及び幹線と地方交通線を連続して乗車する場合
-            else {
-                if (totalEigyoKilo <= 3) return 150;
-                if (totalEigyoKilo <= 6) return 190;
-                return 210;
-            }
+            if (totalGiseiKilo <= 3) return 190;
+            if (totalGiseiKilo <= 6) return 240;
+            if (totalGiseiKilo <= 10) return 280;
         }
 
-        // 第77条 幹線内相互発着の大人片道普通旅客運賃
+        // 第77条の３ 四国旅客鉄道会社内の幹線内相互発着の大人片道普通旅客運賃
+        // 第77条の７ 四国旅客鉄道会社内の地方交通線内相互発着の大人片道普通旅客運賃
+        // 第81条の３ 四国旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
+
+        // （1）営業キロが11キロメートルから100キロメートルまでの場合
+        if (totalGiseiKilo <= 15) return 330;
+        if (totalGiseiKilo <= 20) return 430;
+        if (totalGiseiKilo <= 25) return 530;
+        if (totalGiseiKilo <= 30) return 630;
+        if (totalGiseiKilo <= 35) return 740;
+        if (totalGiseiKilo <= 40) return 850;
+        if (totalGiseiKilo <= 45) return 980;
+        if (totalGiseiKilo <= 50) return 1080;
+        if (totalGiseiKilo <= 60) return 1240;
+        if (totalGiseiKilo <= 70) return 1430;
+        if (totalGiseiKilo <= 80) return 1640;
+        if (totalGiseiKilo <= 90) return 1830;
+        if (totalGiseiKilo <= 100) return 2010;
+
+        // （2）営業キロが100キロメートルを超える場合
+        const splitKilo = this.calculateSplitKiloOfKansen(totalGiseiKilo);
+        if (totalGiseiKilo <= 200) return this.addTax(this.round100(19.20 * splitKilo));
+        if (totalGiseiKilo <= 300) return this.addTax(this.round100(19.20 * 200 + 16.20 * (splitKilo - 200)));
+        if (totalGiseiKilo <= 600) return this.addTax(this.round100(19.20 * 200 + 16.20 * 100 + 12.85 * (splitKilo - 300)));
+        return this.addTax(this.round100(19.20 * 200 + 16.20 * 100 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
+    }
+
+    private calculateFare6(routeSegments: RouteSegment[]): number {
+        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
+        const totalGiseiKilo: number = Math.ceil(this.calculateTotalGiseiKilo(routeSegments) / 10);
+
+        // 第84条の４ 九州旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
+        if (totalGiseiKilo == 4 && totalEigyoKilo == 3) return 210;
+        if (totalGiseiKilo == 11 && totalEigyoKilo == 10) return 320;
+        if (totalGiseiKilo <= 3) return 200;
+        if (totalGiseiKilo <= 6) return 240;
+        if (totalGiseiKilo <= 10) return 270;
+
+        // 第77条の４ 九州旅客鉄道会社内の幹線内相互発着の大人片道普通旅客運賃
         if (this.isAllKansen(routeSegments)) {
+
+            // （1）営業キロが11キロメートルから100キロメートルまでの場合
+            if (totalEigyoKilo <= 15) return 340;
+            if (totalEigyoKilo <= 20) return 450;
+            if (totalEigyoKilo <= 25) return 560;
+            if (totalEigyoKilo <= 30) return 660;
+            if (totalEigyoKilo <= 35) return 760;
+            if (totalEigyoKilo <= 40) return 870;
+            if (totalEigyoKilo <= 45) return 990;
+            if (totalEigyoKilo <= 50) return 1090;
+            if (totalEigyoKilo <= 60) return 1300;
+            if (totalEigyoKilo <= 70) return 1510;
+            if (totalEigyoKilo <= 80) return 1730;
+            if (totalEigyoKilo <= 90) return 1930;
+            if (totalEigyoKilo <= 100) return 2130;
+
+            // （2）営業キロが100キロメートルを超える場合
+            // 別表第２号イの３ 九州旅客鉄道株式会社線の大人普通旅客運賃の特定額
+            if (301 <= totalEigyoKilo && totalEigyoKilo <= 320) return 6600;
+            if (321 <= totalEigyoKilo && totalEigyoKilo <= 340) return 6820;
+            if (341 <= totalEigyoKilo && totalEigyoKilo <= 360) return 7150;
+            if (381 <= totalEigyoKilo && totalEigyoKilo <= 400) return 7700;
+            if (421 <= totalEigyoKilo && totalEigyoKilo <= 440) return 8250;
+            if (441 <= totalEigyoKilo && totalEigyoKilo <= 460) return 8580;
+            if (461 <= totalEigyoKilo && totalEigyoKilo <= 480) return 8800;
+            if (481 <= totalEigyoKilo && totalEigyoKilo <= 500) return 9130;
+            if (521 <= totalEigyoKilo && totalEigyoKilo <= 540) return 9680;
+            if (561 <= totalEigyoKilo && totalEigyoKilo <= 580) return 10230;
+            if (581 <= totalEigyoKilo && totalEigyoKilo <= 600) return 10560;
+            if (641 <= totalEigyoKilo && totalEigyoKilo <= 680) return 11110;
+            if (681 <= totalEigyoKilo && totalEigyoKilo <= 720) return 11440;
+            if (721 <= totalEigyoKilo && totalEigyoKilo <= 760) return 11770;
+            if (841 <= totalEigyoKilo && totalEigyoKilo <= 880) return 12650;
+            if (881 <= totalEigyoKilo && totalEigyoKilo <= 920) return 12980;
+            if (921 <= totalEigyoKilo && totalEigyoKilo <= 960) return 13310;
+            if (961 <= totalEigyoKilo && totalEigyoKilo <= 1000) return 13640;
+            if (1081 <= totalEigyoKilo && totalEigyoKilo <= 1120) return 14520;
+            if (1121 <= totalEigyoKilo && totalEigyoKilo <= 1160) return 14850;
+            if (1161 <= totalEigyoKilo && totalEigyoKilo <= 1200) return 15180;
+            if (1201 <= totalEigyoKilo && totalEigyoKilo <= 1240) return 15510;
+            if (1321 <= totalEigyoKilo && totalEigyoKilo <= 1360) return 16390;
+            if (1361 <= totalEigyoKilo && totalEigyoKilo <= 1400) return 16720;
+            if (1401 <= totalEigyoKilo && totalEigyoKilo <= 1440) return 17050;
+            if (1521 <= totalEigyoKilo && totalEigyoKilo <= 1560) return 17930;
+            if (1561 <= totalEigyoKilo && totalEigyoKilo <= 1600) return 18260;
+            if (1601 <= totalEigyoKilo && totalEigyoKilo <= 1640) return 18590;
+            if (1641 <= totalEigyoKilo && totalEigyoKilo <= 1680) return 18920;
+            if (1761 <= totalEigyoKilo && totalEigyoKilo <= 1800) return 19800;
+            if (1801 <= totalEigyoKilo && totalEigyoKilo <= 1840) return 20130;
+            if (1841 <= totalEigyoKilo && totalEigyoKilo <= 1880) return 20460;
+            if (1961 <= totalEigyoKilo && totalEigyoKilo <= 2000) return 21340;
+
             const splitKilo = this.calculateSplitKiloOfKansen(totalEigyoKilo);
-            if (totalEigyoKilo <= 100) return this.addTax(this.ceil10(16.20 * splitKilo));
-            if (totalEigyoKilo <= 300) return this.addTax(this.round100(16.20 * splitKilo));
-            if (totalEigyoKilo <= 600) return this.addTax(this.round100(16.20 * 300 + 12.85 * (splitKilo - 300)));
-            else return this.addTax(this.round100(16.20 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
+            if (totalEigyoKilo <= 300) return this.addTax(this.round100(19.75 * splitKilo));
+            if (totalEigyoKilo <= 600) return this.addTax(this.round100(19.75 * 300 + 12.85 * (splitKilo - 300)));
+            return this.addTax(this.round100(19.75 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
         }
 
-        // 地方交通線内相互発着の大人片道普通旅客運賃
+        // 第77条の８ 九州旅客鉄道会社線内の地方交通線内相互発着の大人片道普通旅客運賃
         if (this.isAllLocal(routeSegments)) {
+            if (totalGiseiKilo == 11) return 320;
+            if (totalGiseiKilo == 16) return 360;
+            if (totalGiseiKilo == 17 && totalEigyoKilo == 15) return 360;
+            if (totalGiseiKilo == 21) return 470;
+            if (totalGiseiKilo == 22) return 470;
+            if (totalGiseiKilo == 26 && totalEigyoKilo == 23) return 580;
+            if (totalGiseiKilo == 31 && totalEigyoKilo == 28) return 700;
+            if (totalGiseiKilo == 36 && totalEigyoKilo == 32) return 840;
+            if (totalGiseiKilo == 41 && totalEigyoKilo == 37) return 940;
+            if (totalGiseiKilo == 46 && totalEigyoKilo == 41) return 1070;
+            if (totalGiseiKilo == 51 && totalEigyoKilo == 46) return 1170;
+            if (totalGiseiKilo == 61 && totalEigyoKilo == 55) return 1380;
+            if (totalGiseiKilo == 71 && totalEigyoKilo == 64) return 1610;
+            if (totalGiseiKilo == 81 && totalEigyoKilo == 73) return 1730;
+            if (totalGiseiKilo == 91 && totalEigyoKilo == 82) return 1950;
+            if (totalGiseiKilo == 101 && totalEigyoKilo == 91) return 2130;
+            if (totalGiseiKilo == 121) return 2670;
+            if (totalGiseiKilo == 141 && totalEigyoKilo == 128) return 3150;
+            if (totalGiseiKilo == 161 && totalEigyoKilo == 146) return 3580;
+            if (totalGiseiKilo == 181 && totalEigyoKilo == 164) return 4120;
 
-            // 第77条の5 3 次に定める営業キロの区間の大人片道普通旅客運賃は、次のとおり特定の額とする。
-            if (11 <= totalEigyoKilo && totalEigyoKilo <= 15) return 240;
-            if (16 <= totalEigyoKilo && totalEigyoKilo <= 20) return 330;
-            if (21 <= totalEigyoKilo && totalEigyoKilo <= 23) return 420;
-            if (24 <= totalEigyoKilo && totalEigyoKilo <= 28) return 510;
-            if (33 <= totalEigyoKilo && totalEigyoKilo <= 37) return 680;
-            if (42 <= totalEigyoKilo && totalEigyoKilo <= 46) return 860;
-            if (47 <= totalEigyoKilo && totalEigyoKilo <= 55) return 990;
-            if (56 <= totalEigyoKilo && totalEigyoKilo <= 64) return 1170;
-            if (65 <= totalEigyoKilo && totalEigyoKilo <= 73) return 1340;
-            if (74 <= totalEigyoKilo && totalEigyoKilo <= 82) return 1520;
-            if (83 <= totalEigyoKilo && totalEigyoKilo <= 91) return 1690;
-            if (101 <= totalEigyoKilo && totalEigyoKilo <= 110) return 1980;
-            if (292 <= totalEigyoKilo && totalEigyoKilo <= 310) return 5720;
+            // （1）擬制キロが11キロメートルから100キロメートルまでの場合
+            if (totalGiseiKilo <= 15) return 340;
+            if (totalGiseiKilo <= 20) return 450;
+            if (totalGiseiKilo <= 25) return 560;
+            if (totalGiseiKilo <= 30) return 660;
+            if (totalGiseiKilo <= 35) return 760;
+            if (totalGiseiKilo <= 40) return 870;
+            if (totalGiseiKilo <= 45) return 990;
+            if (totalGiseiKilo <= 50) return 1090;
+            if (totalGiseiKilo <= 60) return 1300;
+            if (totalGiseiKilo <= 70) return 1510;
+            if (totalGiseiKilo <= 80) return 1730;
+            if (totalGiseiKilo <= 90) return 1930;
+            if (totalGiseiKilo <= 100) return 2130;
 
-            // 第77条の5
-            const splitKilo = this.calculateSplitKiloOfKansen(totalEigyoKilo);
-            if (totalEigyoKilo <= 273) return this.addTax(this.round100(17.80 * splitKilo));
-            if (totalEigyoKilo <= 546) return this.addTax(this.round100(17.80 * 273 + 14.10 * (splitKilo - 273)));
-            else return this.addTax(this.round100(17.80 * 273 + 14.10 * 273 + 7.70 * (splitKilo - 546)));
-        }
+            // （2）擬制キロが100キロメートルを超える場合
+            // 別表第２号イの３ 九州旅客鉄道株式会社線の大人普通旅客運賃の特定額
+            if (301 <= totalGiseiKilo && totalGiseiKilo <= 320) return 6600;
+            if (321 <= totalGiseiKilo && totalGiseiKilo <= 340) return 6820;
+            if (341 <= totalGiseiKilo && totalGiseiKilo <= 360) return 7150;
+            if (381 <= totalGiseiKilo && totalGiseiKilo <= 400) return 7700;
+            if (421 <= totalGiseiKilo && totalGiseiKilo <= 440) return 8250;
+            if (441 <= totalGiseiKilo && totalGiseiKilo <= 460) return 8580;
+            if (461 <= totalGiseiKilo && totalGiseiKilo <= 480) return 8800;
+            if (481 <= totalGiseiKilo && totalGiseiKilo <= 500) return 9130;
+            if (521 <= totalGiseiKilo && totalGiseiKilo <= 540) return 9680;
+            if (561 <= totalGiseiKilo && totalGiseiKilo <= 580) return 10230;
+            if (581 <= totalGiseiKilo && totalGiseiKilo <= 600) return 10560;
+            if (641 <= totalGiseiKilo && totalGiseiKilo <= 680) return 11110;
+            if (681 <= totalGiseiKilo && totalGiseiKilo <= 720) return 11440;
+            if (721 <= totalGiseiKilo && totalGiseiKilo <= 760) return 11770;
+            if (841 <= totalGiseiKilo && totalGiseiKilo <= 880) return 12650;
+            if (881 <= totalGiseiKilo && totalGiseiKilo <= 920) return 12980;
+            if (921 <= totalGiseiKilo && totalGiseiKilo <= 960) return 13310;
+            if (961 <= totalGiseiKilo && totalGiseiKilo <= 1000) return 13640;
+            if (1081 <= totalGiseiKilo && totalGiseiKilo <= 1120) return 14520;
+            if (1121 <= totalGiseiKilo && totalGiseiKilo <= 1160) return 14850;
+            if (1161 <= totalGiseiKilo && totalGiseiKilo <= 1200) return 15180;
+            if (1201 <= totalGiseiKilo && totalGiseiKilo <= 1240) return 15510;
+            if (1321 <= totalGiseiKilo && totalGiseiKilo <= 1360) return 16390;
+            if (1361 <= totalGiseiKilo && totalGiseiKilo <= 1400) return 16720;
+            if (1401 <= totalGiseiKilo && totalGiseiKilo <= 1440) return 17050;
+            if (1521 <= totalGiseiKilo && totalGiseiKilo <= 1560) return 17930;
+            if (1561 <= totalGiseiKilo && totalGiseiKilo <= 1600) return 18260;
+            if (1601 <= totalGiseiKilo && totalGiseiKilo <= 1640) return 18590;
+            if (1641 <= totalGiseiKilo && totalGiseiKilo <= 1680) return 18920;
+            if (1761 <= totalGiseiKilo && totalGiseiKilo <= 1800) return 19800;
+            if (1801 <= totalGiseiKilo && totalGiseiKilo <= 1840) return 20130;
+            if (1841 <= totalGiseiKilo && totalGiseiKilo <= 1880) return 20460;
+            if (1961 <= totalGiseiKilo && totalGiseiKilo <= 2000) return 21340;
 
-        // 第81条 幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
-        if (this.isAllKansen(routeSegments) === false && this.isAllLocal(routeSegments) === false) {
-            const totalGiseiKilo: number = Math.ceil(this.calculateTotalGiseiKilo(routeSegments) / 10);
             const splitKilo = this.calculateSplitKiloOfKansen(totalGiseiKilo);
-            if (totalGiseiKilo <= 100) return this.addTax(this.ceil10(16.20 * splitKilo));
-            if (totalGiseiKilo <= 300) return this.addTax(this.round100(16.20 * splitKilo));
-            if (totalGiseiKilo <= 600) return this.addTax(this.round100(16.20 * 300 + 12.85 * (splitKilo - 300)));
-            else return this.addTax(this.round100(16.20 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
+            if (totalGiseiKilo <= 300) return this.addTax(this.round100(19.75 * splitKilo));
+            if (totalGiseiKilo <= 600) return this.addTax(this.round100(19.75 * 300 + 12.85 * (splitKilo - 300)));
+            return this.addTax(this.round100(19.75 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
         }
 
-        throw new Error(`calculateFare2でエラーが発生しました.`);
+        // 第81条の４ 九州旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
+        // （1）擬制キロが11キロメートルから100キロメートルまでの場合
+        if (totalGiseiKilo <= 15) return 340;
+        if (totalGiseiKilo <= 20) return 450;
+        if (totalGiseiKilo <= 25) return 560;
+        if (totalGiseiKilo <= 30) return 660;
+        if (totalGiseiKilo <= 35) return 760;
+        if (totalGiseiKilo <= 40) return 870;
+        if (totalGiseiKilo <= 45) return 990;
+        if (totalGiseiKilo <= 50) return 1090;
+        if (totalGiseiKilo <= 60) return 1300;
+        if (totalGiseiKilo <= 70) return 1510;
+        if (totalGiseiKilo <= 80) return 1730;
+        if (totalGiseiKilo <= 90) return 1930;
+        if (totalGiseiKilo <= 100) return 2130;
 
+        // （2）擬制キロが100キロメートルを超える場合
+        // 別表第２号イの３ 九州旅客鉄道株式会社線の大人普通旅客運賃の特定額
+        if (301 <= totalGiseiKilo && totalGiseiKilo <= 320) return 6600;
+        if (321 <= totalGiseiKilo && totalGiseiKilo <= 340) return 6820;
+        if (341 <= totalGiseiKilo && totalGiseiKilo <= 360) return 7150;
+        if (381 <= totalGiseiKilo && totalGiseiKilo <= 400) return 7700;
+        if (421 <= totalGiseiKilo && totalGiseiKilo <= 440) return 8250;
+        if (441 <= totalGiseiKilo && totalGiseiKilo <= 460) return 8580;
+        if (461 <= totalGiseiKilo && totalGiseiKilo <= 480) return 8800;
+        if (481 <= totalGiseiKilo && totalGiseiKilo <= 500) return 9130;
+        if (521 <= totalGiseiKilo && totalGiseiKilo <= 540) return 9680;
+        if (561 <= totalGiseiKilo && totalGiseiKilo <= 580) return 10230;
+        if (581 <= totalGiseiKilo && totalGiseiKilo <= 600) return 10560;
+        if (641 <= totalGiseiKilo && totalGiseiKilo <= 680) return 11110;
+        if (681 <= totalGiseiKilo && totalGiseiKilo <= 720) return 11440;
+        if (721 <= totalGiseiKilo && totalGiseiKilo <= 760) return 11770;
+        if (841 <= totalGiseiKilo && totalGiseiKilo <= 880) return 12650;
+        if (881 <= totalGiseiKilo && totalGiseiKilo <= 920) return 12980;
+        if (921 <= totalGiseiKilo && totalGiseiKilo <= 960) return 13310;
+        if (961 <= totalGiseiKilo && totalGiseiKilo <= 1000) return 13640;
+        if (1081 <= totalGiseiKilo && totalGiseiKilo <= 1120) return 14520;
+        if (1121 <= totalGiseiKilo && totalGiseiKilo <= 1160) return 14850;
+        if (1161 <= totalGiseiKilo && totalGiseiKilo <= 1200) return 15180;
+        if (1201 <= totalGiseiKilo && totalGiseiKilo <= 1240) return 15510;
+        if (1321 <= totalGiseiKilo && totalGiseiKilo <= 1360) return 16390;
+        if (1361 <= totalGiseiKilo && totalGiseiKilo <= 1400) return 16720;
+        if (1401 <= totalGiseiKilo && totalGiseiKilo <= 1440) return 17050;
+        if (1521 <= totalGiseiKilo && totalGiseiKilo <= 1560) return 17930;
+        if (1561 <= totalGiseiKilo && totalGiseiKilo <= 1600) return 18260;
+        if (1601 <= totalGiseiKilo && totalGiseiKilo <= 1640) return 18590;
+        if (1641 <= totalGiseiKilo && totalGiseiKilo <= 1680) return 18920;
+        if (1761 <= totalGiseiKilo && totalGiseiKilo <= 1800) return 19800;
+        if (1801 <= totalGiseiKilo && totalGiseiKilo <= 1840) return 20130;
+        if (1841 <= totalGiseiKilo && totalGiseiKilo <= 1880) return 20460;
+        if (1961 <= totalGiseiKilo && totalGiseiKilo <= 2000) return 21340;
+
+        const splitKilo = this.calculateSplitKiloOfKansen(totalGiseiKilo);
+        if (totalGiseiKilo <= 300) return this.addTax(this.round100(19.75 * splitKilo));
+        if (totalGiseiKilo <= 600) return this.addTax(this.round100(19.75 * 300 + 12.85 * (splitKilo - 300)));
+        return this.addTax(this.round100(19.75 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
     }
 
     private generateViaStrings(detailedPath: PathStep[]): string[] {
