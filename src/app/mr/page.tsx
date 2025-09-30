@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "JR運賃計算（経路入力）",
 };
 
-export default function MrPage() {
+export default function Page() {
   return (
     <Form />
   );
