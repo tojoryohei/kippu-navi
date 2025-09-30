@@ -218,7 +218,7 @@ class Calculator {
         for (let i = 0; i < path.length - 1; i++) {
             const line = path[i].lineName;
             if (line === null) continue;
-            const routeSegment: RouteSegment = load.getRouteSegment(path[i].stationName, path[i + 1].stationName, line);
+            const routeSegment: RouteSegment = load.getRouteSegment(line, path[i].stationName, path[i + 1].stationName);
             routeSegments.push(routeSegment);
         }
         return routeSegments;
@@ -257,7 +257,7 @@ class Calculator {
         for (let i = 0; i < correctedPath.length - 1; i++) {
             const line = correctedPath[i].lineName;
             if (line === null) continue;
-            const routeSegment = load.getRouteSegment(correctedPath[i].stationName, correctedPath[i + 1].stationName, line);
+            const routeSegment = load.getRouteSegment(line, correctedPath[i].stationName, correctedPath[i + 1].stationName);
 
             // 全ての駅間の駅名を取得
             allSections.add(routeSegment.stations.sort().join('-'));

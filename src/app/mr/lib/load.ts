@@ -35,8 +35,8 @@ class Load {
             const routesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'routes.json');
             const routesData: RouteSegment[] = JSON.parse(fs.readFileSync(routesPath, 'utf-8'));
             for (const route of routesData) {
-                // ★ 駅名のペアをソートして、常に一意なキーを作成する
-                const key = this.createRouteKey(route.stations[0], route.stations[1], route.line);
+                // 路線名と駅名のペアをソートして、常に一意なキーを作成する
+                const key = this.createRouteKey(route.line, route.stations[0], route.stations[1]);
                 this.routes.set(key, route);
             }
 
@@ -83,12 +83,12 @@ class Load {
         }
     }
 
-    private createRouteKey(stationName1: string, stationName2: string, line: string): string {
-        return [...[stationName1, stationName2].sort(), line].join('-');
+    private createRouteKey(line: string, stationName1: string, stationName2: string): string {
+        return [line, ...[stationName1, stationName2].sort()].join('-');
     }
 
-    public getRouteSegment(stationName1: string, stationName2: string, line: string): RouteSegment {
-        const key = this.createRouteKey(stationName1, stationName2, line);
+    public getRouteSegment(line: string, stationName1: string, stationName2: string): RouteSegment {
+        const key = this.createRouteKey(line, stationName1, stationName2);
         const routesSegment = this.routes.get(key);
         if (routesSegment === undefined) {
             throw new Error(` ${line}上に${stationName1}と${stationName2}間のデータが見つかりません.`);
