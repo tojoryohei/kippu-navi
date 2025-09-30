@@ -20,7 +20,8 @@ class Calculator {
         const routeSegments = this.convertPathStepsToRouteSegments(correctedPath);
         const totalEigyoKilo = this.calculateTotalEigyoKilo(routeSegments);
         const totalGiseiKilo = this.calculateTotalGiseiKilo(routeSegments);
-        const fare = this.calculateFareFromCorrectedPath(correctedPath);
+        const fare = this.calculateFareFromCorrectedPath(correctedPath)
+            + this.calculateBarrierFreeFeeFromCorrectedPath(correctedPath);
         const validDays = this.calculateValidDaysFromKilo(totalEigyoKilo);
 
         // 経由文字列の生成 (ユーザー入力の経路を使用)
@@ -66,13 +67,16 @@ class Calculator {
     }
 
     private correctPath(fullPath: PathStep[]): PathStep[] {
-        // 旅客営業規則第69条（特定区間における旅客運賃・料金計算の営業キロ又は運賃計算キロ）
-        fullPath = this.correctSpecificSections(fullPath);
 
-        // 旅客営業規則第86条（特定都区市内にある駅に関連する片道普通旅客運賃の計算方）
+        // 旅客営業規則第69条 特定区間における旅客運賃・料金計算の営業キロ又は運賃計算キロ
+        // fullPath = this.correctSpecificSections(fullPath);
+
+        // 旅客営業規則第70条 旅客が次に掲げる図の太線区間を通過する場合
+
+        // 旅客営業規則第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方
         fullPath = this.applyCityRule(fullPath);
 
-        // 旅客営業規則第87条（東京山手線内にある駅に関連する片道普通旅客運賃の計算方）
+        // 旅客営業規則第87条 東京山手線内にある駅に関連する片道普通旅客運賃の計算方
         fullPath = this.applyYamanoteRule(fullPath);
 
         return fullPath;
@@ -115,8 +119,11 @@ class Calculator {
         return -1;
     }
 
+    // 第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方
     private applyCityRule(fullPath: PathStep[]): PathStep[] {
         const cities = load.getCities();
+        const threshold: number = 2000;
+
         for (const city of cities) {
             const stationsInCity = new Set(city.stations);
 
@@ -136,7 +143,7 @@ class Calculator {
                         }
                     ];
                     const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
-                    if (this.calculateTotalEigyoKilo(routeSegments) > 2000)
+                    if (this.calculateTotalEigyoKilo(routeSegments) > threshold)
                         fullPath = applyCityRulePath;
                 }
             }
@@ -154,7 +161,7 @@ class Calculator {
                         ...fullPath.slice(changingIdx[changingIdx.length - 1] + 1)
                     ];
                     const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
-                    if (this.calculateTotalEigyoKilo(routeSegments) > 2000)
+                    if (this.calculateTotalEigyoKilo(routeSegments) > threshold)
                         fullPath = applyCityRulePath;
                 }
             }
@@ -162,9 +169,11 @@ class Calculator {
         return fullPath;
     }
 
+    // 第87条 東京山手線内にある駅に関連する片道普通旅客運賃の計算方
     private applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
         const yamanote = load.getYamanote();
         const stationsInYamanote = new Set(yamanote.stations);
+        const threshold: number = 1000;
 
         // 着駅適用
         if (stationsInYamanote.has(fullPath[fullPath.length - 1].stationName)) {
@@ -179,7 +188,7 @@ class Calculator {
                     { "stationName": yamanote.name, "lineName": null }
                 ];
                 const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
-                if (this.calculateTotalEigyoKilo(routeSegments) > 1000)
+                if (this.calculateTotalEigyoKilo(routeSegments) > threshold)
                     fullPath = applyCityRulePath;
             }
         }
@@ -197,7 +206,7 @@ class Calculator {
                     ...fullPath.slice(changingIdx[0] + 1)
                 ];
                 const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
-                if (this.calculateTotalEigyoKilo(routeSegments) > 1000)
+                if (this.calculateTotalEigyoKilo(routeSegments) > threshold)
                     fullPath = applyCityRulePath;
             }
         }
@@ -338,7 +347,7 @@ class Calculator {
 
     // 別表第２号イの４ 地方交通線の営業キロの区間
     private calculateSplitKiloOfLocal(totalKilo: number): number {
-        if (totalKilo <= 10) return totalKilo;
+        if (totalKilo <= 10) throw new Error(`calculateSplitKiloOfLocalで範囲外アクセスが発生しました.`);
         if (totalKilo <= 15) return 13;
         if (totalKilo <= 20) return 18;
         if (totalKilo <= 23) return 22;
@@ -396,7 +405,7 @@ class Calculator {
         if (totalKilo <= 1128) return 1110;
         if (totalKilo <= 1164) return 1146;
         if (totalKilo <= 1200) return 1182;
-        return totalKilo;
+        throw new Error(`calculateSplitKiloOfLocalで範囲外アクセスが発生しました.`);
     }
 
     private calculateFare(routeSegments: RouteSegment[]): number {
@@ -808,6 +817,11 @@ class Calculator {
         if (totalGiseiKilo <= 300) return this.addTax(this.round100(19.75 * splitKilo));
         if (totalGiseiKilo <= 600) return this.addTax(this.round100(19.75 * 300 + 12.85 * (splitKilo - 300)));
         return this.addTax(this.round100(19.75 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
+    }
+
+    //旅客営業規則第140号 鉄道駅バリアフリー料金
+    private calculateBarrierFreeFeeFromCorrectedPath(correctedPath: PathStep[]): number {
+        return 0;
     }
 
     private generateViaStrings(detailedPath: PathStep[]): string[] {
