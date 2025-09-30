@@ -77,7 +77,7 @@ export interface SpecificFare {
 }
 
 export interface SpecificSection {
-    incorrectPath: string[];
+    incorrectPath: PathStep[];
     correctPath: PathStep[];
 }
 

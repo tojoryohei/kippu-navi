@@ -84,32 +84,42 @@ class Calculator {
 
     private correctSpecificSections(fullPath: PathStep[]): PathStep[] {
         for (const rule of load.getSpecificSections()) {
-            const fullPathStations = fullPath.map(p => p.stationName);
-            const straddling = rule.correctPath
-                .slice(1)
-                .some(path => fullPathStations.includes(path.stationName));
+            const { incorrectPath, correctPath } = rule;
 
-            const startIndex = this.findSubPathIndex(fullPathStations, rule.incorrectPath);
+            const startIndex = this.findSubPathIndex(fullPath, incorrectPath);
 
-            if (straddling === false && startIndex !== -1) {
-                const correctPath = rule.correctPath;
-                const correctedPath = [
+            if (startIndex !== -1) {
+                const correctPathMiddleStations = correctPath.slice(1, -1).map(p => p.stationName);
+                const pathOutsideSegment = [
                     ...fullPath.slice(0, startIndex),
-                    ...correctPath,
-                    ...fullPath.slice(startIndex + rule.incorrectPath.length - 1)
+                    ...fullPath.slice(startIndex + incorrectPath.length)
                 ];
-                return correctedPath;
+
+                const isStraddling = correctPathMiddleStations.some(
+                    correctStation => pathOutsideSegment.some(p => p.stationName === correctStation)
+                );
+
+                if (!isStraddling) {
+                    const correctedPath = [
+                        ...fullPath.slice(0, startIndex),
+                        ...correctPath,
+                        ...fullPath.slice(startIndex + incorrectPath.length)
+                    ];
+                    fullPath = correctedPath;
+                }
             }
         }
+
         return fullPath;
     }
 
-    private findSubPathIndex(path: string[], subPath: string[]): number {
-        if (subPath.length > path.length) return -1;
+    private findSubPathIndex(path: PathStep[], subPath: PathStep[]): number {
+        if (subPath.length === 0 || subPath.length > path.length) return -1;
+
         for (let i = 0; i <= path.length - subPath.length; i++) {
             let match = true;
             for (let j = 0; j < subPath.length; j++) {
-                if (path[i + j] !== subPath[j]) {
+                if (path[i + j].stationName !== subPath[j].stationName) {
                     match = false;
                     break;
                 }
