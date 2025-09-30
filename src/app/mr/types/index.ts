@@ -71,6 +71,11 @@ export interface RouteSegment {
     company: number;
 }
 
+export interface SpecificFare {
+    sections: PathStep[];
+    fare: number;
+}
+
 export interface SpecificSection {
     incorrectPath: string[];
     correctPath: PathStep[];

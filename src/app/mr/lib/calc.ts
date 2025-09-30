@@ -1,6 +1,6 @@
 import { load } from '@/app/mr/lib/load';
 
-import { RouteRequest, ApiResponse, PathStep, RouteSegment, } from '@/app/mr/types';
+import { RouteRequest, ApiResponse, PathStep, RouteSegment } from '@/app/mr/types';
 
 class Calculator {
     public processRouteAndCalculateFare(request: RouteRequest): ApiResponse {
@@ -68,15 +68,15 @@ class Calculator {
 
     private correctPath(fullPath: PathStep[]): PathStep[] {
 
-        // 旅客営業規則第69条 特定区間における旅客運賃・料金計算の営業キロ又は運賃計算キロ
+        // 第69条 特定区間における旅客運賃・料金計算の営業キロ又は運賃計算キロ
         // fullPath = this.correctSpecificSections(fullPath);
 
-        // 旅客営業規則第70条 旅客が次に掲げる図の太線区間を通過する場合
+        // 第70条 旅客が次に掲げる図の太線区間を通過する場合
 
-        // 旅客営業規則第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方
+        // 第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方
         fullPath = this.applyCityRule(fullPath);
 
-        // 旅客営業規則第87条 東京山手線内にある駅に関連する片道普通旅客運賃の計算方
+        // 第87条 東京山手線内にある駅に関連する片道普通旅客運賃の計算方
         fullPath = this.applyYamanoteRule(fullPath);
 
         return fullPath;
@@ -242,6 +242,14 @@ class Calculator {
 
     private calculateFareFromCorrectedPath(correctedPath: PathStep[]): number {
         if (correctedPath.length === 1) return 0;
+
+        // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
+        const specificFares = load.getSpecificFares();
+        for (const specificFare of specificFares) {
+            if (JSON.stringify(correctedPath) === JSON.stringify(specificFare.sections)) {
+                return specificFare.fare;
+            }
+        }
 
         // 山手線内相互発着の場合
 
@@ -819,7 +827,7 @@ class Calculator {
         return this.addTax(this.round100(19.75 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
     }
 
-    //旅客営業規則第140号 鉄道駅バリアフリー料金
+    // 第140号 鉄道駅バリアフリー料金
     private calculateBarrierFreeFeeFromCorrectedPath(correctedPath: PathStep[]): number {
         return 0;
     }

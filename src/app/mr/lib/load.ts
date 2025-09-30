@@ -1,12 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 
-import { Station, Line, RouteSegment, SpecificSection, City } from '@/app/mr/types';
+import { Station, Line, RouteSegment, SpecificFare, SpecificSection, City } from '@/app/mr/types';
 
 class Load {
     private stations: Map<string, Station> = new Map();
     private lines: Map<string, Line> = new Map();
     private routes: Map<string, RouteSegment> = new Map();
+    private specificFares: SpecificFare[] = [];
     private specificSections: SpecificSection[] = [];
     private cities: City[] = [];
     private yamanote!: City;
@@ -40,9 +41,13 @@ class Load {
                 this.routes.set(key, route);
             }
 
+            // specificFares.jsonの読み込み
+            const specificFaresPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'specificFares.json');
+            this.specificFares = JSON.parse(fs.readFileSync(specificFaresPath, 'utf-8'));
+
             // specificSections.jsonの読み込み
-            const sectionsPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'specificSections.json');
-            this.specificSections = JSON.parse(fs.readFileSync(sectionsPath, 'utf-8'));
+            const specificSections = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'specificSections.json');
+            this.specificSections = JSON.parse(fs.readFileSync(specificSections, 'utf-8'));
 
             // cities.jsonの読み込み
             const citiesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'cities.json');
@@ -94,6 +99,10 @@ class Load {
             throw new Error(` ${line}上に${stationName1}と${stationName2}間のデータが見つかりません.`);
         }
         return routesSegment;
+    }
+
+    public getSpecificFares(): SpecificFare[] {
+        return this.specificFares;
     }
 
     public getSpecificSections(): SpecificSection[] {
