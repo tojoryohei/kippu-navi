@@ -1,6 +1,6 @@
 import { load } from '@/app/mr/lib/load';
 
-import { RouteRequest, ApiResponse, PathStep, RouteSegment } from '@/app/mr/types';
+import { RouteRequest, ApiResponse, PathStep, RouteSegment, TrainSpecificSection } from '@/app/mr/types';
 
 class Calculator {
     public processRouteAndCalculateFare(request: RouteRequest): ApiResponse {
@@ -234,6 +234,17 @@ class Calculator {
         return routeSegments;
     }
 
+    private convertPathStepsToRouteKeys(path: PathStep[]): string[] {
+        let routeKeys: string[] = [];
+        for (let i = 0; i < path.length - 1; i++) {
+            const line = path[i].lineName;
+            if (line === null) continue;
+            const routeKey: string = load.createRouteKey(line, path[i].stationName, path[i + 1].stationName);
+            routeKeys.push(routeKey);
+        }
+        return routeKeys;
+    }
+
     private calculateTotalEigyoKilo(routeSegments: RouteSegment[]): number {
         let totalEigyoKilo: number = 0;
         for (const routeSegment of routeSegments) {
@@ -261,68 +272,84 @@ class Calculator {
             }
         }
 
-        // 山手線内相互発着の場合
-
-        // 東京附近における電車特定区間内相互発着の場合
-
-        // 大阪附近における電車特定区間内相互発着の場合
-
-        const allSections = new Set<string>();
-        const paths: RouteSegment[] = [];
-        const pathsByCompany: RouteSegment[][] = [[], [], [], [], [], [], []];
+        const routeKeys = new Set<string>();
+        const routeSegments: RouteSegment[] = [];
+        const routeSegmentsByCompany: RouteSegment[][] = [[], [], [], [], [], [], []];
         // 0 = その他, 1 = JR北海道, 2 = JR東日本, 3 = JR東海, 4 = JR西日本, 5 = JR四国, 6 = JR九州
 
         for (let i = 0; i < correctedPath.length - 1; i++) {
             const line = correctedPath[i].lineName;
-            if (line === null) continue;
+            if (line === null) throw new Error(`calculateFareFromCorrectedPathでエラーが発生しました.`);
             const routeSegment = load.getRouteSegment(line, correctedPath[i].stationName, correctedPath[i + 1].stationName);
 
             // 全ての駅間の駅名を取得
-            allSections.add(routeSegment.stations.sort().join('-'));
-            paths.push(routeSegment);
+            routeKeys.add(load.createRouteKey(line, routeSegment.station0, routeSegment.station1));
+            routeSegments.push(routeSegment);
 
             // routeSegmentを会社ごとに分ける
-            pathsByCompany[routeSegment.company].push(routeSegment);
+            routeSegmentsByCompany[routeSegment.company].push(routeSegment);
+        }
+
+        // 第78条 電車特定区間内等の大人片道普通旅客運賃
+        // （1） 山手線内の駅相互発着の場合
+        if (this.isAllTrainSpecificSections("山手線内", [...routeKeys])) {
+            return this.calculateFareInYamanote(routeSegments);
+        }
+        // （2） イ 東京附近における電車特定区間内相互発着の場合
+        if (this.isAllTrainSpecificSections("東京附近", [...routeKeys])) {
+            return this.calculateFareInTokyo(routeSegments);
+        }
+        // （2） ロ 大阪附近における電車特定区間内相互発着の場合
+        if (this.isAllTrainSpecificSections("大阪附近", [...routeKeys])) {
+            return this.calculateFareInOsaka(routeSegments);
         }
 
         // 第85条 他の旅客鉄道会社線を連続して乗車する場合の大人片道普通旅客運賃
-        let fare: number = this.calculateFare(paths);
+        let fare: number = this.calculateFare(routeSegments);
 
         // （1）北海道旅客鉄道会社線の乗車区間に対する普通旅客運賃の加算額
-        if (0 < pathsByCompany[1].length) {
-            fare += this.calculateFare1(pathsByCompany[1]) - this.calculateFare(pathsByCompany[1]);
+        if (0 < routeSegmentsByCompany[1].length) {
+            fare += this.calculateFare1(routeSegmentsByCompany[1]) - this.calculateFare(routeSegmentsByCompany[1]);
         }
 
         // （2）四国旅客鉄道会社線の乗車区間に対する普通旅客運賃の加算額
-        if (0 < pathsByCompany[5].length) {
-            fare += this.calculateFare5(pathsByCompany[5]) - this.calculateFare(pathsByCompany[5]);
+        if (0 < routeSegmentsByCompany[5].length) {
+            fare += this.calculateFare5(routeSegmentsByCompany[5]) - this.calculateFare(routeSegmentsByCompany[5]);
         }
 
         // （3）九州旅客鉄道会社線の乗車区間に対する普通旅客運賃の加算額
-        if (0 < pathsByCompany[6].length) {
-            fare += this.calculateFare6(pathsByCompany[6]) - this.calculateFare(pathsByCompany[6]);
+        if (0 < routeSegmentsByCompany[6].length) {
+            fare += this.calculateFare6(routeSegmentsByCompany[6]) - this.calculateFare(routeSegmentsByCompany[6]);
         }
 
         // 第85条の２ 加算普通旅客運賃の適用区間及び額
-        if (allSections.has(["南千歳", "新千歳空港"].sort().join('-'))) {
+        if (routeKeys.has(load.createRouteKey("千歳支線", "南千歳", "新千歳空港"))) {
             fare += 20;
         }
-        if (allSections.has(["日根野", "りんくうタウン"].sort().join('-'))
-            && allSections.has(["りんくうタウン", "関西空港"].sort().join('-'))) {
+        if (routeKeys.has(load.createRouteKey("関西空港線", "日根野", "りんくうタウン"))
+            && routeKeys.has(load.createRouteKey("関西空港線", "りんくうタウン", "関西空港"))) {
             fare += 220;
-        } else if (allSections.has(["日根野", "りんくうタウン"].sort().join('-'))) {
+        } else if (routeKeys.has(load.createRouteKey("関西空港線", "日根野", "りんくうタウン"))) {
             fare += 160;
-        } else if (allSections.has(["りんくうタウン", "関西空港"].sort().join('-'))) {
+        } else if (routeKeys.has(load.createRouteKey("関西空港線", "りんくうタウン", "関西空港"))) {
             fare += 170;
         }
-        if (allSections.has(["児島", "宇多津"].sort().join('-'))) {
+        if (routeKeys.has(load.createRouteKey("本四備讃", "児島", "宇多津"))) {
             fare += 110;
         }
-        if (allSections.has(["田吉", "宮崎空港"].sort().join('-'))) {
+        if (routeKeys.has(load.createRouteKey("宮崎空港線", "田吉", "宮崎空港"))) {
             fare += 130;
         }
 
         return fare;
+    }
+
+    private isAllTrainSpecificSections(specificSectionName: keyof TrainSpecificSection, routeKeys: string[]): boolean {
+        const trainSpecificSection = load.getTrainSpecificSections(specificSectionName);
+        for (const routeKey of routeKeys) {
+            if (routeKey in trainSpecificSection === false) return false;
+        }
+        return true;
     }
 
     private isAllKansen(routeSegments: RouteSegment[]): boolean {
@@ -337,6 +364,10 @@ class Calculator {
             if (routeSegment.isLocal === false) return false;
         }
         return true;
+    }
+
+    private floor10(n: number): number {
+        return Math.floor(n / 10) * 10;
     }
 
     private ceil10(n: number): number {
@@ -482,6 +513,53 @@ class Calculator {
         if (totalGiseiKilo <= 300) return this.addTax(this.round100(16.20 * splitKilo));
         if (totalGiseiKilo <= 600) return this.addTax(this.round100(16.20 * 300 + 12.85 * (splitKilo - 300)));
         return this.addTax(this.round100(16.20 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
+    }
+
+    private calculateFareInYamanote(routeSegments: RouteSegment[]): number {
+        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
+
+        // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
+        if (totalEigyoKilo <= 3) return 140;
+        if (totalEigyoKilo <= 6) return 160;
+        if (totalEigyoKilo <= 10) return 170;
+
+        const splitKilo: number = this.calculateSplitKiloOfKansen(totalEigyoKilo);
+        if (totalEigyoKilo <= 100) return this.floor10(this.ceil10(13.25 * splitKilo) * 1.1);
+        if (totalEigyoKilo <= 300) return this.floor10(this.round100(13.25 * splitKilo) * 1.1);
+
+        throw new Error(`calculateFareInYamanoteで範囲外アクセスが発生しました.`);
+    }
+
+    private calculateFareInTokyo(routeSegments: RouteSegment[]): number {
+        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
+
+        // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
+        if (totalEigyoKilo <= 3) return 140;
+        if (totalEigyoKilo <= 6) return 160;
+        if (totalEigyoKilo <= 10) return 170;
+
+        const splitKilo: number = this.calculateSplitKiloOfKansen(totalEigyoKilo);
+        if (totalEigyoKilo <= 100) return this.floor10(this.ceil10(15.30 * splitKilo) * 1.1);
+        if (totalEigyoKilo <= 300) return this.floor10(this.round100(15.30 * splitKilo) * 1.1);
+        if (totalEigyoKilo <= 600) return this.floor10(this.round100(15.30 * 300 + 12.15 * (splitKilo - 300) * 1.1));
+
+        throw new Error(`calculateFareInTokyoで範囲外アクセスが発生しました.`);
+    }
+
+    private calculateFareInOsaka(routeSegments: RouteSegment[]): number {
+        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
+
+        // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
+        if (totalEigyoKilo <= 3) return 140;
+        if (totalEigyoKilo <= 6) return 170;
+        if (totalEigyoKilo <= 10) return 190;
+
+        const splitKilo: number = this.calculateSplitKiloOfKansen(totalEigyoKilo);
+        if (totalEigyoKilo <= 100) return this.addTax(this.ceil10(15.50 * splitKilo));
+        if (totalEigyoKilo <= 300) return this.addTax(this.round100(15.50 * splitKilo));
+        if (totalEigyoKilo <= 600) return this.addTax(this.round100(15.50 * 300 + 12.30 * (splitKilo - 300)));
+
+        throw new Error(`calculateFareInOsakaで範囲外アクセスが発生しました.`);
     }
 
     private calculateFare1(routeSegments: RouteSegment[]): number {
@@ -839,6 +917,10 @@ class Calculator {
 
     // 第140号 鉄道駅バリアフリー料金
     private calculateBarrierFreeFeeFromCorrectedPath(correctedPath: PathStep[]): number {
+        const routeKeys = this.convertPathStepsToRouteKeys(correctedPath);
+        if (this.isAllTrainSpecificSections("東京附近", routeKeys)) return 10;
+        if (this.isAllTrainSpecificSections("大阪附近", routeKeys)) return 10;
+        if (this.isAllTrainSpecificSections("名古屋附近", routeKeys)) return 10;
         return 0;
     }
 

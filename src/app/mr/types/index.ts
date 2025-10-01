@@ -64,7 +64,8 @@ export interface ApiResponse {
 
 export interface RouteSegment {
     line: string;
-    stations: [string, string];
+    station0: string;
+    station1: string;
     eigyoKilo: number;
     giseiKilo: number;
     isLocal: boolean;
@@ -79,6 +80,20 @@ export interface SpecificFare {
 export interface SpecificSection {
     incorrectPath: PathStep[];
     correctPath: PathStep[];
+}
+
+export interface Section {
+    line: string;
+    station0: string;
+    station1: string;
+}
+
+export interface TrainSpecificSection {
+    山手線内: Set<string>;
+    東京附近: Set<string>;
+    大阪附近: Set<string>;
+    名古屋附近: Set<string>;
+    電車大環状線: Set<string>;
 }
 
 export interface City {

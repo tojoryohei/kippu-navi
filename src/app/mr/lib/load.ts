@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { Station, Line, RouteSegment, SpecificFare, SpecificSection, City } from '@/app/mr/types';
+import { Station, Line, RouteSegment, SpecificFare, SpecificSection, City, TrainSpecificSection } from '@/app/mr/types';
 
 class Load {
     private stations: Map<string, Station> = new Map();
@@ -9,6 +9,7 @@ class Load {
     private routes: Map<string, RouteSegment> = new Map();
     private specificFares: SpecificFare[] = [];
     private specificSections: SpecificSection[] = [];
+    private trainSpecificSections!: TrainSpecificSection;
     private cities: City[] = [];
     private yamanote!: City;
 
@@ -18,12 +19,10 @@ class Load {
 
     private loadData() {
         try {
-            // stations.jsonの読み込み
-            const stationPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'stations.json');
-            const stationsData: Station[] = JSON.parse(fs.readFileSync(stationPath, 'utf-8'));
-            for (const station of stationsData) {
-                this.stations.set(station.name, station);
-            }
+
+            // cities.jsonの読み込み
+            const citiesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'cities.json');
+            this.cities = JSON.parse(fs.readFileSync(citiesPath, 'utf-8'));
 
             // lines.jsonの読み込み
             const linesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'lines.json');
@@ -37,7 +36,7 @@ class Load {
             const routesData: RouteSegment[] = JSON.parse(fs.readFileSync(routesPath, 'utf-8'));
             for (const route of routesData) {
                 // 路線名と駅名のペアをソートして、常に一意なキーを作成する
-                const key = this.createRouteKey(route.line, route.stations[0], route.stations[1]);
+                const key = this.createRouteKey(route.line, route.station0, route.station1);
                 this.routes.set(key, route);
             }
 
@@ -49,9 +48,28 @@ class Load {
             const specificSections = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'specificSections.json');
             this.specificSections = JSON.parse(fs.readFileSync(specificSections, 'utf-8'));
 
-            // cities.jsonの読み込み
-            const citiesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'cities.json');
-            this.cities = JSON.parse(fs.readFileSync(citiesPath, 'utf-8'));
+            // stations.jsonの読み込み
+            const stationPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'stations.json');
+            const stationsData: Station[] = JSON.parse(fs.readFileSync(stationPath, 'utf-8'));
+            for (const station of stationsData) {
+                this.stations.set(station.name, station);
+            }
+
+            // trainSpecificSections.jsonの読み込み
+            const trainSpecificSections = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'trainSpecificSections.json');
+            const rawData: Record<string, { line: string; station0: string; station1: string; }[]> = JSON.parse(fs.readFileSync(trainSpecificSections, 'utf-8'));
+            const transformedSections = {} as TrainSpecificSection;
+            for (const sectionName in rawData) {
+                if (Object.prototype.hasOwnProperty.call(rawData, sectionName)) {
+                    const key = sectionName as keyof TrainSpecificSection;
+                    const segments = rawData[key];
+                    const routeKeys = segments.map(segment =>
+                        this.createRouteKey(segment.line, segment.station0, segment.station1)
+                    );
+                    transformedSections[key] = new Set(routeKeys);
+                }
+            }
+            this.trainSpecificSections = transformedSections;
 
             // yamanote.jsonの読み込み
             const yamanotePath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'yamanote.json');
@@ -88,7 +106,7 @@ class Load {
         }
     }
 
-    private createRouteKey(line: string, stationName1: string, stationName2: string): string {
+    public createRouteKey(line: string, stationName1: string, stationName2: string): string {
         return [line, ...[stationName1, stationName2].sort()].join('-');
     }
 
@@ -107,6 +125,10 @@ class Load {
 
     public getSpecificSections(): SpecificSection[] {
         return this.specificSections;
+    }
+
+    public getTrainSpecificSections(specificSectionName: keyof TrainSpecificSection): Set<string> {
+        return this.trainSpecificSections[specificSectionName];
     }
 
     public getCities(): City[] {
