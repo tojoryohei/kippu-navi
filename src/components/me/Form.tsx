@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useForm, Controller, SubmitHandler, useFieldArray } from "react-hook-form";
 import type { SingleValue } from "react-select";
 
-import stationData from "@/app/mr/data/stations.json";
-import lineData from "@/app/mr/data/lines.json";
-import SelectStation from "@/app/mr/components/SelectStation";
-import SelectLine from "@/app/mr/components/SelectLine";
+import stationData from "@/app/me/data/stations.json";
+import lineData from "@/app/me/data/lines.json";
+import SelectStation from "@/components/me/SelectStation";
+import SelectLine from "@/components/me/SelectLine";
 
-import { Station, Line, ApiResponse, IFormInput, PathStep, RouteRequest } from "@/app/mr/types";
+import { Station, Line, ApiResponse, IFormInput, PathStep, RouteRequest } from "@/app/me/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 
@@ -103,7 +103,7 @@ export default function Form() {
         }
 
         try {
-            const response = await fetch('/api/mr', {
+            const response = await fetch('/api/me', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(apiRequestBody),
