@@ -1,4 +1,4 @@
-import { load } from '@/app/mr/lib/load';
+import { load } from '@/app/me/lib/load';
 
 import { RouteRequest, ApiResponse, PathStep, RouteSegment, TrainSpecificSection } from '@/app/mr/types';
 
