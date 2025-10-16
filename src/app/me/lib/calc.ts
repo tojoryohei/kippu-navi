@@ -1,6 +1,6 @@
 import { load } from '@/app/me/lib/load';
 
-import { RouteRequest, ApiResponse, PathStep, RouteSegment, TrainSpecificSection } from '@/app/mr/types';
+import { RouteRequest, ApiResponse, PathStep, RouteSegment, TrainSpecificSection } from '@/app/me/types';
 
 class Calculator {
     public processRouteAndCalculateFare(request: RouteRequest): ApiResponse {
