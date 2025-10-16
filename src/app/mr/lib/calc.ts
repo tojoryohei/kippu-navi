@@ -20,13 +20,13 @@ class Calculator {
         const routeSegments = this.convertPathStepsToRouteSegments(correctedPath);
         const totalEigyoKilo = this.calculateTotalEigyoKilo(routeSegments);
         const totalGiseiKilo = this.calculateTotalGiseiKilo(routeSegments);
-        const fare = this.calculateFareFromCorrectedPath(correctedPath)
-            + this.calculateBarrierFreeFeeFromCorrectedPath(correctedPath);
+        const fare = this.calculateFareFromCorrectedPath(correctedPath);
+        const barrierFreeFee = this.calculateBarrierFreeFeeFromCorrectedPath(correctedPath);
+        console.log(this.calculateBarrierFreeFeeFromCorrectedPath(correctedPath));
         const validDays = this.calculateValidDaysFromKilo(totalEigyoKilo);
 
         // 経由文字列の生成 (ユーザー入力の経路を使用)
-        const viaLines = this.generateViaStrings(correctedPath);
-        const printedViaLines = this.generatePrintedViaStrings(viaLines);
+        const printedViaLines = this.generatePrintedViaStrings(routeSegments);
 
         return {
             totalEigyoKilo,
@@ -109,7 +109,6 @@ class Calculator {
                 }
             }
         }
-
         return fullPath;
     }
 
@@ -141,7 +140,27 @@ class Calculator {
             if (stationsInCity.has(fullPath[fullPath.length - 1].stationName)) {
                 let changingIdx: number[] = [];
                 for (let i = 0; i < fullPath.length - 1; i++) {
-                    if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
+                    if (i !== 0 &&
+                        fullPath[i - 1].stationName === "加島" &&
+                        fullPath[i].stationName === "尼崎" &&
+                        fullPath[i + 1].stationName === "塚本")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        fullPath[i - 1].stationName === "塚本" &&
+                        fullPath[i].stationName === "尼崎" &&
+                        fullPath[i + 1].stationName === "加島")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        fullPath[i - 1].stationName === "加美" &&
+                        fullPath[i].stationName === "久宝寺" &&
+                        fullPath[i + 1].stationName === "新加美")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        fullPath[i - 1].stationName === "新加美" &&
+                        fullPath[i].stationName === "久宝寺" &&
+                        fullPath[i + 1].stationName === "加美")
+                        changingIdx.pop();
+                    else if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
                         changingIdx.push(i);
                 }
                 if (changingIdx.length === 1 || changingIdx.length === 2) {
@@ -162,7 +181,27 @@ class Calculator {
             if (stationsInCity.has(fullPath[0].stationName)) {
                 let changingIdx: number[] = [];
                 for (let i = 0; i < fullPath.length - 1; i++) {
-                    if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
+                    if (i !== 0 &&
+                        fullPath[i - 1].stationName === "加島" &&
+                        fullPath[i].stationName === "尼崎" &&
+                        fullPath[i + 1].stationName === "塚本")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        fullPath[i - 1].stationName === "塚本" &&
+                        fullPath[i].stationName === "尼崎" &&
+                        fullPath[i + 1].stationName === "加島")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        fullPath[i - 1].stationName === "加美" &&
+                        fullPath[i].stationName === "久宝寺" &&
+                        fullPath[i + 1].stationName === "新加美")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        fullPath[i - 1].stationName === "新加美" &&
+                        fullPath[i].stationName === "久宝寺" &&
+                        fullPath[i + 1].stationName === "加美")
+                        changingIdx.pop();
+                    else if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
                         changingIdx.push(i);
                 }
                 if (changingIdx.length === 1 || changingIdx.length === 2) {
@@ -283,7 +322,7 @@ class Calculator {
             const routeSegment = load.getRouteSegment(line, correctedPath[i].stationName, correctedPath[i + 1].stationName);
 
             // 全ての駅間の駅名を取得
-            routeKeys.add(load.createRouteKey(line, routeSegment.station0, routeSegment.station1));
+            routeKeys.add(load.createRouteKey(routeSegment.kana, routeSegment.station0, routeSegment.station1));
             routeSegments.push(routeSegment);
 
             // routeSegmentを会社ごとに分ける
@@ -323,21 +362,21 @@ class Calculator {
         }
 
         // 第85条の２ 加算普通旅客運賃の適用区間及び額
-        if (routeKeys.has(load.createRouteKey("千歳支線", "南千歳", "新千歳空港"))) {
+        if (routeKeys.has(load.createRouteKey("チトセ２", "南千歳", "新千歳空港"))) {
             fare += 20;
         }
-        if (routeKeys.has(load.createRouteKey("関西空港線", "日根野", "りんくうタウン"))
-            && routeKeys.has(load.createRouteKey("関西空港線", "りんくうタウン", "関西空港"))) {
+        if (routeKeys.has(load.createRouteKey("カンク", "日根野", "りんくうタウン"))
+            && routeKeys.has(load.createRouteKey("カンク", "りんくうタウン", "関西空港"))) {
             fare += 220;
-        } else if (routeKeys.has(load.createRouteKey("関西空港線", "日根野", "りんくうタウン"))) {
+        } else if (routeKeys.has(load.createRouteKey("カンク", "日根野", "りんくうタウン"))) {
             fare += 160;
-        } else if (routeKeys.has(load.createRouteKey("関西空港線", "りんくうタウン", "関西空港"))) {
+        } else if (routeKeys.has(load.createRouteKey("カンク", "りんくうタウン", "関西空港"))) {
             fare += 170;
         }
-        if (routeKeys.has(load.createRouteKey("本四備讃", "児島", "宇多津"))) {
+        if (routeKeys.has(load.createRouteKey("ヒサセ", "児島", "宇多津"))) {
             fare += 110;
         }
-        if (routeKeys.has(load.createRouteKey("宮崎空港線", "田吉", "宮崎空港"))) {
+        if (routeKeys.has(load.createRouteKey("ミヤクウ", "田吉", "宮崎空港"))) {
             fare += 130;
         }
 
@@ -915,7 +954,7 @@ class Calculator {
         return this.addTax(this.round100(19.75 * 300 + 12.85 * 300 + 7.05 * (splitKilo - 600)));
     }
 
-    // 第140号 鉄道駅バリアフリー料金
+    // 第140条 鉄道駅バリアフリー料金
     private calculateBarrierFreeFeeFromCorrectedPath(correctedPath: PathStep[]): number {
         const routeKeys = this.convertPathStepsToRouteKeys(correctedPath);
         if (this.isAllTrainSpecificSections("東京附近", routeKeys)) return 10;
@@ -924,24 +963,19 @@ class Calculator {
         return 0;
     }
 
-    private generateViaStrings(detailedPath: PathStep[]): string[] {
+    private generatePrintedViaStrings(routeSegments: RouteSegment[]): string[] {
         let viaLines: string[] = [];
-        for (const path of detailedPath) {
-            if (path.lineName !== null && (viaLines.length === 0 || viaLines[viaLines.length - 1] !== path.lineName))
-                viaLines.push(path.lineName);
+        for (const routeSegment of routeSegments) {
+            if (viaLines.length === 0 || (viaLines[viaLines.length - 1] !== routeSegment.kana))
+                viaLines.push(routeSegment.kana);
         }
-        return viaLines;
-    }
-
-    private generatePrintedViaStrings(viaStrings: string[]): string[] {
-        let printViaStrings: string[] = [];
-        for (const viaString of viaStrings) {
-            const viaPrintedString = load.getPrintedViaStringByViaString(viaString);
-            if (viaPrintedString !== null) {
-                printViaStrings.push(viaPrintedString);
-            }
+        let printedViaLines: string[] = [];
+        for (const viaLine of viaLines) {
+            const printing = load.getPrinting(viaLine)
+            if (printing !== null)
+                printedViaLines.push(printing);
         }
-        return printViaStrings;
+        return printedViaLines;
     }
 
     private calculateValidDaysFromKilo(totalEigyoKilo: number): number {

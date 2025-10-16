@@ -1,16 +1,17 @@
 import fs from 'fs';
 import path from 'path';
 
-import { Station, Line, RouteSegment, SpecificFare, SpecificSection, City, TrainSpecificSection } from '@/app/mr/types';
+import { City, Line, Printing, RouteSegment, SpecificFare, SpecificSection, Station, TrainSpecificSection } from '@/app/mr/types';
 
 class Load {
-    private stations: Map<string, Station> = new Map();
+    private cities: City[] = [];
     private lines: Map<string, Line> = new Map();
+    private printings: Map<string, string> = new Map();
     private routes: Map<string, RouteSegment> = new Map();
     private specificFares: SpecificFare[] = [];
     private specificSections: SpecificSection[] = [];
+    private stations: Map<string, Station> = new Map();
     private trainSpecificSections!: TrainSpecificSection;
-    private cities: City[] = [];
     private yamanote!: City;
 
     constructor () {
@@ -29,6 +30,13 @@ class Load {
             const linesData: Line[] = JSON.parse(fs.readFileSync(linesPath, 'utf-8'));
             for (const line of linesData) {
                 this.lines.set(line.name, line);
+            }
+
+            // printings.jsonの読み込み
+            const printingsList = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'printings.json');
+            const printingsData: Printing[] = JSON.parse(fs.readFileSync(printingsList, 'utf-8'));
+            for (const printing of printingsData) {
+                this.printings.set(printing.kana, printing.print);
             }
 
             // routes.jsonの読み込み
@@ -96,16 +104,6 @@ class Load {
         return line;
     }
 
-    public getPrintedViaStringByViaString(viaString: string): string | null {
-        const printedViaString = this.lines.get(viaString)?.printedName;
-        if (printedViaString === undefined) {
-            throw new Error(` ${printedViaString} が見つかりません.`);
-        }
-        else {
-            return printedViaString;
-        }
-    }
-
     public createRouteKey(line: string, stationName1: string, stationName2: string): string {
         return [line, ...[stationName1, stationName2].sort()].join('-');
     }
@@ -137,6 +135,10 @@ class Load {
 
     public getYamanote(): City {
         return this.yamanote;
+    }
+
+    public getPrinting(kana: string): string | null {
+        return this.printings.get(kana) ?? null;
     }
 }
 

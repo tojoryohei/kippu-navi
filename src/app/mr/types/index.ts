@@ -23,7 +23,6 @@ export interface SelectStationProps {
 
 export interface Line {
     name: string;
-    printedName: string | null;
     stations: string[];
 }
 
@@ -64,6 +63,7 @@ export interface ApiResponse {
 
 export interface RouteSegment {
     line: string;
+    kana: string;
     station0: string;
     station1: string;
     eigyoKilo: number;
@@ -99,4 +99,9 @@ export interface TrainSpecificSection {
 export interface City {
     name: string;
     stations: string[];
+}
+
+export interface Printing {
+    kana: string;
+    print: string;
 }
