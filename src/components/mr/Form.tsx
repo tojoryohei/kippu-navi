@@ -102,6 +102,21 @@ export default function Form() {
             return;
         }
 
+        if (100 < apiRequestBody.path.length) {
+            setError('経路が長すぎます');
+            setIsLoading(false);
+            return;
+        }
+        let stations = new Set<string>();
+        for (let i = 0; i < apiRequestBody.path.length; i++) {
+            stations.add(apiRequestBody.path[i].stationName);
+        }
+        if (!apiRequestBody || apiRequestBody.path.length < 2 || stations.size === 1) {
+            setError('不正な経路です');
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const response = await fetch('/api/mr', {
                 method: 'POST',
@@ -118,7 +133,6 @@ export default function Form() {
 
         } catch (err) {
             setError("計算に失敗しました。");
-            console.error(err);
         } finally {
             setIsLoading(false);
         }

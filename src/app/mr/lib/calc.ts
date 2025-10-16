@@ -20,9 +20,8 @@ class Calculator {
         const routeSegments = this.convertPathStepsToRouteSegments(correctedPath);
         const totalEigyoKilo = this.calculateTotalEigyoKilo(routeSegments);
         const totalGiseiKilo = this.calculateTotalGiseiKilo(routeSegments);
-        const fare = this.calculateFareFromCorrectedPath(correctedPath);
-        const barrierFreeFee = this.calculateBarrierFreeFeeFromCorrectedPath(correctedPath);
-        console.log(this.calculateBarrierFreeFeeFromCorrectedPath(correctedPath));
+        const fare = this.calculateFareFromCorrectedPath(correctedPath)
+            + this.calculateBarrierFreeFeeFromCorrectedPath(correctedPath);
         const validDays = this.calculateValidDaysFromKilo(totalEigyoKilo);
 
         // 経由文字列の生成 (ユーザー入力の経路を使用)
