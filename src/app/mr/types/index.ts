@@ -83,7 +83,7 @@ export interface SpecificSection {
 }
 
 export interface Section {
-    line: string;
+    kana: string;
     station0: string;
     station1: string;
 }

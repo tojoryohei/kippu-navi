@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { City, Line, Printing, RouteSegment, SpecificFare, SpecificSection, Station, TrainSpecificSection } from '@/app/mr/types';
+import { City, Line, Printing, RouteSegment, Section, SpecificFare, SpecificSection, Station, TrainSpecificSection } from '@/app/mr/types';
 
 class Load {
     private cities: City[] = [];
@@ -65,14 +65,14 @@ class Load {
 
             // trainSpecificSections.jsonの読み込み
             const trainSpecificSections = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'trainSpecificSections.json');
-            const rawData: Record<string, { line: string; station0: string; station1: string; }[]> = JSON.parse(fs.readFileSync(trainSpecificSections, 'utf-8'));
+            const rawData: Record<string, Section[]> = JSON.parse(fs.readFileSync(trainSpecificSections, 'utf-8'));
             const transformedSections = {} as TrainSpecificSection;
             for (const sectionName in rawData) {
                 if (Object.prototype.hasOwnProperty.call(rawData, sectionName)) {
                     const key = sectionName as keyof TrainSpecificSection;
                     const segments = rawData[key];
                     const routeKeys = segments.map(segment =>
-                        this.createRouteKey(segment.line, segment.station0, segment.station1)
+                        this.createRouteKey(segment.kana, segment.station0, segment.station1)
                     );
                     transformedSections[key] = new Set(routeKeys);
                 }
