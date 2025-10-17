@@ -963,12 +963,12 @@ class Calculator {
     }
 
     private generatePrintedViaStrings(routeSegments: RouteSegment[]): string[] {
-        let viaLines: string[] = [];
+        const viaLines: string[] = [];
         for (const routeSegment of routeSegments) {
             if (viaLines.length === 0 || (viaLines[viaLines.length - 1] !== routeSegment.kana))
                 viaLines.push(routeSegment.kana);
         }
-        let printedViaLines: string[] = [];
+        const printedViaLines: string[] = [];
         for (const viaLine of viaLines) {
             const printing = load.getPrinting(viaLine)
             if (printing !== null)
