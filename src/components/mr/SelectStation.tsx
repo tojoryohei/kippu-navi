@@ -22,6 +22,12 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: Sel
 
     const filterOption = (option: FilterOptionOption<Station>, rawInput: string) => {
         const target = option.data;
+        rawInput = rawInput.replace('j', 'Ｊ')
+        rawInput = rawInput.replace('ｊ', 'Ｊ')
+        rawInput = rawInput.replace('J', 'Ｊ')
+        rawInput = rawInput.replace('r', 'Ｒ')
+        rawInput = rawInput.replace('ｒ', 'Ｒ')
+        rawInput = rawInput.replace('R', 'Ｒ')
         rawInput = rawInput.replace('ヶ', 'ケ')
         return target.name.startsWith(rawInput) || target.kana.startsWith(rawInput);
     };
