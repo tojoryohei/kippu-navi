@@ -1869,7 +1869,7 @@
     {"line": "山陽本線", "kana": "サンヨ", "station0": "神戸市内", "station1": "朝霧", "eigyoKilo": 170, "giseiKilo": 170, "isLocal": false, "company": 4},
     {"line": "山陽本線", "kana": "サンヨ", "station0": "八本松", "station1": "広島市内", "eigyoKilo": 258, "giseiKilo": 258, "isLocal": false, "company": 4},
     {"line": "山陽本線", "kana": "サンヨ", "station0": "広島市内", "station1": "廿日市", "eigyoKilo": 155, "giseiKilo": 155, "isLocal": false, "company": 4},
-    {"line": "山陽本線", "kana": "サンヨ", "station0": "下関", "station1": "北九州市内", "eigyoKilo": 118, "giseiKilo": 118, "isLocal": false, "company": 4},
+    {"line": "山陽本線", "kana": "サンヨ", "station0": "下関", "station1": "北九州市内", "eigyoKilo": 118, "giseiKilo": 118, "isLocal": false, "company": 6},
     {"line": "和田岬支線", "kana": "サンヨ２", "station0": "兵庫", "station1": "和田岬", "eigyoKilo": 27, "giseiKilo": 27, "isLocal": false, "company": 4},
     {"line": "篠ノ井線", "kana": "シノノ", "station0": "塩尻", "station1": "広丘", "eigyoKilo": 38, "giseiKilo": 38, "isLocal": false, "company": 3},
     {"line": "篠ノ井線", "kana": "シノノ", "station0": "広丘", "station1": "村井", "eigyoKilo": 30, "giseiKilo": 30, "isLocal": false, "company": 3},
