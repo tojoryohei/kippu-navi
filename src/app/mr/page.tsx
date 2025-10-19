@@ -2,11 +2,14 @@ import Form from "@/components/mr/Form"
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "JR運賃計算（経路入力）",
+  title: "運賃計算（経路入力）",
 };
 
 export default function Page() {
   return (
-    <Form />
+    <main className="max-w-md mx-auto">
+      <h1 className="text-xl font-bold m-4">JR運賃計算（経路入力）</h1>
+      <Form />
+    </main>
   );
 }

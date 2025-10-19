@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MdMenu, MdClear, MdHome, MdOutlineCalculate } from "react-icons/md";
+import { FaQuestionCircle } from "react-icons/fa";
+import { MdMenu, MdClear, MdHome } from "react-icons/md";
+import { RiGuideLine } from "react-icons/ri";
 
 import { menuItem } from "@/app/mr/types";
 
 const MENU_ITEMS: menuItem[] = [
     { href: "/", icon: MdHome, label: "ホーム" },
-    { href: "/mr", icon: MdOutlineCalculate, label: "運賃計算(経路入力)" }
+    { href: "/guide", icon: FaQuestionCircle, label: "利用案内" },
+    { href: "/mr", icon: RiGuideLine, label: "運賃計算(経路入力)" }
 ];
 
 const Header = () => {
