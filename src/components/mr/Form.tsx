@@ -140,7 +140,6 @@ export default function Form() {
 
     return (
         <>
-            <h1 className="text-xl font-bold m-4">JR運賃計算（経路入力）</h1>
             <form onSubmit={handleSubmit(onSubmit)} className="p-8">
                 <div className="flex flex-col">
                     <div className="flex items-center gap-5 whitespace-nowrap">
