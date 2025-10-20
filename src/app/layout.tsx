@@ -39,6 +39,7 @@ export default function RootLayout({
   const gaId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
   return (
     <html lang="ja">
+      <meta name="google-adsense-account" content="ca-pub-1214458177768834"></meta>
       <body
         className={`flex flex-col min-h-screen ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
