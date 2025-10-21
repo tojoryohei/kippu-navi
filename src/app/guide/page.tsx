@@ -59,7 +59,7 @@ export default function Page() {
       <Element name="about">
         <h2 className="text-xl font-semibold mt-8 mb-2">このサイトについて</h2>
         <p className="mb-4">
-          当サイトでは，JRの運賃計算や分割乗車券の最適解を出力するプログラムを公開しています．
+          当サイトでは，JRの運賃計算を出力するプログラムを公開しています．
           <br />
           これらのプログラムは大学の卒業研究で使うために作られたものであり，必ずしも正確な出力をすることは保証していません．
           <br />
