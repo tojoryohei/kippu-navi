@@ -538,8 +538,8 @@ class Calculator {
             if (101 <= totalEigyoKilo && totalEigyoKilo <= 110) return 1980;
             if (292 <= totalEigyoKilo && totalEigyoKilo <= 310) return 5720;
 
-            const splitKilo = this.calculateSplitKiloOfKansen(totalEigyoKilo);
-            if (totalEigyoKilo <= 273) return this.addTax(this.round100(17.80 * splitKilo));
+            const splitKilo = this.calculateSplitKiloOfLocal(totalEigyoKilo);
+            if (totalEigyoKilo <= 273) return this.addTax(this.ceil10(17.80 * splitKilo));
             if (totalEigyoKilo <= 546) return this.addTax(this.round100(17.80 * 273 + 14.10 * (splitKilo - 273)));
             return this.addTax(this.round100(17.80 * 273 + 14.10 * 273 + 7.70 * (splitKilo - 546)));
         }
