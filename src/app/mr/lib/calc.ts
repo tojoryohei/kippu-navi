@@ -140,21 +140,25 @@ class Calculator {
                 let changingIdx: number[] = [];
                 for (let i = 0; i < fullPath.length - 1; i++) {
                     if (i !== 0 &&
+                        city.name === "大阪市内" &&
                         fullPath[i - 1].stationName === "加島" &&
                         fullPath[i].stationName === "尼崎" &&
                         fullPath[i + 1].stationName === "塚本")
                         changingIdx.pop();
                     else if (i !== 0 &&
+                        city.name === "大阪市内" &&
                         fullPath[i - 1].stationName === "塚本" &&
                         fullPath[i].stationName === "尼崎" &&
                         fullPath[i + 1].stationName === "加島")
                         changingIdx.pop();
                     else if (i !== 0 &&
+                        city.name === "大阪市内" &&
                         fullPath[i - 1].stationName === "加美" &&
                         fullPath[i].stationName === "久宝寺" &&
                         fullPath[i + 1].stationName === "新加美")
                         changingIdx.pop();
                     else if (i !== 0 &&
+                        city.name === "大阪市内" &&
                         fullPath[i - 1].stationName === "新加美" &&
                         fullPath[i].stationName === "久宝寺" &&
                         fullPath[i + 1].stationName === "加美")
@@ -165,10 +169,7 @@ class Calculator {
                 if (changingIdx.length === 1 || changingIdx.length === 2) {
                     const applyCityRulePath = [
                         ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
-                        {
-                            "stationName": city.name,
-                            "lineName": null
-                        }
+                        { "stationName": city.name, "lineName": null }
                     ];
                     const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
                     if (this.calculateTotalEigyoKilo(routeSegments) > threshold)
@@ -181,21 +182,25 @@ class Calculator {
                 let changingIdx: number[] = [];
                 for (let i = 0; i < fullPath.length - 1; i++) {
                     if (i !== 0 &&
+                        city.name === "大阪市内" &&
                         fullPath[i - 1].stationName === "加島" &&
                         fullPath[i].stationName === "尼崎" &&
                         fullPath[i + 1].stationName === "塚本")
                         changingIdx.pop();
                     else if (i !== 0 &&
+                        city.name === "大阪市内" &&
                         fullPath[i - 1].stationName === "塚本" &&
                         fullPath[i].stationName === "尼崎" &&
                         fullPath[i + 1].stationName === "加島")
                         changingIdx.pop();
                     else if (i !== 0 &&
+                        city.name === "大阪市内" &&
                         fullPath[i - 1].stationName === "加美" &&
                         fullPath[i].stationName === "久宝寺" &&
                         fullPath[i + 1].stationName === "新加美")
                         changingIdx.pop();
                     else if (i !== 0 &&
+                        city.name === "大阪市内" &&
                         fullPath[i - 1].stationName === "新加美" &&
                         fullPath[i].stationName === "久宝寺" &&
                         fullPath[i + 1].stationName === "加美")
