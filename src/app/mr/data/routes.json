@@ -2890,6 +2890,7 @@
     {"line": "ＪＲ東西", "kana": "トウサ", "station0": "御幣島", "station1": "加島", "eigyoKilo": 17, "giseiKilo": 17, "isLocal": false, "company": 4},
     {"line": "ＪＲ東西", "kana": "トウサ", "station0": "加島", "station1": "尼崎", "eigyoKilo": 22, "giseiKilo": 22, "isLocal": false, "company": 4},
     {"line": "ＪＲ東西", "kana": "トウサ", "station0": "大阪市内", "station1": "尼崎", "eigyoKilo": 167, "giseiKilo": 167, "isLocal": false, "company": 4},
+    {"line": "ＪＲ東西", "kana": "トウサ", "station0": "北新地", "station1": "尼崎", "eigyoKilo": 89, "giseiKilo": 77, "isLocal": false, "company": 4},
     {"line": "東金線", "kana": "トウネ", "station0": "大網", "station1": "福俵", "eigyoKilo": 33, "giseiKilo": 36, "isLocal": true, "company": 2},
     {"line": "東金線", "kana": "トウネ", "station0": "福俵", "station1": "東金", "eigyoKilo": 25, "giseiKilo": 28, "isLocal": true, "company": 2},
     {"line": "東金線", "kana": "トウネ", "station0": "東金", "station1": "求名", "eigyoKilo": 38, "giseiKilo": 42, "isLocal": true, "company": 2},

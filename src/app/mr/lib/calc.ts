@@ -78,6 +78,9 @@ class Calculator {
         // 第87条 東京山手線内にある駅に関連する片道普通旅客運賃の計算方
         fullPath = this.applyYamanoteRule(fullPath);
 
+        // 第89条 北新地駅発又は着となる片道普通旅客運賃の計算方
+        fullPath = this.applyKitashinchiRule(fullPath);
+
         return fullPath;
     }
 
@@ -266,6 +269,99 @@ class Calculator {
         return fullPath;
     }
 
+    private applyKitashinchiRule(fullPath: PathStep[]): PathStep[] {
+        if (fullPath.length === 6 &&
+            fullPath[0].stationName === "北新地" &&
+            fullPath[0].lineName === "ＪＲ東西" &&
+            fullPath[1].stationName === "新福島" &&
+            fullPath[1].lineName === "ＪＲ東西" &&
+            fullPath[2].stationName === "海老江" &&
+            fullPath[2].lineName === "ＪＲ東西" &&
+            fullPath[3].stationName === "御幣島" &&
+            fullPath[3].lineName === "ＪＲ東西" &&
+            fullPath[4].stationName === "加島" &&
+            fullPath[4].lineName === "ＪＲ東西" &&
+            fullPath[5].stationName === "尼崎" ||
+            fullPath[0].stationName === "北新地" &&
+            fullPath[0].lineName === "ＪＲ東西" &&
+            fullPath[1].stationName === "新福島" &&
+            fullPath[1].lineName === "ＪＲ東西" &&
+            fullPath[2].stationName === "海老江" &&
+            fullPath[2].lineName === "ＪＲ東西" &&
+            fullPath[3].stationName === "御幣島" &&
+            fullPath[3].lineName === "ＪＲ東西" &&
+            fullPath[4].stationName === "加島" &&
+            fullPath[4].lineName === "ＪＲ東西" &&
+            fullPath[5].stationName === "尼崎" &&
+            fullPath[5].lineName === "東海道" &&
+            fullPath[6].stationName === "立花" ||
+            fullPath[0].stationName === "北新地" &&
+            fullPath[0].lineName === "ＪＲ東西" &&
+            fullPath[1].stationName === "新福島" &&
+            fullPath[1].lineName === "ＪＲ東西" &&
+            fullPath[2].stationName === "海老江" &&
+            fullPath[2].lineName === "ＪＲ東西" &&
+            fullPath[3].stationName === "御幣島" &&
+            fullPath[3].lineName === "ＪＲ東西" &&
+            fullPath[4].stationName === "加島" &&
+            fullPath[4].lineName === "ＪＲ東西" &&
+            fullPath[5].stationName === "尼崎" &&
+            fullPath[5].lineName === "福知山線" &&
+            fullPath[6].stationName === "塚口"
+        ) {
+            fullPath = [
+                { "stationName": "北新地", "lineName": "ＪＲ東西" },
+                ...fullPath.slice(5)
+            ]
+        }
+
+        if (fullPath.length === 6 &&
+            fullPath[fullPath.length - 6].stationName === "尼崎" &&
+            fullPath[fullPath.length - 6].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 5].stationName === "加島" &&
+            fullPath[fullPath.length - 5].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 4].stationName === "御幣島" &&
+            fullPath[fullPath.length - 4].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 3].stationName === "海老江" &&
+            fullPath[fullPath.length - 3].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 2].stationName === "新福島" &&
+            fullPath[fullPath.length - 2].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 1].stationName === "北新地" ||
+            fullPath[fullPath.length - 7].stationName === "立花" &&
+            fullPath[fullPath.length - 7].lineName === "東海道" &&
+            fullPath[fullPath.length - 6].stationName === "尼崎" &&
+            fullPath[fullPath.length - 6].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 5].stationName === "加島" &&
+            fullPath[fullPath.length - 5].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 4].stationName === "御幣島" &&
+            fullPath[fullPath.length - 4].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 3].stationName === "海老江" &&
+            fullPath[fullPath.length - 3].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 2].stationName === "新福島" &&
+            fullPath[fullPath.length - 2].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 1].stationName === "北新地" ||
+            fullPath[fullPath.length - 7].stationName === "塚口" &&
+            fullPath[fullPath.length - 7].lineName === "福知山線" &&
+            fullPath[fullPath.length - 6].stationName === "尼崎" &&
+            fullPath[fullPath.length - 6].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 5].stationName === "加島" &&
+            fullPath[fullPath.length - 5].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 4].stationName === "御幣島" &&
+            fullPath[fullPath.length - 4].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 3].stationName === "海老江" &&
+            fullPath[fullPath.length - 3].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 2].stationName === "新福島" &&
+            fullPath[fullPath.length - 2].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 1].stationName === "北新地"
+        ) {
+            fullPath = [
+                ...fullPath.slice(0, fullPath.length - 6),
+                { "stationName": "尼崎", "lineName": "ＪＲ東西" },
+                ...fullPath.slice(fullPath.length - 1, fullPath.length)
+            ]
+        }
+        return fullPath;
+    }
     private convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[] {
         let routeSegments: RouteSegment[] = [];
         for (let i = 0; i < path.length - 1; i++) {
