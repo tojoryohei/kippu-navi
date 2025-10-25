@@ -63,7 +63,6 @@ export interface ApiResponse {
 
 export interface RouteSegment {
     line: string;
-    kana: string;
     station0: string;
     station1: string;
     eigyoKilo: number;
@@ -83,7 +82,7 @@ export interface SpecificSection {
 }
 
 export interface Section {
-    kana: string;
+    line: string;
     station0: string;
     station1: string;
 }
@@ -104,4 +103,11 @@ export interface City {
 export interface Printing {
     kana: string;
     print: string;
+}
+
+export interface Kana {
+    line: string;
+    kana: string;
+    station0: string;
+    station1: string;
 }

@@ -1,10 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 
-import { City, Line, Printing, RouteSegment, Section, SpecificFare, SpecificSection, Station, TrainSpecificSection } from '@/app/mr/types';
+import { City, Kana, Line, Printing, RouteSegment, Section, SpecificFare, SpecificSection, Station, TrainSpecificSection } from '@/app/mr/types';
 
 class Load {
     private cities: City[] = [];
+    private kanas: Map<string, string> = new Map();
     private lines: Map<string, Line> = new Map();
     private printings: Map<string, string> = new Map();
     private routes: Map<string, RouteSegment> = new Map();
@@ -25,6 +26,14 @@ class Load {
             const citiesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'cities.json');
             this.cities = JSON.parse(fs.readFileSync(citiesPath, 'utf-8'));
 
+            // kanas.jsonの読み込み
+            const kanaList = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'kanas.json');
+            const kanaData: Kana[] = JSON.parse(fs.readFileSync(kanaList, 'utf-8'));
+            for (const kana of kanaData) {
+                const key = this.createRouteKey(kana.line, kana.station0, kana.station1);
+                this.kanas.set(key, kana.kana);
+            }
+
             // lines.jsonの読み込み
             const linesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'lines.json');
             const linesData: Line[] = JSON.parse(fs.readFileSync(linesPath, 'utf-8'));
@@ -43,7 +52,6 @@ class Load {
             const routesPath = path.join(process.cwd(), 'src', 'app', 'mr', 'data', 'routes.json');
             const routesData: RouteSegment[] = JSON.parse(fs.readFileSync(routesPath, 'utf-8'));
             for (const route of routesData) {
-                // 路線名と駅名のペアをソートして、常に一意なキーを作成する
                 const key = this.createRouteKey(route.line, route.station0, route.station1);
                 this.routes.set(key, route);
             }
@@ -72,7 +80,7 @@ class Load {
                     const key = sectionName as keyof TrainSpecificSection;
                     const segments = rawData[key];
                     const routeKeys = segments.map(segment =>
-                        this.createRouteKey(segment.kana, segment.station0, segment.station1)
+                        this.createRouteKey(segment.line, segment.station0, segment.station1)
                     );
                     transformedSections[key] = new Set(routeKeys);
                 }
@@ -104,15 +112,24 @@ class Load {
         return line;
     }
 
-    public createRouteKey(line: string, stationName1: string, stationName2: string): string {
-        return [line, ...[stationName1, stationName2].sort()].join('-');
+    public getKana(line: string, stationName0: string, stationName1: string): string {
+        const key = this.createRouteKey(line, stationName0, stationName1);
+        const kana = this.kanas.get(key);
+        if (kana === undefined) {
+            throw new Error(` ${key} が見つかりません.`);
+        }
+        return kana;
     }
 
-    public getRouteSegment(line: string, stationName1: string, stationName2: string): RouteSegment {
-        const key = this.createRouteKey(line, stationName1, stationName2);
+    public createRouteKey(line: string, stationName0: string, stationName1: string): string {
+        return [line, ...[stationName0, stationName1].sort()].join('-');
+    }
+
+    public getRouteSegment(line: string, stationName0: string, stationName1: string): RouteSegment {
+        const key = this.createRouteKey(line, stationName0, stationName1);
         const routesSegment = this.routes.get(key);
         if (routesSegment === undefined) {
-            throw new Error(` ${line}上に${stationName1}と${stationName2}間のデータが見つかりません.`);
+            throw new Error(` ${line}上に${stationName0}と${stationName1}間のデータが見つかりません.`);
         }
         return routesSegment;
     }

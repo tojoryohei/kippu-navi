@@ -26,7 +26,6 @@ class Calculator {
 
         // 経由文字列の生成 (ユーザー入力の経路を使用)
         const printedViaLines = this.generatePrintedViaStrings(routeSegments);
-
         return {
             totalEigyoKilo,
             totalGiseiKilo,
@@ -62,6 +61,9 @@ class Calculator {
             }
         }
         fullPath.push(path[path.length - 1]);
+        for (let i = 0; i < fullPath.length - 1; i++) {
+            fullPath[i].lineName = load.getKana(fullPath[i].lineName!, fullPath[i].stationName, fullPath[i + 1].stationName);
+        }
         return fullPath;
     }
 
@@ -272,96 +274,101 @@ class Calculator {
     private applyKitashinchiRule(fullPath: PathStep[]): PathStep[] {
         if (fullPath.length === 6 &&
             fullPath[0].stationName === "北新地" &&
-            fullPath[0].lineName === "ＪＲ東西" &&
+            fullPath[0].lineName === "トウサ" &&
             fullPath[1].stationName === "新福島" &&
-            fullPath[1].lineName === "ＪＲ東西" &&
+            fullPath[1].lineName === "トウサ" &&
             fullPath[2].stationName === "海老江" &&
-            fullPath[2].lineName === "ＪＲ東西" &&
+            fullPath[2].lineName === "トウサ" &&
             fullPath[3].stationName === "御幣島" &&
-            fullPath[3].lineName === "ＪＲ東西" &&
+            fullPath[3].lineName === "トウサ" &&
             fullPath[4].stationName === "加島" &&
-            fullPath[4].lineName === "ＪＲ東西" &&
+            fullPath[4].lineName === "トウサ" &&
             fullPath[5].stationName === "尼崎" ||
+            fullPath.length > 6 &&
             fullPath[0].stationName === "北新地" &&
-            fullPath[0].lineName === "ＪＲ東西" &&
+            fullPath[0].lineName === "トウサ" &&
             fullPath[1].stationName === "新福島" &&
-            fullPath[1].lineName === "ＪＲ東西" &&
+            fullPath[1].lineName === "トウサ" &&
             fullPath[2].stationName === "海老江" &&
-            fullPath[2].lineName === "ＪＲ東西" &&
+            fullPath[2].lineName === "トウサ" &&
             fullPath[3].stationName === "御幣島" &&
-            fullPath[3].lineName === "ＪＲ東西" &&
+            fullPath[3].lineName === "トウサ" &&
             fullPath[4].stationName === "加島" &&
-            fullPath[4].lineName === "ＪＲ東西" &&
+            fullPath[4].lineName === "トウサ" &&
             fullPath[5].stationName === "尼崎" &&
-            fullPath[5].lineName === "東海道" &&
+            fullPath[5].lineName === "トウカ" &&
             fullPath[6].stationName === "立花" ||
+            fullPath.length > 6 &&
             fullPath[0].stationName === "北新地" &&
-            fullPath[0].lineName === "ＪＲ東西" &&
+            fullPath[0].lineName === "トウサ" &&
             fullPath[1].stationName === "新福島" &&
-            fullPath[1].lineName === "ＪＲ東西" &&
+            fullPath[1].lineName === "トウサ" &&
             fullPath[2].stationName === "海老江" &&
-            fullPath[2].lineName === "ＪＲ東西" &&
+            fullPath[2].lineName === "トウサ" &&
             fullPath[3].stationName === "御幣島" &&
-            fullPath[3].lineName === "ＪＲ東西" &&
+            fullPath[3].lineName === "トウサ" &&
             fullPath[4].stationName === "加島" &&
-            fullPath[4].lineName === "ＪＲ東西" &&
+            fullPath[4].lineName === "トウサ" &&
             fullPath[5].stationName === "尼崎" &&
-            fullPath[5].lineName === "福知山線" &&
+            fullPath[5].lineName === "フクチ" &&
             fullPath[6].stationName === "塚口"
         ) {
             fullPath = [
-                { "stationName": "北新地", "lineName": "ＪＲ東西" },
+                { "stationName": "北新地", "lineName": "トウサ" },
                 ...fullPath.slice(5)
             ]
         }
 
         if (fullPath.length === 6 &&
             fullPath[fullPath.length - 6].stationName === "尼崎" &&
-            fullPath[fullPath.length - 6].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 6].lineName === "トウサ" &&
             fullPath[fullPath.length - 5].stationName === "加島" &&
-            fullPath[fullPath.length - 5].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 5].lineName === "トウサ" &&
             fullPath[fullPath.length - 4].stationName === "御幣島" &&
-            fullPath[fullPath.length - 4].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 4].lineName === "トウサ" &&
             fullPath[fullPath.length - 3].stationName === "海老江" &&
-            fullPath[fullPath.length - 3].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 3].lineName === "トウサ" &&
             fullPath[fullPath.length - 2].stationName === "新福島" &&
-            fullPath[fullPath.length - 2].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 2].lineName === "トウサ" &&
             fullPath[fullPath.length - 1].stationName === "北新地" ||
+            fullPath.length > 6 &&
             fullPath[fullPath.length - 7].stationName === "立花" &&
             fullPath[fullPath.length - 7].lineName === "東海道" &&
             fullPath[fullPath.length - 6].stationName === "尼崎" &&
-            fullPath[fullPath.length - 6].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 6].lineName === "トウサ" &&
             fullPath[fullPath.length - 5].stationName === "加島" &&
-            fullPath[fullPath.length - 5].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 5].lineName === "トウサ" &&
             fullPath[fullPath.length - 4].stationName === "御幣島" &&
-            fullPath[fullPath.length - 4].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 4].lineName === "トウサ" &&
             fullPath[fullPath.length - 3].stationName === "海老江" &&
-            fullPath[fullPath.length - 3].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 3].lineName === "トウサ" &&
             fullPath[fullPath.length - 2].stationName === "新福島" &&
-            fullPath[fullPath.length - 2].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 2].lineName === "トウサ" &&
             fullPath[fullPath.length - 1].stationName === "北新地" ||
+            fullPath.length > 6 &&
             fullPath[fullPath.length - 7].stationName === "塚口" &&
             fullPath[fullPath.length - 7].lineName === "福知山線" &&
             fullPath[fullPath.length - 6].stationName === "尼崎" &&
-            fullPath[fullPath.length - 6].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 6].lineName === "トウサ" &&
             fullPath[fullPath.length - 5].stationName === "加島" &&
-            fullPath[fullPath.length - 5].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 5].lineName === "トウサ" &&
             fullPath[fullPath.length - 4].stationName === "御幣島" &&
-            fullPath[fullPath.length - 4].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 4].lineName === "トウサ" &&
             fullPath[fullPath.length - 3].stationName === "海老江" &&
-            fullPath[fullPath.length - 3].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 3].lineName === "トウサ" &&
             fullPath[fullPath.length - 2].stationName === "新福島" &&
-            fullPath[fullPath.length - 2].lineName === "ＪＲ東西" &&
+            fullPath[fullPath.length - 2].lineName === "トウサ" &&
             fullPath[fullPath.length - 1].stationName === "北新地"
         ) {
             fullPath = [
                 ...fullPath.slice(0, fullPath.length - 6),
-                { "stationName": "尼崎", "lineName": "ＪＲ東西" },
+                { "stationName": "尼崎", "lineName": "トウサ" },
                 ...fullPath.slice(fullPath.length - 1, fullPath.length)
             ]
         }
         return fullPath;
     }
+
     private convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[] {
         let routeSegments: RouteSegment[] = [];
         for (let i = 0; i < path.length - 1; i++) {
@@ -422,7 +429,7 @@ class Calculator {
             const routeSegment = load.getRouteSegment(line, correctedPath[i].stationName, correctedPath[i + 1].stationName);
 
             // 全ての駅間の駅名を取得
-            routeKeys.add(load.createRouteKey(routeSegment.kana, routeSegment.station0, routeSegment.station1));
+            routeKeys.add(load.createRouteKey(routeSegment.line, routeSegment.station0, routeSegment.station1));
             routeSegments.push(routeSegment);
 
             // routeSegmentを会社ごとに分ける
@@ -486,7 +493,7 @@ class Calculator {
     private isAllTrainSpecificSections(specificSectionName: keyof TrainSpecificSection, routeKeys: string[]): boolean {
         const trainSpecificSection = load.getTrainSpecificSections(specificSectionName);
         for (const routeKey of routeKeys) {
-            if (routeKey in trainSpecificSection === false) return false;
+            if (trainSpecificSection.has(routeKey) === false) return false;
         }
         return true;
     }
@@ -522,7 +529,7 @@ class Calculator {
     }
 
     private addTax(noTax: number): number {
-        return this.round10(noTax * 1.1);
+        return this.round10(noTax * 11 / 10);
     }
 
     private calculateSplitKiloOfKansen(totalKilo: number): number {
@@ -664,8 +671,8 @@ class Calculator {
         if (totalEigyoKilo <= 10) return 170;
 
         const splitKilo: number = this.calculateSplitKiloOfKansen(totalEigyoKilo);
-        if (totalEigyoKilo <= 100) return this.floor10(this.ceil10(13.25 * splitKilo) * 1.1);
-        if (totalEigyoKilo <= 300) return this.floor10(this.round100(13.25 * splitKilo) * 1.1);
+        if (totalEigyoKilo <= 100) return this.ceil10(this.ceil10(13.25 * splitKilo) * 11 / 10);
+        if (totalEigyoKilo <= 300) return this.ceil10(this.round100(13.25 * splitKilo) * 11 / 10);
 
         throw new Error(`calculateFareInYamanoteで範囲外アクセスが発生しました.`);
     }
@@ -679,9 +686,9 @@ class Calculator {
         if (totalEigyoKilo <= 10) return 170;
 
         const splitKilo: number = this.calculateSplitKiloOfKansen(totalEigyoKilo);
-        if (totalEigyoKilo <= 100) return this.floor10(this.ceil10(15.30 * splitKilo) * 1.1);
-        if (totalEigyoKilo <= 300) return this.floor10(this.round100(15.30 * splitKilo) * 1.1);
-        if (totalEigyoKilo <= 600) return this.floor10(this.round100(15.30 * 300 + 12.15 * (splitKilo - 300) * 1.1));
+        if (totalEigyoKilo <= 100) return this.ceil10(this.ceil10(15.30 * splitKilo) * 11 / 10);
+        if (totalEigyoKilo <= 300) return this.ceil10(this.round100(15.30 * splitKilo) * 11 / 10);
+        if (totalEigyoKilo <= 600) return this.ceil10(this.round100(15.30 * 300 + 12.15 * (splitKilo - 300) * 11 / 10));
 
         throw new Error(`calculateFareInTokyoで範囲外アクセスが発生しました.`);
     }
@@ -1067,8 +1074,8 @@ class Calculator {
     private generatePrintedViaStrings(routeSegments: RouteSegment[]): string[] {
         const viaLines: string[] = [];
         for (const routeSegment of routeSegments) {
-            if (viaLines.length === 0 || (viaLines[viaLines.length - 1] !== routeSegment.kana))
-                viaLines.push(routeSegment.kana);
+            if (viaLines.length === 0 || (viaLines[viaLines.length - 1] !== routeSegment.line))
+                viaLines.push(routeSegment.line);
         }
         const printedViaLines: string[] = [];
         for (const viaLine of viaLines) {
