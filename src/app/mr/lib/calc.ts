@@ -81,6 +81,9 @@ class Calculator {
         // 第87条 東京山手線内にある駅に関連する片道普通旅客運賃の計算方
         fullPath = this.applyYamanoteRule(fullPath);
 
+        // 第88条 新大阪駅又は大阪駅発又は着となる片道普通旅客運賃の計算方
+        fullPath = this.applyOsakaRule(fullPath);
+
         // 第89条 北新地駅発又は着となる片道普通旅客運賃の計算方
         const [kitashinchiAdjustedPath, countKitashinchi] = this.applyKitashinchiRule(fullPath);
         fullPath = kitashinchiAdjustedPath;
@@ -273,6 +276,136 @@ class Calculator {
         return fullPath;
     }
 
+    // 第88条 新大阪駅又は大阪駅発又は着となる片道普通旅客運賃の計算方
+    private applyOsakaRule(fullPath: PathStep[]): PathStep[] {
+        if (fullPath[0].stationName === "新大阪") {
+            for (let i = 0; i < fullPath.length - 2; i++) {
+                if (fullPath[i + 1].stationName === "東姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "姫路" &&
+                    fullPath[i + 2].lineName === null ||
+                    fullPath[i].stationName === "東姫路" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "英賀保" ||
+                    fullPath[i].stationName === "東姫路" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "ハンタ" &&
+                    fullPath[i + 2].stationName === "京口" ||
+                    fullPath[i].stationName === "東姫路" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "キシン" &&
+                    fullPath[i + 2].stationName === "播磨高岡"
+                )
+                    return [
+                        { "stationName": "大阪・新大阪", "lineName": fullPath[1].lineName },
+                        ...fullPath.slice(2)
+                    ]
+            }
+        }
+        if (fullPath[0].stationName === "大阪") {
+            for (let i = 0; i < fullPath.length - 2; i++) {
+                if (fullPath[i + 1].stationName === "東姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "姫路" &&
+                    fullPath[i + 2].lineName === null ||
+                    fullPath[i].stationName === "東姫路" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "英賀保" ||
+                    fullPath[i].stationName === "東姫路" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "ハンタ" &&
+                    fullPath[i + 2].stationName === "京口" ||
+                    fullPath[i].stationName === "東姫路" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "キシン" &&
+                    fullPath[i + 2].stationName === "播磨高岡"
+                )
+                    return [
+                        { "stationName": "大阪・新大阪", "lineName": fullPath[1].lineName },
+                        ...fullPath.slice(1)
+                    ]
+            }
+        }
+        if (fullPath[fullPath.length - 1].stationName === "新大阪") {
+            if (fullPath[0].stationName === "姫路" &&
+                fullPath[1].lineName === "サンヨ" &&
+                fullPath[1].stationName === "東姫路"
+            ) {
+                return [
+                    ...fullPath.slice(0, fullPath.length - 2),
+                    { "stationName": "大阪・新大阪", "lineName": null }
+                ]
+            }
+            for (let i = 0; i < fullPath.length - 2; i++) {
+                if (
+                    fullPath[i].stationName === "英賀保" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "東姫路" ||
+                    fullPath[i].stationName === "京口" &&
+                    fullPath[i].lineName === "ハンタ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "東姫路" ||
+                    fullPath[i].stationName === "播磨高岡" &&
+                    fullPath[i].lineName === "キシン" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "東姫路"
+                )
+                    return [
+                        ...fullPath.slice(0, fullPath.length - 2),
+                        { "stationName": "大阪・新大阪", "lineName": null }
+                    ]
+            }
+        }
+        if (fullPath[fullPath.length - 1].stationName === "大阪") {
+            if (fullPath[0].stationName === "姫路" &&
+                fullPath[1].lineName === "サンヨ" &&
+                fullPath[1].stationName === "東姫路"
+            ) {
+                return [
+                    ...fullPath.slice(0, fullPath.length - 1),
+                    { "stationName": "大阪・新大阪", "lineName": null }
+                ]
+            }
+            for (let i = 0; i < fullPath.length - 2; i++) {
+                if (
+                    fullPath[i].stationName === "英賀保" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "東姫路" ||
+                    fullPath[i].stationName === "京口" &&
+                    fullPath[i].lineName === "ハンタ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "東姫路" ||
+                    fullPath[i].stationName === "播磨高岡" &&
+                    fullPath[i].lineName === "キシン" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "東姫路"
+                )
+                    return [
+                        ...fullPath.slice(0, fullPath.length - 1),
+                        { "stationName": "大阪・新大阪", "lineName": null }
+                    ]
+            }
+        }
+        return fullPath;
+    }
+
+    // 第89条 北新地駅発又は着となる片道普通旅客運賃の計算方
     private applyKitashinchiRule(fullPath: PathStep[]): [PathStep[], number] {
         let cnt = 0;
         if (fullPath.length === 6 &&

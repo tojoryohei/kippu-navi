@@ -121,7 +121,7 @@ export default function Form() {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error("サーバーでエラーが発生しました。" + errorData.error);
+                throw new Error(errorData.error);
             }
 
             const responseData: ApiFullResponse = await response.json();
