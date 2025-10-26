@@ -9,7 +9,7 @@ import lineData from "@/app/mr/data/lines.json";
 import SelectStation from "@/components/mr/SelectStation";
 import SelectLine from "@/components/mr/SelectLine";
 
-import { Station, Line, ApiResponse, IFormInput, PathStep, RouteRequest } from "@/app/mr/types";
+import { Station, Line, ApiResponse, ApiFullResponse, IFormInput, PathStep, RouteRequest } from "@/app/mr/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 
@@ -84,15 +84,15 @@ export default function Form() {
     };
 
     const [result, setResult] = useState<ApiResponse | null>(null);
-
+    const [serverTime, setServerTime] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-
     const [error, setError] = useState<string | null>(null);
 
     const onSubmit: SubmitHandler<IFormInput> = async (data) => {
         setIsLoading(true);
         setError(null);
         setResult(null);
+        setServerTime(null);
 
         const apiRequestBody = createApiRequestBody(data);
 
@@ -102,11 +102,6 @@ export default function Form() {
             return;
         }
 
-        if (100 < apiRequestBody.path.length) {
-            setError('経路が長すぎます');
-            setIsLoading(false);
-            return;
-        }
         let stations = new Set<string>();
         for (let i = 0; i < apiRequestBody.path.length; i++) {
             stations.add(apiRequestBody.path[i].stationName);
@@ -125,14 +120,24 @@ export default function Form() {
             });
 
             if (!response.ok) {
-                throw new Error("サーバーでエラーが発生しました。");
+                const errorData = await response.json();
+                throw new Error("サーバーでエラーが発生しました。" + errorData.error);
             }
 
-            const data: ApiResponse = await response.json();
-            setResult(data);
+            const responseData: ApiFullResponse = await response.json();
+            if (responseData.data && typeof responseData.time === "number") {
+                setResult(responseData.data);
+                setServerTime(responseData.time);
+            } else {
+                throw new Error("サーバーからのレスポンス形式が不正です。");
+            }
 
         } catch (err) {
-            setError("計算に失敗しました。");
+            if (err instanceof Error) {
+                setError(err.message)
+            } else {
+                setError("計算に失敗しました。");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -269,6 +274,7 @@ export default function Form() {
                         </span>
                     </div>
                 )}
+                {serverTime && <p className="py-5">{"計算時間(ms): " + serverTime}</p>}
             </div>
         </>
     );

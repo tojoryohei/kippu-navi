@@ -10,7 +10,7 @@ class Calculator {
         const fullPath = this.createFullPath(userInputPath);
 
         // 経路の補正
-        const correctedPath = this.correctPath(fullPath);
+        const [correctedPath, countKitashinchi] = this.correctPath(fullPath);
 
         // 出発駅と到着駅の名前を取得して変数に代入
         const departureStation = correctedPath[0].stationName;
@@ -18,7 +18,8 @@ class Calculator {
 
         // 営業キロと運賃の計算
         const routeSegments = this.convertPathStepsToRouteSegments(correctedPath);
-        const totalEigyoKilo = this.calculateTotalEigyoKilo(routeSegments);
+        const totalEigyoKilo = this.calculateTotalEigyoKilo(routeSegments)
+            + 11 * countKitashinchi;
         const totalGiseiKilo = this.calculateTotalGiseiKilo(routeSegments);
         const fare = this.calculateFareFromCorrectedPath(correctedPath)
             + this.calculateBarrierFreeFeeFromCorrectedPath(correctedPath);
@@ -67,7 +68,7 @@ class Calculator {
         return fullPath;
     }
 
-    private correctPath(fullPath: PathStep[]): PathStep[] {
+    private correctPath(fullPath: PathStep[]): [PathStep[], number] {
 
         // 第69条 特定区間における旅客運賃・料金計算の営業キロ又は運賃計算キロ
         // fullPath = this.correctSpecificSections(fullPath);
@@ -81,9 +82,10 @@ class Calculator {
         fullPath = this.applyYamanoteRule(fullPath);
 
         // 第89条 北新地駅発又は着となる片道普通旅客運賃の計算方
-        fullPath = this.applyKitashinchiRule(fullPath);
+        const [kitashinchiAdjustedPath, countKitashinchi] = this.applyKitashinchiRule(fullPath);
+        fullPath = kitashinchiAdjustedPath;
 
-        return fullPath;
+        return [fullPath, countKitashinchi];
     }
 
     private correctSpecificSections(fullPath: PathStep[]): PathStep[] {
@@ -271,7 +273,8 @@ class Calculator {
         return fullPath;
     }
 
-    private applyKitashinchiRule(fullPath: PathStep[]): PathStep[] {
+    private applyKitashinchiRule(fullPath: PathStep[]): [PathStep[], number] {
+        let cnt = 0;
         if (fullPath.length === 6 &&
             fullPath[0].stationName === "北新地" &&
             fullPath[0].lineName === "トウサ" &&
@@ -317,6 +320,7 @@ class Calculator {
                 { "stationName": "北新地", "lineName": "トウサ" },
                 ...fullPath.slice(5)
             ]
+            cnt += 1;
         }
 
         if (fullPath.length === 6 &&
@@ -365,8 +369,9 @@ class Calculator {
                 { "stationName": "尼崎", "lineName": "トウサ" },
                 ...fullPath.slice(fullPath.length - 1, fullPath.length)
             ]
+            cnt += 1
         }
-        return fullPath;
+        return [fullPath, cnt];
     }
 
     private convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[] {

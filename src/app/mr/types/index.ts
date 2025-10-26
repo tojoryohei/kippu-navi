@@ -61,6 +61,11 @@ export interface ApiResponse {
     validDays: number;
 }
 
+export interface ApiFullResponse {
+    data: ApiResponse;
+    time: number;
+}
+
 export interface RouteSegment {
     line: string;
     station0: string;
