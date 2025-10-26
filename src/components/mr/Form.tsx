@@ -245,6 +245,7 @@ export default function Form() {
             <div className="my-8 p-4">
                 {isLoading && <p className="py-5 border-t">計算中...</p>}
                 {error && <p className="py-5 border-t"></p> && <p className="text-red-500">{error}</p>}
+                {serverTime && <p className="py-5 border-t">{"計算時間(ms): " + serverTime}</p>}
                 {result && (
                     <div>
                         <h2 className="py-5 text-2xl border-t">計算結果</h2>
@@ -274,7 +275,6 @@ export default function Form() {
                         </span>
                     </div>
                 )}
-                {serverTime && <p className="py-5">{"計算時間(ms): " + serverTime}</p>}
             </div>
         </>
     );
