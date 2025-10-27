@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { generateTicket } from '@/app/mr/lib/generateTicket';
+import { processRouteAndCalculateFare } from '@/app/mr/lib/generateTicket';
 
 import { RouteRequest } from '@/app/types';
 
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
                 { status: 400 }
             );
         }
-        const result = generateTicket.processRouteAndCalculateFare(body);
+        const result = processRouteAndCalculateFare(body);
         const endTime = performance.now();
         const calculationTimeMs = endTime - startTime;
         return NextResponse.json(
