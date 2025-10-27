@@ -6,7 +6,7 @@ import { FaQuestionCircle } from "react-icons/fa";
 import { MdMenu, MdClear, MdHome } from "react-icons/md";
 import { RiGuideLine } from "react-icons/ri";
 
-import { menuItem } from "@/app/mr/types";
+import { menuItem } from "@/app/types";
 
 const MENU_ITEMS: menuItem[] = [
     { href: "/", icon: MdHome, label: "ホーム" },

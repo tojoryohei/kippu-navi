@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { calc } from '@/app/mr/lib/calc';
+import { generateTicket } from '@/app/mr/lib/generateTicket';
 
-import { RouteRequest } from '@/app/mr/types';
+import { RouteRequest } from '@/app/types';
 
 export async function POST(request: Request) {
     const startTime = performance.now();
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
                 { status: 400 }
             );
         }
-        const result = calc.processRouteAndCalculateFare(body);
+        const result = generateTicket.processRouteAndCalculateFare(body);
         const endTime = performance.now();
         const calculationTimeMs = endTime - startTime;
         return NextResponse.json(

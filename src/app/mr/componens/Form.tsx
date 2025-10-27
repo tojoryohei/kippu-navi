@@ -6,10 +6,10 @@ import type { SingleValue } from "react-select";
 
 import stationData from "@/app/mr/data/stations.json";
 import lineData from "@/app/mr/data/lines.json";
-import SelectStation from "@/components/mr/SelectStation";
-import SelectLine from "@/components/mr/SelectLine";
+import SelectStation from "@/app/mr/componens/SelectStation";
+import SelectLine from "@/app/mr/componens/SelectLine";
 
-import { Station, Line, ApiResponse, ApiFullResponse, IFormInput, PathStep, RouteRequest } from "@/app/mr/types";
+import { Station, Line, ApiResponse, ApiFullResponse, IFormInput, PathStep, RouteRequest } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 

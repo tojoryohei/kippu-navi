@@ -2,7 +2,7 @@
 
 import Select, { components, OptionProps } from "react-select";
 
-import { Line, SelectLineProps } from "@/app/mr/types";
+import { Line, SelectLineProps } from "@/app/types";
 
 const formatLabel = (option: Line): string => {
     return option.name.split('_')[0];

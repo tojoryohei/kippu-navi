@@ -4,7 +4,7 @@ import Select, { components, OptionProps, FilterOptionOption } from "react-selec
 import { useState } from "react";
 import stationData from "@/app/mr/data/stations.json";
 
-import { Station, SelectStationProps } from '@/app/mr/types';
+import { Station, SelectStationProps } from '@/app/types';
 
 const CustomOption = (props: OptionProps<Station>) => (
     <components.Option {...props}>

@@ -1,4 +1,4 @@
-import Form from "@/components/mr/Form"
+import Form from "@/app/mr/componens/Form"
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

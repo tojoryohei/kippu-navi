@@ -1,551 +1,10 @@
-import { load } from '@/app/mr/lib/load';
+import { load } from '@/components/load';
+import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo } from '@/app/utils/calc';
 
-import { RouteRequest, ApiResponse, PathStep, RouteSegment, TrainSpecificSection } from '@/app/mr/types';
+import { PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
 
-class Calculator {
-    public processRouteAndCalculateFare(request: RouteRequest): ApiResponse {
-        const userInputPath = request.path;
-
-        // 経路の展開
-        const fullPath = this.createFullPath(userInputPath);
-
-        // 経路の補正
-        const [correctedPath, countKitashinchi] = this.correctPath(fullPath);
-
-        // 出発駅と到着駅の名前を取得して変数に代入
-        const departureStation = correctedPath[0].stationName;
-        const arrivalStation = correctedPath[correctedPath.length - 1].stationName;
-
-        // 営業キロと運賃の計算
-        const routeSegments = this.convertPathStepsToRouteSegments(correctedPath);
-        const totalEigyoKilo = this.calculateTotalEigyoKilo(routeSegments)
-            + 11 * countKitashinchi;
-        const totalGiseiKilo = this.calculateTotalGiseiKilo(routeSegments);
-        const fare = this.calculateFareFromCorrectedPath(correctedPath)
-            + this.calculateBarrierFreeFeeFromCorrectedPath(correctedPath);
-        const validDays = this.calculateValidDaysFromKilo(totalEigyoKilo);
-
-        // 経由文字列の生成 (ユーザー入力の経路を使用)
-        const printedViaLines = this.generatePrintedViaStrings(routeSegments);
-        return {
-            totalEigyoKilo,
-            totalGiseiKilo,
-            departureStation,
-            arrivalStation,
-            fare,
-            printedViaLines,
-            validDays
-        };
-    }
-
-    private createFullPath(path: PathStep[]): PathStep[] {
-        if (path.length <= 1) {
-            return path;
-        }
-        const fullPath: PathStep[] = [];
-        for (let i = 0; i < path.length - 1; i++) {
-            const startStep = path[i];
-            const endStep = path[i + 1];
-            const lineName = startStep.lineName!;
-            const line = load.getLineByName(lineName);
-            const stationsOnLine = line.stations;
-            const startIdx = stationsOnLine.indexOf(startStep.stationName);
-            const endIdx = stationsOnLine.indexOf(endStep.stationName);
-            let segmentStations: string[];
-            if (startIdx < endIdx) {
-                segmentStations = stationsOnLine.slice(startIdx, endIdx);
-            } else {
-                segmentStations = stationsOnLine.slice(endIdx + 1, startIdx + 1).reverse();
-            }
-            for (const stationName of segmentStations) {
-                fullPath.push({ stationName: stationName, lineName: lineName });
-            }
-        }
-        fullPath.push(path[path.length - 1]);
-        for (let i = 0; i < fullPath.length - 1; i++) {
-            fullPath[i].lineName = load.getKana(fullPath[i].lineName!, fullPath[i].stationName, fullPath[i + 1].stationName);
-        }
-        return fullPath;
-    }
-
-    private correctPath(fullPath: PathStep[]): [PathStep[], number] {
-
-        // 第69条 特定区間における旅客運賃・料金計算の営業キロ又は運賃計算キロ
-        // fullPath = this.correctSpecificSections(fullPath);
-
-        // 第70条 旅客が次に掲げる図の太線区間を通過する場合
-
-        // 第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方
-        fullPath = this.applyCityRule(fullPath);
-
-        // 第87条 東京山手線内にある駅に関連する片道普通旅客運賃の計算方
-        fullPath = this.applyYamanoteRule(fullPath);
-
-        // 第88条 新大阪駅又は大阪駅発又は着となる片道普通旅客運賃の計算方
-        fullPath = this.applyOsakaRule(fullPath);
-
-        // 第89条 北新地駅発又は着となる片道普通旅客運賃の計算方
-        const [kitashinchiAdjustedPath, countKitashinchi] = this.applyKitashinchiRule(fullPath);
-        fullPath = kitashinchiAdjustedPath;
-
-        return [fullPath, countKitashinchi];
-    }
-
-    private correctSpecificSections(fullPath: PathStep[]): PathStep[] {
-        for (const rule of load.getSpecificSections()) {
-            const { incorrectPath, correctPath } = rule;
-
-            const startIndex = this.findSubPathIndex(fullPath, incorrectPath);
-
-            if (startIndex !== -1) {
-                const correctPathMiddleStations = correctPath.slice(1, -1).map(p => p.stationName);
-                const pathOutsideSegment = [
-                    ...fullPath.slice(0, startIndex),
-                    ...fullPath.slice(startIndex + incorrectPath.length)
-                ];
-
-                const isStraddling = correctPathMiddleStations.some(
-                    correctStation => pathOutsideSegment.some(p => p.stationName === correctStation)
-                );
-
-                if (!isStraddling) {
-                    const correctedPath = [
-                        ...fullPath.slice(0, startIndex),
-                        ...correctPath,
-                        ...fullPath.slice(startIndex + incorrectPath.length)
-                    ];
-                    fullPath = correctedPath;
-                }
-            }
-        }
-        return fullPath;
-    }
-
-    private findSubPathIndex(path: PathStep[], subPath: PathStep[]): number {
-        if (subPath.length === 0 || subPath.length > path.length) return -1;
-
-        for (let i = 0; i <= path.length - subPath.length; i++) {
-            let match = true;
-            for (let j = 0; j < subPath.length; j++) {
-                if (path[i + j].stationName !== subPath[j].stationName) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) return i;
-        }
-        return -1;
-    }
-
-    // 第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方
-    private applyCityRule(fullPath: PathStep[]): PathStep[] {
-        const cities = load.getCities();
-        const threshold: number = 2000;
-
-        for (const city of cities) {
-            const stationsInCity = new Set(city.stations);
-
-            // 着駅適用
-            if (stationsInCity.has(fullPath[fullPath.length - 1].stationName)) {
-                let changingIdx: number[] = [];
-                for (let i = 0; i < fullPath.length - 1; i++) {
-                    if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "加島" &&
-                        fullPath[i].stationName === "尼崎" &&
-                        fullPath[i + 1].stationName === "塚本")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "塚本" &&
-                        fullPath[i].stationName === "尼崎" &&
-                        fullPath[i + 1].stationName === "加島")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "加美" &&
-                        fullPath[i].stationName === "久宝寺" &&
-                        fullPath[i + 1].stationName === "新加美")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "新加美" &&
-                        fullPath[i].stationName === "久宝寺" &&
-                        fullPath[i + 1].stationName === "加美")
-                        changingIdx.pop();
-                    else if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
-                        changingIdx.push(i);
-                }
-                if (changingIdx.length === 1 || changingIdx.length === 2) {
-                    const applyCityRulePath = [
-                        ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
-                        { "stationName": city.name, "lineName": null }
-                    ];
-                    const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
-                    if (this.calculateTotalEigyoKilo(routeSegments) > threshold)
-                        fullPath = applyCityRulePath;
-                }
-            }
-
-            // 発駅適用
-            if (stationsInCity.has(fullPath[0].stationName)) {
-                let changingIdx: number[] = [];
-                for (let i = 0; i < fullPath.length - 1; i++) {
-                    if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "加島" &&
-                        fullPath[i].stationName === "尼崎" &&
-                        fullPath[i + 1].stationName === "塚本")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "塚本" &&
-                        fullPath[i].stationName === "尼崎" &&
-                        fullPath[i + 1].stationName === "加島")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "加美" &&
-                        fullPath[i].stationName === "久宝寺" &&
-                        fullPath[i + 1].stationName === "新加美")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "新加美" &&
-                        fullPath[i].stationName === "久宝寺" &&
-                        fullPath[i + 1].stationName === "加美")
-                        changingIdx.pop();
-                    else if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
-                        changingIdx.push(i);
-                }
-                if (changingIdx.length === 1 || changingIdx.length === 2) {
-                    const applyCityRulePath = [
-                        { "stationName": city.name, "lineName": fullPath[changingIdx[changingIdx.length - 1]].lineName },
-                        ...fullPath.slice(changingIdx[changingIdx.length - 1] + 1)
-                    ];
-                    const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
-                    if (this.calculateTotalEigyoKilo(routeSegments) > threshold)
-                        fullPath = applyCityRulePath;
-                }
-            }
-        }
-        return fullPath;
-    }
-
-    // 第87条 東京山手線内にある駅に関連する片道普通旅客運賃の計算方
-    private applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
-        const yamanote = load.getYamanote();
-        const stationsInYamanote = new Set(yamanote.stations);
-        const threshold: number = 1000;
-
-        // 着駅適用
-        if (stationsInYamanote.has(fullPath[fullPath.length - 1].stationName)) {
-            let changingIdx: number[] = [];
-            for (let i = 0; i < fullPath.length - 1; i++) {
-                if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
-                    changingIdx.push(i);
-            }
-            if (changingIdx.length === 1 || changingIdx.length === 2) {
-                const applyCityRulePath = [
-                    ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
-                    { "stationName": yamanote.name, "lineName": null }
-                ];
-                const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
-                if (this.calculateTotalEigyoKilo(routeSegments) > threshold)
-                    fullPath = applyCityRulePath;
-            }
-        }
-
-        // 発駅適用
-        if (stationsInYamanote.has(fullPath[0].stationName)) {
-            let changingIdx: number[] = [];
-            for (let i = 0; i < fullPath.length - 1; i++) {
-                if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
-                    changingIdx.push(i);
-            }
-            if (changingIdx.length === 1 || changingIdx.length === 2) {
-                const applyCityRulePath = [
-                    { "stationName": yamanote.name, "lineName": fullPath[changingIdx[0]].lineName },
-                    ...fullPath.slice(changingIdx[0] + 1)
-                ];
-                const routeSegments: RouteSegment[] = this.convertPathStepsToRouteSegments(applyCityRulePath);
-                if (this.calculateTotalEigyoKilo(routeSegments) > threshold)
-                    fullPath = applyCityRulePath;
-            }
-        }
-        return fullPath;
-    }
-
-    // 第88条 新大阪駅又は大阪駅発又は着となる片道普通旅客運賃の計算方
-    private applyOsakaRule(fullPath: PathStep[]): PathStep[] {
-        if (fullPath[0].stationName === "新大阪") {
-            for (let i = 0; i < fullPath.length - 2; i++) {
-                if (fullPath[i + 1].stationName === "東姫路" &&
-                    fullPath[i + 1].lineName === "サンヨ" &&
-                    fullPath[i + 2].stationName === "姫路" &&
-                    fullPath[i + 2].lineName === null ||
-                    fullPath[i].stationName === "東姫路" &&
-                    fullPath[i].lineName === "サンヨ" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "サンヨ" &&
-                    fullPath[i + 2].stationName === "英賀保" ||
-                    fullPath[i].stationName === "東姫路" &&
-                    fullPath[i].lineName === "サンヨ" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "ハンタ" &&
-                    fullPath[i + 2].stationName === "京口" ||
-                    fullPath[i].stationName === "東姫路" &&
-                    fullPath[i].lineName === "サンヨ" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "キシン" &&
-                    fullPath[i + 2].stationName === "播磨高岡"
-                )
-                    return [
-                        { "stationName": "大阪・新大阪", "lineName": fullPath[1].lineName },
-                        ...fullPath.slice(2)
-                    ]
-            }
-        }
-        if (fullPath[0].stationName === "大阪") {
-            for (let i = 0; i < fullPath.length - 2; i++) {
-                if (fullPath[i + 1].stationName === "東姫路" &&
-                    fullPath[i + 1].lineName === "サンヨ" &&
-                    fullPath[i + 2].stationName === "姫路" &&
-                    fullPath[i + 2].lineName === null ||
-                    fullPath[i].stationName === "東姫路" &&
-                    fullPath[i].lineName === "サンヨ" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "サンヨ" &&
-                    fullPath[i + 2].stationName === "英賀保" ||
-                    fullPath[i].stationName === "東姫路" &&
-                    fullPath[i].lineName === "サンヨ" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "ハンタ" &&
-                    fullPath[i + 2].stationName === "京口" ||
-                    fullPath[i].stationName === "東姫路" &&
-                    fullPath[i].lineName === "サンヨ" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "キシン" &&
-                    fullPath[i + 2].stationName === "播磨高岡"
-                )
-                    return [
-                        { "stationName": "大阪・新大阪", "lineName": fullPath[1].lineName },
-                        ...fullPath.slice(1)
-                    ]
-            }
-        }
-        if (fullPath[fullPath.length - 1].stationName === "新大阪") {
-            if (fullPath[0].stationName === "姫路" &&
-                fullPath[1].lineName === "サンヨ" &&
-                fullPath[1].stationName === "東姫路"
-            ) {
-                return [
-                    ...fullPath.slice(0, fullPath.length - 2),
-                    { "stationName": "大阪・新大阪", "lineName": null }
-                ]
-            }
-            for (let i = 0; i < fullPath.length - 2; i++) {
-                if (
-                    fullPath[i].stationName === "英賀保" &&
-                    fullPath[i].lineName === "サンヨ" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "サンヨ" &&
-                    fullPath[i + 2].stationName === "東姫路" ||
-                    fullPath[i].stationName === "京口" &&
-                    fullPath[i].lineName === "ハンタ" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "サンヨ" &&
-                    fullPath[i + 2].stationName === "東姫路" ||
-                    fullPath[i].stationName === "播磨高岡" &&
-                    fullPath[i].lineName === "キシン" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "サンヨ" &&
-                    fullPath[i + 2].stationName === "東姫路"
-                )
-                    return [
-                        ...fullPath.slice(0, fullPath.length - 2),
-                        { "stationName": "大阪・新大阪", "lineName": null }
-                    ]
-            }
-        }
-        if (fullPath[fullPath.length - 1].stationName === "大阪") {
-            if (fullPath[0].stationName === "姫路" &&
-                fullPath[1].lineName === "サンヨ" &&
-                fullPath[1].stationName === "東姫路"
-            ) {
-                return [
-                    ...fullPath.slice(0, fullPath.length - 1),
-                    { "stationName": "大阪・新大阪", "lineName": null }
-                ]
-            }
-            for (let i = 0; i < fullPath.length - 2; i++) {
-                if (
-                    fullPath[i].stationName === "英賀保" &&
-                    fullPath[i].lineName === "サンヨ" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "サンヨ" &&
-                    fullPath[i + 2].stationName === "東姫路" ||
-                    fullPath[i].stationName === "京口" &&
-                    fullPath[i].lineName === "ハンタ" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "サンヨ" &&
-                    fullPath[i + 2].stationName === "東姫路" ||
-                    fullPath[i].stationName === "播磨高岡" &&
-                    fullPath[i].lineName === "キシン" &&
-                    fullPath[i + 1].stationName === "姫路" &&
-                    fullPath[i + 1].lineName === "サンヨ" &&
-                    fullPath[i + 2].stationName === "東姫路"
-                )
-                    return [
-                        ...fullPath.slice(0, fullPath.length - 1),
-                        { "stationName": "大阪・新大阪", "lineName": null }
-                    ]
-            }
-        }
-        return fullPath;
-    }
-
-    // 第89条 北新地駅発又は着となる片道普通旅客運賃の計算方
-    private applyKitashinchiRule(fullPath: PathStep[]): [PathStep[], number] {
-        let cnt = 0;
-        if (fullPath.length === 6 &&
-            fullPath[0].stationName === "北新地" &&
-            fullPath[0].lineName === "トウサ" &&
-            fullPath[1].stationName === "新福島" &&
-            fullPath[1].lineName === "トウサ" &&
-            fullPath[2].stationName === "海老江" &&
-            fullPath[2].lineName === "トウサ" &&
-            fullPath[3].stationName === "御幣島" &&
-            fullPath[3].lineName === "トウサ" &&
-            fullPath[4].stationName === "加島" &&
-            fullPath[4].lineName === "トウサ" &&
-            fullPath[5].stationName === "尼崎" ||
-            fullPath.length > 6 &&
-            fullPath[0].stationName === "北新地" &&
-            fullPath[0].lineName === "トウサ" &&
-            fullPath[1].stationName === "新福島" &&
-            fullPath[1].lineName === "トウサ" &&
-            fullPath[2].stationName === "海老江" &&
-            fullPath[2].lineName === "トウサ" &&
-            fullPath[3].stationName === "御幣島" &&
-            fullPath[3].lineName === "トウサ" &&
-            fullPath[4].stationName === "加島" &&
-            fullPath[4].lineName === "トウサ" &&
-            fullPath[5].stationName === "尼崎" &&
-            fullPath[5].lineName === "トウカ" &&
-            fullPath[6].stationName === "立花" ||
-            fullPath.length > 6 &&
-            fullPath[0].stationName === "北新地" &&
-            fullPath[0].lineName === "トウサ" &&
-            fullPath[1].stationName === "新福島" &&
-            fullPath[1].lineName === "トウサ" &&
-            fullPath[2].stationName === "海老江" &&
-            fullPath[2].lineName === "トウサ" &&
-            fullPath[3].stationName === "御幣島" &&
-            fullPath[3].lineName === "トウサ" &&
-            fullPath[4].stationName === "加島" &&
-            fullPath[4].lineName === "トウサ" &&
-            fullPath[5].stationName === "尼崎" &&
-            fullPath[5].lineName === "フクチ" &&
-            fullPath[6].stationName === "塚口"
-        ) {
-            fullPath = [
-                { "stationName": "北新地", "lineName": "トウサ" },
-                ...fullPath.slice(5)
-            ]
-            cnt += 1;
-        }
-
-        if (fullPath.length === 6 &&
-            fullPath[fullPath.length - 6].stationName === "尼崎" &&
-            fullPath[fullPath.length - 6].lineName === "トウサ" &&
-            fullPath[fullPath.length - 5].stationName === "加島" &&
-            fullPath[fullPath.length - 5].lineName === "トウサ" &&
-            fullPath[fullPath.length - 4].stationName === "御幣島" &&
-            fullPath[fullPath.length - 4].lineName === "トウサ" &&
-            fullPath[fullPath.length - 3].stationName === "海老江" &&
-            fullPath[fullPath.length - 3].lineName === "トウサ" &&
-            fullPath[fullPath.length - 2].stationName === "新福島" &&
-            fullPath[fullPath.length - 2].lineName === "トウサ" &&
-            fullPath[fullPath.length - 1].stationName === "北新地" ||
-            fullPath.length > 6 &&
-            fullPath[fullPath.length - 7].stationName === "立花" &&
-            fullPath[fullPath.length - 7].lineName === "東海道" &&
-            fullPath[fullPath.length - 6].stationName === "尼崎" &&
-            fullPath[fullPath.length - 6].lineName === "トウサ" &&
-            fullPath[fullPath.length - 5].stationName === "加島" &&
-            fullPath[fullPath.length - 5].lineName === "トウサ" &&
-            fullPath[fullPath.length - 4].stationName === "御幣島" &&
-            fullPath[fullPath.length - 4].lineName === "トウサ" &&
-            fullPath[fullPath.length - 3].stationName === "海老江" &&
-            fullPath[fullPath.length - 3].lineName === "トウサ" &&
-            fullPath[fullPath.length - 2].stationName === "新福島" &&
-            fullPath[fullPath.length - 2].lineName === "トウサ" &&
-            fullPath[fullPath.length - 1].stationName === "北新地" ||
-            fullPath.length > 6 &&
-            fullPath[fullPath.length - 7].stationName === "塚口" &&
-            fullPath[fullPath.length - 7].lineName === "福知山線" &&
-            fullPath[fullPath.length - 6].stationName === "尼崎" &&
-            fullPath[fullPath.length - 6].lineName === "トウサ" &&
-            fullPath[fullPath.length - 5].stationName === "加島" &&
-            fullPath[fullPath.length - 5].lineName === "トウサ" &&
-            fullPath[fullPath.length - 4].stationName === "御幣島" &&
-            fullPath[fullPath.length - 4].lineName === "トウサ" &&
-            fullPath[fullPath.length - 3].stationName === "海老江" &&
-            fullPath[fullPath.length - 3].lineName === "トウサ" &&
-            fullPath[fullPath.length - 2].stationName === "新福島" &&
-            fullPath[fullPath.length - 2].lineName === "トウサ" &&
-            fullPath[fullPath.length - 1].stationName === "北新地"
-        ) {
-            fullPath = [
-                ...fullPath.slice(0, fullPath.length - 6),
-                { "stationName": "尼崎", "lineName": "トウサ" },
-                ...fullPath.slice(fullPath.length - 1, fullPath.length)
-            ]
-            cnt += 1
-        }
-        return [fullPath, cnt];
-    }
-
-    private convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[] {
-        let routeSegments: RouteSegment[] = [];
-        for (let i = 0; i < path.length - 1; i++) {
-            const line = path[i].lineName;
-            if (line === null) continue;
-            const routeSegment: RouteSegment = load.getRouteSegment(line, path[i].stationName, path[i + 1].stationName);
-            routeSegments.push(routeSegment);
-        }
-        return routeSegments;
-    }
-
-    private convertPathStepsToRouteKeys(path: PathStep[]): string[] {
-        let routeKeys: string[] = [];
-        for (let i = 0; i < path.length - 1; i++) {
-            const line = path[i].lineName;
-            if (line === null) continue;
-            const routeKey: string = load.createRouteKey(line, path[i].stationName, path[i + 1].stationName);
-            routeKeys.push(routeKey);
-        }
-        return routeKeys;
-    }
-
-    private calculateTotalEigyoKilo(routeSegments: RouteSegment[]): number {
-        let totalEigyoKilo: number = 0;
-        for (const routeSegment of routeSegments) {
-            totalEigyoKilo += routeSegment.eigyoKilo;
-        }
-        return totalEigyoKilo;
-    }
-
-    private calculateTotalGiseiKilo(routeSegments: RouteSegment[]): number {
-        let totalGiseiKilo: number = 0;
-        for (const routeSegment of routeSegments) {
-            totalGiseiKilo += routeSegment.giseiKilo;
-        }
-        return totalGiseiKilo;
-    }
-
-    private calculateFareFromCorrectedPath(correctedPath: PathStep[]): number {
+class FareCalculator {
+    public calculateFareFromCorrectedPath(correctedPath: PathStep[]): number {
         if (correctedPath.length === 1) return 0;
 
         // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
@@ -567,7 +26,7 @@ class Calculator {
             const routeSegment = load.getRouteSegment(line, correctedPath[i].stationName, correctedPath[i + 1].stationName);
 
             // 全ての駅間の駅名を取得
-            routeKeys.add(load.createRouteKey(routeSegment.line, routeSegment.station0, routeSegment.station1));
+            routeKeys.add(createRouteKey(routeSegment.line, routeSegment.station0, routeSegment.station1));
             routeSegments.push(routeSegment);
 
             // routeSegmentを会社ごとに分ける
@@ -607,21 +66,21 @@ class Calculator {
         }
 
         // 第85条の２ 加算普通旅客運賃の適用区間及び額
-        if (routeKeys.has(load.createRouteKey("チトセ２", "南千歳", "新千歳空港"))) {
+        if (routeKeys.has(createRouteKey("チトセ２", "南千歳", "新千歳空港"))) {
             fare += 20;
         }
-        if (routeKeys.has(load.createRouteKey("カンク", "日根野", "りんくうタウン"))
-            && routeKeys.has(load.createRouteKey("カンク", "りんくうタウン", "関西空港"))) {
+        if (routeKeys.has(createRouteKey("カンク", "日根野", "りんくうタウン"))
+            && routeKeys.has(createRouteKey("カンク", "りんくうタウン", "関西空港"))) {
             fare += 220;
-        } else if (routeKeys.has(load.createRouteKey("カンク", "日根野", "りんくうタウン"))) {
+        } else if (routeKeys.has(createRouteKey("カンク", "日根野", "りんくうタウン"))) {
             fare += 160;
-        } else if (routeKeys.has(load.createRouteKey("カンク", "りんくうタウン", "関西空港"))) {
+        } else if (routeKeys.has(createRouteKey("カンク", "りんくうタウン", "関西空港"))) {
             fare += 170;
         }
-        if (routeKeys.has(load.createRouteKey("ヒサセ", "児島", "宇多津"))) {
+        if (routeKeys.has(createRouteKey("ヒサセ", "児島", "宇多津"))) {
             fare += 110;
         }
-        if (routeKeys.has(load.createRouteKey("ミヤクウ", "田吉", "宮崎空港"))) {
+        if (routeKeys.has(createRouteKey("ミヤクウ", "田吉", "宮崎空港"))) {
             fare += 130;
         }
 
@@ -734,7 +193,7 @@ class Calculator {
     }
 
     private calculateFare(routeSegments: RouteSegment[]): number {
-        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
+        const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
 
         // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
         // （1）幹線内相互発着の場合
@@ -784,7 +243,7 @@ class Calculator {
         }
 
         // 第81条 幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
-        const totalGiseiKilo: number = Math.ceil(this.calculateTotalGiseiKilo(routeSegments) / 10);
+        const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
         const splitKilo = this.calculateSplitKiloOfKansen(totalGiseiKilo);
         if (totalGiseiKilo <= 100) return this.round1000(this.ceil1000(1620 * splitKilo) * 11 / 10) / 100;
         if (totalGiseiKilo <= 300) return this.round1000(this.round10000(1620 * splitKilo) * 11 / 10) / 100;
@@ -793,7 +252,7 @@ class Calculator {
     }
 
     private calculateFareInYamanote(routeSegments: RouteSegment[]): number {
-        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
+        const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
 
         // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
         if (totalEigyoKilo <= 3) return 140;
@@ -808,7 +267,7 @@ class Calculator {
     }
 
     private calculateFareInTokyo(routeSegments: RouteSegment[]): number {
-        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
+        const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
 
         // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
         if (totalEigyoKilo <= 3) return 140;
@@ -824,7 +283,7 @@ class Calculator {
     }
 
     private calculateFareInOsaka(routeSegments: RouteSegment[]): number {
-        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
+        const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
 
         // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
         if (totalEigyoKilo <= 3) return 140;
@@ -840,7 +299,7 @@ class Calculator {
     }
 
     private calculateFare1(routeSegments: RouteSegment[]): number {
-        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
+        const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
 
         // 第84条の２ 北海道旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
         // （1）幹線内相互発着の場合
@@ -919,7 +378,7 @@ class Calculator {
         }
 
         // 第81条の２ 北海道旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
-        const totalGiseiKilo: number = Math.ceil(this.calculateTotalGiseiKilo(routeSegments) / 10);
+        const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
 
         // （1）運賃計算キロが11キロメートルから100キロメートルまでの場合
         if (totalGiseiKilo <= 15) return 360;
@@ -945,8 +404,8 @@ class Calculator {
     }
 
     private calculateFare5(routeSegments: RouteSegment[]): number {
-        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
-        const totalGiseiKilo: number = Math.ceil(this.calculateTotalGiseiKilo(routeSegments) / 10);
+        const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
+        const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
         if (totalGiseiKilo == 0) return 0;
 
         // 第84条の３ 四国旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
@@ -984,8 +443,8 @@ class Calculator {
     }
 
     private calculateFare6(routeSegments: RouteSegment[]): number {
-        const totalEigyoKilo: number = Math.ceil(this.calculateTotalEigyoKilo(routeSegments) / 10);
-        const totalGiseiKilo: number = Math.ceil(this.calculateTotalGiseiKilo(routeSegments) / 10);
+        const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
+        const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
 
         // 第84条の４ 九州旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
         if (totalGiseiKilo == 4 && totalEigyoKilo == 3) return 210;
@@ -1192,33 +651,25 @@ class Calculator {
         return this.round1000(this.round10000(1975 * 300 + 1285 * 300 + 705 * (splitKilo - 600)) * 11 / 10) / 100;
     }
 
+    private convertPathStepsToRouteKeys(path: PathStep[]): string[] {
+        let routeKeys: string[] = [];
+        for (let i = 0; i < path.length - 1; i++) {
+            const line = path[i].lineName;
+            if (line === null) continue;
+            const routeKey: string = createRouteKey(line, path[i].stationName, path[i + 1].stationName);
+            routeKeys.push(routeKey);
+        }
+        return routeKeys;
+    }
+
     // 第140条 鉄道駅バリアフリー料金
-    private calculateBarrierFreeFeeFromCorrectedPath(correctedPath: PathStep[]): number {
+    public calculateBarrierFreeFeeFromCorrectedPath(correctedPath: PathStep[]): number {
         const routeKeys = this.convertPathStepsToRouteKeys(correctedPath);
         if (this.isAllTrainSpecificSections("東京附近", routeKeys)) return 10;
         if (this.isAllTrainSpecificSections("大阪附近", routeKeys)) return 10;
         if (this.isAllTrainSpecificSections("名古屋附近", routeKeys)) return 10;
         return 0;
     }
-
-    private generatePrintedViaStrings(routeSegments: RouteSegment[]): string[] {
-        const viaLines: string[] = [];
-        for (const routeSegment of routeSegments) {
-            if (viaLines.length === 0 || (viaLines[viaLines.length - 1] !== routeSegment.line))
-                viaLines.push(routeSegment.line);
-        }
-        const printedViaLines: string[] = [];
-        for (const viaLine of viaLines) {
-            const printing = load.getPrinting(viaLine)
-            if (printing !== null)
-                printedViaLines.push(printing);
-        }
-        return printedViaLines;
-    }
-
-    private calculateValidDaysFromKilo(totalEigyoKilo: number): number {
-        return totalEigyoKilo <= 1000 ? 1 : Math.ceil(totalEigyoKilo / 2000) + 1;
-    }
 }
 
-export const calc = new Calculator();
+export const calcFare = new FareCalculator();
