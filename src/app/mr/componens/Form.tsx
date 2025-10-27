@@ -168,14 +168,11 @@ export default function Form() {
                             ? formValues.startStation
                             : formValues.segments[index - 1].destinationStation;
 
-                        const previousLine = index > 0 ? formValues.segments[index - 1]?.viaLine : null;
-
                         const availableLineNames = new Set(previousStation?.lines);
 
                         const availableLines = previousStation
                             ? lineData
                                 .filter(line => availableLineNames.has(line.name))
-                                .filter(line => !previousLine || line.name !== previousLine.name)
                             : [];
 
                         const selectedLine = formValues.segments[index]?.viaLine;
