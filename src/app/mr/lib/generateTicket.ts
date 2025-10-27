@@ -2,7 +2,7 @@ import { calculateTotalEigyoKilo, calculateTotalGiseiKilo, calculateValidDaysFro
 import { loadLines } from '@/app/mr/lib/loadLines';
 import { loadKanas } from '@/app/mr/lib/loadKanas';
 import { correctPath } from '@/components/correctPath';
-import { calculateFareFromCorrectedPath, calculateBarrierFreeFeeFromCorrectedPath } from '@/components/calcFare';
+import { calculateFareFromPath, calculateBarrierFreeFeeFromPath } from '@/components/calcFare';
 
 import { RouteRequest, ApiResponse, PathStep } from '@/app/types';
 
@@ -24,8 +24,8 @@ export function processRouteAndCalculateFare(request: RouteRequest): ApiResponse
     const totalEigyoKilo = calculateTotalEigyoKilo(routeSegments)
         + 11 * countKitashinchi;
     const totalGiseiKilo = calculateTotalGiseiKilo(routeSegments);
-    const fare = calculateFareFromCorrectedPath(correctedPath)
-        + calculateBarrierFreeFeeFromCorrectedPath(correctedPath);
+    const fare = calculateFareFromPath(correctedPath)
+        + calculateBarrierFreeFeeFromPath(correctedPath);
     const validDays = calculateValidDaysFromKilo(totalEigyoKilo);
 
     // 経由文字列の生成 (ユーザー入力の経路を使用)

@@ -3,7 +3,7 @@ import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo } from
 
 import { PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
 
-export function calculateFareFromCorrectedPath(correctedPath: PathStep[]): number {
+export function calculateFareFromPath(correctedPath: PathStep[]): number {
     if (correctedPath.length === 1) return 0;
 
     // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
@@ -662,7 +662,7 @@ function convertPathStepsToRouteKeys(path: PathStep[]): string[] {
 }
 
 // 第140条 鉄道駅バリアフリー料金
-export function calculateBarrierFreeFeeFromCorrectedPath(correctedPath: PathStep[]): number {
+export function calculateBarrierFreeFeeFromPath(correctedPath: PathStep[]): number {
     const routeKeys = convertPathStepsToRouteKeys(correctedPath);
     if (isAllTrainSpecificSections("東京附近", routeKeys)) return 10;
     if (isAllTrainSpecificSections("大阪附近", routeKeys)) return 10;
