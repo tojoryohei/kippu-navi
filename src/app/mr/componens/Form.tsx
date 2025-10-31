@@ -242,10 +242,10 @@ export default function Form() {
             <div className="my-8 p-4">
                 {isLoading && <p className="py-5 border-t">計算中...</p>}
                 {error && <p className="py-5 border-t"></p> && <p className="text-red-500">{error}</p>}
-                {serverTime && <p className="py-5 border-t">{"計算時間(ms): " + serverTime}</p>}
                 {result && (
                     <div>
                         <h2 className="py-5 text-2xl border-t">計算結果</h2>
+                        <div>計算時間(ms): {serverTime}</div>
                         <div>営業キロ: {(result.totalEigyoKilo / 10).toFixed(1)} km</div>
                         <div>運賃計算キロ（擬制キロ）: {(result.totalGiseiKilo / 10).toFixed(1)} km</div>
                         <div className="flex justify-between items-center my-3 gap-2">
