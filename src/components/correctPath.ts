@@ -1,5 +1,5 @@
 import { load } from '@/components/load';
-import { calculateTotalEigyoKilo, convertPathStepsToRouteSegments } from '@/app/utils/calc';
+import { calculateTotalEigyoKilo, convertPathStepsToRouteSegments, createRouteKey } from '@/app/utils/calc';
 
 import { PathStep, RouteSegment } from '@/app/types';
 
@@ -9,6 +9,7 @@ export function correctPath(fullPath: PathStep[]): [PathStep[], number] {
     // fullPath = correctSpecificSections(fullPath);
 
     // 第70条 旅客が次に掲げる図の太線区間を通過する場合
+    //fullPath = applyPassingBoldLineAreaRule(fullPath);
 
     // 第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方
     fullPath = applyCityRule(fullPath);
@@ -43,7 +44,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 correctStation => pathOutsideSegment.some(p => p.stationName === correctStation)
             );
 
-            if (!isStraddling) {
+            if (isStraddling === false) {
                 const correctedPath = [
                     ...fullPath.slice(0, startIndex),
                     ...correctPath,
@@ -53,6 +54,36 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
             }
         }
     }
+    return fullPath;
+}
+
+// 第70条 旅客が次に掲げる図の太線区間を通過する場合
+function applyPassingBoldLineAreaRule(fullPath: PathStep[]) {
+    const stationsInBoldLineArea = load.getTrainSpecificSections("電車大環状線");
+    const changeIdx: number[] = [];
+
+    for (let i = 0; i < fullPath.length - 2; i++) {
+        const line0 = fullPath[i].lineName;
+        const line1 = fullPath[i + 1].lineName;
+        if (line0 === null || line1 === null) throw new Error(`applyBoldLineAreaRuleでエラーが発生しました.`);
+        if (stationsInBoldLineArea.has(createRouteKey(line0, fullPath[i].stationName, fullPath[i + 1].stationName)) !==
+            stationsInBoldLineArea.has(createRouteKey(line1, fullPath[i + 1].stationName, fullPath[i + 2].stationName)))
+            changeIdx.push(i + 1);
+    }
+    if ((changeIdx.length === 3 || changeIdx.length === 4) &&
+        stationsInBoldLineArea.has(createRouteKey(fullPath[0].lineName!, fullPath[0].stationName, fullPath[1].stationName)) === true)
+        fullPath = [
+            ...fullPath.slice(0, changeIdx[2]),
+            { "stationName": fullPath[changeIdx[2]].stationName, "lineName": "ツウカ" },
+            ...fullPath.slice(changeIdx[3])
+        ]
+    if ((changeIdx.length === 2 || changeIdx.length === 3) &&
+        stationsInBoldLineArea.has(createRouteKey(fullPath[0].lineName!, fullPath[0].stationName, fullPath[1].stationName)) === false)
+        fullPath = [
+            ...fullPath.slice(0, changeIdx[0]),
+            { "stationName": fullPath[changeIdx[0]].stationName, "lineName": "ツウカ" },
+            ...fullPath.slice(changeIdx[1])
+        ]
     return fullPath;
 }
 
@@ -82,7 +113,7 @@ function applyCityRule(fullPath: PathStep[]): PathStep[] {
 
         // 着駅適用
         if (stationsInCity.has(fullPath[fullPath.length - 1].stationName)) {
-            let changingIdx: number[] = [];
+            const changingIdx: number[] = [];
             for (let i = 0; i < fullPath.length - 1; i++) {
                 if (i !== 0 &&
                     city.name === "大阪市内" &&
@@ -124,7 +155,7 @@ function applyCityRule(fullPath: PathStep[]): PathStep[] {
 
         // 発駅適用
         if (stationsInCity.has(fullPath[0].stationName)) {
-            let changingIdx: number[] = [];
+            const changingIdx: number[] = [];
             for (let i = 0; i < fullPath.length - 1; i++) {
                 if (i !== 0 &&
                     city.name === "大阪市内" &&
@@ -175,7 +206,7 @@ function applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
 
     // 着駅適用
     if (stationsInYamanote.has(fullPath[fullPath.length - 1].stationName)) {
-        let changingIdx: number[] = [];
+        const changingIdx: number[] = [];
         for (let i = 0; i < fullPath.length - 1; i++) {
             if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
                 changingIdx.push(i);
@@ -193,7 +224,7 @@ function applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
 
     // 発駅適用
     if (stationsInYamanote.has(fullPath[0].stationName)) {
-        let changingIdx: number[] = [];
+        const changingIdx: number[] = [];
         for (let i = 0; i < fullPath.length - 1; i++) {
             if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
                 changingIdx.push(i);

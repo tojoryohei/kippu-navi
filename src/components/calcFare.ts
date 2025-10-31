@@ -1,15 +1,15 @@
 import { load } from '@/components/load';
-import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo } from '@/app/utils/calc';
+import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo, isAllTrainSpecificSections } from '@/app/utils/calc';
 
-import { PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
+import { PathStep, RouteSegment } from '@/app/types';
 
-export function calculateFareFromPath(correctedPath: PathStep[]): number {
-    if (correctedPath.length === 1) return 0;
+export function calculateFareFromPath(fullPath: PathStep[]): number {
+    if (fullPath.length === 1) return 0;
 
     // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
     const specificFares = load.getSpecificFares();
     for (const specificFare of specificFares) {
-        if (JSON.stringify(correctedPath) === JSON.stringify(specificFare.sections)) {
+        if (JSON.stringify(fullPath) === JSON.stringify(specificFare.sections)) {
             return specificFare.fare;
         }
     }
@@ -19,10 +19,10 @@ export function calculateFareFromPath(correctedPath: PathStep[]): number {
     const routeSegmentsByCompany: RouteSegment[][] = [[], [], [], [], [], [], []];
     // 0 = その他, 1 = JR北海道, 2 = JR東日本, 3 = JR東海, 4 = JR西日本, 5 = JR四国, 6 = JR九州
 
-    for (let i = 0; i < correctedPath.length - 1; i++) {
-        const line = correctedPath[i].lineName;
+    for (let i = 0; i < fullPath.length - 1; i++) {
+        const line = fullPath[i].lineName;
         if (line === null) throw new Error(`calculateFareFromCorrectedPathでエラーが発生しました.`);
-        const routeSegment = load.getRouteSegment(line, correctedPath[i].stationName, correctedPath[i + 1].stationName);
+        const routeSegment = load.getRouteSegment(line, fullPath[i].stationName, fullPath[i + 1].stationName);
 
         // 全ての駅間の駅名を取得
         routeKeys.add(createRouteKey(routeSegment.line, routeSegment.station0, routeSegment.station1));
@@ -84,14 +84,6 @@ export function calculateFareFromPath(correctedPath: PathStep[]): number {
     }
 
     return fare;
-}
-
-function isAllTrainSpecificSections(specificSectionName: keyof TrainSpecificSection, routeKeys: string[]): boolean {
-    const trainSpecificSection = load.getTrainSpecificSections(specificSectionName);
-    for (const routeKey of routeKeys) {
-        if (trainSpecificSection.has(routeKey) === false) return false;
-    }
-    return true;
 }
 
 function isAllKansen(routeSegments: RouteSegment[]): boolean {
@@ -662,8 +654,8 @@ function convertPathStepsToRouteKeys(path: PathStep[]): string[] {
 }
 
 // 第140条 鉄道駅バリアフリー料金
-export function calculateBarrierFreeFeeFromPath(correctedPath: PathStep[]): number {
-    const routeKeys = convertPathStepsToRouteKeys(correctedPath);
+export function calculateBarrierFreeFeeFromPath(fullPath: PathStep[]): number {
+    const routeKeys = convertPathStepsToRouteKeys(fullPath);
     if (isAllTrainSpecificSections("東京附近", routeKeys)) return 10;
     if (isAllTrainSpecificSections("大阪附近", routeKeys)) return 10;
     if (isAllTrainSpecificSections("名古屋附近", routeKeys)) return 10;
