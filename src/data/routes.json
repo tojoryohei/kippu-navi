@@ -1313,7 +1313,7 @@
     {"line": "ケイヒ", "station0": "安芸矢口", "station1": "戸坂", "eigyoKilo": 28, "giseiKilo": 31, "isLocal": true, "company": 4},
     {"line": "ケイヒ", "station0": "戸坂", "station1": "矢賀", "eigyoKilo": 48, "giseiKilo": 53, "isLocal": true, "company": 4},
     {"line": "ケイヒ", "station0": "矢賀", "station1": "広島", "eigyoKilo": 22, "giseiKilo": 24, "isLocal": true, "company": 4},
-    {"line": "ケイヒ", "station0": "向原", "station1": "広島市内", "eigyoKilo": 473, "giseiKilo": 430, "isLocal": true, "company": 4},
+    {"line": "ケイヒ", "station0": "向原", "station1": "広島市内", "eigyoKilo": 430, "giseiKilo": 473, "isLocal": true, "company": 4},
     {"line": "ケイヨ", "station0": "東京", "station1": "八丁堀", "eigyoKilo": 12, "giseiKilo": 12, "isLocal": false, "company": 2},
     {"line": "ケイヨ", "station0": "八丁堀", "station1": "越中島", "eigyoKilo": 16, "giseiKilo": 16, "isLocal": false, "company": 2},
     {"line": "ケイヨ", "station0": "越中島", "station1": "潮見", "eigyoKilo": 26, "giseiKilo": 26, "isLocal": false, "company": 2},
