@@ -206,8 +206,8 @@ function calculateFare(routeSegments: RouteSegment[]): number {
         const splitKilo = calculateSplitKiloOfKansen(totalEigyoKilo);
         if (totalEigyoKilo <= 100) return round1000(ceil1000(1620 * splitKilo) * 11 / 10) / 100;
         if (totalEigyoKilo <= 300) return round1000(round10000(1620 * splitKilo) * 11 / 10) / 100;
-        if (totalEigyoKilo <= 600) return round1000(round10000(1620 * 300 + 1280 * (splitKilo - 300)) * 11 / 10) / 100;
-        return round1000(round10000(1620 * 300 + 1280 * 300 + 705 * (splitKilo - 600)) * 11 / 10) / 100;
+        if (totalEigyoKilo <= 600) return round1000(round10000(1620 * 300 + 1285 * (splitKilo - 300)) * 11 / 10) / 100;
+        return round1000(round10000(1620 * 300 + 1285 * 300 + 705 * (splitKilo - 600)) * 11 / 10) / 100;
     }
 
     // 第77条の５ 地方交通線内相互発着の大人片道普通旅客運賃

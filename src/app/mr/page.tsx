@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <main className="max-w-md mx-auto">
-      <h1 className="text-xl font-bold m-4">JR運賃計算（経路入力）</h1>
+      <h1 className="text-xl font-bold m-4">運賃計算（経路入力）</h1>
       <Form />
     </main>
   );

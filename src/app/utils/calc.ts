@@ -45,11 +45,11 @@ export function convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[
     return routeSegments;
 }
 
-export function generatePrintedViaStrings(routeSegments: RouteSegment[]): string[] {
+export function generatePrintedViaStrings(pathSteps: PathStep[]): string[] {
     const viaLines: string[] = [];
-    for (const routeSegment of routeSegments) {
-        if (viaLines.length === 0 || (viaLines[viaLines.length - 1] !== routeSegment.line))
-            viaLines.push(routeSegment.line);
+    for (const pathStep of pathSteps) {
+        if (viaLines.length === 0 || (viaLines[viaLines.length - 1] !== pathStep.lineName!))
+            viaLines.push(pathStep.lineName!);
     }
     const printedViaLines: string[] = [];
     for (const viaLine of viaLines) {

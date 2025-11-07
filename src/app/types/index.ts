@@ -42,6 +42,11 @@ export interface IFormInput {
     }[];
 }
 
+export interface SplitFormInput {
+    startStation: Station | null;
+    endStation: Station | null;
+}
+
 export interface PathStep {
     stationName: string;
     lineName: string | null;
@@ -61,8 +66,23 @@ export interface ApiResponse {
     validDays: number;
 }
 
+export interface SplitApiRequest {
+    startStationName: string;
+    endStationName: string;
+}
+
+export interface SplitApiResponse {
+    totalFare: number;
+    segments: SplitSegment[];
+}
+
 export interface ApiFullResponse {
     data: ApiResponse;
+    time: number;
+}
+
+export interface ApiSplitFullResponse {
+    data: SplitApiResponse;
     time: number;
 }
 
@@ -74,6 +94,13 @@ export interface RouteSegment {
     giseiKilo: number;
     isLocal: boolean;
     company: number;
+}
+
+export interface SplitSegment {
+    departureStation: string;
+    arrivalStation: string;
+    fare: number;
+    printedViaLines: string[];
 }
 
 export interface SpecificFare {

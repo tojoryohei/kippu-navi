@@ -8,6 +8,7 @@ class Load {
     private cities: City[] = [];
     private printings: Map<string, string> = new Map();
     private routes: Map<string, RouteSegment> = new Map();
+    private routesData: RouteSegment[] = [];
     private specificFares: SpecificFare[] = [];
     private specificSections: SpecificSection[] = [];
     private trainSpecificSections!: TrainSpecificSection;
@@ -33,8 +34,16 @@ class Load {
 
             // routes.jsonの読み込み
             const routesPath = path.join(process.cwd(), 'src', 'data', 'routes.json');
-            const routesData: RouteSegment[] = JSON.parse(fs.readFileSync(routesPath, 'utf-8'));
-            for (const route of routesData) {
+            this.routesData = JSON.parse(fs.readFileSync(routesPath, 'utf-8'));
+            for (const route of this.routesData) {
+                const key = createRouteKey(route.line, route.station0, route.station1);
+                this.routes.set(key, route);
+            }
+
+            // addRoutes.jsonの読み込み
+            const addRoutesPath = path.join(process.cwd(), 'src', 'data', 'addRoutes.json');
+            const addRoutesData = JSON.parse(fs.readFileSync(addRoutesPath, 'utf-8'));
+            for (const route of addRoutesData) {
                 const key = createRouteKey(route.line, route.station0, route.station1);
                 this.routes.set(key, route);
             }
@@ -79,6 +88,10 @@ class Load {
             throw new Error(` ${line}上に${stationName0}と${stationName1}間のデータが見つかりません.`);
         }
         return routesSegment;
+    }
+
+    public getRoutesData(): RouteSegment[] {
+        return this.routesData;
     }
 
     public getSpecificFares(): SpecificFare[] {

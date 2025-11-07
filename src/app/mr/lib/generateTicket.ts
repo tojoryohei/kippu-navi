@@ -29,7 +29,7 @@ export function processRouteAndCalculateFare(request: RouteRequest): ApiResponse
     const validDays = calculateValidDaysFromKilo(totalEigyoKilo);
 
     // 経由文字列の生成 (ユーザー入力の経路を使用)
-    const printedViaLines = generatePrintedViaStrings(routeSegments);
+    const printedViaLines = generatePrintedViaStrings(correctedPath);
     return {
         totalEigyoKilo,
         totalGiseiKilo,

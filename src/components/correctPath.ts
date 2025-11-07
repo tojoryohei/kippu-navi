@@ -114,7 +114,7 @@ function applyCityRule(fullPath: PathStep[]): PathStep[] {
         // 着駅適用
         if (stationsInCity.has(fullPath[fullPath.length - 1].stationName)) {
             const changingIdx: number[] = [];
-            for (let i = 0; i < fullPath.length - 1; i++) {
+            for (let i = fullPath.length - 2; i >= 0; i--) {
                 if (i !== 0 &&
                     city.name === "大阪市内" &&
                     fullPath[i - 1].stationName === "加島" &&
@@ -144,7 +144,7 @@ function applyCityRule(fullPath: PathStep[]): PathStep[] {
             }
             if (changingIdx.length === 1 || changingIdx.length === 2) {
                 const applyCityRulePath = [
-                    ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
+                    ...fullPath.slice(0, changingIdx[0] + 1),
                     { "stationName": city.name, "lineName": null }
                 ];
                 const routeSegments: RouteSegment[] = convertPathStepsToRouteSegments(applyCityRulePath);
@@ -186,8 +186,8 @@ function applyCityRule(fullPath: PathStep[]): PathStep[] {
             }
             if (changingIdx.length === 1 || changingIdx.length === 2) {
                 const applyCityRulePath = [
-                    { "stationName": city.name, "lineName": fullPath[changingIdx[changingIdx.length - 1]].lineName },
-                    ...fullPath.slice(changingIdx[changingIdx.length - 1] + 1)
+                    { "stationName": city.name, "lineName": fullPath[changingIdx[0]].lineName },
+                    ...fullPath.slice(changingIdx[0] + 1)
                 ];
                 const routeSegments: RouteSegment[] = convertPathStepsToRouteSegments(applyCityRulePath);
                 if (calculateTotalEigyoKilo(routeSegments) > threshold)
