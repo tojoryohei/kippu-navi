@@ -3,7 +3,7 @@ import { calculateTotalEigyoKilo, convertPathStepsToRouteSegments, createRouteKe
 
 import { PathStep, RouteSegment } from '@/app/types';
 
-export function correctPath(fullPath: PathStep[]): [PathStep[], number] {
+export function correctPath(fullPath: PathStep[]): PathStep[] {
 
     // 第69条 特定区間における旅客運賃・料金計算の営業キロ又は運賃計算キロ
     // fullPath = correctSpecificSections(fullPath);
@@ -21,10 +21,9 @@ export function correctPath(fullPath: PathStep[]): [PathStep[], number] {
     fullPath = applyOsakaRule(fullPath);
 
     // 第89条 北新地駅発又は着となる片道普通旅客運賃の計算方
-    const [kitashinchiAdjustedPath, countKitashinchi] = applyKitashinchiRule(fullPath);
-    fullPath = kitashinchiAdjustedPath;
+    fullPath = applyKitashinchiRule(fullPath);
 
-    return [fullPath, countKitashinchi];
+    return fullPath;
 }
 
 function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
@@ -372,7 +371,7 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
 }
 
 // 第89条 北新地駅発又は着となる片道普通旅客運賃の計算方
-function applyKitashinchiRule(fullPath: PathStep[]): [PathStep[], number] {
+function applyKitashinchiRule(fullPath: PathStep[]): PathStep[] {
     let cnt = 0;
     if (fullPath.length === 6 &&
         fullPath[0].stationName === "北新地" &&
@@ -419,7 +418,6 @@ function applyKitashinchiRule(fullPath: PathStep[]): [PathStep[], number] {
             { "stationName": "北新地", "lineName": "トウサ" },
             ...fullPath.slice(5)
         ]
-        cnt += 1;
     }
 
     if (fullPath.length === 6 &&
@@ -468,7 +466,6 @@ function applyKitashinchiRule(fullPath: PathStep[]): [PathStep[], number] {
             { "stationName": "尼崎", "lineName": "トウサ" },
             ...fullPath.slice(fullPath.length - 1, fullPath.length)
         ]
-        cnt += 1
     }
-    return [fullPath, cnt];
+    return fullPath;
 }

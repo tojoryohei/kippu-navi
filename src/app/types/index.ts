@@ -58,7 +58,6 @@ export interface RouteRequest {
 
 export interface ApiResponse {
     totalEigyoKilo: number;
-    totalGiseiKilo: number;
     departureStation: string;
     arrivalStation: string;
     printedViaLines: string[];

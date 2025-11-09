@@ -13,7 +13,7 @@ export function processRouteAndCalculateFare(request: RouteRequest): ApiResponse
     const fullPath = createFullPath(userInputPath);
 
     // 経路の補正
-    const [correctedPath, countKitashinchi] = correctPath(fullPath);
+    const correctedPath = correctPath(fullPath);
 
     // 出発駅と到着駅の名前を取得して変数に代入
     const departureStation = correctedPath[0].stationName;
@@ -22,8 +22,6 @@ export function processRouteAndCalculateFare(request: RouteRequest): ApiResponse
     // 営業キロと運賃の計算
     const routeSegments = convertPathStepsToRouteSegments(correctedPath);
     const totalEigyoKilo = calculateTotalEigyoKilo(routeSegments)
-        + 11 * countKitashinchi;
-    const totalGiseiKilo = calculateTotalGiseiKilo(routeSegments);
     const fare = calculateFareFromPath(correctedPath)
         + calculateBarrierFreeFeeFromPath(correctedPath);
     const validDays = calculateValidDaysFromKilo(totalEigyoKilo);
@@ -32,7 +30,6 @@ export function processRouteAndCalculateFare(request: RouteRequest): ApiResponse
     const printedViaLines = generatePrintedViaStrings(correctedPath);
     return {
         totalEigyoKilo,
-        totalGiseiKilo,
         departureStation,
         arrivalStation,
         fare,

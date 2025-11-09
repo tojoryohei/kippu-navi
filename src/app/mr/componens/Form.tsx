@@ -168,11 +168,14 @@ export default function Form() {
                             ? formValues.startStation
                             : formValues.segments[index - 1].destinationStation;
 
+                        const previousLine = index > 0 ? formValues.segments[index - 1]?.viaLine : null;
+
                         const availableLineNames = new Set(previousStation?.lines);
 
                         const availableLines = previousStation
                             ? lineData
                                 .filter(line => availableLineNames.has(line.name))
+                                .filter(line => !previousLine || line.name !== previousLine.name)
                             : [];
 
                         const selectedLine = formValues.segments[index]?.viaLine;
@@ -247,9 +250,8 @@ export default function Form() {
                         <h2 className="py-5 text-2xl border-t">計算結果</h2>
                         <div>計算時間(ms): {serverTime}</div>
                         <div>営業キロ: {(result.totalEigyoKilo / 10).toFixed(1)} km</div>
-                        <div>運賃計算キロ（擬制キロ）: {(result.totalGiseiKilo / 10).toFixed(1)} km</div>
                         <div className="flex justify-between items-center my-3 gap-2">
-                            <div className="flex-1 text-right break-words">
+                            <div className="flex-1 text-right text-wrap">
                                 <div className='font-bold text-2xl flex justify-around'>
                                     {result.departureStation.split('').map((char, idx) => (
                                         <span key={idx}>{char}</span>
@@ -257,7 +259,7 @@ export default function Form() {
                                 </div>
                             </div>
                             <div className="text-2xl shrink-0 text-center">→</div>
-                            <div className="flex-1 text-left break-words">
+                            <div className="flex-1 text-left text-wrap">
                                 <div className='font-bold text-2xl flex justify-around'>
                                     {result.arrivalStation.split('').map((char, idx) => (
                                         <span key={idx}>{char}</span>
