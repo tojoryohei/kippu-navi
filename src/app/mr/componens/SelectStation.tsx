@@ -30,7 +30,7 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: Sel
             .replace('ｒ', 'Ｒ')
             .replace('R', 'Ｒ')
             .replace('ヶ', 'ケ')
-        return target.name.includes(rawInput) || target.kana.includes(rawInput);
+        return target.name.includes(rawInput) || target.kana.startsWith(rawInput);
     };
 
     return (
