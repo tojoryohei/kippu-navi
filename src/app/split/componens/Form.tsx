@@ -32,7 +32,7 @@ export default function SplitForm() {
         };
 
         try {
-            const response = await fetch('/api/split', { // APIエンドポイントは /api/split を想定
+            const response = await fetch('/api/split', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(apiRequestBody),
