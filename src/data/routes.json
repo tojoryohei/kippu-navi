@@ -657,7 +657,6 @@
     {"line": "オサヒ", "station0": "ＪＲ俊徳道", "station1": "ＪＲ河内永和", "eigyoKilo": 6, "giseiKilo": 6, "isLocal": false, "company": 4},
     {"line": "オサヒ", "station0": "ＪＲ河内永和", "station1": "高井田中央", "eigyoKilo": 16, "giseiKilo": 16, "isLocal": false, "company": 4},
     {"line": "オサヒ", "station0": "高井田中央", "station1": "放出", "eigyoKilo": 17, "giseiKilo": 17, "isLocal": false, "company": 4},
-    {"line": "オサヒ", "station0": "放出", "station1": "鴫野", "eigyoKilo": 16, "giseiKilo": 16, "isLocal": false, "company": 4},
     {"line": "オサヒ", "station0": "鴫野", "station1": "ＪＲ野江", "eigyoKilo": 18, "giseiKilo": 18, "isLocal": false, "company": 4},
     {"line": "オサヒ", "station0": "ＪＲ野江", "station1": "城北公園通", "eigyoKilo": 22, "giseiKilo": 22, "isLocal": false, "company": 4},
     {"line": "オサヒ", "station0": "城北公園通", "station1": "ＪＲ淡路", "eigyoKilo": 21, "giseiKilo": 21, "isLocal": false, "company": 4},
