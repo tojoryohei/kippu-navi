@@ -40,10 +40,10 @@ class Load {
                 this.routes.set(key, route);
             }
 
-            // addRoutes.jsonの読み込み
-            const addRoutesPath = path.join(process.cwd(), 'src', 'data', 'addRoutes.json');
-            const addRoutesData = JSON.parse(fs.readFileSync(addRoutesPath, 'utf-8'));
-            for (const route of addRoutesData) {
+            // additionalRoutes.jsonの読み込み
+            const additionalRoutesPath = path.join(process.cwd(), 'src', 'data', 'additionalRoutes.json');
+            const additionalRoutesData = JSON.parse(fs.readFileSync(additionalRoutesPath, 'utf-8'));
+            for (const route of additionalRoutesData) {
                 const key = createRouteKey(route.line, route.station0, route.station1);
                 this.routes.set(key, route);
             }
