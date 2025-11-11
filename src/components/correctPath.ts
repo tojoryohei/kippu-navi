@@ -113,7 +113,7 @@ function applyCityRule(fullPath: PathStep[]): PathStep[] {
         // 着駅適用
         if (stationsInCity.has(fullPath[fullPath.length - 1].stationName)) {
             const changingIdx: number[] = [];
-            for (let i = fullPath.length - 2; i >= 0; i--) {
+            for (let i = 0; i < fullPath.length - 1; i++) {
                 if (i !== 0 &&
                     city.name === "大阪市内" &&
                     fullPath[i - 1].stationName === "加島" &&
@@ -140,10 +140,12 @@ function applyCityRule(fullPath: PathStep[]): PathStep[] {
                     changingIdx.pop();
                 else if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
                     changingIdx.push(i);
+                console.log(changingIdx)
+
             }
             if (changingIdx.length === 1 || changingIdx.length === 2) {
                 const applyCityRulePath = [
-                    ...fullPath.slice(0, changingIdx[0] + 1),
+                    ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
                     { "stationName": city.name, "lineName": null }
                 ];
                 const routeSegments: RouteSegment[] = convertPathStepsToRouteSegments(applyCityRulePath);
