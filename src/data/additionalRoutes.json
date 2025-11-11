@@ -1,5 +1,7 @@
 [
     {"line": "アカハ", "station0": "東京山手線内", "station1": "板橋", "eigyoKilo": 141, "giseiKilo": 141, "isLocal": false, "company": 2},
+    {"line": "オオサ１", "station0": "大阪・新大阪", "station1": "天満", "eigyoKilo": 16, "giseiKilo": 16, "isLocal": false, "company": 4},
+    {"line": "オオサ２", "station0": "大阪・新大阪", "station1": "（環）福島", "eigyoKilo": 10, "giseiKilo": 10, "isLocal": false, "company": 4},
     {"line": "オク", "station0": "日暮里", "station1": "尾久", "eigyoKilo": 26, "giseiKilo": 26, "isLocal": false, "company": 2},
     {"line": "オク", "station0": "尾久", "station1": "赤羽", "eigyoKilo": 50, "giseiKilo": 50, "isLocal": false, "company": 2},
     {"line": "オク", "station0": "東京山手線内", "station1": "尾久", "eigyoKilo": 84, "giseiKilo": 84, "isLocal": false, "company": 2},
@@ -52,6 +54,7 @@
     {"line": "ツウカ", "station0": "東京", "station1": "品川", "eigyoKilo": 68, "giseiKilo": 68, "isLocal": false, "company": 2},
     {"line": "ツウカ", "station0": "東京", "station1": "新宿", "eigyoKilo": 103, "giseiKilo": 103, "isLocal": false, "company": 2},
     {"line": "ツウカ", "station0": "品川", "station1": "新宿", "eigyoKilo": 106, "giseiKilo": 106, "isLocal": false, "company": 2},
+    {"line": "トウカ", "station0": "大阪・新大阪", "station1": "塚本", "eigyoKilo": 34, "giseiKilo": 34, "isLocal": false, "company": 4},
     {"line": "トウカ", "station0": "東京都区内", "station1": "川崎", "eigyoKilo": 182, "giseiKilo": 182, "isLocal": false, "company": 2},
     {"line": "トウカ", "station0": "東京山手線内", "station1": "大井町", "eigyoKilo": 92, "giseiKilo": 92, "isLocal": false, "company": 2},
     {"line": "トウカ", "station0": "蒲田", "station1": "横浜市内", "eigyoKilo": 144, "giseiKilo": 144, "isLocal": false, "company": 2},
