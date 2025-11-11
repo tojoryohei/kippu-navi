@@ -140,7 +140,6 @@ function applyCityRule(fullPath: PathStep[]): PathStep[] {
                     changingIdx.pop();
                 else if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
                     changingIdx.push(i);
-                console.log(changingIdx)
 
             }
             if (changingIdx.length === 1 || changingIdx.length === 2) {
