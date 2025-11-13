@@ -47,9 +47,9 @@ export function convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[
 
 export function generatePrintedViaStrings(pathSteps: PathStep[]): string[] {
     const viaLines: string[] = [];
-    for (const pathStep of pathSteps) {
-        if (viaLines.length === 0 || (viaLines[viaLines.length - 1] !== pathStep.lineName!))
-            viaLines.push(pathStep.lineName!);
+    for (let i = 0; i < pathSteps.length - 1; i++) {
+        if (viaLines.length === 0 || (viaLines[viaLines.length - 1] !== pathSteps[i].lineName!))
+            viaLines.push(pathSteps[i].lineName!);
     }
     const printedViaLines: string[] = [];
     for (const viaLine of viaLines) {
