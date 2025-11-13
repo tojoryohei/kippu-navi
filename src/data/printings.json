@@ -148,7 +148,7 @@
     {"kana": "トウサ", "print": "ＪＲ東西"},
     {"kana": "トウネ", "print": "東金線"},
     {"kana": "トウホ", "print": "東北"},
-    {"kana": "トウホ２", "print": "東北"},
+    {"kana": "トウホ２", "print": null},
     {"kana": "トウホ３", "print": null},
     {"kana": "トウホ４", "print": "埼京"},
     {"kana": "トウホ６", "print": "東北接"},
