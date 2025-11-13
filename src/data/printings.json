@@ -114,7 +114,7 @@
     {"kana": "センセ", "print": "仙石"},
     {"kana": "センモ", "print": "釧網"},
     {"kana": "ソウフ", "print": "総武"},
-    {"kana": "ソウフ２", "print": "総武"},
+    {"kana": "ソウフ２", "print": null},
     {"kana": "ソウヤ", "print": "宗谷"},
     {"kana": "ソトホ", "print": "外房"},
     {"kana": "タイタ", "print": "太多"},
