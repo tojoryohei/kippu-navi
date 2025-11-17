@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: '出発駅と到着駅が同じです。' }, { status: 400 });
         }
 
-        const result = calcSplit.findCheapestRoute(startStationName, endStationName);
+        const result = calcSplit.findOptimalSplitByShortestGiseiKiloPath(startStationName, endStationName);
 
         if (!result || result.totalFare === Infinity) {
             return NextResponse.json({ error: '経路が見つかりませんでした。' }, { status: 404 });

@@ -4,14 +4,12 @@ import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo, isAll
 import { PathStep, RouteSegment } from '@/app/types';
 
 export function calculateFareFromPath(fullPath: PathStep[]): number {
-    if (fullPath.length === 1) return 0;
+    if (fullPath.length <= 1) return 0;
 
     // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
-    const specificFares = load.getSpecificFares();
-    for (const specificFare of specificFares) {
-        if (JSON.stringify(fullPath) === JSON.stringify(specificFare.sections)) {
-            return specificFare.fare;
-        }
+    const specificFare = load.getSpecificFares(fullPath);
+    if (specificFare !== null) {
+        return specificFare;
     }
 
     const routeKeys = new Set<string>();

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { createRouteKey } from '@/app/utils/calc';
-import { City, Printing, RouteSegment, Section, SpecificFare, SpecificSection, TrainSpecificSection } from '@/app/types';
+import { City, PathStep, Printing, RouteSegment, Section, SpecificFare, SpecificSection, TrainSpecificSection } from '@/app/types';
 
 class Load {
     private cities: City[] = [];
@@ -10,6 +10,7 @@ class Load {
     private routes: Map<string, RouteSegment> = new Map();
     private routesData: RouteSegment[] = [];
     private specificFares: SpecificFare[] = [];
+    private specificFareMap = new Map<string, number>();
     private specificSections: SpecificSection[] = [];
     private trainSpecificSections!: TrainSpecificSection;
     private yamanote!: City;
@@ -51,6 +52,10 @@ class Load {
             // specificFares.jsonの読み込み
             const specificFaresPath = path.join(process.cwd(), 'src', 'data', 'specificFares.json');
             this.specificFares = JSON.parse(fs.readFileSync(specificFaresPath, 'utf-8'));
+            for (const specificFare of this.specificFares) {
+                this.specificFareMap.set(specificFare.sections.map(seg => `${seg.stationName}-${seg.lineName}`)
+                    .join("-"), specificFare.fare);
+            }
 
             // specificSections.jsonの読み込み
             const specificSections = path.join(process.cwd(), 'src', 'data', 'specificSections.json');
@@ -94,8 +99,11 @@ class Load {
         return this.routesData;
     }
 
-    public getSpecificFares(): SpecificFare[] {
-        return this.specificFares;
+    public getSpecificFares(fullPath: PathStep[]): number | null {
+        const key = fullPath
+            .map(seg => `${seg.stationName}-${seg.lineName}`)
+            .join("-");
+        return this.specificFareMap.get(key) ?? null;
     }
 
     public getSpecificSections(): SpecificSection[] {
