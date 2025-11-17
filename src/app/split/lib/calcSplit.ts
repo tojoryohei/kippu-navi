@@ -2,121 +2,267 @@ import { loadSplit } from '@/app/split/lib/loadSplit';
 import { calculateFareFromPath, calculateBarrierFreeFeeFromPath } from '@/components/calcFare';
 import { correctPath } from '@/components/correctPath';
 import { generatePrintedViaStrings } from '@/app/utils/calc';
-import { SplitSegment, SplitApiResponse, PathStep } from '@/app/types';
+import { PathStep, SplitSegment, SplitApiResponse } from '@/app/types';
 
+/**
+ * 優先度付きキュー (修正版)
+ * 経路(path)は保存せず、駅名とコストのみを管理する
+ */
 class PriorityQueue {
-    private heap: { stationName: string; cost: number; path: PathStep[] }[] = [];
+
+    private heap: { stationName: string; cost: number }[] = []; // path を削除
 
     isEmpty(): boolean {
         return this.heap.length === 0;
     }
 
-    enqueue(stationName: string, cost: number, path: PathStep[]): void {
-        this.heap.push({ stationName, cost, path });
-        this.heap.sort((a, b) => a.cost - b.cost);
+    /**
+     * 項目をキューに追加 (O(log N))
+     */
+    enqueue(stationName: string, cost: number): void { // path を削除
+        this.heap.push({ stationName, cost });
+        this.bubbleUp(this.heap.length - 1);
     }
 
-    dequeue(): { stationName: string; cost: number; path: PathStep[] } | null {
-        return this.heap.shift() || null;
+    /**
+     * 最小コストの項目をキューから取り出す (O(log N))
+     */
+    dequeue(): { stationName: string; cost: number } | null { // path を削除
+        if (this.isEmpty()) return null;
+        if (this.heap.length === 1) return this.heap.pop()!;
+
+        const root = this.heap[0];
+        this.heap[0] = this.heap.pop()!;
+        this.bubbleDown(0);
+        return root;
+    }
+
+    /**
+     * ヒープ構造を維持するため、追加した要素を上に移動させる
+     */
+    private bubbleUp(index: number): void {
+        while (index > 0) {
+            const parentIndex = Math.floor((index - 1) / 2);
+            if (this.heap[index].cost < this.heap[parentIndex].cost) {
+                [this.heap[index], this.heap[parentIndex]] = [this.heap[parentIndex], this.heap[index]];
+                index = parentIndex;
+            } else {
+                break;
+            }
+        }
+    }
+
+    /**
+     * ヒープ構造を維持するため、根に移動した要素を下に移動させる
+     */
+    private bubbleDown(index: number): void {
+        const lastIndex = this.heap.length - 1;
+        while (true) {
+            let leftChildIndex = 2 * index + 1;
+            let rightChildIndex = 2 * index + 2;
+            let smallestIndex = index;
+
+            if (leftChildIndex <= lastIndex && this.heap[leftChildIndex].cost < this.heap[smallestIndex].cost) {
+                smallestIndex = leftChildIndex;
+            }
+            if (rightChildIndex <= lastIndex && this.heap[rightChildIndex].cost < this.heap[smallestIndex].cost) {
+                smallestIndex = rightChildIndex;
+            }
+
+            if (smallestIndex !== index) {
+                [this.heap[index], this.heap[smallestIndex]] = [this.heap[smallestIndex], this.heap[index]];
+                index = smallestIndex;
+            } else {
+                break;
+            }
+        }
     }
 }
 
 class CalculatorSplit {
-    public findCheapestRoute(startStationName: string, endStationName: string): SplitApiResponse | null {
-        const costs: Map<string, number> = new Map();
-        const pq = new PriorityQueue();
-        costs.set(startStationName, 0);
-        const startNeighbors = loadSplit.getNeighbors(startStationName);
 
-        for (const neighbor of startNeighbors) {
-            const segments = loadSplit.getSegmentsForStationPair(startStationName, neighbor);
-            if (segments.length === 0) continue;
-            const segment = segments[0];
+    // 運賃計算のメモ化用マップ (通し運賃)
+    private fareMemo: Map<string, number> = new Map();
+    // 分割計算のメモ化用マップ
+    private splitMemo: Map<string, SplitApiResponse | null> = new Map();
 
-            const path: PathStep[] = [
-                { stationName: startStationName, lineName: segment.line },
-                { stationName: neighbor, lineName: null }
-            ];
 
-            const correctedPath = correctPath(path)[0];
-            const fare = calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
+    /**
+     * メイン関数：
+     * 擬制キロ最短経路を1本見つけ、その経路の最適分割を計算する
+     * (旧: findCheapestRoute)
+     */
+    public findOptimalSplitByShortestGiseiKiloPath(startStationName: string, endStationName: string): SplitApiResponse | null {
 
-            if (!costs.has(neighbor) || fare < (costs.get(neighbor) || Infinity)) {
-                costs.set(neighbor, fare);
-                pq.enqueue(neighbor, fare, path);
-            }
+        // メモをリセット
+        this.fareMemo.clear();
+        this.splitMemo.clear();
+
+        // --- ステップ1: 擬制キロが最短の経路を1本見つける (Dijkstra) ---
+
+        // ★修正点: 探索結果（previousマップ）を受け取る
+        const { pathFound, previous } = this.findShortestPathByGiseiKilo(startStationName, endStationName);
+
+        if (!pathFound) {
+            return null; // 経路が見つからなかった
         }
 
-        let bestFareToEndStation = Infinity;
-        let finalResult: { cost: number, path: PathStep[] } | null = null;
+        // ★追加点: previousマップから経路を復元
+        const shortestPath = this.reconstructPath(previous, startStationName, endStationName);
+
+        if (!shortestPath) {
+            return null; // 経路復元に失敗
+        }
+
+        // --- ステップ2: 見つかった1本の経路に対して、最適分割（DP）を実行 ---
+        return this.calculateOptimalSplitForPath(shortestPath);
+    }
+
+    /**
+     * ステップ1: 擬制キロをコストとして使い、最短経路をDijkstraで探索 (修正版)
+     */
+    private findShortestPathByGiseiKilo(
+        startStationName: string,
+        endStationName: string
+    ): { pathFound: boolean; previous: Map<string, { parentStation: string; lineName: string | null; }> } {
+
+        // 始点から各駅までの最短「擬制キロ」
+        const costs: Map<string, number> = new Map();
+
+        // ★修正点: 経路復元のためのpreviousマップ
+        // key: 子駅, value: { 親駅, 経由した路線名 }
+        const previous: Map<string, { parentStation: string; lineName: string | null; }> = new Map();
+
+        const pq = new PriorityQueue();
+
+        costs.set(startStationName, 0);
+        pq.enqueue(startStationName, 0); // ★修正点: pathを渡さない
 
         while (!pq.isEmpty()) {
-            const { stationName: currentStation, cost: currentCost, path: currentPath } = pq.dequeue()!;
-
-            if (currentCost > bestFareToEndStation) {
-                break;
-            }
+            const { stationName: currentStation, cost: currentCost } = pq.dequeue()!;
 
             if (currentCost > (costs.get(currentStation) || Infinity)) {
                 continue;
             }
 
+            // ★ 目的地に到達したら、探索終了
             if (currentStation === endStationName) {
-                bestFareToEndStation = currentCost;
-                finalResult = { cost: currentCost, path: currentPath };
-                continue;
+                return { pathFound: true, previous }; // ★修正点: previousマップを返す
             }
 
             const neighbors = loadSplit.getNeighbors(currentStation);
 
             for (const neighborStation of neighbors) {
 
-                if (currentPath.some(step => step.stationName === neighborStation)) {
+                // ★修正点: 循環経路の禁止 (previousを辿ってチェック)
+                let isLoop = false;
+                let checkStation = currentStation;
+                while (previous.has(checkStation)) {
+                    const parent = previous.get(checkStation)!.parentStation;
+                    if (parent === neighborStation) {
+                        isLoop = true;
+                        break;
+                    }
+                    checkStation = parent;
+                }
+                if (isLoop) {
                     continue;
                 }
 
+
                 const segments = loadSplit.getSegmentsForStationPair(currentStation, neighborStation);
                 if (segments.length === 0) continue;
+
                 const representativeSegment = segments[0];
-
-                const newPath: PathStep[] = currentPath.slice(0, -1); // 最後の要素（終点）を一旦削除
-                newPath.push({ stationName: currentStation, lineName: representativeSegment.line }); // 終点にlineNameを追加して戻す
-                newPath.push({ stationName: neighborStation, lineName: null }); // 新しい終点を追加
-
-                const correctedPath = correctPath(newPath)[0];
-                const cost_通し = calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
-
-                let cost_分割 = Infinity;
-                for (let j = 0; j < newPath.length - 1; j++) {
-                    const station_j = newPath[j].stationName;
-                    const cost_j_まで = costs.get(station_j); // 始点からj駅までの最安運賃
-
-                    if (cost_j_まで === undefined) continue; // 始点からj駅までのコストが未計算
-
-                    const path_j_から = newPath.slice(j); // j駅から終点までの経路
-                    const correctedPath = correctPath(path_j_から)[0];
-                    const fare_j_から = calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
-
-                    cost_分割 = Math.min(cost_分割, cost_j_まで + fare_j_から);
-                }
-
-                const newCost = Math.min(cost_通し, cost_分割);
+                const weight = representativeSegment.giseiKilo ?? representativeSegment.eigyoKilo;
+                const newCost = currentCost + weight;
 
                 if (!costs.has(neighborStation) || newCost < (costs.get(neighborStation) || Infinity)) {
                     costs.set(neighborStation, newCost);
-                    pq.enqueue(neighborStation, newCost, newPath);
+
+                    // ★修正点: previousマップに親情報を記録
+                    previous.set(neighborStation, {
+                        parentStation: currentStation,
+                        lineName: representativeSegment.line
+                    });
+
+                    pq.enqueue(neighborStation, newCost); // ★修正点: pathを渡さない
                 }
             }
         }
 
-        if (!finalResult) {
-            return null;
-        }
-
-        return this.findBestSplitForPath(finalResult.path);
+        return { pathFound: false, previous }; // 経路が見つからなかった
     }
 
-    private findBestSplitForPath(fullPath: PathStep[]): SplitApiResponse | null {
+    /**
+     * ★新規追加: previousマップから経路(PathStep[])を復元する
+     */
+    private reconstructPath(
+        previous: Map<string, { parentStation: string; lineName: string | null; }>,
+        startStationName: string,
+        endStationName: string
+    ): PathStep[] | null {
+
+        const path: PathStep[] = [];
+        let currentStation = endStationName;
+
+        // 終点から始点まで逆順に辿る
+        while (currentStation !== startStationName) {
+            const parentInfo = previous.get(currentStation);
+            if (!parentInfo) {
+                return null; // 経路が途切れている（エラー）
+            }
+
+            path.unshift({ stationName: currentStation, lineName: parentInfo.lineName });
+            currentStation = parentInfo.parentStation;
+        }
+
+        // 始点を追加
+        path.unshift({ stationName: startStationName, lineName: null });
+
+        // lineNameを次の駅（親）のものに付け替える
+        const finalPath: PathStep[] = [];
+        for (let i = 0; i < path.length; i++) {
+            if (i === path.length - 1) {
+                // 最後の駅
+                finalPath.push({ stationName: path[i].stationName, lineName: null });
+            } else {
+                // 途中の駅：次の駅（＝復元時は親）の路線名を採用する
+                finalPath.push({ stationName: path[i].stationName, lineName: path[i + 1].lineName });
+            }
+        }
+
+        return finalPath;
+    }
+
+
+    /**
+     * メモ化された「通し運賃」計算
+     * (旧: getMemoizedFare)
+     */
+    private getMemoizedFare(path: PathStep[]): number {
+        const key = JSON.stringify(path);
+        if (this.fareMemo.has(key)) {
+            return this.fareMemo.get(key)!;
+        }
+
+        const correctedPath = correctPath(path);
+        const segmentFare = calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
+
+        this.fareMemo.set(key, segmentFare);
+        return segmentFare;
+    }
+
+    /**
+     * ステップ2: 確定した1本の経路の最適分割解を計算する（動的計画法）
+     * (旧: findBestSplitForPath)
+     */
+    private calculateOptimalSplitForPath(fullPath: PathStep[]): SplitApiResponse | null {
+        const key = JSON.stringify(fullPath);
+        if (this.splitMemo.has(key)) {
+            return this.splitMemo.get(key)!;
+        }
+
         const n = fullPath.length;
         if (n <= 1) return null;
 
@@ -127,8 +273,10 @@ class CalculatorSplit {
         for (let i = 1; i < n; i++) {
             for (let j = 0; j < i; j++) {
                 const subPath = fullPath.slice(j, i + 1);
-                const correctedPath = correctPath(subPath)[0];
-                const segmentFare = calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
+
+                // メモ化された「通し運賃」を呼び出す
+                const segmentFare = this.getMemoizedFare(subPath);
+
                 const newTotalFare = dp[j] + segmentFare;
 
                 if (newTotalFare < dp[i]) {
@@ -145,8 +293,11 @@ class CalculatorSplit {
         while (currentIndex > 0) {
             const prevIndex = from[currentIndex];
             const segmentPath = fullPath.slice(prevIndex, currentIndex + 1);
-            const correctedPath = correctPath(segmentPath)[0];
-            const segmentFare = calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
+
+            // メモ化された「通し運賃」を呼び出す
+            const segmentFare = this.getMemoizedFare(segmentPath);
+
+            const correctedPath = correctPath(segmentPath);
             const printedViaLines = generatePrintedViaStrings(correctedPath);
 
             segments.unshift({
@@ -158,7 +309,9 @@ class CalculatorSplit {
             currentIndex = prevIndex;
         }
 
-        return { totalFare, segments };
+        const result = { totalFare, segments };
+        this.splitMemo.set(key, result); // 分割計算の結果もメモ化
+        return result;
     }
 }
 
