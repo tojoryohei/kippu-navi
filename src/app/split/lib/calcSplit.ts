@@ -235,13 +235,13 @@ class CalculatorSplit {
         return finalPath;
     }
 
-
     /**
      * メモ化された「通し運賃」計算
      * (旧: getMemoizedFare)
      */
     private getMemoizedFare(path: PathStep[]): number {
-        const key = JSON.stringify(path);
+        const key = path.map(seg => `${seg.stationName}-${seg.lineName}`)
+            .join("-");
         if (this.fareMemo.has(key)) {
             return this.fareMemo.get(key)!;
         }
@@ -258,7 +258,8 @@ class CalculatorSplit {
      * (旧: findBestSplitForPath)
      */
     private calculateOptimalSplitForPath(fullPath: PathStep[]): SplitApiResponse | null {
-        const key = JSON.stringify(fullPath);
+        const key = fullPath.map(seg => `${seg.stationName}-${seg.lineName}`)
+            .join("-");
         if (this.splitMemo.has(key)) {
             return this.splitMemo.get(key)!;
         }

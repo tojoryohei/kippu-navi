@@ -4,7 +4,9 @@ import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo, isAll
 import { PathStep, RouteSegment } from '@/app/types';
 
 export function calculateFareFromPath(fullPath: PathStep[]): number {
-    if (fullPath.length <= 1) return 0;
+    let fare: number = 0;
+
+    if (fullPath.length <= 1) return fare;
 
     // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
     const specificFare = load.getSpecificFares(fullPath);
@@ -33,19 +35,19 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
     // 第78条 電車特定区間内等の大人片道普通旅客運賃
     // （1） 山手線内の駅相互発着の場合
     if (isAllTrainSpecificSections("山手線内", [...routeKeys])) {
-        return calculateFareInYamanote(routeSegments);
+        fare = calculateFareInYamanote(routeSegments);
     }
     // （2） イ 東京附近における電車特定区間内相互発着の場合
-    if (isAllTrainSpecificSections("東京附近", [...routeKeys])) {
-        return calculateFareInTokyo(routeSegments);
+    else if (isAllTrainSpecificSections("東京附近", [...routeKeys])) {
+        fare = calculateFareInTokyo(routeSegments);
     }
     // （2） ロ 大阪附近における電車特定区間内相互発着の場合
-    if (isAllTrainSpecificSections("大阪附近", [...routeKeys])) {
-        return calculateFareInOsaka(routeSegments);
+    else if (isAllTrainSpecificSections("大阪附近", [...routeKeys])) {
+        fare = calculateFareInOsaka(routeSegments);
     }
 
     // 第85条 他の旅客鉄道会社線を連続して乗車する場合の大人片道普通旅客運賃
-    let fare: number = calculateFare(routeSegments);
+    else fare = calculateFare(routeSegments);
 
     // （1）北海道旅客鉄道会社線の乗車区間に対する普通旅客運賃の加算額
     if (0 < routeSegmentsByCompany[1].length) {

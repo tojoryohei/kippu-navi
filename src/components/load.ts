@@ -103,6 +103,7 @@ class Load {
         const key = fullPath
             .map(seg => `${seg.stationName}-${seg.lineName}`)
             .join("-");
+        console.log(key);
         return this.specificFareMap.get(key) ?? null;
     }
 
