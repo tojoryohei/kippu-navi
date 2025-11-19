@@ -174,7 +174,7 @@ class CalculatorSplit {
                 if (segments.length === 0) continue;
 
                 const representativeSegment = segments[0];
-                const weight = representativeSegment.giseiKilo ?? representativeSegment.eigyoKilo;
+                const weight = representativeSegment.giseiKilo;
                 const newCost = currentCost + weight;
 
                 if (!costs.has(neighborStation) || newCost < (costs.get(neighborStation) || Infinity)) {

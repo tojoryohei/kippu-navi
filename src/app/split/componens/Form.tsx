@@ -129,7 +129,7 @@ export default function SplitForm() {
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-gray-600">
-                                                経由：{segment.printedViaLines.length === 0 ? "（経由なし）" : segment.printedViaLines.join("・")}
+                                                経由：{segment.printedViaLines.length === 0 ? "ーーー" : segment.printedViaLines.join("・")}
                                             </span>
                                             <span className="font-bold text-lg">
                                                 ¥{segment.fare.toLocaleString()}

@@ -11,7 +11,7 @@ class LoadSplit {
 
     private loadData() {
         try {
-            const routesData = load.getRoutesData();
+            const routesData = load.getRoutesList();
             for (const route of routesData) {
                 const station0 = route.station0;
                 const station1 = route.station1;

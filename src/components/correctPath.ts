@@ -9,7 +9,8 @@ export function correctPath(fullPath: PathStep[]): PathStep[] {
     // fullPath = correctSpecificSections(fullPath);
 
     // 第70条 旅客が次に掲げる図の太線区間を通過する場合
-    //fullPath = applyPassingBoldLineAreaRule(fullPath);
+    // 第160条 特定区間発着の場合のう回乗車
+    fullPath = applyBoldLineAreaRule(fullPath);
 
     // 第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方
     fullPath = applyCityRule(fullPath);
@@ -26,80 +27,65 @@ export function correctPath(fullPath: PathStep[]): PathStep[] {
     return fullPath;
 }
 
+// 第69条 特定区間における旅客運賃・料金計算の営業キロ又は運賃計算キロ
 function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
-    for (const rule of load.getSpecificSections()) {
-        const { incorrectPath, correctPath } = rule;
 
-        const startIndex = findSubPathIndex(fullPath, incorrectPath);
-
-        if (startIndex !== -1) {
-            const correctPathMiddleStations = correctPath.slice(1, -1).map(p => p.stationName);
-            const pathOutsideSegment = [
-                ...fullPath.slice(0, startIndex),
-                ...fullPath.slice(startIndex + incorrectPath.length)
-            ];
-
-            const isStraddling = correctPathMiddleStations.some(
-                correctStation => pathOutsideSegment.some(p => p.stationName === correctStation)
-            );
-
-            if (isStraddling === false) {
-                const correctedPath = [
-                    ...fullPath.slice(0, startIndex),
-                    ...correctPath,
-                    ...fullPath.slice(startIndex + incorrectPath.length)
-                ];
-                fullPath = correctedPath;
-            }
-        }
-    }
     return fullPath;
 }
 
 // 第70条 旅客が次に掲げる図の太線区間を通過する場合
-function applyPassingBoldLineAreaRule(fullPath: PathStep[]) {
-    const stationsInBoldLineArea = load.getTrainSpecificSections("電車大環状線");
+// 第160条 特定区間発着の場合のう回乗車
+function applyBoldLineAreaRule(fullPath: PathStep[]) {
+    const boldLineArea = load.getTrainSpecificSections("電車大環状線");
     const changeIdx: number[] = [];
 
     for (let i = 0; i < fullPath.length - 2; i++) {
         const line0 = fullPath[i].lineName;
         const line1 = fullPath[i + 1].lineName;
         if (line0 === null || line1 === null) throw new Error(`applyBoldLineAreaRuleでエラーが発生しました.`);
-        if (stationsInBoldLineArea.has(createRouteKey(line0, fullPath[i].stationName, fullPath[i + 1].stationName)) !==
-            stationsInBoldLineArea.has(createRouteKey(line1, fullPath[i + 1].stationName, fullPath[i + 2].stationName)))
+        if (boldLineArea.has(createRouteKey(line0, fullPath[i].stationName, fullPath[i + 1].stationName)) !==
+            boldLineArea.has(createRouteKey(line1, fullPath[i + 1].stationName, fullPath[i + 2].stationName)))
             changeIdx.push(i + 1);
     }
-    if ((changeIdx.length === 3 || changeIdx.length === 4) &&
-        stationsInBoldLineArea.has(createRouteKey(fullPath[0].lineName!, fullPath[0].stationName, fullPath[1].stationName)) === true)
-        fullPath = [
-            ...fullPath.slice(0, changeIdx[2]),
-            { "stationName": fullPath[changeIdx[2]].stationName, "lineName": "ツウカ" },
-            ...fullPath.slice(changeIdx[3])
-        ]
-    if ((changeIdx.length === 2 || changeIdx.length === 3) &&
-        stationsInBoldLineArea.has(createRouteKey(fullPath[0].lineName!, fullPath[0].stationName, fullPath[1].stationName)) === false)
+
+    // 通過の場合
+    if (changeIdx.length === 2 &&
+        boldLineArea.has(createRouteKey(fullPath[0].lineName!, fullPath[0].stationName, fullPath[1].stationName)) === false &&
+        boldLineArea.has(createRouteKey(fullPath[fullPath.length - 2].lineName!, fullPath[fullPath.length - 2].stationName, fullPath[fullPath.length - 1].stationName)) === false)
         fullPath = [
             ...fullPath.slice(0, changeIdx[0]),
             { "stationName": fullPath[changeIdx[0]].stationName, "lineName": "ツウカ" },
             ...fullPath.slice(changeIdx[1])
         ]
-    return fullPath;
-}
 
-function findSubPathIndex(path: PathStep[], subPath: PathStep[]): number {
-    if (subPath.length === 0 || subPath.length > path.length) return -1;
-
-    for (let i = 0; i <= path.length - subPath.length; i++) {
-        let match = true;
-        for (let j = 0; j < subPath.length; j++) {
-            if (path[i + j].stationName !== subPath[j].stationName) {
-                match = false;
-                break;
-            }
+    // 発駅の場合
+    else if (changeIdx.length === 1 &&
+        boldLineArea.has(createRouteKey(fullPath[0].lineName!, fullPath[0].stationName, fullPath[1].stationName)) === true &&
+        boldLineArea.has(createRouteKey(fullPath[fullPath.length - 2].lineName!, fullPath[fullPath.length - 2].stationName, fullPath[fullPath.length - 1].stationName)) === false) {
+        const boldLineAreaRoute = load.getFromBoldLineAreaRoute([fullPath[0].stationName, fullPath[changeIdx[0]].stationName].join("-"));
+        if (boldLineAreaRoute !== null) {
+            fullPath = [
+                ...boldLineAreaRoute,
+                ...fullPath.slice(changeIdx[0])
+            ]
         }
-        if (match) return i;
     }
-    return -1;
+
+    // 着駅の場合
+    else if (changeIdx.length === 1 &&
+        boldLineArea.has(createRouteKey(fullPath[0].lineName!, fullPath[0].stationName, fullPath[1].stationName)) === false &&
+        boldLineArea.has(createRouteKey(fullPath[fullPath.length - 2].lineName!, fullPath[fullPath.length - 2].stationName, fullPath[fullPath.length - 1].stationName)) === true) {
+        const boldLineAreaRoute = load.getToBoldLineAreaRoute([fullPath[changeIdx[0]].stationName, fullPath[fullPath.length - 1].stationName].join("-"));
+        if (boldLineAreaRoute !== null) {
+            fullPath = [
+                ...fullPath.slice(0, changeIdx[0]),
+                ...boldLineAreaRoute
+            ]
+        }
+    }
+
+
+    return fullPath;
 }
 
 // 第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方

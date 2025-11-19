@@ -125,6 +125,10 @@ export interface TrainSpecificSection {
     名古屋附近: Set<string>;
     電車大環状線: Set<string>;
 }
+export interface BoldLineAreaRoute {
+    key: string;
+    route: PathStep[];
+}
 
 export interface City {
     name: string;
