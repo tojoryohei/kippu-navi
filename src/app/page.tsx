@@ -8,13 +8,14 @@ export default function Home() {
         <p>きっぷナビへようこそ！</p>
       </h1>
       <p className="py-4">
-        アクセスしていただきありがとうございます。<br />
-        このサイトでは「発駅」と「着駅」をから最適な分割乗車券の出力ができるプログラムを公開する予定です。<br />
-        分割乗車券プログラムを作るにあたって必要となる運賃計算プログラムは現在作成中です。<br />
-        以下のリンクから色々いじってみてください。
+        アクセスしていただきありがとうございます．<br />
+        このサイトでは「発駅」と「着駅」をから最適な分割乗車券の出力ができるプログラムを公開しています．<br />
+        また，分割乗車券プログラムを作るにあたって必要となる運賃計算プログラムも公開しています．<br />
+        以下のリンクからどうぞ．<br />
       </p>
-
-      <Link href="/mr">運賃計算のページはこちら</Link>
+      <Link href="/mr" className="text-blue-600 hover:underline cursor-pointer">運賃計算プログラム</Link>
+      <br />
+      <Link href="/split" className="text-blue-600 hover:underline cursor-pointer">分割運賃プログラム</Link>
     </div>
   );
 }
