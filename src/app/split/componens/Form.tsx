@@ -131,71 +131,92 @@ export default function SplitForm() {
                             </div>
                         </section>
 
-                        {/* 2 & 3. 分割案の表示 (複数あれば全て表示) */}
-                        <div className="space-y-6">
-                            {result.splitKippuDatasList.map((splitPlan, planIndex) => {
-                                const diff = result.shortestData.fare - splitPlan.totalFare;
-                                const isCheaper = diff > 0;
+                        {/* 2. 分割結果の表示エリア */}
+                        {result.splitKippuDatasList.length > 0 ? (
+                            <div className="space-y-6">
+                                {/* ★変更点: 分割運賃のサマリー（金額とお得額）をここで一回だけ表示する 
+                                    全ての分割プランは同じ最安値を持っている前提
+                                */}
+                                {(() => {
+                                    const bestFare = result.splitKippuDatasList[0].totalFare;
+                                    const diff = result.shortestData.fare - bestFare;
+                                    const isCheaper = diff > 0;
 
-                                return (
-                                    <section key={planIndex} className={`p-6 rounded-lg shadow-md border-2 ${isCheaper ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}>
-                                        <div className="flex justify-between items-end mb-4 border-b pb-3 border-blue-200">
-                                            <div>
-                                                <h3 className="font-bold text-xl text-blue-800">
-                                                    分割プラン {result.splitKippuDatasList.length > 1 ? `#${planIndex + 1}` : ''}
-                                                </h3>
-                                                {isCheaper ? (
-                                                    <p className="text-red-600 font-bold mt-1">
-                                                        通常より {diff.toLocaleString()}円 お得
-                                                    </p>
-                                                ) : (
-                                                    <p className="text-gray-500 text-sm mt-1">通常運賃と同じ</p>
-                                                )}
-                                            </div>
-                                            <div className="text-4xl font-bold text-blue-900">
-                                                ¥{splitPlan.totalFare.toLocaleString()}
-                                            </div>
-                                        </div>
-
-                                        {/* 切符詳細リスト */}
-                                        <div className="flex flex-col gap-3">
-                                            {splitPlan.splitKippuDatas.map((segment, segIndex) => (
-                                                <div key={segIndex} className="bg-white p-4 rounded border border-gray-200 shadow-sm relative">
-                                                    {/* 実際の乗車区間 */}
-                                                    <div className="text-sm text-gray-500 mb-1 flex items-center">
-                                                        <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs mr-2">利用区間</span>
-                                                        <span>{segment.departureStation} → {segment.arrivalStation}</span>
-                                                        <span>（{(segment.kippuData.totalEigyoKilo / 10).toFixed(1)}km）</span>
-                                                    </div>
-
-                                                    {/* 切符の区間 (2行目) */}
-                                                    <div className="flex justify-between items-center mt-2">
-                                                        <div className="flex-1">
-                                                            <div className="text-lg font-bold text-gray-800 flex items-center flex-wrap gap-2">
-                                                                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">切符印字</span>
-                                                                <span>{segment.kippuData.departureStation}</span>
-                                                                <span className="text-gray-400">→</span>
-                                                                <span>{segment.kippuData.arrivalStation}</span>
-                                                            </div>
-                                                            <div className="text-xs text-gray-500 mt-1 ml-10">
-                                                                経由：{segment.kippuData.printedViaLines.length === 0 ? "---" : segment.kippuData.printedViaLines.join("・")}
-                                                            </div>
-                                                        </div>
-                                                        <div className="font-bold text-xl ml-4">
-                                                            ¥{segment.kippuData.fare.toLocaleString()}
-                                                        </div>
-                                                    </div>
+                                    return (
+                                        <section className={`p-6 rounded-lg shadow-md border-2 ${isCheaper ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <h3 className="font-bold text-xl text-blue-800">
+                                                        最安分割運賃
+                                                    </h3>
+                                                    {isCheaper ? (
+                                                        <p className="text-red-600 font-bold mt-1 text-lg">
+                                                            {diff.toLocaleString()}円安くなりました！
+                                                        </p>
+                                                    ) : (
+                                                        <p className="text-gray-500 text-sm mt-1">通常運賃と同じ</p>
+                                                    )}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </section>
-                                );
-                            })}
+                                                <div className="text-4xl font-bold text-blue-900">
+                                                    ¥{bestFare.toLocaleString()}
+                                                </div>
+                                            </div>
+                                        </section>
+                                    );
+                                })()}
 
-                            {result.splitKippuDatasList.length === 0 && (
-                                <p className="text-center text-gray-500">有効な分割候補が見つかりませんでした。</p>
-                            )}
-                        </div>
+                                {/* 3. 実際の分割パターンのリスト表示 */}
+                                <div className="space-y-8">
+                                    {result.splitKippuDatasList.map((splitPlan, planIndex) => (
+                                        <div key={planIndex} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                            {/* 複数パターンがある場合のみ見出しをつける */}
+                                            {result.splitKippuDatasList.length > 1 && (
+                                                <h4 className="font-bold text-gray-700 mb-3 ml-1">
+                                                    パターン {planIndex + 1}
+                                                </h4>
+                                            )}
+
+                                            <div className="flex flex-col gap-3">
+                                                {splitPlan.splitKippuDatas.map((segment, segIndex) => (
+                                                    <div key={segIndex} className="bg-white p-4 rounded border border-gray-200 shadow-sm relative">
+                                                        {/* 実際の乗車区間 */}
+                                                        <div className="text-sm text-gray-500 mb-1 flex items-center">
+                                                            <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs mr-2">利用区間</span>
+                                                            <span>{segment.departureStation} → {segment.arrivalStation}</span>
+                                                        </div>
+
+                                                        {/* 切符の区間 (2行目) */}
+                                                        <div className="flex justify-between items-center mt-2">
+                                                            <div className="flex-1">
+                                                                <div className="text-lg font-bold text-gray-800 flex items-center flex-wrap gap-2">
+                                                                    <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">切符</span>
+                                                                    <span>{segment.kippuData.departureStation}</span>
+                                                                    <span className="text-gray-400">→</span>
+                                                                    <span>{segment.kippuData.arrivalStation}</span>
+
+                                                                    {/* ★追加: 営業キロの表示 */}
+                                                                    <span className="text-sm font-normal text-gray-600 ml-1">
+                                                                        （{(segment.kippuData.totalEigyoKilo / 10).toFixed(1)}km）
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-xs text-gray-500 mt-1 ml-10">
+                                                                    経由：{segment.kippuData.printedViaLines.length === 0 ? "---" : segment.kippuData.printedViaLines.join("・")}
+                                                                </div>
+                                                            </div>
+                                                            <div className="font-bold text-xl ml-4">
+                                                                ¥{segment.kippuData.fare.toLocaleString()}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-center text-gray-500">有効な分割候補が見つかりませんでした。</p>
+                        )}
                     </div>
                 )}
             </div>

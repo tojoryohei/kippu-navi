@@ -55,7 +55,7 @@ class CalculatorSplit {
 
     // メモ化用マップ
     private fareMemo: Map<string, number> = new Map();
-    // 分割計算のメモ化用マップ（戻り値を配列に変更）
+    // 分割計算のメモ化用マップ
     private splitMemo: Map<string, SplitKippuDatas[] | null> = new Map();
 
     /**
@@ -71,11 +71,13 @@ class CalculatorSplit {
         const penaltyMap = new Map<string, number>();
 
         let baseDistance: number | null = null;
-        const MAX_ITERATIONS = 5;
+        const MAX_ITERATIONS = 100;
 
         // --- 1. 経路候補の列挙 ---
         for (let i = 0; i < MAX_ITERATIONS; i++) {
             const { pathFound, previous } = this.findShortestPathByGiseiKilo(startStationName, endStationName, penaltyMap);
+
+            // 経路が見つからなければ探索終了
             if (!pathFound) break;
 
             const path = this.reconstructPath(previous, startStationName, endStationName);
@@ -100,9 +102,15 @@ class CalculatorSplit {
             }
         }
 
+        // ★追加: 経路が1つも見つからなかった場合（孤立路線など）のエラー処理
+        // これがないと、後続の処理で空配列に対して generateKippu を呼び出してエラーになります
+        if (candidates.length === 0) {
+            return null;
+        }
+
         // --- 2. 全候補の計算と集計 ---
         let minThroughFare = Infinity;
-        let minThroughPath: PathStep[] = [];
+        let minThroughPath: PathStep[] = []; // ここはcandidatesが空でない限り必ず上書きされます
 
         // 全ての候補から出た分割案をフラットに格納する配列
         let allSplitPatterns: SplitKippuDatas[] = [];
@@ -115,7 +123,7 @@ class CalculatorSplit {
                 minThroughPath = path;
             }
 
-            // 分割運賃の計算 (この経路における最安パターンのリストを取得)
+            // 分割運賃の計算
             const splitPatterns = this.calculateOptimalSplitForPath(path);
             if (splitPatterns) {
                 allSplitPatterns = allSplitPatterns.concat(splitPatterns);
@@ -131,7 +139,7 @@ class CalculatorSplit {
         // 全パターンの中での最安値を探す
         const globalMinFare = Math.min(...allSplitPatterns.map(p => p.totalFare));
 
-        // 最安値と一致するパターンのみを抽出（経路が違っても値段が同じなら全て残す）
+        // 最安値と一致するパターンのみを抽出
         const optimalPatterns = allSplitPatterns.filter(p => p.totalFare === globalMinFare);
 
         return {
@@ -142,7 +150,6 @@ class CalculatorSplit {
 
     /**
      * 1本の経路に対し、最安となる「全ての」分割パターンを返す
-     * 戻り値を SplitKippuDatas[] (配列) に変更
      */
     private calculateOptimalSplitForPath(fullPath: PathStep[]): SplitKippuDatas[] | null {
         const key = fullPath.map(seg => `${seg.stationName}-${seg.lineName}`).join("-");
@@ -154,7 +161,6 @@ class CalculatorSplit {
         if (n <= 1) return null;
 
         const dp = new Array(n).fill(Infinity);
-        // ★変更点: 1つの分割点だけでなく、候補を複数持てるように配列の配列にする
         const from: number[][] = Array.from({ length: n }, () => []);
 
         dp[0] = 0;
@@ -165,33 +171,28 @@ class CalculatorSplit {
                 const segmentFare = this.getMemoizedFare(subPath);
                 const newTotalFare = dp[j] + segmentFare;
 
-                // ★変更点: 最安更新時はリセット、同額なら追加
                 if (newTotalFare < dp[i]) {
                     dp[i] = newTotalFare;
-                    from[i] = [j]; // 新しい最安が見つかったので候補をリセット
+                    from[i] = [j];
                 } else if (newTotalFare === dp[i]) {
-                    from[i].push(j); // 同額なので候補に追加
+                    from[i].push(j);
                 }
             }
         }
 
         // --- 経路復元 (再帰DFS) ---
-        // 同額のパターンすべてを網羅する
         const resultPatterns: SplitKippuDatas[] = [];
         const totalFare = dp[n - 1];
 
-        // 再帰関数: 現在の駅(currentIndex)から親を遡って経路を構築する
         const reconstruct = (currentIndex: number, currentSegments: SplitKippuData[]) => {
-            // ゴール(index 0)に到達したら1つのパターン完成
             if (currentIndex === 0) {
                 resultPatterns.push({
                     totalFare: totalFare,
-                    splitKippuDatas: [...currentSegments] // 逆順で入っているので、呼び出し元はunshift的な順序になるよう調整済み
+                    splitKippuDatas: [...currentSegments]
                 });
                 return;
             }
 
-            // 親候補をすべて探索
             const parents = from[currentIndex];
             for (const prevIndex of parents) {
                 const segmentPath = fullPath.slice(prevIndex, currentIndex + 1);
@@ -202,19 +203,17 @@ class CalculatorSplit {
                     kippuData: generateKippu(segmentPath)
                 };
 
-                // 再帰呼び出し (現在のセグメントをリストの先頭に追加)
                 reconstruct(prevIndex, [newSegment, ...currentSegments]);
             }
         };
 
-        // 最後の駅から探索開始
         reconstruct(n - 1, []);
 
         this.splitMemo.set(key, resultPatterns);
         return resultPatterns;
     }
 
-    // --- 以下、既存ロジック（変更なし） ---
+    // --- 以下、変更なし ---
 
     private calculateTotalGiseiKilo(path: PathStep[]): number {
         let total = 0;
@@ -280,6 +279,7 @@ class CalculatorSplit {
                 }
             }
         }
+        // 経路が見つからなかった場合は false を返す
         return { pathFound: false, previous };
     }
 
@@ -305,7 +305,6 @@ class CalculatorSplit {
         const lastIndex = path.length - 1;
         const originalLastStep = path[lastIndex];
 
-        // ★ここでの slice+spread による複製は安全です
         path[lastIndex] = { ...originalLastStep, lineName: null };
 
         const key = path.map(seg => `${seg.stationName}-${seg.lineName}`).join("-");
