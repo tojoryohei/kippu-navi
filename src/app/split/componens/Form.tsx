@@ -58,7 +58,7 @@ export default function SplitForm() {
     };
 
     return (
-        <main className="max-w-md mx-auto">
+        <main className="max-w-2xl mx-auto">
             <form onSubmit={handleSubmit(onSubmit)} className="p-8">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-5 whitespace-nowrap">
@@ -94,7 +94,7 @@ export default function SplitForm() {
                     <div>
                         <button
                             type="submit"
-                            className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400"
+                            className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors"
                             disabled={!isValid || isLoading}
                         >
                             {isLoading ? "計算中..." : "最安運賃を計算"}
@@ -104,40 +104,97 @@ export default function SplitForm() {
             </form>
 
             <div className="my-8 p-4">
-                {isLoading && <p className="py-5 border-t text-center">計算中です...</p>}
-                {serverTime && <p>計算時間(ms): {serverTime}</p>}
+                {isLoading && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
+                {serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
 
                 {error && <p className="py-5 border-t text-red-500 text-center">{error}</p>}
+
                 {result && (
-                    <div className="border-t pt-4">
-                        <h2 className="text-2xl font-bold text-center">計算結果</h2>
-                        <div className="text-center my-4 p-4 bg-gray-100 rounded">
-                            <span className="text-lg">最安運賃（総額）</span>
-                            <span className="text-4xl font-bold mx-2">
-                                ¥{result.totalFare.toLocaleString()}
-                            </span>
-                        </div>
-                        <div>
-                            <h3 className="font-bold mb-2">分割切符の詳細</h3>
-                            <div className="flex flex-col gap-2">
-                                {result.segments.map((segment, index) => (
-                                    <div key={index} className="border p-3 rounded-lg shadow-sm">
-                                        <div className="font-bold text-lg mb-2">
-                                            <span>{segment.departureStation}</span>
-                                            <span className="mx-2">→</span>
-                                            <span>{segment.arrivalStation}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-600">
-                                                経由：{segment.printedViaLines.length === 0 ? "ーーー" : segment.printedViaLines.join("・")}
-                                            </span>
-                                            <span className="font-bold text-lg">
-                                                ¥{segment.fare.toLocaleString()}
-                                            </span>
-                                        </div>
+                    <div className="border-t pt-8 space-y-8">
+                        <h2 className="text-2xl font-bold text-center mb-6">計算結果</h2>
+
+                        {/* 1. 通し運賃の表示 */}
+                        <section className="bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-200">
+                            <h3 className="font-bold text-lg mb-4 text-gray-700 border-b pb-2">通常の運賃（分割なし）</h3>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <div className="text-lg font-bold">
+                                        {result.shortestData.departureStation} <span className="text-gray-400 mx-2">→</span> {result.shortestData.arrivalStation}
                                     </div>
-                                ))}
+                                    <div className="text-sm text-gray-600 mt-1">
+                                        経由：{result.shortestData.printedViaLines.join('・') || '---'}
+                                    </div>
+                                </div>
+                                <div className="text-3xl font-bold text-gray-800">
+                                    ¥{result.shortestData.fare.toLocaleString()}
+                                </div>
                             </div>
+                        </section>
+
+                        {/* 2 & 3. 分割案の表示 (複数あれば全て表示) */}
+                        <div className="space-y-6">
+                            {result.splitKippuDatasList.map((splitPlan, planIndex) => {
+                                const diff = result.shortestData.fare - splitPlan.totalFare;
+                                const isCheaper = diff > 0;
+
+                                return (
+                                    <section key={planIndex} className={`p-6 rounded-lg shadow-md border-2 ${isCheaper ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+                                        <div className="flex justify-between items-end mb-4 border-b pb-3 border-blue-200">
+                                            <div>
+                                                <h3 className="font-bold text-xl text-blue-800">
+                                                    分割プラン {result.splitKippuDatasList.length > 1 ? `#${planIndex + 1}` : ''}
+                                                </h3>
+                                                {isCheaper ? (
+                                                    <p className="text-red-600 font-bold mt-1">
+                                                        通常より {diff.toLocaleString()}円 お得
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-gray-500 text-sm mt-1">通常運賃と同じ</p>
+                                                )}
+                                            </div>
+                                            <div className="text-4xl font-bold text-blue-900">
+                                                ¥{splitPlan.totalFare.toLocaleString()}
+                                            </div>
+                                        </div>
+
+                                        {/* 切符詳細リスト */}
+                                        <div className="flex flex-col gap-3">
+                                            {splitPlan.splitKippuDatas.map((segment, segIndex) => (
+                                                <div key={segIndex} className="bg-white p-4 rounded border border-gray-200 shadow-sm relative">
+                                                    {/* 実際の乗車区間 */}
+                                                    <div className="text-sm text-gray-500 mb-1 flex items-center">
+                                                        <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs mr-2">利用区間</span>
+                                                        <span>{segment.departureStation} → {segment.arrivalStation}</span>
+                                                        <span>（{(segment.kippuData.totalEigyoKilo / 10).toFixed(1)}km）</span>
+                                                    </div>
+
+                                                    {/* 切符の区間 (2行目) */}
+                                                    <div className="flex justify-between items-center mt-2">
+                                                        <div className="flex-1">
+                                                            <div className="text-lg font-bold text-gray-800 flex items-center flex-wrap gap-2">
+                                                                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">切符印字</span>
+                                                                <span>{segment.kippuData.departureStation}</span>
+                                                                <span className="text-gray-400">→</span>
+                                                                <span>{segment.kippuData.arrivalStation}</span>
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 mt-1 ml-10">
+                                                                経由：{segment.kippuData.printedViaLines.length === 0 ? "---" : segment.kippuData.printedViaLines.join("・")}
+                                                            </div>
+                                                        </div>
+                                                        <div className="font-bold text-xl ml-4">
+                                                            ¥{segment.kippuData.fare.toLocaleString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </section>
+                                );
+                            })}
+
+                            {result.splitKippuDatasList.length === 0 && (
+                                <p className="text-center text-gray-500">有効な分割候補が見つかりませんでした。</p>
+                            )}
                         </div>
                     </div>
                 )}

@@ -56,7 +56,7 @@ export interface RouteRequest {
     path: PathStep[];
 }
 
-export interface ApiResponse {
+export interface KippuData {
     totalEigyoKilo: number;
     departureStation: string;
     arrivalStation: string;
@@ -70,13 +70,24 @@ export interface SplitApiRequest {
     endStationName: string;
 }
 
-export interface SplitApiResponse {
+export interface SplitKippuData {
+    departureStation: string;
+    arrivalStation: string;
+    kippuData: KippuData;
+}
+
+export interface SplitKippuDatas {
+    splitKippuDatas: SplitKippuData[];
     totalFare: number;
-    segments: SplitSegment[];
+}
+
+export interface SplitApiResponse {
+    shortestData: KippuData;
+    splitKippuDatasList: SplitKippuDatas[];
 }
 
 export interface ApiFullResponse {
-    data: ApiResponse;
+    data: KippuData;
     time: number;
 }
 

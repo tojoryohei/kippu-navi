@@ -1,12 +1,12 @@
-import { calculateTotalEigyoKilo, calculateTotalGiseiKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings } from '@/app/utils/calc';
+import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings } from '@/app/utils/calc';
 import { loadLines } from '@/app/mr/lib/loadLines';
 import { loadKanas } from '@/app/mr/lib/loadKanas';
 import { correctPath } from '@/components/correctPath';
 import { calculateFareFromPath, calculateBarrierFreeFeeFromPath } from '@/components/calcFare';
 
-import { RouteRequest, ApiResponse, PathStep } from '@/app/types';
+import { RouteRequest, KippuData, PathStep } from '@/app/types';
 
-export function processRouteAndCalculateFare(request: RouteRequest): ApiResponse {
+export function processRouteAndCalculateFare(request: RouteRequest): KippuData {
     const userInputPath = request.path;
 
     // 経路の展開

@@ -9,7 +9,7 @@ import lineData from "@/app/mr/data/lines.json";
 import SelectStation from "@/app/mr/componens/SelectStation";
 import SelectLine from "@/app/mr/componens/SelectLine";
 
-import { Station, Line, ApiResponse, ApiFullResponse, IFormInput, PathStep, RouteRequest } from "@/app/types";
+import { Station, Line, KippuData, ApiFullResponse, IFormInput, PathStep, RouteRequest } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 
@@ -83,7 +83,7 @@ export default function Form() {
         return { path };
     };
 
-    const [result, setResult] = useState<ApiResponse | null>(null);
+    const [result, setResult] = useState<KippuData | null>(null);
     const [serverTime, setServerTime] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
         const result = calcSplit.findOptimalSplitByShortestGiseiKiloPath(startStationName, endStationName);
 
-        if (!result || result.totalFare === Infinity) {
+        if (result === null || result.shortestData.fare === Infinity) {
             return NextResponse.json({ error: '経路が見つかりませんでした。' }, { status: 404 });
         }
 
