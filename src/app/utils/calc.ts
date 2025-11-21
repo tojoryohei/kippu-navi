@@ -45,17 +45,36 @@ export function convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[
     return routeSegments;
 }
 
-export function generatePrintedViaStrings(pathSteps: PathStep[]): string[] {
+export function generatePrintedViaStrings(fullPath: PathStep[]): string[] {
     const viaLines: string[] = [];
-    for (let i = 0; i < pathSteps.length - 1; i++) {
-        if (viaLines.length === 0 || (viaLines[viaLines.length - 1] !== pathSteps[i].lineName!))
-            viaLines.push(pathSteps[i].lineName!);
-    }
     const printedViaLines: string[] = [];
-    for (const viaLine of viaLines) {
-        const printing = load.getPrinting(viaLine)
-        if (printing !== null)
-            printedViaLines.push(printing);
+
+    for (let i = 0; i < fullPath.length - 1; i++) {
+        const kana = fullPath[i].lineName;
+        if (kana === null) continue;
+        const printing = load.getPrinting(kana);
+        if (printing !== null) {
+            if (0 < printedViaLines.length) {
+                if (kana !== viaLines[viaLines.length - 1]) {
+                    viaLines.push(kana);
+                    printedViaLines.push(printing);
+                }
+                else if (fullPath[i].stationName === "京橋" &&
+                    fullPath[i].lineName === "オオサ１"
+                ) {
+                    printedViaLines.push("京橋")
+                }
+                else if (fullPath[i].stationName === "西九条" &&
+                    fullPath[i].lineName === "オオサ２"
+                ) {
+                    printedViaLines.push("西九条")
+                }
+            }
+            else {
+                viaLines.push(kana);
+                printedViaLines.push(printing);
+            }
+        }
     }
     return printedViaLines;
 }
