@@ -5850,7 +5850,7 @@
                 { "stationName": "駒込", "lineName": "ヤマノテ" },
                 { "stationName": "巣鴨", "lineName": "ヤマノテ" },
                 { "stationName": "大塚", "lineName": "ヤマノテ" },
-                { "stationName": "池袋", "lineName": "アカハ" },
+                { "stationName": "池袋", "lineName": "アカハネ" },
                 { "stationName": "板橋", "lineName": null }
             ]
         },
@@ -5863,7 +5863,7 @@
                 { "stationName": "上中里", "lineName": "トウホ２" },
                 { "stationName": "王子", "lineName": "トウホ２" },
                 { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "赤羽", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
                 { "stationName": "十条", "lineName": null }
             ]
         },
@@ -6487,15 +6487,15 @@
         {
             "key": "赤羽-板橋",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
                 { "stationName": "板橋", "lineName": null }
             ]
         },
         {
             "key": "赤羽-十条",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
                 { "stationName": "十条", "lineName": null }
             ]
         },
@@ -6666,9 +6666,9 @@
         {
             "key": "赤羽-市ケ谷",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -6684,9 +6684,9 @@
         {
             "key": "赤羽-四ツ谷",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -6701,9 +6701,9 @@
         {
             "key": "赤羽-信濃町",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -6717,9 +6717,9 @@
         {
             "key": "赤羽-千駄ケ谷",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -6732,9 +6732,9 @@
         {
             "key": "赤羽-代々木",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -6998,9 +6998,9 @@
         {
             "key": "赤羽-大崎",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -7018,9 +7018,9 @@
         {
             "key": "赤羽-五反田",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -7037,9 +7037,9 @@
         {
             "key": "赤羽-目黒",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -7055,9 +7055,9 @@
         {
             "key": "赤羽-恵比寿",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -7072,9 +7072,9 @@
         {
             "key": "赤羽-渋谷",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -7088,9 +7088,9 @@
         {
             "key": "赤羽-原宿",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -7135,9 +7135,9 @@
         {
             "key": "赤羽-巣鴨",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "大塚", "lineName": "ヤマノテ" },
                 { "stationName": "巣鴨", "lineName": null }
@@ -7146,9 +7146,9 @@
         {
             "key": "赤羽-大塚",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "大塚", "lineName": null }
             ]
@@ -7156,18 +7156,18 @@
         {
             "key": "赤羽-池袋",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": null }
             ]
         },
         {
             "key": "赤羽-目白",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": null }
             ]
@@ -7175,9 +7175,9 @@
         {
             "key": "赤羽-高田馬場",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": null }
@@ -7186,9 +7186,9 @@
         {
             "key": "赤羽-新大久保",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -7198,9 +7198,9 @@
         {
             "key": "赤羽-新宿",
             "route": [
-                { "stationName": "赤羽", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "赤羽", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "池袋", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
@@ -7215,7 +7215,7 @@
                 { "stationName": "新大久保", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
-                { "stationName": "池袋", "lineName": "アカハ" },
+                { "stationName": "池袋", "lineName": "アカハネ" },
                 { "stationName": "板橋", "lineName": null }
             ]
         },
@@ -7226,8 +7226,8 @@
                 { "stationName": "新大久保", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
-                { "stationName": "池袋", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
+                { "stationName": "池袋", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "十条", "lineName": null }
             ]
         },
@@ -7637,9 +7637,9 @@
                 { "stationName": "新大久保", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
-                { "stationName": "池袋", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
+                { "stationName": "池袋", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
                 { "stationName": "赤羽", "lineName": null }
             ]
         },
@@ -7681,9 +7681,9 @@
                 { "stationName": "新大久保", "lineName": "ヤマノテ" },
                 { "stationName": "高田馬場", "lineName": "ヤマノテ" },
                 { "stationName": "目白", "lineName": "ヤマノテ" },
-                { "stationName": "池袋", "lineName": "アカハ" },
-                { "stationName": "板橋", "lineName": "アカハ" },
-                { "stationName": "十条", "lineName": "アカハ" },
+                { "stationName": "池袋", "lineName": "アカハネ" },
+                { "stationName": "板橋", "lineName": "アカハネ" },
+                { "stationName": "十条", "lineName": "アカハネ" },
                 { "stationName": "赤羽", "lineName": "トウホ２" },
                 { "stationName": "東十条", "lineName": null }
             ]
