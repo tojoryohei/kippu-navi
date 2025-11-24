@@ -637,7 +637,7 @@
         {
             "key": "新宿-錦糸町",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -1215,9 +1215,7 @@
         {
             "key": "新宿-東京",
             "route":[
-                { "stationName": "高田馬場", "lineName": "ヤマノテ" },
-                { "stationName": "新大久保", "lineName": "ヤマノテ" },
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -3219,7 +3217,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3236,7 +3234,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3253,7 +3251,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3268,7 +3266,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3284,7 +3282,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3298,7 +3296,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3311,7 +3309,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3323,7 +3321,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3334,7 +3332,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3344,7 +3342,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3353,7 +3351,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3361,14 +3359,14 @@
             "route": [
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
             "key": "千駄ケ谷-新宿",
             "route": [
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3389,7 +3387,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3405,7 +3403,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3422,7 +3420,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3440,7 +3438,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3496,7 +3494,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3511,7 +3509,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3527,7 +3525,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -3544,7 +3542,7 @@
                 { "stationName": "四ツ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
-                { "stationName": "代々木", "lineName": "ヤマノテ" }
+                { "stationName": "代々木", "lineName": "チユト" }
             ]
         },
         {
@@ -7234,7 +7232,7 @@
         {
             "key": "新宿-新日本橋",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7251,7 +7249,7 @@
         {
             "key": "新宿-馬喰町",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7269,7 +7267,7 @@
         {
             "key": "新宿-錦糸町",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7287,7 +7285,7 @@
         {
             "key": "新宿-浅草橋",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7303,7 +7301,7 @@
         {
             "key": "新宿-両国",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7320,7 +7318,7 @@
         {
             "key": "新宿-神田",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7335,7 +7333,7 @@
         {
             "key": "新宿-御茶ノ水",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7349,7 +7347,7 @@
         {
             "key": "新宿-水道橋",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7362,7 +7360,7 @@
         {
             "key": "新宿-飯田橋",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7374,7 +7372,7 @@
         {
             "key": "新宿-市ケ谷",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7385,7 +7383,7 @@
         {
             "key": "新宿-四ツ谷",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7395,7 +7393,7 @@
         {
             "key": "新宿-信濃町",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": null }
@@ -7404,7 +7402,7 @@
         {
             "key": "新宿-千駄ケ谷",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": null }
             ]
@@ -7412,14 +7410,14 @@
         {
             "key": "新宿-代々木",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": null }
             ]
         },
         {
             "key": "新宿-東京",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7435,7 +7433,7 @@
         {
             "key": "新宿-有楽町",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7452,7 +7450,7 @@
         {
             "key": "新宿-新橋",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7470,7 +7468,7 @@
         {
             "key": "新宿-浜松町",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7534,7 +7532,7 @@
         {
             "key": "新宿-秋葉原",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7549,7 +7547,7 @@
         {
             "key": "新宿-御徒町",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7565,7 +7563,7 @@
         {
             "key": "新宿-上野",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
@@ -7582,7 +7580,7 @@
         {
             "key": "新宿-鶯谷",
             "route": [
-                { "stationName": "新宿", "lineName": "ヤマノテ" },
+                { "stationName": "新宿", "lineName": "チユト" },
                 { "stationName": "代々木", "lineName": "チユト" },
                 { "stationName": "千駄ケ谷", "lineName": "チユト" },
                 { "stationName": "信濃町", "lineName": "チユト" },
