@@ -7,7 +7,6 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
     let fare: number = 0;
 
     if (fullPath.length <= 1) return fare;
-
     // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
     const specificFare = load.getSpecificFares(fullPath);
     if (specificFare !== null) {
@@ -24,7 +23,7 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
         if (line === null) throw new Error(`calculateFareFromCorrectedPathでエラーが発生しました.`);
         const routeSegment = load.getRouteSegment(line, fullPath[i].stationName, fullPath[i + 1].stationName);
 
-        // 全ての駅間の駅名を取得
+        // 全ての駅間のデータを取得
         routeKeys.add(createRouteKey(routeSegment.line, routeSegment.station0, routeSegment.station1));
         routeSegments.push(routeSegment);
 

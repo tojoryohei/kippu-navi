@@ -5,6 +5,7 @@ import { createRouteKey } from '@/app/utils/calc';
 import { City, PathStep, Printing, RouteSegment, Section, SpecificFare, SpecificSection, TrainSpecificSection } from '@/app/types';
 
 class Load {
+    private passingBoldLineAreaRoutes: Map<string, PathStep[]> = new Map();
     private fromBoldLineAreaRoutes: Map<string, PathStep[]> = new Map();
     private toBoldLineAreaRoutes: Map<string, PathStep[]> = new Map();
     private cities: City[] = [];
@@ -13,7 +14,6 @@ class Load {
     private routeList: RouteSegment[] = [];
     private specificFares: SpecificFare[] = [];
     private specificFareMap = new Map<string, number>();
-    private specificSections: SpecificSection[] = [];
     private trainSpecificSections!: TrainSpecificSection;
     private yamanote!: City;
 
@@ -27,6 +27,9 @@ class Load {
             // boldLineAreaRoutes.jsonの読み込み
             const boldLineAreaRoutesData = path.join(process.cwd(), 'src', 'data', 'boldLineAreaRoutes.json');
             const boldLineAreaRoutes = JSON.parse(fs.readFileSync(boldLineAreaRoutesData, 'utf-8'));
+            for (const boldLineAreaRoute of boldLineAreaRoutes["passing"]) {
+                this.passingBoldLineAreaRoutes.set(boldLineAreaRoute.key, boldLineAreaRoute.route);
+            }
             for (const boldLineAreaRoute of boldLineAreaRoutes["from"]) {
                 this.fromBoldLineAreaRoutes.set(boldLineAreaRoute.key, boldLineAreaRoute.route);
             }
@@ -65,13 +68,9 @@ class Load {
             const specificFaresData = path.join(process.cwd(), 'src', 'data', 'specificFares.json');
             this.specificFares = JSON.parse(fs.readFileSync(specificFaresData, 'utf-8'));
             for (const specificFare of this.specificFares) {
-                this.specificFareMap.set(specificFare.sections.map(seg => `${seg.stationName}-${seg.lineName}`)
+                this.specificFareMap.set(specificFare.sections.map(seg => `${seg.stationName}`)
                     .join("-"), specificFare.fare);
             }
-
-            // specificSections.jsonの読み込み
-            const specificSectionsData = path.join(process.cwd(), 'src', 'data', 'specificSections.json');
-            this.specificSections = JSON.parse(fs.readFileSync(specificSectionsData, 'utf-8'));
 
             // trainSpecificSections.jsonの読み込み
             const trainSpecificSectionsData = path.join(process.cwd(), 'src', 'data', 'trainSpecificSections.json');
@@ -113,17 +112,17 @@ class Load {
 
     public getSpecificFares(fullPath: PathStep[]): number | null {
         const key = fullPath
-            .map(seg => `${seg.stationName}-${seg.lineName}`)
+            .map(seg => `${seg.stationName}`)
             .join("-");
         return this.specificFareMap.get(key) ?? null;
     }
 
-    public getSpecificSections(): SpecificSection[] {
-        return this.specificSections;
-    }
-
     public getTrainSpecificSections(specificSectionName: keyof TrainSpecificSection): Set<string> {
         return this.trainSpecificSections[specificSectionName];
+    }
+
+    public getPassingBoldLineAreaRoute(key: string): PathStep[] | null {
+        return this.passingBoldLineAreaRoutes.get(key) ?? null;
     }
 
     public getFromBoldLineAreaRoute(key: string): PathStep[] | null {

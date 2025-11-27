@@ -1,4 +1,458 @@
 {
+    "passing": [
+        {
+            "key": "錦糸町-錦糸町",
+            "route": []
+        },
+        {
+            "key": "錦糸町-東京",
+            "route": [
+                { "stationName": "錦糸町", "lineName": "ツウカ" },
+                { "stationName": "馬喰町", "lineName": "ツウカ" },
+                { "stationName": "新日本橋", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "錦糸町-品川",
+            "route": [
+                { "stationName": "錦糸町", "lineName": "ツウカ" },
+                { "stationName": "馬喰町", "lineName": "ツウカ" },
+                { "stationName": "新日本橋", "lineName": "ツウカ" },
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "有楽町", "lineName": "ツウカ" },
+                { "stationName": "新橋", "lineName": "ツウカ" },
+                { "stationName": "浜松町", "lineName": "ツウカ" },
+                { "stationName": "田町", "lineName": "ツウカ" },
+                { "stationName": "高輪ゲートウェイ", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "錦糸町-日暮里",
+            "route": [
+                { "stationName": "錦糸町", "lineName": "ツウカ" },
+                { "stationName": "両国", "lineName": "ツウカ" },
+                { "stationName": "浅草橋", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "錦糸町-赤羽",
+            "route": [
+                { "stationName": "錦糸町", "lineName": "ツウカ" },
+                { "stationName": "両国", "lineName": "ツウカ" },
+                { "stationName": "浅草橋", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" },
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "西日暮里", "lineName": "ツウカ" },
+                { "stationName": "田端", "lineName": "ツウカ" },
+                { "stationName": "上中里", "lineName": "ツウカ" },
+                { "stationName": "王子", "lineName": "ツウカ" },
+                { "stationName": "東十条", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "錦糸町-新宿",
+            "route": [
+                { "stationName": "錦糸町", "lineName": "ツウカ" },
+                { "stationName": "両国", "lineName": "ツウカ" },
+                { "stationName": "浅草橋", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "御茶ノ水", "lineName": "ツウカ" },
+                { "stationName": "水道橋", "lineName": "ツウカ" },
+                { "stationName": "飯田橋", "lineName": "ツウカ" },
+                { "stationName": "市ケ谷", "lineName": "ツウカ" },
+                { "stationName": "四ツ谷", "lineName": "ツウカ" },
+                { "stationName": "信濃町", "lineName": "ツウカ" },
+                { "stationName": "千駄ケ谷", "lineName": "ツウカ" },
+                { "stationName": "代々木", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "東京-錦糸町",
+            "route": [
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "新日本橋", "lineName": "ツウカ" },
+                { "stationName": "馬喰町", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "東京-東京",
+            "route": []
+        },
+        {
+            "key": "東京-品川",
+            "route": [
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "有楽町", "lineName": "ツウカ" },
+                { "stationName": "新橋", "lineName": "ツウカ" },
+                { "stationName": "浜松町", "lineName": "ツウカ" },
+                { "stationName": "田町", "lineName": "ツウカ" },
+                { "stationName": "高輪ゲートウェイ", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "東京-日暮里",
+            "route": [
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "神田", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "東京-赤羽",
+            "route": [
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "神田", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" },
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "西日暮里", "lineName": "ツウカ" },
+                { "stationName": "田端", "lineName": "ツウカ" },
+                { "stationName": "上中里", "lineName": "ツウカ" },
+                { "stationName": "王子", "lineName": "ツウカ" },
+                { "stationName": "東十条", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "東京-新宿",
+            "route": [
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "神田", "lineName": "ツウカ" },
+                { "stationName": "御茶ノ水", "lineName": "ツウカ" },
+                { "stationName": "水道橋", "lineName": "ツウカ" },
+                { "stationName": "飯田橋", "lineName": "ツウカ" },
+                { "stationName": "市ケ谷", "lineName": "ツウカ" },
+                { "stationName": "四ツ谷", "lineName": "ツウカ" },
+                { "stationName": "信濃町", "lineName": "ツウカ" },
+                { "stationName": "千駄ケ谷", "lineName": "ツウカ" },
+                { "stationName": "代々木", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "品川-錦糸町",
+            "route": [
+                { "stationName": "品川", "lineName": "ツウカ" },
+                { "stationName": "高輪ゲートウェイ", "lineName": "ツウカ" },
+                { "stationName": "田町", "lineName": "ツウカ" },
+                { "stationName": "浜松町", "lineName": "ツウカ" },
+                { "stationName": "新橋", "lineName": "ツウカ" },
+                { "stationName": "有楽町", "lineName": "ツウカ" },
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "新日本橋", "lineName": "ツウカ" },
+                { "stationName": "馬喰町", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "品川-東京",
+            "route": [
+                { "stationName": "品川", "lineName": "ツウカ" },
+                { "stationName": "高輪ゲートウェイ", "lineName": "ツウカ" },
+                { "stationName": "田町", "lineName": "ツウカ" },
+                { "stationName": "浜松町", "lineName": "ツウカ" },
+                { "stationName": "新橋", "lineName": "ツウカ" },
+                { "stationName": "有楽町", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "品川-品川",
+            "route": []
+        },
+        {
+            "key": "品川-日暮里",
+            "route": [
+                { "stationName": "品川", "lineName": "ツウカ" },
+                { "stationName": "高輪ゲートウェイ", "lineName": "ツウカ" },
+                { "stationName": "田町", "lineName": "ツウカ" },
+                { "stationName": "浜松町", "lineName": "ツウカ" },
+                { "stationName": "新橋", "lineName": "ツウカ" },
+                { "stationName": "有楽町", "lineName": "ツウカ" },
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "神田", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "品川-赤羽",
+            "route": [
+                { "stationName": "品川", "lineName": "ツウカ" },
+                { "stationName": "高輪ゲートウェイ", "lineName": "ツウカ" },
+                { "stationName": "田町", "lineName": "ツウカ" },
+                { "stationName": "浜松町", "lineName": "ツウカ" },
+                { "stationName": "新橋", "lineName": "ツウカ" },
+                { "stationName": "有楽町", "lineName": "ツウカ" },
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "神田", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" },
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "西日暮里", "lineName": "ツウカ" },
+                { "stationName": "田端", "lineName": "ツウカ" },
+                { "stationName": "上中里", "lineName": "ツウカ" },
+                { "stationName": "王子", "lineName": "ツウカ" },
+                { "stationName": "東十条", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "品川-新宿",
+            "route": [
+                { "stationName": "品川", "lineName": "ツウカ" },
+                { "stationName": "大崎", "lineName": "ツウカ" },
+                { "stationName": "五反田", "lineName": "ツウカ" },
+                { "stationName": "目黒", "lineName": "ツウカ" },
+                { "stationName": "恵比寿", "lineName": "ツウカ" },
+                { "stationName": "渋谷", "lineName": "ツウカ" },
+                { "stationName": "原宿", "lineName": "ツウカ" },
+                { "stationName": "代々木", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "日暮里-錦糸町",
+            "route": [
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "浅草橋", "lineName": "ツウカ" },
+                { "stationName": "両国", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "日暮里-東京",
+            "route": [
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "神田", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "日暮里-品川",
+            "route": [
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "神田", "lineName": "ツウカ" },
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "有楽町", "lineName": "ツウカ" },
+                { "stationName": "新橋", "lineName": "ツウカ" },
+                { "stationName": "浜松町", "lineName": "ツウカ" },
+                { "stationName": "田町", "lineName": "ツウカ" },
+                { "stationName": "高輪ゲートウェイ", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "日暮里-日暮里",
+            "route": []
+        },
+        {
+            "key": "日暮里-赤羽",
+            "route": [
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "西日暮里", "lineName": "ツウカ" },
+                { "stationName": "田端", "lineName": "ツウカ" },
+                { "stationName": "上中里", "lineName": "ツウカ" },
+                { "stationName": "王子", "lineName": "ツウカ" },
+                { "stationName": "東十条", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "日暮里-新宿",
+            "route": [
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "西日暮里", "lineName": "ツウカ" },
+                { "stationName": "田端", "lineName": "ツウカ" },
+                { "stationName": "駒込", "lineName": "ツウカ" },
+                { "stationName": "巣鴨", "lineName": "ツウカ" },
+                { "stationName": "大塚", "lineName": "ツウカ" },
+                { "stationName": "池袋", "lineName": "ツウカ" },
+                { "stationName": "目白", "lineName": "ツウカ" },
+                { "stationName": "高田馬場", "lineName": "ツウカ" },
+                { "stationName": "新大久保", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "赤羽-錦糸町",
+            "route": [
+                { "stationName": "赤羽", "lineName": "ツウカ" },
+                { "stationName": "東十条", "lineName": "ツウカ" },
+                { "stationName": "王子", "lineName": "ツウカ" },
+                { "stationName": "上中里", "lineName": "ツウカ" },
+                { "stationName": "田端", "lineName": "ツウカ" },
+                { "stationName": "西日暮里", "lineName": "ツウカ" },
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "浅草橋", "lineName": "ツウカ" },
+                { "stationName": "両国", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "赤羽-東京",
+            "route": [
+                { "stationName": "赤羽", "lineName": "ツウカ" },
+                { "stationName": "東十条", "lineName": "ツウカ" },
+                { "stationName": "王子", "lineName": "ツウカ" },
+                { "stationName": "上中里", "lineName": "ツウカ" },
+                { "stationName": "田端", "lineName": "ツウカ" },
+                { "stationName": "西日暮里", "lineName": "ツウカ" },
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "神田", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "赤羽-品川",
+            "route": [
+                { "stationName": "赤羽", "lineName": "ツウカ" },
+                { "stationName": "東十条", "lineName": "ツウカ" },
+                { "stationName": "王子", "lineName": "ツウカ" },
+                { "stationName": "上中里", "lineName": "ツウカ" },
+                { "stationName": "田端", "lineName": "ツウカ" },
+                { "stationName": "西日暮里", "lineName": "ツウカ" },
+                { "stationName": "日暮里", "lineName": "ツウカ" },
+                { "stationName": "鶯谷", "lineName": "ツウカ" },
+                { "stationName": "上野", "lineName": "ツウカ" },
+                { "stationName": "御徒町", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "神田", "lineName": "ツウカ" },
+                { "stationName": "東京", "lineName": "ツウカ" },
+                { "stationName": "有楽町", "lineName": "ツウカ" },
+                { "stationName": "新橋", "lineName": "ツウカ" },
+                { "stationName": "浜松町", "lineName": "ツウカ" },
+                { "stationName": "田町", "lineName": "ツウカ" },
+                { "stationName": "高輪ゲートウェイ", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "赤羽-日暮里",
+            "route": [
+                { "stationName": "赤羽", "lineName": "ツウカ" },
+                { "stationName": "東十条", "lineName": "ツウカ" },
+                { "stationName": "王子", "lineName": "ツウカ" },
+                { "stationName": "上中里", "lineName": "ツウカ" },
+                { "stationName": "田端", "lineName": "ツウカ" },
+                { "stationName": "西日暮里", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "赤羽-赤羽",
+            "route": []
+        },
+        {
+            "key": "赤羽-新宿",
+            "route": [
+                { "stationName": "赤羽", "lineName": "ツウカ" },
+                { "stationName": "十条", "lineName": "ツウカ" },
+                { "stationName": "板橋", "lineName": "ツウカ" },
+                { "stationName": "池袋", "lineName": "ツウカ" },
+                { "stationName": "目白", "lineName": "ツウカ" },
+                { "stationName": "高田馬場", "lineName": "ツウカ" },
+                { "stationName": "新大久保", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "新宿-錦糸町",
+            "route": [
+                { "stationName": "新宿", "lineName": "ツウカ" },
+                { "stationName": "代々木", "lineName": "ツウカ" },
+                { "stationName": "千駄ケ谷", "lineName": "ツウカ" },
+                { "stationName": "信濃町", "lineName": "ツウカ" },
+                { "stationName": "四ツ谷", "lineName": "ツウカ" },
+                { "stationName": "市ケ谷", "lineName": "ツウカ" },
+                { "stationName": "飯田橋", "lineName": "ツウカ" },
+                { "stationName": "水道橋", "lineName": "ツウカ" },
+                { "stationName": "御茶ノ水", "lineName": "ツウカ" },
+                { "stationName": "秋葉原", "lineName": "ツウカ" },
+                { "stationName": "浅草橋", "lineName": "ツウカ" },
+                { "stationName": "両国", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "新宿-東京",
+            "route": [
+                { "stationName": "新宿", "lineName": "ツウカ" },
+                { "stationName": "代々木", "lineName": "ツウカ" },
+                { "stationName": "千駄ケ谷", "lineName": "ツウカ" },
+                { "stationName": "信濃町", "lineName": "ツウカ" },
+                { "stationName": "四ツ谷", "lineName": "ツウカ" },
+                { "stationName": "市ケ谷", "lineName": "ツウカ" },
+                { "stationName": "飯田橋", "lineName": "ツウカ" },
+                { "stationName": "水道橋", "lineName": "ツウカ" },
+                { "stationName": "御茶ノ水", "lineName": "ツウカ" },
+                { "stationName": "神田", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "新宿-品川",
+            "route": [
+                { "stationName": "新宿", "lineName": "ツウカ" },
+                { "stationName": "代々木", "lineName": "ツウカ" },
+                { "stationName": "原宿", "lineName": "ツウカ" },
+                { "stationName": "渋谷", "lineName": "ツウカ" },
+                { "stationName": "恵比寿", "lineName": "ツウカ" },
+                { "stationName": "目黒", "lineName": "ツウカ" },
+                { "stationName": "五反田", "lineName": "ツウカ" },
+                { "stationName": "大崎", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "新宿-日暮里",
+            "route": [
+                { "stationName": "新宿", "lineName": "ツウカ" },
+                { "stationName": "新大久保", "lineName": "ツウカ" },
+                { "stationName": "高田馬場", "lineName": "ツウカ" },
+                { "stationName": "目白", "lineName": "ツウカ" },
+                { "stationName": "池袋", "lineName": "ツウカ" },
+                { "stationName": "大塚", "lineName": "ツウカ" },
+                { "stationName": "巣鴨", "lineName": "ツウカ" },
+                { "stationName": "駒込", "lineName": "ツウカ" },
+                { "stationName": "田端", "lineName": "ツウカ" },
+                { "stationName": "西日暮里", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "新宿-赤羽",
+            "route": [
+                { "stationName": "新宿", "lineName": "ツウカ" },
+                { "stationName": "新大久保", "lineName": "ツウカ" },
+                { "stationName": "高田馬場", "lineName": "ツウカ" },
+                { "stationName": "目白", "lineName": "ツウカ" },
+                { "stationName": "池袋", "lineName": "ツウカ" },
+                { "stationName": "板橋", "lineName": "ツウカ" },
+                { "stationName": "十条", "lineName": "ツウカ" }
+            ]
+        },
+        {
+            "key": "新宿-新宿",
+            "route": []
+        }
+    ],
     "from": [
         {
             "key": "板橋-錦糸町",
@@ -23,7 +477,7 @@
             "key": "十条-錦糸町",
             "route": [
                 { "stationName": "十条", "lineName": "アカハネ" },
-                { "stationName": "赤羽", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
                 { "stationName": "東十条", "lineName": "トウホ２" },
                 { "stationName": "王子", "lineName": "トウホ２" },
                 { "stationName": "上中里", "lineName": "トウホ２" },
@@ -735,7 +1189,7 @@
             "key": "御茶ノ水-東京",
             "route":[
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -743,7 +1197,7 @@
             "route":[
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -752,7 +1206,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -762,7 +1216,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -773,7 +1227,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -785,7 +1239,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -798,7 +1252,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -812,7 +1266,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -1056,7 +1510,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -1071,7 +1525,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -1193,7 +1647,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -1209,7 +1663,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -1224,7 +1678,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" }
+                { "stationName": "神田", "lineName": "チユト" }
             ]
         },
         {
@@ -1348,7 +1802,7 @@
             "key": "御茶ノ水-品川",
             "route": [
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" },
+                { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "東京", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": "トウカ" },
@@ -1362,7 +1816,7 @@
             "route": [
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" },
+                { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "東京", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": "トウカ" },
@@ -1377,7 +1831,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" },
+                { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "東京", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": "トウカ" },
@@ -1393,7 +1847,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" },
+                { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "東京", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": "トウカ" },
@@ -3208,7 +3662,7 @@
             "key": "新日本橋-新宿",
             "route": [
                 { "stationName": "新日本橋", "lineName": "ソウフ" },
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -3225,7 +3679,7 @@
             "route": [
                 { "stationName": "馬喰町", "lineName": "ソウフ" },
                 { "stationName": "新日本橋", "lineName": "ソウフ" },
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -3378,7 +3832,7 @@
         {
             "key": "東京-新宿",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -3394,7 +3848,7 @@
             "key": "有楽町-新宿",
             "route": [
                 { "stationName": "有楽町", "lineName": "トウカ" },
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -3411,7 +3865,7 @@
             "route": [
                 { "stationName": "新橋", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -3429,7 +3883,7 @@
                 { "stationName": "浜松町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -4573,7 +5027,7 @@
         {
             "key": "東京-御茶ノ水",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": null }
             ]
@@ -4581,7 +5035,7 @@
         {
             "key": "東京-水道橋",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": null }
@@ -4590,7 +5044,7 @@
         {
             "key": "東京-飯田橋",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -4600,7 +5054,7 @@
         {
             "key": "東京-市ケ谷",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -4611,7 +5065,7 @@
         {
             "key": "東京-四ツ谷",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -4623,7 +5077,7 @@
         {
             "key": "東京-信濃町",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -4636,7 +5090,7 @@
         {
             "key": "東京-千駄ケ谷",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -4650,7 +5104,7 @@
         {
             "key": "東京-代々木",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -4913,7 +5367,7 @@
         {
             "key": "東京-渋谷",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -4930,7 +5384,7 @@
         {
             "key": "東京-原宿",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -5058,7 +5512,7 @@
         {
             "key": "東京-高田馬場",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -5076,7 +5530,7 @@
         {
             "key": "東京-新大久保",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -5093,7 +5547,7 @@
         {
             "key": "東京-新宿",
             "route": [
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -5240,7 +5694,7 @@
                 { "stationName": "浜松町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": null }
             ]
@@ -5254,7 +5708,7 @@
                 { "stationName": "浜松町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": null }
@@ -5269,7 +5723,7 @@
                 { "stationName": "浜松町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -5285,7 +5739,7 @@
                 { "stationName": "浜松町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
-                { "stationName": "東京", "lineName": "トウホ" },
+                { "stationName": "東京", "lineName": "チユト" },
                 { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
@@ -7241,7 +7695,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" },
+                { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "東京", "lineName": "ソウフ" },
                 { "stationName": "新日本橋", "lineName": null }
             ]
@@ -7258,7 +7712,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" },
+                { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "東京", "lineName": "ソウフ" },
                 { "stationName": "新日本橋", "lineName": "ソウフ" },
                 { "stationName": "馬喰町", "lineName": null }
@@ -7426,7 +7880,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" },
+                { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "東京", "lineName": null }
             ]
         },
@@ -7442,7 +7896,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" },
+                { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "東京", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": null }
             ]
@@ -7459,7 +7913,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" },
+                { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "東京", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": null }
@@ -7477,7 +7931,7 @@
                 { "stationName": "飯田橋", "lineName": "チユト" },
                 { "stationName": "水道橋", "lineName": "チユト" },
                 { "stationName": "御茶ノ水", "lineName": "チユト" },
-                { "stationName": "神田", "lineName": "トウホ" },
+                { "stationName": "神田", "lineName": "チユト" },
                 { "stationName": "東京", "lineName": "トウカ" },
                 { "stationName": "有楽町", "lineName": "トウカ" },
                 { "stationName": "新橋", "lineName": "トウカ" },
