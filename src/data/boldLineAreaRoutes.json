@@ -478,9 +478,9 @@
             "route": [
                 { "stationName": "十条", "lineName": "アカハネ" },
                 { "stationName": "赤羽", "lineName": "トウホ" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -774,10 +774,10 @@
         {
             "key": "赤羽-錦糸町",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -792,7 +792,7 @@
         {
             "key": "上中里-錦糸町",
             "route": [
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -807,8 +807,8 @@
         {
             "key": "王子-錦糸町",
             "route": [
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -823,9 +823,9 @@
         {
             "key": "東十条-錦糸町",
             "route": [
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -1127,10 +1127,10 @@
             "key": "十条-東京",
             "route":[
                 { "stationName": "十条", "lineName": "アカハネ" },
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -1384,10 +1384,10 @@
         {
             "key": "赤羽-東京",
             "route":[
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -1401,7 +1401,7 @@
         {
             "key": "上中里-東京",
             "route":[
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -1415,8 +1415,8 @@
         {
             "key": "王子-東京",
             "route":[
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -1430,9 +1430,9 @@
         {
             "key": "東十条-東京",
             "route":[
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -2061,10 +2061,10 @@
         {
             "key": "赤羽-品川",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -2084,7 +2084,7 @@
         {
             "key": "上中里-品川",
             "route": [
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -2104,8 +2104,8 @@
         {
             "key": "王子-品川",
             "route": [
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -2125,9 +2125,9 @@
         {
             "key": "東十条-品川",
             "route": [
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -2382,10 +2382,10 @@
             "key": "十条-日暮里",
             "route": [
                 { "stationName": "十条", "lineName": "アカハネ" },
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" }
             ]
@@ -2707,10 +2707,10 @@
         {
             "key": "赤羽-日暮里",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" }
             ]
@@ -2718,7 +2718,7 @@
         {
             "key": "上中里-日暮里",
             "route": [
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" }
             ]
@@ -2726,8 +2726,8 @@
         {
             "key": "王子-日暮里",
             "route": [
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" }
             ]
@@ -2735,9 +2735,9 @@
         {
             "key": "東十条-日暮里",
             "route": [
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" }
             ]
@@ -2986,10 +2986,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3005,10 +3005,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3023,10 +3023,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3039,10 +3039,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3056,10 +3056,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3072,10 +3072,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3088,10 +3088,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3105,10 +3105,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3123,10 +3123,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3215,10 +3215,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3233,10 +3233,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3252,10 +3252,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3272,10 +3272,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3293,10 +3293,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3315,10 +3315,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3338,10 +3338,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3353,10 +3353,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3367,10 +3367,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3380,10 +3380,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3392,10 +3392,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3403,10 +3403,10 @@
             "route": [
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3422,22 +3422,22 @@
         {
             "key": "上中里-赤羽",
             "route": [
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
             "key": "王子-赤羽",
             "route": [
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
             "key": "東十条-赤羽",
             "route": [
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -3543,29 +3543,29 @@
             "key": "西日暮里-赤羽",
             "route": [
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
             "key": "田端-赤羽",
             "route": [
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
             "key": "駒込-赤羽",
             "route": [
                 { "stationName": "駒込", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" }
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" }
             ]
         },
         {
@@ -4045,7 +4045,7 @@
         {
             "key": "上中里-新宿",
             "route": [
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "駒込", "lineName": "ヤマノテ" },
                 { "stationName": "巣鴨", "lineName": "ヤマノテ" },
@@ -4059,8 +4059,8 @@
         {
             "key": "王子-新宿",
             "route": [
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "駒込", "lineName": "ヤマノテ" },
                 { "stationName": "巣鴨", "lineName": "ヤマノテ" },
@@ -4074,7 +4074,7 @@
         {
             "key": "東十条-新宿",
             "route": [
-                { "stationName": "東十条", "lineName": "トウホ２" },
+                { "stationName": "東十条", "lineName": "トウホ" },
                 { "stationName": "赤羽", "lineName": "アカハネ" },
                 { "stationName": "十条", "lineName": "アカハネ" },
                 { "stationName": "板橋", "lineName": "アカハネ" },
@@ -4269,10 +4269,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
                 { "stationName": "赤羽", "lineName": "アカハネ" },
                 { "stationName": "十条", "lineName": null }
             ]
@@ -4594,10 +4594,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
                 { "stationName": "赤羽", "lineName": null }
             ]
         },
@@ -4613,7 +4613,7 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
                 { "stationName": "上中里", "lineName": null }
             ]
         },
@@ -4629,8 +4629,8 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "王子", "lineName": null }
             ]
         },
@@ -4646,9 +4646,9 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
                 { "stationName": "東十条", "lineName": null }
             ]
         },
@@ -4966,10 +4966,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
                 { "stationName": "赤羽", "lineName": "アカハネ" },
                 { "stationName": "十条", "lineName": null }
             ]
@@ -5251,10 +5251,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
                 { "stationName": "赤羽", "lineName": null }
             ]
         },
@@ -5269,7 +5269,7 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
                 { "stationName": "上中里", "lineName": null }
             ]
         },
@@ -5284,8 +5284,8 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "王子", "lineName": null }
             ]
         },
@@ -5300,9 +5300,9 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
                 { "stationName": "東十条", "lineName": null }
             ]
         },
@@ -5982,10 +5982,10 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
                 { "stationName": "赤羽", "lineName": null }
             ]
         },
@@ -6006,7 +6006,7 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
                 { "stationName": "上中里", "lineName": null }
             ]
         },
@@ -6027,8 +6027,8 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "王子", "lineName": null }
             ]
         },
@@ -6049,9 +6049,9 @@
                 { "stationName": "鶯谷", "lineName": "トウホ" },
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
                 { "stationName": "東十条", "lineName": null }
             ]
         },
@@ -6311,10 +6311,10 @@
             "route": [
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
                 { "stationName": "赤羽", "lineName": "アカハネ" },
                 { "stationName": "十条", "lineName": null }
             ]
@@ -6664,10 +6664,10 @@
             "route": [
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
                 { "stationName": "赤羽", "lineName": null }
             ]
         },
@@ -6676,7 +6676,7 @@
             "route": [
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
                 { "stationName": "上中里", "lineName": null }
             ]
         },
@@ -6685,8 +6685,8 @@
             "route": [
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "王子", "lineName": null }
             ]
         },
@@ -6695,9 +6695,9 @@
             "route": [
                 { "stationName": "日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
                 { "stationName": "東十条", "lineName": null }
             ]
         },
@@ -6954,10 +6954,10 @@
         {
             "key": "赤羽-新日本橋",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -6973,10 +6973,10 @@
         {
             "key": "赤羽-馬喰町",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -6993,10 +6993,10 @@
         {
             "key": "赤羽-錦糸町",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7012,10 +7012,10 @@
         {
             "key": "赤羽-浅草橋",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7029,10 +7029,10 @@
         {
             "key": "赤羽-両国",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7047,10 +7047,10 @@
         {
             "key": "赤羽-神田",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7064,10 +7064,10 @@
         {
             "key": "赤羽-御茶ノ水",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7081,10 +7081,10 @@
         {
             "key": "赤羽-水道橋",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7099,10 +7099,10 @@
         {
             "key": "赤羽-飯田橋",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7198,10 +7198,10 @@
         {
             "key": "赤羽-東京",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7216,10 +7216,10 @@
         {
             "key": "赤羽-有楽町",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7235,10 +7235,10 @@
         {
             "key": "赤羽-新橋",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7255,10 +7255,10 @@
         {
             "key": "赤羽-浜松町",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7276,10 +7276,10 @@
         {
             "key": "赤羽-田町",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7298,10 +7298,10 @@
         {
             "key": "赤羽-高輪ゲートウェイ",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7321,10 +7321,10 @@
         {
             "key": "赤羽-品川",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7345,10 +7345,10 @@
         {
             "key": "赤羽-秋葉原",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7361,10 +7361,10 @@
         {
             "key": "赤羽-御徒町",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7376,10 +7376,10 @@
         {
             "key": "赤羽-上野",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7390,10 +7390,10 @@
         {
             "key": "赤羽-鶯谷",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": "トウホ" },
@@ -7403,10 +7403,10 @@
         {
             "key": "赤羽-日暮里",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": "ヤマノテ" },
                 { "stationName": "日暮里", "lineName": null }
@@ -7426,24 +7426,24 @@
         {
             "key": "赤羽-上中里",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
                 { "stationName": "上中里", "lineName": null }
             ]
         },
         {
             "key": "赤羽-王子",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
                 { "stationName": "王子", "lineName": null }
             ]
         },
         {
             "key": "赤羽-東十条",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
                 { "stationName": "東十条", "lineName": null }
             ]
         },
@@ -7555,10 +7555,10 @@
         {
             "key": "赤羽-西日暮里",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "西日暮里", "lineName": null }
             ]
@@ -7566,20 +7566,20 @@
         {
             "key": "赤羽-田端",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": null }
             ]
         },
         {
             "key": "赤羽-駒込",
             "route": [
-                { "stationName": "赤羽", "lineName": "トウホ２" },
-                { "stationName": "東十条", "lineName": "トウホ２" },
-                { "stationName": "王子", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
+                { "stationName": "東十条", "lineName": "トウホ" },
+                { "stationName": "王子", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "田端", "lineName": "ヤマノテ" },
                 { "stationName": "駒込", "lineName": null }
             ]
@@ -8106,7 +8106,7 @@
                 { "stationName": "大塚", "lineName": "ヤマノテ" },
                 { "stationName": "巣鴨", "lineName": "ヤマノテ" },
                 { "stationName": "駒込", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
                 { "stationName": "上中里", "lineName": null }
             ]
         },
@@ -8121,8 +8121,8 @@
                 { "stationName": "大塚", "lineName": "ヤマノテ" },
                 { "stationName": "巣鴨", "lineName": "ヤマノテ" },
                 { "stationName": "駒込", "lineName": "ヤマノテ" },
-                { "stationName": "田端", "lineName": "トウホ２" },
-                { "stationName": "上中里", "lineName": "トウホ２" },
+                { "stationName": "田端", "lineName": "トウホ" },
+                { "stationName": "上中里", "lineName": "トウホ" },
                 { "stationName": "王子", "lineName": null }
             ]
         },
@@ -8136,7 +8136,7 @@
                 { "stationName": "池袋", "lineName": "アカハネ" },
                 { "stationName": "板橋", "lineName": "アカハネ" },
                 { "stationName": "十条", "lineName": "アカハネ" },
-                { "stationName": "赤羽", "lineName": "トウホ２" },
+                { "stationName": "赤羽", "lineName": "トウホ" },
                 { "stationName": "東十条", "lineName": null }
             ]
         },
