@@ -13,7 +13,7 @@ export async function POST(request: Request) {
             const calculationTimeMs = endTime - startTime;
             return NextResponse.json(
                 {
-                    error: '経路が長すぎます',
+                    error: '経路の上限は100です．',
                     time: calculationTimeMs
                 },
                 { status: 400 }
