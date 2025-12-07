@@ -12,6 +12,13 @@ export function correctPath(fullPath: PathStep[]): PathStep[] {
     // 第160条 特定区間発着の場合のう回乗車
     fullPath = applyBoldLineAreaRule(fullPath);
 
+    fullPath = uncorrectPath(fullPath);
+
+    return fullPath;
+}
+
+export function uncorrectPath(fullPath: PathStep[]): PathStep[] {
+
     // 第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方
     fullPath = applyCityRule(fullPath);
 
@@ -711,6 +718,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath = [
                         ...fullPath.slice(0, idx),
                         { stationName: "赤羽", lineName: "ホセイ" },
+                        { stationName: "東十条", lineName: "ホセイ" },
+                        { stationName: "王子", lineName: "ホセイ" },
+                        { stationName: "上中里", lineName: "ホセイ" },
+                        { stationName: "田端", lineName: "ホセイ" },
+                        { stationName: "西日暮里", lineName: "ホセイ" },
                         ...fullPath.slice(idx + 2)
                     ]
                     break;
@@ -735,7 +747,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 fullPath[i + 1].stationName === "北赤羽" &&
                 fullPath[i + 2].stationName === "浮間舟渡" &&
                 fullPath[i + 3].stationName === "戸田公園" &&
-                fullPath[i + 4].stationName === "（東）戸田" &&
+                fullPath[i + 4].stationName === "（北）戸田" &&
                 fullPath[i + 5].stationName === "北戸田" &&
                 fullPath[i + 6].stationName === "武蔵浦和" &&
                 fullPath[i + 7].stationName === "中浦和" &&
@@ -1137,7 +1149,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 fullPath[i + 4].stationName === "中浦和" &&
                 fullPath[i + 5].stationName === "武蔵浦和" &&
                 fullPath[i + 6].stationName === "北戸田" &&
-                fullPath[i + 7].stationName === "（東）戸田" &&
+                fullPath[i + 7].stationName === "（北）戸田" &&
                 fullPath[i + 8].stationName === "戸田公園" &&
                 fullPath[i + 9].stationName === "浮間舟渡" &&
                 fullPath[i + 10].stationName === "北赤羽" &&
@@ -2041,7 +2053,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
         stationsOnFullPath.has("千葉") === false &&
         stationsOnFullPath.has("本千葉") === false
     ) {
-        for (let i = 0; i < fullPath.length - 4; i++) {
+        for (let i = 0; i < fullPath.length - 17; i++) {
             if (fullPath[i + 0].stationName === "東京" &&
                 fullPath[i + 1].stationName === "八丁堀" &&
                 fullPath[i + 2].stationName === "越中島" &&
@@ -2403,7 +2415,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
             }
         }
 
-        for (let i = 0; i < fullPath.length - 4; i++) {
+        for (let i = 0; i < fullPath.length - 17; i++) {
             if (fullPath[i + 0].stationName === "蘇我" &&
                 fullPath[i + 1].stationName === "千葉みなと" &&
                 fullPath[i + 2].stationName === "稲毛海岸" &&
@@ -4305,9 +4317,2290 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
         }
     }
 
-    console.log(fullPath);
+    // （22）辰野以遠（宮木方面）の各駅と塩尻以遠（洗馬又は広丘方面）の各駅との相互間（小野経由、岡谷経由）
+    if (stationsOnFullPath.has("岡谷") === true &&
+        stationsOnFullPath.has("信濃川島") === false &&
+        stationsOnFullPath.has("（中）小野") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 4; i++) {
+            if (fullPath[i + 0].stationName === "辰野" &&
+                fullPath[i + 1].stationName === "川岸" &&
+                fullPath[i + 2].stationName === "岡谷" &&
+                fullPath[i + 3].stationName === "みどり湖" &&
+                fullPath[i + 4].stationName === "塩尻" &&
+                fullPath[i + 0].lineName === "チユト２" &&
+                fullPath[i + 1].lineName === "チユト２" &&
+                fullPath[i + 2].lineName === "チユト" &&
+                fullPath[i + 3].lineName === "チユト"
+            ) {
+                const idx = i;
+
+                // 辰野→塩尻
+                if (idx === 0 &&
+                    4 < fullPath.length &&
+                    fullPath[4].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "辰野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        ...fullPath.slice(4)
+                    ]
+                    break;
+                }
+
+                // 辰野→洗馬方面
+                if (idx === 0 &&
+                    5 < fullPath.length &&
+                    fullPath[4].lineName === "チユサ" &&
+                    fullPath[5].stationName === "洗馬"
+                ) {
+                    fullPath = [
+                        { stationName: "辰野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        ...fullPath.slice(4)
+                    ]
+                    break;
+                }
+
+                // 辰野→広丘方面
+                if (idx === 0 &&
+                    5 < fullPath.length &&
+                    fullPath[4].lineName === "シノノ" &&
+                    fullPath[5].stationName === "広丘"
+                ) {
+                    fullPath = [
+                        { stationName: "辰野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        ...fullPath.slice(4)
+                    ]
+                    break;
+                }
+
+                // 宮木方面→塩尻
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "宮木" &&
+                    fullPath[idx - 1].lineName === "イイタ" &&
+                    idx + 4 < fullPath.length &&
+                    fullPath[idx + 4].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "辰野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+
+                // 宮木方面→洗馬方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "宮木" &&
+                    fullPath[idx - 1].lineName === "イイタ" &&
+                    idx + 5 < fullPath.length &&
+                    fullPath[idx + 4].lineName === "チユサ" &&
+                    fullPath[idx + 5].stationName === "洗馬"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "辰野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+
+                // 宮木方面→広丘方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "宮木" &&
+                    fullPath[idx - 1].lineName === "イイタ" &&
+                    idx + 5 < fullPath.length &&
+                    fullPath[idx + 4].lineName === "シノノ" &&
+                    fullPath[idx + 5].stationName === "広丘"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "辰野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 4; i++) {
+            if (fullPath[i + 0].stationName === "塩尻" &&
+                fullPath[i + 1].stationName === "みどり湖" &&
+                fullPath[i + 2].stationName === "岡谷" &&
+                fullPath[i + 3].stationName === "川岸" &&
+                fullPath[i + 4].stationName === "辰野" &&
+                fullPath[i + 0].lineName === "チユト" &&
+                fullPath[i + 1].lineName === "チユト" &&
+                fullPath[i + 2].lineName === "チユト２" &&
+                fullPath[i + 3].lineName === "チユト２"
+            ) {
+                const idx = i;
+
+                // 塩尻→辰野
+                if (idx === 0 &&
+                    4 < fullPath.length &&
+                    fullPath[4].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "塩尻", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        ...fullPath.slice(4)
+                    ]
+                    break;
+                }
+
+                // 塩尻→宮木方面
+                if (idx === 0 &&
+                    5 < fullPath.length &&
+                    fullPath[4].lineName === "イイタ" &&
+                    fullPath[5].stationName === "宮木"
+                ) {
+                    fullPath = [
+                        { stationName: "塩尻", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        ...fullPath.slice(4)
+                    ]
+                    break;
+                }
+
+                // 洗馬方面→辰野
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "洗馬" &&
+                    fullPath[idx - 1].lineName === "チユサ" &&
+                    idx + 4 < fullPath.length &&
+                    fullPath[idx + 4].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "塩尻", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+
+                // 洗馬方面→宮木方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "洗馬" &&
+                    fullPath[idx - 1].lineName === "チユサ" &&
+                    idx + 5 < fullPath.length &&
+                    fullPath[idx + 5].lineName === "イイタ" &&
+                    fullPath[idx + 5].stationName === "宮木"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "塩尻", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+
+                // 広丘方面→辰野
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "広丘" &&
+                    fullPath[idx - 1].lineName === "シノノ" &&
+                    idx + 4 < fullPath.length &&
+                    fullPath[idx + 4].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "塩尻", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+
+                // 広丘方面→宮木方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "広丘" &&
+                    fullPath[idx - 1].lineName === "シノノ" &&
+                    idx + 5 < fullPath.length &&
+                    fullPath[idx + 5].lineName === "イイタ" &&
+                    fullPath[idx + 5].stationName === "宮木"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "塩尻", lineName: "チユト２" },
+                        { stationName: "（中）小野", lineName: "チユト２" },
+                        { stationName: "信濃川島", lineName: "チユト２" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // （33）相生以遠（竜野方面）の各駅と東岡山以遠（高島方面）の各駅との相互間（山陽本線経由、赤穂線経由）
+    if (stationsOnFullPath.has("坂越") === true &&
+        stationsOnFullPath.has("有年") === false &&
+        stationsOnFullPath.has("上郡") === false &&
+        stationsOnFullPath.has("三石") === false &&
+        stationsOnFullPath.has("吉永") === false &&
+        stationsOnFullPath.has("和気") === false &&
+        stationsOnFullPath.has("熊山") === false &&
+        stationsOnFullPath.has("万富") === false &&
+        stationsOnFullPath.has("瀬戸") === false &&
+        stationsOnFullPath.has("（陽）上道") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 18; i++) {
+            if (fullPath[i + 0].stationName === "相生" &&
+                fullPath[i + 1].stationName === "西相生" &&
+                fullPath[i + 2].stationName === "坂越" &&
+                fullPath[i + 3].stationName === "播州赤穂" &&
+                fullPath[i + 4].stationName === "天和" &&
+                fullPath[i + 5].stationName === "備前福河" &&
+                fullPath[i + 6].stationName === "寒河" &&
+                fullPath[i + 7].stationName === "日生" &&
+                fullPath[i + 8].stationName === "伊里" &&
+                fullPath[i + 9].stationName === "備前片上" &&
+                fullPath[i + 10].stationName === "西片上" &&
+                fullPath[i + 11].stationName === "伊部" &&
+                fullPath[i + 12].stationName === "香登" &&
+                fullPath[i + 13].stationName === "長船" &&
+                fullPath[i + 14].stationName === "邑久" &&
+                fullPath[i + 15].stationName === "大富" &&
+                fullPath[i + 16].stationName === "西大寺" &&
+                fullPath[i + 17].stationName === "大多羅" &&
+                fullPath[i + 18].stationName === "東岡山" &&
+                (fullPath[i + 0].lineName === "アコウ" || fullPath[i + 0].lineName === "アコウア") &&
+                (fullPath[i + 1].lineName === "アコウ" || fullPath[i + 1].lineName === "アコウア" || fullPath[i + 1].lineName === "アコウヒ") &&
+                (fullPath[i + 2].lineName === "アコウ" || fullPath[i + 2].lineName === "アコウア" || fullPath[i + 2].lineName === "アコウヒ") &&
+                (fullPath[i + 3].lineName === "アコウ" || fullPath[i + 3].lineName === "アコウア" || fullPath[i + 3].lineName === "アコウヒ") &&
+                (fullPath[i + 4].lineName === "アコウ" || fullPath[i + 4].lineName === "アコウア" || fullPath[i + 4].lineName === "アコウヒ") &&
+                (fullPath[i + 5].lineName === "アコウ" || fullPath[i + 5].lineName === "アコウア" || fullPath[i + 5].lineName === "アコウヒ") &&
+                (fullPath[i + 6].lineName === "アコウ" || fullPath[i + 6].lineName === "アコウア" || fullPath[i + 6].lineName === "アコウヒ") &&
+                (fullPath[i + 7].lineName === "アコウ" || fullPath[i + 7].lineName === "アコウア" || fullPath[i + 7].lineName === "アコウヒ") &&
+                (fullPath[i + 8].lineName === "アコウ" || fullPath[i + 8].lineName === "アコウア" || fullPath[i + 8].lineName === "アコウヒ") &&
+                (fullPath[i + 9].lineName === "アコウ" || fullPath[i + 9].lineName === "アコウア" || fullPath[i + 9].lineName === "アコウヒ") &&
+                (fullPath[i + 10].lineName === "アコウ" || fullPath[i + 10].lineName === "アコウア" || fullPath[i + 10].lineName === "アコウヒ") &&
+                (fullPath[i + 11].lineName === "アコウ" || fullPath[i + 11].lineName === "アコウア" || fullPath[i + 11].lineName === "アコウヒ") &&
+                (fullPath[i + 12].lineName === "アコウ" || fullPath[i + 12].lineName === "アコウア" || fullPath[i + 12].lineName === "アコウヒ") &&
+                (fullPath[i + 13].lineName === "アコウ" || fullPath[i + 13].lineName === "アコウア" || fullPath[i + 13].lineName === "アコウヒ") &&
+                (fullPath[i + 14].lineName === "アコウ" || fullPath[i + 14].lineName === "アコウア" || fullPath[i + 14].lineName === "アコウヒ") &&
+                (fullPath[i + 15].lineName === "アコウ" || fullPath[i + 15].lineName === "アコウア" || fullPath[i + 15].lineName === "アコウヒ") &&
+                (fullPath[i + 16].lineName === "アコウ" || fullPath[i + 16].lineName === "アコウア" || fullPath[i + 16].lineName === "アコウヒ") &&
+                (fullPath[i + 17].lineName === "アコウ" || fullPath[i + 17].lineName === "アコウヒ")
+            ) {
+                const idx = i;
+
+                // 相生→東岡山
+                if (idx === 0 &&
+                    17 < fullPath.length &&
+                    fullPath[18].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "相生", lineName: "サンヨ" },
+                        { stationName: "有年", lineName: "サンヨ" },
+                        { stationName: "上郡", lineName: "サンヨ" },
+                        { stationName: "三石", lineName: "サンヨ" },
+                        { stationName: "吉永", lineName: "サンヨ" },
+                        { stationName: "和気", lineName: "サンヨ" },
+                        { stationName: "熊山", lineName: "サンヨ" },
+                        { stationName: "万富", lineName: "サンヨ" },
+                        { stationName: "瀬戸", lineName: "サンヨ" },
+                        { stationName: "（陽）上道", lineName: "サンヨ" },
+                        ...fullPath.slice(18)
+                    ]
+                    break;
+                }
+
+                // 相生→高島方面
+                if (idx === 0 &&
+                    19 < fullPath.length &&
+                    fullPath[18].lineName === "サンヨ" &&
+                    fullPath[19].stationName === "高島"
+                ) {
+                    fullPath = [
+                        { stationName: "相生", lineName: "サンヨ" },
+                        { stationName: "有年", lineName: "サンヨ" },
+                        { stationName: "上郡", lineName: "サンヨ" },
+                        { stationName: "三石", lineName: "サンヨ" },
+                        { stationName: "吉永", lineName: "サンヨ" },
+                        { stationName: "和気", lineName: "サンヨ" },
+                        { stationName: "熊山", lineName: "サンヨ" },
+                        { stationName: "万富", lineName: "サンヨ" },
+                        { stationName: "瀬戸", lineName: "サンヨ" },
+                        { stationName: "（陽）上道", lineName: "サンヨ" },
+                        ...fullPath.slice(18)
+                    ]
+                    break;
+                }
+
+                // 竜野方面→東岡山
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "竜野" &&
+                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    idx + 18 < fullPath.length &&
+                    fullPath[idx + 18].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "相生", lineName: "サンヨ" },
+                        { stationName: "有年", lineName: "サンヨ" },
+                        { stationName: "上郡", lineName: "サンヨ" },
+                        { stationName: "三石", lineName: "サンヨ" },
+                        { stationName: "吉永", lineName: "サンヨ" },
+                        { stationName: "和気", lineName: "サンヨ" },
+                        { stationName: "熊山", lineName: "サンヨ" },
+                        { stationName: "万富", lineName: "サンヨ" },
+                        { stationName: "瀬戸", lineName: "サンヨ" },
+                        { stationName: "（陽）上道", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 18)
+                    ]
+                    break;
+                }
+
+                // 竜野方面→高島方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "竜野" &&
+                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    idx + 19 < fullPath.length &&
+                    fullPath[idx + 18].lineName === "サンヨ" &&
+                    fullPath[idx + 19].stationName === "高島"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "相生", lineName: "サンヨ" },
+                        { stationName: "有年", lineName: "サンヨ" },
+                        { stationName: "上郡", lineName: "サンヨ" },
+                        { stationName: "三石", lineName: "サンヨ" },
+                        { stationName: "吉永", lineName: "サンヨ" },
+                        { stationName: "和気", lineName: "サンヨ" },
+                        { stationName: "熊山", lineName: "サンヨ" },
+                        { stationName: "万富", lineName: "サンヨ" },
+                        { stationName: "瀬戸", lineName: "サンヨ" },
+                        { stationName: "（陽）上道", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 18)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    for (let i = 0; i < fullPath.length - 18; i++) {
+        if (fullPath[i + 0].stationName === "東岡山" &&
+            fullPath[i + 1].stationName === "大多羅" &&
+            fullPath[i + 2].stationName === "西大寺" &&
+            fullPath[i + 3].stationName === "大富" &&
+            fullPath[i + 4].stationName === "邑久" &&
+            fullPath[i + 5].stationName === "長船" &&
+            fullPath[i + 6].stationName === "香登" &&
+            fullPath[i + 7].stationName === "伊部" &&
+            fullPath[i + 8].stationName === "西片上" &&
+            fullPath[i + 9].stationName === "備前片上" &&
+            fullPath[i + 10].stationName === "伊里" &&
+            fullPath[i + 11].stationName === "日生" &&
+            fullPath[i + 12].stationName === "寒河" &&
+            fullPath[i + 13].stationName === "備前福河" &&
+            fullPath[i + 14].stationName === "天和" &&
+            fullPath[i + 15].stationName === "播州赤穂" &&
+            fullPath[i + 16].stationName === "坂越" &&
+            fullPath[i + 17].stationName === "西相生" &&
+            fullPath[i + 18].stationName === "相生" &&
+            (fullPath[i + 0].lineName === "アコウ" || fullPath[i + 0].lineName === "アコウヒ") &&
+            (fullPath[i + 1].lineName === "アコウ" || fullPath[i + 1].lineName === "アコウア" || fullPath[i + 1].lineName === "アコウヒ") &&
+            (fullPath[i + 2].lineName === "アコウ" || fullPath[i + 2].lineName === "アコウア" || fullPath[i + 2].lineName === "アコウヒ") &&
+            (fullPath[i + 3].lineName === "アコウ" || fullPath[i + 3].lineName === "アコウア" || fullPath[i + 3].lineName === "アコウヒ") &&
+            (fullPath[i + 4].lineName === "アコウ" || fullPath[i + 4].lineName === "アコウア" || fullPath[i + 4].lineName === "アコウヒ") &&
+            (fullPath[i + 5].lineName === "アコウ" || fullPath[i + 5].lineName === "アコウア" || fullPath[i + 5].lineName === "アコウヒ") &&
+            (fullPath[i + 6].lineName === "アコウ" || fullPath[i + 6].lineName === "アコウア" || fullPath[i + 6].lineName === "アコウヒ") &&
+            (fullPath[i + 7].lineName === "アコウ" || fullPath[i + 7].lineName === "アコウア" || fullPath[i + 7].lineName === "アコウヒ") &&
+            (fullPath[i + 8].lineName === "アコウ" || fullPath[i + 8].lineName === "アコウア" || fullPath[i + 8].lineName === "アコウヒ") &&
+            (fullPath[i + 9].lineName === "アコウ" || fullPath[i + 9].lineName === "アコウア" || fullPath[i + 9].lineName === "アコウヒ") &&
+            (fullPath[i + 10].lineName === "アコウ" || fullPath[i + 10].lineName === "アコウア" || fullPath[i + 10].lineName === "アコウヒ") &&
+            (fullPath[i + 11].lineName === "アコウ" || fullPath[i + 11].lineName === "アコウア" || fullPath[i + 11].lineName === "アコウヒ") &&
+            (fullPath[i + 12].lineName === "アコウ" || fullPath[i + 12].lineName === "アコウア" || fullPath[i + 12].lineName === "アコウヒ") &&
+            (fullPath[i + 13].lineName === "アコウ" || fullPath[i + 13].lineName === "アコウア" || fullPath[i + 13].lineName === "アコウヒ") &&
+            (fullPath[i + 14].lineName === "アコウ" || fullPath[i + 14].lineName === "アコウア" || fullPath[i + 14].lineName === "アコウヒ") &&
+            (fullPath[i + 15].lineName === "アコウ" || fullPath[i + 15].lineName === "アコウア" || fullPath[i + 15].lineName === "アコウヒ") &&
+            (fullPath[i + 16].lineName === "アコウ" || fullPath[i + 16].lineName === "アコウア" || fullPath[i + 16].lineName === "アコウヒ") &&
+            (fullPath[i + 17].lineName === "アコウ" || fullPath[i + 17].lineName === "アコウア")
+        ) {
+            const idx = i;
+
+            // 東岡山→相生
+            if (idx === 0 &&
+                17 < fullPath.length &&
+                fullPath[18].lineName === null
+            ) {
+                fullPath = [
+                    { stationName: "東岡山", lineName: "サンヨ" },
+                    { stationName: "（陽）上道", lineName: "サンヨ" },
+                    { stationName: "瀬戸", lineName: "サンヨ" },
+                    { stationName: "万富", lineName: "サンヨ" },
+                    { stationName: "熊山", lineName: "サンヨ" },
+                    { stationName: "和気", lineName: "サンヨ" },
+                    { stationName: "吉永", lineName: "サンヨ" },
+                    { stationName: "三石", lineName: "サンヨ" },
+                    { stationName: "上郡", lineName: "サンヨ" },
+                    { stationName: "有年", lineName: "サンヨ" },
+                    ...fullPath.slice(18)
+                ]
+                break;
+            }
+
+            // 東岡山→竜野方面
+            if (idx === 0 &&
+                18 < fullPath.length &&
+                fullPath[18].lineName === "サンヨ" &&
+                fullPath[19].stationName === "竜野"
+            ) {
+                fullPath = [
+                    { stationName: "東岡山", lineName: "サンヨ" },
+                    { stationName: "（陽）上道", lineName: "サンヨ" },
+                    { stationName: "瀬戸", lineName: "サンヨ" },
+                    { stationName: "万富", lineName: "サンヨ" },
+                    { stationName: "熊山", lineName: "サンヨ" },
+                    { stationName: "和気", lineName: "サンヨ" },
+                    { stationName: "吉永", lineName: "サンヨ" },
+                    { stationName: "三石", lineName: "サンヨ" },
+                    { stationName: "上郡", lineName: "サンヨ" },
+                    { stationName: "有年", lineName: "サンヨ" },
+                    ...fullPath.slice(18)
+                ]
+                break;
+            }
+
+            // 高島方面→相生
+            if (0 < idx &&
+                fullPath[idx - 1].stationName === "高島" &&
+                fullPath[idx - 1].lineName === "サンヨ" &&
+                idx + 18 < fullPath.length &&
+                fullPath[idx + 18].lineName === null
+            ) {
+                fullPath = [
+                    ...fullPath.slice(0, idx),
+                    { stationName: "東岡山", lineName: "サンヨ" },
+                    { stationName: "（陽）上道", lineName: "サンヨ" },
+                    { stationName: "瀬戸", lineName: "サンヨ" },
+                    { stationName: "万富", lineName: "サンヨ" },
+                    { stationName: "熊山", lineName: "サンヨ" },
+                    { stationName: "和気", lineName: "サンヨ" },
+                    { stationName: "吉永", lineName: "サンヨ" },
+                    { stationName: "三石", lineName: "サンヨ" },
+                    { stationName: "上郡", lineName: "サンヨ" },
+                    { stationName: "有年", lineName: "サンヨ" },
+                    ...fullPath.slice(18)
+                ]
+                break;
+            }
+
+            // 高島方面→竜野方面
+            if (0 < idx &&
+                fullPath[idx - 1].stationName === "高島" &&
+                fullPath[idx - 1].lineName === "サンヨ" &&
+                idx + 19 < fullPath.length &&
+                fullPath[idx + 18].lineName === "サンヨ" &&
+                fullPath[idx + 19].stationName === "竜野"
+            ) {
+                fullPath = [
+                    ...fullPath.slice(0, idx),
+                    { stationName: "東岡山", lineName: "サンヨ" },
+                    { stationName: "（陽）上道", lineName: "サンヨ" },
+                    { stationName: "瀬戸", lineName: "サンヨ" },
+                    { stationName: "万富", lineName: "サンヨ" },
+                    { stationName: "熊山", lineName: "サンヨ" },
+                    { stationName: "和気", lineName: "サンヨ" },
+                    { stationName: "吉永", lineName: "サンヨ" },
+                    { stationName: "三石", lineName: "サンヨ" },
+                    { stationName: "上郡", lineName: "サンヨ" },
+                    { stationName: "有年", lineName: "サンヨ" },
+                    ...fullPath.slice(18)
+                ]
+                break;
+            }
+        }
+    }
+
+    // （34）向井原以遠（伊予市方面）の各駅と伊予大洲以遠（西大洲方面）の各駅との相互間（伊予長浜経由、内子経由）
+    if (stationsOnFullPath.has("伊予長浜") === true &&
+        stationsOnFullPath.has("伊予大平") === false &&
+        stationsOnFullPath.has("伊予中山") === false &&
+        stationsOnFullPath.has("伊予立川") === false &&
+        stationsOnFullPath.has("内子") === false &&
+        stationsOnFullPath.has("五十崎") === false &&
+        stationsOnFullPath.has("喜多山") === false &&
+        stationsOnFullPath.has("新谷") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 12; i++) {
+            if (fullPath[i + 0].stationName === "向井原" &&
+                fullPath[i + 1].stationName === "高野川" &&
+                fullPath[i + 2].stationName === "伊予上灘" &&
+                fullPath[i + 3].stationName === "下灘" &&
+                fullPath[i + 4].stationName === "串" &&
+                fullPath[i + 5].stationName === "喜多灘" &&
+                fullPath[i + 6].stationName === "伊予長浜" &&
+                fullPath[i + 7].stationName === "伊予出石" &&
+                fullPath[i + 8].stationName === "伊予白滝" &&
+                fullPath[i + 9].stationName === "八多喜" &&
+                fullPath[i + 10].stationName === "春賀" &&
+                fullPath[i + 11].stationName === "五郎" &&
+                fullPath[i + 12].stationName === "伊予大洲" &&
+                fullPath[i + 0].lineName === "ヨサン" &&
+                fullPath[i + 1].lineName === "ヨサン" &&
+                fullPath[i + 2].lineName === "ヨサン" &&
+                fullPath[i + 3].lineName === "ヨサン" &&
+                fullPath[i + 4].lineName === "ヨサン" &&
+                fullPath[i + 5].lineName === "ヨサン" &&
+                fullPath[i + 6].lineName === "ヨサン" &&
+                fullPath[i + 7].lineName === "ヨサン" &&
+                fullPath[i + 8].lineName === "ヨサン" &&
+                fullPath[i + 9].lineName === "ヨサン" &&
+                fullPath[i + 10].lineName === "ヨサン" &&
+                fullPath[i + 11].lineName === "ヨサン"
+            ) {
+                const idx = i;
+
+                // 向井原→伊予大洲
+                if (idx === 0 &&
+                    12 < fullPath.length &&
+                    fullPath[12].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "向井原", lineName: "ヨサン２" },
+                        { stationName: "伊予大平", lineName: "ヨサン２" },
+                        { stationName: "伊予中山", lineName: "ヨサン２" },
+                        { stationName: "伊予立川", lineName: "ヨサン２" },
+                        { stationName: "内子", lineName: "ウチコ" },
+                        { stationName: "五十崎", lineName: "ウチコ" },
+                        { stationName: "喜多山", lineName: "ウチコ" },
+                        { stationName: "新谷", lineName: "ヨサン３" },
+                        ...fullPath.slice(12)
+                    ]
+                    break;
+                }
+
+                // 向井原→西大洲方面
+                if (idx === 0 &&
+                    13 < fullPath.length &&
+                    fullPath[12].lineName === "ヨサン" &&
+                    fullPath[13].stationName === "西大洲"
+                ) {
+                    fullPath = [
+                        { stationName: "向井原", lineName: "ヨサン２" },
+                        { stationName: "伊予大平", lineName: "ヨサン２" },
+                        { stationName: "伊予中山", lineName: "ヨサン２" },
+                        { stationName: "伊予立川", lineName: "ヨサン２" },
+                        { stationName: "内子", lineName: "ウチコ" },
+                        { stationName: "五十崎", lineName: "ウチコ" },
+                        { stationName: "喜多山", lineName: "ウチコ" },
+                        { stationName: "新谷", lineName: "ヨサン３" },
+                        ...fullPath.slice(12)
+                    ]
+                    break;
+                }
+
+                // 伊予市方面→伊予大洲
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "伊予市" &&
+                    fullPath[idx - 1].lineName === "ヨサン" &&
+                    idx + 12 < fullPath.length &&
+                    fullPath[idx + 12].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "向井原", lineName: "ヨサン２" },
+                        { stationName: "伊予大平", lineName: "ヨサン２" },
+                        { stationName: "伊予中山", lineName: "ヨサン２" },
+                        { stationName: "伊予立川", lineName: "ヨサン２" },
+                        { stationName: "内子", lineName: "ウチコ" },
+                        { stationName: "五十崎", lineName: "ウチコ" },
+                        { stationName: "喜多山", lineName: "ウチコ" },
+                        { stationName: "新谷", lineName: "ヨサン３" },
+                        ...fullPath.slice(idx + 12)
+                    ]
+                    break;
+                }
+
+                // 伊予市方面→西大洲方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "伊予市" &&
+                    fullPath[idx - 1].lineName === "ヨサン" &&
+                    idx + 13 < fullPath.length &&
+                    fullPath[idx + 12].lineName === "ヨサン" &&
+                    fullPath[idx + 13].stationName === "西大洲"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "向井原", lineName: "ヨサン２" },
+                        { stationName: "伊予大平", lineName: "ヨサン２" },
+                        { stationName: "伊予中山", lineName: "ヨサン２" },
+                        { stationName: "伊予立川", lineName: "ヨサン２" },
+                        { stationName: "内子", lineName: "ウチコ" },
+                        { stationName: "五十崎", lineName: "ウチコ" },
+                        { stationName: "喜多山", lineName: "ウチコ" },
+                        { stationName: "新谷", lineName: "ヨサン３" },
+                        ...fullPath.slice(idx + 12)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 12; i++) {
+            if (fullPath[i + 0].stationName === "伊予大洲" &&
+                fullPath[i + 1].stationName === "五郎" &&
+                fullPath[i + 2].stationName === "春賀" &&
+                fullPath[i + 3].stationName === "八多喜" &&
+                fullPath[i + 4].stationName === "伊予白滝" &&
+                fullPath[i + 5].stationName === "伊予出石" &&
+                fullPath[i + 6].stationName === "伊予長浜" &&
+                fullPath[i + 7].stationName === "喜多灘" &&
+                fullPath[i + 8].stationName === "串" &&
+                fullPath[i + 9].stationName === "下灘" &&
+                fullPath[i + 10].stationName === "伊予上灘" &&
+                fullPath[i + 11].stationName === "高野川" &&
+                fullPath[i + 12].stationName === "向井原" &&
+                fullPath[i + 0].lineName === "ヨサン" &&
+                fullPath[i + 1].lineName === "ヨサン" &&
+                fullPath[i + 2].lineName === "ヨサン" &&
+                fullPath[i + 3].lineName === "ヨサン" &&
+                fullPath[i + 4].lineName === "ヨサン" &&
+                fullPath[i + 5].lineName === "ヨサン" &&
+                fullPath[i + 6].lineName === "ヨサン" &&
+                fullPath[i + 7].lineName === "ヨサン" &&
+                fullPath[i + 8].lineName === "ヨサン" &&
+                fullPath[i + 9].lineName === "ヨサン" &&
+                fullPath[i + 10].lineName === "ヨサン" &&
+                fullPath[i + 11].lineName === "ヨサン"
+            ) {
+                const idx = i;
+
+                // 伊予大洲→向井原
+                if (idx === 0 &&
+                    12 < fullPath.length &&
+                    fullPath[12].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "伊予大洲", lineName: "ヨサン３" },
+                        { stationName: "新谷", lineName: "ウチコ" },
+                        { stationName: "喜多山", lineName: "ウチコ" },
+                        { stationName: "五十崎", lineName: "ウチコ" },
+                        { stationName: "内子", lineName: "ヨサン２" },
+                        { stationName: "伊予立川", lineName: "ヨサン２" },
+                        { stationName: "伊予中山", lineName: "ヨサン２" },
+                        { stationName: "伊予大平", lineName: "ヨサン２" },
+                        ...fullPath.slice(12)
+                    ]
+                    break;
+                }
+
+                // 伊予大洲→伊予市方面
+                if (idx === 0 &&
+                    13 < fullPath.length &&
+                    fullPath[12].lineName === "ヨサン" &&
+                    fullPath[13].stationName === "伊予市"
+                ) {
+                    fullPath = [
+                        { stationName: "伊予大洲", lineName: "ヨサン３" },
+                        { stationName: "新谷", lineName: "ウチコ" },
+                        { stationName: "喜多山", lineName: "ウチコ" },
+                        { stationName: "五十崎", lineName: "ウチコ" },
+                        { stationName: "内子", lineName: "ヨサン２" },
+                        { stationName: "伊予立川", lineName: "ヨサン２" },
+                        { stationName: "伊予中山", lineName: "ヨサン２" },
+                        { stationName: "伊予大平", lineName: "ヨサン２" },
+                        ...fullPath.slice(12)
+                    ]
+                    break;
+                }
+
+                // 西大洲方面→向井原
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "西大洲" &&
+                    fullPath[idx - 1].lineName === "ヨサン" &&
+                    idx + 12 < fullPath.length &&
+                    fullPath[idx + 12].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "伊予大洲", lineName: "ヨサン３" },
+                        { stationName: "新谷", lineName: "ウチコ" },
+                        { stationName: "喜多山", lineName: "ウチコ" },
+                        { stationName: "五十崎", lineName: "ウチコ" },
+                        { stationName: "内子", lineName: "ヨサン２" },
+                        { stationName: "伊予立川", lineName: "ヨサン２" },
+                        { stationName: "伊予中山", lineName: "ヨサン２" },
+                        { stationName: "伊予大平", lineName: "ヨサン２" },
+                        ...fullPath.slice(idx + 12)
+                    ]
+                    break;
+                }
+
+                // 西大洲方面→伊予市方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "西大洲" &&
+                    fullPath[idx - 1].lineName === "ヨサン" &&
+                    idx + 13 < fullPath.length &&
+                    fullPath[idx + 12].lineName === "ヨサン" &&
+                    fullPath[idx + 13].stationName === "伊予市"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "伊予大洲", lineName: "ヨサン３" },
+                        { stationName: "新谷", lineName: "ウチコ" },
+                        { stationName: "喜多山", lineName: "ウチコ" },
+                        { stationName: "五十崎", lineName: "ウチコ" },
+                        { stationName: "内子", lineName: "ヨサン２" },
+                        { stationName: "伊予立川", lineName: "ヨサン２" },
+                        { stationName: "伊予中山", lineName: "ヨサン２" },
+                        { stationName: "伊予大平", lineName: "ヨサン２" },
+                        ...fullPath.slice(idx + 12)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // （44）居能以遠（宇部新川方面）の各駅と、小野田以遠（厚狭方面）の各駅との相互間（宇部線及び山陽本線経由、小野田線経由）
+    if (stationsOnFullPath.has("雀田") === true &&
+        stationsOnFullPath.has("岩鼻") === false &&
+        stationsOnFullPath.has("宇部") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 8; i++) {
+            if (fullPath[i + 0].stationName === "居能" &&
+                fullPath[i + 1].stationName === "妻崎" &&
+                fullPath[i + 2].stationName === "長門長沢" &&
+                fullPath[i + 3].stationName === "雀田" &&
+                fullPath[i + 4].stationName === "小野田港" &&
+                fullPath[i + 5].stationName === "南小野田" &&
+                fullPath[i + 6].stationName === "南中川" &&
+                fullPath[i + 7].stationName === "目出" &&
+                fullPath[i + 8].stationName === "小野田" &&
+                fullPath[i + 0].lineName === "オノタ" &&
+                fullPath[i + 1].lineName === "オノタ" &&
+                fullPath[i + 2].lineName === "オノタ" &&
+                fullPath[i + 3].lineName === "オノタ" &&
+                fullPath[i + 4].lineName === "オノタ" &&
+                fullPath[i + 5].lineName === "オノタ" &&
+                fullPath[i + 6].lineName === "オノタ" &&
+                fullPath[i + 7].lineName === "オノタ"
+            ) {
+                const idx = i;
+
+                // 居能→小野田
+                if (idx === 0 &&
+                    8 < fullPath.length &&
+                    fullPath[8].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "居能", lineName: "ウヘ" },
+                        { stationName: "岩鼻", lineName: "ウヘ" },
+                        { stationName: "宇部", lineName: "サンヨ" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+
+                // 居能→厚狭方面
+                if (idx === 0 &&
+                    9 < fullPath.length &&
+                    fullPath[8].lineName === "サンヨ" &&
+                    fullPath[9].stationName === "厚狭"
+                ) {
+                    fullPath = [
+                        { stationName: "居能", lineName: "ウヘ" },
+                        { stationName: "岩鼻", lineName: "ウヘ" },
+                        { stationName: "宇部", lineName: "サンヨ" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+
+                // 宇部新川方面→小野田
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "宇部新川" &&
+                    fullPath[idx - 1].lineName === "ウヘ",
+                    idx + 8 < fullPath.length &&
+                    fullPath[idx + 8].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "居能", lineName: "ウヘ" },
+                        { stationName: "岩鼻", lineName: "ウヘ" },
+                        { stationName: "宇部", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 8)
+                    ]
+                    break;
+                }
+
+                // 宇部新川方面→厚狭方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "宇部新川" &&
+                    fullPath[idx - 1].lineName === "ウヘ",
+                    idx + 9 < fullPath.length &&
+                    fullPath[idx + 8].lineName === "サンヨ" &&
+                    fullPath[idx + 9].stationName === "厚狭"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "居能", lineName: "ウヘ" },
+                        { stationName: "岩鼻", lineName: "ウヘ" },
+                        { stationName: "宇部", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 8)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 8; i++) {
+            if (fullPath[i + 0].stationName === "小野田" &&
+                fullPath[i + 7].stationName === "妻崎" &&
+                fullPath[i + 6].stationName === "長門長沢" &&
+                fullPath[i + 5].stationName === "雀田" &&
+                fullPath[i + 4].stationName === "小野田港" &&
+                fullPath[i + 3].stationName === "南小野田" &&
+                fullPath[i + 2].stationName === "南中川" &&
+                fullPath[i + 1].stationName === "目出" &&
+                fullPath[i + 8].stationName === "居能" &&
+                fullPath[i + 0].lineName === "オノタ" &&
+                fullPath[i + 1].lineName === "オノタ" &&
+                fullPath[i + 2].lineName === "オノタ" &&
+                fullPath[i + 3].lineName === "オノタ" &&
+                fullPath[i + 4].lineName === "オノタ" &&
+                fullPath[i + 5].lineName === "オノタ" &&
+                fullPath[i + 6].lineName === "オノタ" &&
+                fullPath[i + 7].lineName === "オノタ"
+            ) {
+                const idx = i;
+
+                // 小野田→居能
+                if (idx === 0 &&
+                    8 < fullPath.length &&
+                    fullPath[8].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "小野田", lineName: "サンヨ" },
+                        { stationName: "宇部", lineName: "ウヘ" },
+                        { stationName: "岩鼻", lineName: "ウヘ" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+
+                // 小野田→宇部新川方面
+                if (idx === 0 &&
+                    9 < fullPath.length &&
+                    fullPath[8].lineName === "ウヘ" &&
+                    fullPath[9].stationName === "宇部新川"
+                ) {
+                    fullPath = [
+                        { stationName: "小野田", lineName: "サンヨ" },
+                        { stationName: "宇部", lineName: "ウヘ" },
+                        { stationName: "岩鼻", lineName: "ウヘ" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+
+                // 厚狭方面→居能
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "厚狭" &&
+                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    idx + 8 < fullPath.length &&
+                    fullPath[idx + 8].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "小野田", lineName: "サンヨ" },
+                        { stationName: "宇部", lineName: "ウヘ" },
+                        { stationName: "岩鼻", lineName: "ウヘ" },
+                        ...fullPath.slice(idx + 8)
+                    ]
+                    break;
+                }
+
+                // 厚狭方面→宇部新川方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "厚狭" &&
+                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    idx + 9 < fullPath.length &&
+                    fullPath[idx + 8].lineName === "ウヘ" &&
+                    fullPath[idx + 9].stationName === "宇部新川"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "小野田", lineName: "サンヨ" },
+                        { stationName: "宇部", lineName: "ウヘ" },
+                        { stationName: "岩鼻", lineName: "ウヘ" },
+                        ...fullPath.slice(idx + 8)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // （45）新山口以遠（四辻又は周防下郷方面）の各駅と、宇部以遠（小野田方面）の各駅との相互間（山陽本線経由、宇部線経由）
+    if (stationsOnFullPath.has("岩鼻") === true &&
+        stationsOnFullPath.has("嘉川") === false &&
+        stationsOnFullPath.has("本由良") === false &&
+        stationsOnFullPath.has("厚東") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 8; i++) {
+            if (fullPath[i + 0].stationName === "新山口" &&
+                fullPath[i + 1].stationName === "上嘉川" &&
+                fullPath[i + 2].stationName === "深溝" &&
+                fullPath[i + 3].stationName === "周防佐山" &&
+                fullPath[i + 4].stationName === "岩倉" &&
+                fullPath[i + 5].stationName === "阿知須" &&
+                fullPath[i + 6].stationName === "岐波" &&
+                fullPath[i + 7].stationName === "丸尾" &&
+                fullPath[i + 8].stationName === "床波" &&
+                fullPath[i + 9].stationName === "常盤" &&
+                fullPath[i + 10].stationName === "草江" &&
+                fullPath[i + 11].stationName === "宇部岬" &&
+                fullPath[i + 12].stationName === "東新川" &&
+                fullPath[i + 13].stationName === "琴芝" &&
+                fullPath[i + 14].stationName === "宇部新川" &&
+                fullPath[i + 15].stationName === "居能" &&
+                fullPath[i + 16].stationName === "岩鼻" &&
+                fullPath[i + 17].stationName === "宇部" &&
+                (fullPath[i + 0].lineName === "ウヘ" || fullPath[i + 0].lineName === "ウヘオ") &&
+                (fullPath[i + 1].lineName === "ウヘ" || fullPath[i + 1].lineName === "ウヘオ" || fullPath[i + 1].lineName === "ウヘウ") &&
+                (fullPath[i + 2].lineName === "ウヘ" || fullPath[i + 2].lineName === "ウヘオ" || fullPath[i + 2].lineName === "ウヘウ") &&
+                (fullPath[i + 3].lineName === "ウヘ" || fullPath[i + 3].lineName === "ウヘオ" || fullPath[i + 3].lineName === "ウヘウ") &&
+                (fullPath[i + 4].lineName === "ウヘ" || fullPath[i + 4].lineName === "ウヘオ" || fullPath[i + 4].lineName === "ウヘウ") &&
+                (fullPath[i + 5].lineName === "ウヘ" || fullPath[i + 5].lineName === "ウヘオ" || fullPath[i + 5].lineName === "ウヘウ") &&
+                (fullPath[i + 6].lineName === "ウヘ" || fullPath[i + 6].lineName === "ウヘオ" || fullPath[i + 6].lineName === "ウヘウ") &&
+                (fullPath[i + 7].lineName === "ウヘ" || fullPath[i + 7].lineName === "ウヘオ" || fullPath[i + 7].lineName === "ウヘウ") &&
+                (fullPath[i + 8].lineName === "ウヘ" || fullPath[i + 8].lineName === "ウヘオ" || fullPath[i + 8].lineName === "ウヘウ") &&
+                (fullPath[i + 9].lineName === "ウヘ" || fullPath[i + 9].lineName === "ウヘオ" || fullPath[i + 9].lineName === "ウヘウ") &&
+                (fullPath[i + 10].lineName === "ウヘ" || fullPath[i + 10].lineName === "ウヘオ" || fullPath[i + 10].lineName === "ウヘウ") &&
+                (fullPath[i + 11].lineName === "ウヘ" || fullPath[i + 11].lineName === "ウヘオ" || fullPath[i + 11].lineName === "ウヘウ") &&
+                (fullPath[i + 12].lineName === "ウヘ" || fullPath[i + 12].lineName === "ウヘオ" || fullPath[i + 12].lineName === "ウヘウ") &&
+                (fullPath[i + 13].lineName === "ウヘ" || fullPath[i + 13].lineName === "ウヘオ" || fullPath[i + 13].lineName === "ウヘウ") &&
+                (fullPath[i + 14].lineName === "ウヘ" || fullPath[i + 14].lineName === "ウヘオ" || fullPath[i + 14].lineName === "ウヘウ") &&
+                (fullPath[i + 15].lineName === "ウヘ" || fullPath[i + 15].lineName === "ウヘオ" || fullPath[i + 15].lineName === "ウヘウ") &&
+                (fullPath[i + 16].lineName === "ウヘ" || fullPath[i + 16].lineName === "ウヘウ")
+            ) {
+                const idx = i;
+
+                // 新山口→宇部
+                if (idx === 0 &&
+                    17 < fullPath.length &&
+                    fullPath[17].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "新山口", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        ...fullPath.slice(17)
+                    ]
+                    break;
+                }
+
+                // 新山口→小野田方面
+                if (idx === 0 &&
+                    18 < fullPath.length &&
+                    fullPath[17].lineName === "サンヨ" &&
+                    fullPath[18].stationName === "小野田"
+                ) {
+                    fullPath = [
+                        { stationName: "新山口", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        ...fullPath.slice(17)
+                    ]
+                    break;
+                }
+
+                // 四辻方面→宇部
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "四辻" &&
+                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    idx + 17 < fullPath.length &&
+                    fullPath[idx + 17].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "新山口", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+
+                // 四辻方面→小野田方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "四辻" &&
+                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    idx + 18 < fullPath.length &&
+                    fullPath[idx + 17].lineName === "サンヨ" &&
+                    fullPath[idx + 18].stationName === "小野田"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "新山口", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+
+                // 周防下郷方面→宇部
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "周防下郷" &&
+                    fullPath[idx - 1].lineName === "ヤマク" &&
+                    idx + 17 < fullPath.length &&
+                    fullPath[idx + 17].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "新山口", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+
+                // 周防下郷方面→小野田方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "周防下郷" &&
+                    fullPath[idx - 1].lineName === "ヤマク" &&
+                    idx + 18 < fullPath.length &&
+                    fullPath[idx + 17].lineName === "サンヨ" &&
+                    fullPath[idx + 18].stationName === "小野田"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "新山口", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 8; i++) {
+            if (fullPath[i + 0].stationName === "宇部" &&
+                fullPath[i + 1].stationName === "岩鼻" &&
+                fullPath[i + 2].stationName === "居能" &&
+                fullPath[i + 3].stationName === "宇部新川" &&
+                fullPath[i + 4].stationName === "琴芝" &&
+                fullPath[i + 5].stationName === "東新川" &&
+                fullPath[i + 6].stationName === "宇部岬" &&
+                fullPath[i + 7].stationName === "草江" &&
+                fullPath[i + 8].stationName === "常盤" &&
+                fullPath[i + 9].stationName === "床波" &&
+                fullPath[i + 10].stationName === "丸尾" &&
+                fullPath[i + 11].stationName === "岐波" &&
+                fullPath[i + 12].stationName === "阿知須" &&
+                fullPath[i + 13].stationName === "岩倉" &&
+                fullPath[i + 14].stationName === "周防佐山" &&
+                fullPath[i + 15].stationName === "深溝" &&
+                fullPath[i + 16].stationName === "上嘉川" &&
+                fullPath[i + 17].stationName === "新山口" &&
+                (fullPath[i + 0].lineName === "ウヘ" || fullPath[i + 0].lineName === "ウヘウ") &&
+                (fullPath[i + 1].lineName === "ウヘ" || fullPath[i + 1].lineName === "ウヘオ" || fullPath[i + 1].lineName === "ウヘウ") &&
+                (fullPath[i + 2].lineName === "ウヘ" || fullPath[i + 2].lineName === "ウヘオ" || fullPath[i + 2].lineName === "ウヘウ") &&
+                (fullPath[i + 3].lineName === "ウヘ" || fullPath[i + 3].lineName === "ウヘオ" || fullPath[i + 3].lineName === "ウヘウ") &&
+                (fullPath[i + 4].lineName === "ウヘ" || fullPath[i + 4].lineName === "ウヘオ" || fullPath[i + 4].lineName === "ウヘウ") &&
+                (fullPath[i + 5].lineName === "ウヘ" || fullPath[i + 5].lineName === "ウヘオ" || fullPath[i + 5].lineName === "ウヘウ") &&
+                (fullPath[i + 6].lineName === "ウヘ" || fullPath[i + 6].lineName === "ウヘオ" || fullPath[i + 6].lineName === "ウヘウ") &&
+                (fullPath[i + 7].lineName === "ウヘ" || fullPath[i + 7].lineName === "ウヘオ" || fullPath[i + 7].lineName === "ウヘウ") &&
+                (fullPath[i + 8].lineName === "ウヘ" || fullPath[i + 8].lineName === "ウヘオ" || fullPath[i + 8].lineName === "ウヘウ") &&
+                (fullPath[i + 9].lineName === "ウヘ" || fullPath[i + 9].lineName === "ウヘオ" || fullPath[i + 9].lineName === "ウヘウ") &&
+                (fullPath[i + 10].lineName === "ウヘ" || fullPath[i + 10].lineName === "ウヘオ" || fullPath[i + 10].lineName === "ウヘウ") &&
+                (fullPath[i + 11].lineName === "ウヘ" || fullPath[i + 11].lineName === "ウヘオ" || fullPath[i + 11].lineName === "ウヘウ") &&
+                (fullPath[i + 12].lineName === "ウヘ" || fullPath[i + 12].lineName === "ウヘオ" || fullPath[i + 12].lineName === "ウヘウ") &&
+                (fullPath[i + 13].lineName === "ウヘ" || fullPath[i + 13].lineName === "ウヘオ" || fullPath[i + 13].lineName === "ウヘウ") &&
+                (fullPath[i + 14].lineName === "ウヘ" || fullPath[i + 14].lineName === "ウヘオ" || fullPath[i + 14].lineName === "ウヘウ") &&
+                (fullPath[i + 15].lineName === "ウヘ" || fullPath[i + 15].lineName === "ウヘオ" || fullPath[i + 15].lineName === "ウヘウ") &&
+                (fullPath[i + 16].lineName === "ウヘ" || fullPath[i + 16].lineName === "ウヘオ")
+            ) {
+                const idx = i;
+
+                // 宇部→新山口
+                if (idx === 0 &&
+                    17 < fullPath.length &&
+                    fullPath[17].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "宇部", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        ...fullPath.slice(17)
+                    ]
+                    break;
+                }
+
+                // 宇部→四辻方面
+                if (idx === 0 &&
+                    18 < fullPath.length &&
+                    fullPath[17].lineName === "サンヨ" &&
+                    fullPath[18].stationName === "四辻"
+                ) {
+                    fullPath = [
+                        { stationName: "宇部", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        ...fullPath.slice(17)
+                    ]
+                    break;
+                }
+
+                // 宇部→周防下郷方面
+                if (idx === 0 &&
+                    18 < fullPath.length &&
+                    fullPath[17].lineName === "ヤマク" &&
+                    fullPath[18].stationName === "周防下郷"
+                ) {
+                    fullPath = [
+                        { stationName: "宇部", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        ...fullPath.slice(17)
+                    ]
+                    break;
+                }
+
+                // 小野田方面→新山口
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "小野田" &&
+                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    idx + 17 < fullPath.length &&
+                    fullPath[idx + 17].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "宇部", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+
+                // 小野田方面→四辻方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "小野田" &&
+                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    idx + 18 < fullPath.length &&
+                    fullPath[idx + 17].lineName === "サンヨ" &&
+                    fullPath[idx + 18].stationName === "四辻"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "宇部", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+
+                // 小野田方面→周防下郷方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "小野田" &&
+                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    idx + 18 < fullPath.length &&
+                    fullPath[idx + 17].lineName === "ヤマク" &&
+                    fullPath[idx + 18].stationName === "周防下郷"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "宇部", lineName: "サンヨ" },
+                        { stationName: "厚東", lineName: "サンヨ" },
+                        { stationName: "本由良", lineName: "サンヨ" },
+                        { stationName: "嘉川", lineName: "サンヨ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // （55）喜々津以遠（西諫早方面）の各駅と、浦上又は長崎駅との相互間（現川経由、本川内経由）
+    if (stationsOnFullPath.has("本川内") === true &&
+        stationsOnFullPath.has("市布") === false &&
+        stationsOnFullPath.has("肥前古賀") === false &&
+        stationsOnFullPath.has("現川") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 8; i++) {
+            if (fullPath[i + 0].stationName === "喜々津" &&
+                fullPath[i + 1].stationName === "東園" &&
+                fullPath[i + 2].stationName === "大草" &&
+                fullPath[i + 3].stationName === "本川内" &&
+                fullPath[i + 4].stationName === "長与" &&
+                fullPath[i + 5].stationName === "（長）高田" &&
+                fullPath[i + 6].stationName === "道ノ尾" &&
+                fullPath[i + 7].stationName === "西浦上" &&
+                fullPath[i + 8].stationName === "浦上" &&
+                (fullPath[i + 0].lineName === "ナカサ２" || fullPath[i + 0].lineName === "ナカサキ") &&
+                (fullPath[i + 1].lineName === "ナカサ２" || fullPath[i + 1].lineName === "ナカサキ" || fullPath[i + 1].lineName === "ナカサウ") &&
+                (fullPath[i + 2].lineName === "ナカサ２" || fullPath[i + 2].lineName === "ナカサキ" || fullPath[i + 2].lineName === "ナカサウ") &&
+                (fullPath[i + 3].lineName === "ナカサ２" || fullPath[i + 3].lineName === "ナカサキ" || fullPath[i + 3].lineName === "ナカサウ") &&
+                (fullPath[i + 4].lineName === "ナカサ２" || fullPath[i + 4].lineName === "ナカサキ" || fullPath[i + 4].lineName === "ナカサウ") &&
+                (fullPath[i + 5].lineName === "ナカサ２" || fullPath[i + 5].lineName === "ナカサキ" || fullPath[i + 5].lineName === "ナカサウ") &&
+                (fullPath[i + 6].lineName === "ナカサ２" || fullPath[i + 6].lineName === "ナカサキ" || fullPath[i + 6].lineName === "ナカサウ") &&
+                (fullPath[i + 7].lineName === "ナカサ２" || fullPath[i + 7].lineName === "ナカサウ")
+            ) {
+                const idx = i;
+
+                // 喜々津→浦上
+                if (idx === 0 &&
+                    8 < fullPath.length &&
+                    fullPath[8].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "喜々津", lineName: "ナカサ" },
+                        { stationName: "市布", lineName: "ナカサ" },
+                        { stationName: "肥前古賀", lineName: "ナカサ" },
+                        { stationName: "現川", lineName: "ナカサ" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+
+                // 喜々津→長崎
+                if (idx === 0 &&
+                    9 < fullPath.length &&
+                    fullPath[8].lineName === "ナカサ" &&
+                    fullPath[9].stationName === "長崎" &&
+                    fullPath[9].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "喜々津", lineName: "ナカサ" },
+                        { stationName: "市布", lineName: "ナカサ" },
+                        { stationName: "肥前古賀", lineName: "ナカサ" },
+                        { stationName: "現川", lineName: "ナカサ" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+
+                // 西諫早方面→浦上
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "西諫早" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 8 < fullPath.length &&
+                    fullPath[idx + 8].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "喜々津", lineName: "ナカサ" },
+                        { stationName: "市布", lineName: "ナカサ" },
+                        { stationName: "肥前古賀", lineName: "ナカサ" },
+                        { stationName: "現川", lineName: "ナカサ" },
+                        ...fullPath.slice(idx + 8)
+                    ]
+                    break;
+                }
+
+                // 西諫早方面→長崎
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "西諫早" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 9 < fullPath.length &&
+                    fullPath[idx + 8].lineName === "ナカサ" &&
+                    fullPath[idx + 9].stationName === "長崎" &&
+                    fullPath[idx + 9].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "喜々津", lineName: "ナカサ" },
+                        { stationName: "市布", lineName: "ナカサ" },
+                        { stationName: "肥前古賀", lineName: "ナカサ" },
+                        { stationName: "現川", lineName: "ナカサ" },
+                        ...fullPath.slice(idx + 8)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 8; i++) {
+            if (fullPath[i + 0].stationName === "浦上" &&
+                fullPath[i + 1].stationName === "西浦上" &&
+                fullPath[i + 2].stationName === "道ノ尾" &&
+                fullPath[i + 3].stationName === "（長）高田" &&
+                fullPath[i + 4].stationName === "長与" &&
+                fullPath[i + 5].stationName === "本川内" &&
+                fullPath[i + 6].stationName === "大草" &&
+                fullPath[i + 7].stationName === "東園" &&
+                fullPath[i + 8].stationName === "喜々津" &&
+                (fullPath[i + 0].lineName === "ナカサ２" || fullPath[i + 0].lineName === "ナカサウ") &&
+                (fullPath[i + 1].lineName === "ナカサ２" || fullPath[i + 1].lineName === "ナカサキ" || fullPath[i + 1].lineName === "ナカサウ") &&
+                (fullPath[i + 2].lineName === "ナカサ２" || fullPath[i + 2].lineName === "ナカサキ" || fullPath[i + 2].lineName === "ナカサウ") &&
+                (fullPath[i + 3].lineName === "ナカサ２" || fullPath[i + 3].lineName === "ナカサキ" || fullPath[i + 3].lineName === "ナカサウ") &&
+                (fullPath[i + 4].lineName === "ナカサ２" || fullPath[i + 4].lineName === "ナカサキ" || fullPath[i + 4].lineName === "ナカサウ") &&
+                (fullPath[i + 5].lineName === "ナカサ２" || fullPath[i + 5].lineName === "ナカサキ" || fullPath[i + 5].lineName === "ナカサウ") &&
+                (fullPath[i + 6].lineName === "ナカサ２" || fullPath[i + 6].lineName === "ナカサキ" || fullPath[i + 6].lineName === "ナカサウ") &&
+                (fullPath[i + 7].lineName === "ナカサ２" || fullPath[i + 7].lineName === "ナカサキ")
+            ) {
+                const idx = i;
+
+                // 浦上→喜々津
+                if (idx === 0 &&
+                    8 < fullPath.length &&
+                    fullPath[8].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "浦上", lineName: "ナカサ" },
+                        { stationName: "現川", lineName: "ナカサ" },
+                        { stationName: "肥前古賀", lineName: "ナカサ" },
+                        { stationName: "市布", lineName: "ナカサ" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+
+                // 浦上→西諫早方面
+                if (idx === 0 &&
+                    9 < fullPath.length &&
+                    fullPath[8].lineName === "ナカサ" &&
+                    fullPath[9].stationName === "西諫早"
+                ) {
+                    fullPath = [
+                        { stationName: "浦上", lineName: "ナカサ" },
+                        { stationName: "現川", lineName: "ナカサ" },
+                        { stationName: "肥前古賀", lineName: "ナカサ" },
+                        { stationName: "市布", lineName: "ナカサ" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+
+                // 長崎→喜々津
+                if (idx === 1 &&
+                    fullPath[idx - 1].stationName === "長崎" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 8 < fullPath.length &&
+                    fullPath[idx + 8].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "浦上", lineName: "ナカサ" },
+                        { stationName: "現川", lineName: "ナカサ" },
+                        { stationName: "肥前古賀", lineName: "ナカサ" },
+                        { stationName: "市布", lineName: "ナカサ" },
+                        ...fullPath.slice(idx + 8)
+                    ]
+                    break;
+                }
+
+                // 長崎→西諫早方面
+                if (idx === 1 &&
+                    fullPath[idx - 1].stationName === "長崎" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 9 < fullPath.length &&
+                    fullPath[idx + 8].lineName === "ナカサ" &&
+                    fullPath[idx + 9].stationName === "西諫早"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "浦上", lineName: "ナカサ" },
+                        { stationName: "現川", lineName: "ナカサ" },
+                        { stationName: "肥前古賀", lineName: "ナカサ" },
+                        { stationName: "市布", lineName: "ナカサ" },
+                        ...fullPath.slice(idx + 8)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // （56）喜々津以遠（西諫早方面）の各駅と、長与・西浦上間各駅との相互間（現川経由、本川内経由）
+
+    // 喜々津以遠（西諫早方面）の各駅と、長与駅との相互間（現川経由、本川内経由）
+    if (stationsOnFullPath.has("現川") === true &&
+        stationsOnFullPath.has("東園") === false &&
+        stationsOnFullPath.has("大草") === false &&
+        stationsOnFullPath.has("本川内") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 8; i++) {
+            if (fullPath[i + 0].stationName === "喜々津" &&
+                fullPath[i + 1].stationName === "市布" &&
+                fullPath[i + 2].stationName === "肥前古賀" &&
+                fullPath[i + 3].stationName === "現川" &&
+                fullPath[i + 4].stationName === "浦上" &&
+                fullPath[i + 5].stationName === "西浦上" &&
+                fullPath[i + 6].stationName === "道ノ尾" &&
+                fullPath[i + 7].stationName === "（長）高田" &&
+                fullPath[i + 8].stationName === "長与" &&
+                fullPath[i + 0].lineName === "ナカサ" &&
+                fullPath[i + 1].lineName === "ナカサ" &&
+                fullPath[i + 2].lineName === "ナカサ" &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                (fullPath[i + 4].lineName === "ナカサ２" || fullPath[i + 4].lineName === "ナカサウ") &&
+                (fullPath[i + 5].lineName === "ナカサ２" || fullPath[i + 5].lineName === "ナカサキ" || fullPath[i + 5].lineName === "ナカサウ") &&
+                (fullPath[i + 6].lineName === "ナカサ２" || fullPath[i + 6].lineName === "ナカサキ" || fullPath[i + 6].lineName === "ナカサウ") &&
+                (fullPath[i + 7].lineName === "ナカサ２" || fullPath[i + 7].lineName === "ナカサキ" || fullPath[i + 7].lineName === "ナカサウ")
+            ) {
+                const idx = i;
+
+                // 喜々津→長与
+                if (idx === 0 &&
+                    8 < fullPath.length &&
+                    fullPath[8].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "喜々津", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+
+                // 西諫早方面→長与
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "西諫早" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 8 < fullPath.length &&
+                    fullPath[idx + 8].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "喜々津", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        ...fullPath.slice(idx + 8)
+                    ]
+                    break;
+                }
+            }
+
+            if (fullPath[i + 0].stationName === "長与" &&
+                fullPath[i + 1].stationName === "（長）高田" &&
+                fullPath[i + 2].stationName === "道ノ尾" &&
+                fullPath[i + 3].stationName === "西浦上" &&
+                fullPath[i + 4].stationName === "浦上" &&
+                fullPath[i + 5].stationName === "現川" &&
+                fullPath[i + 6].stationName === "肥前古賀" &&
+                fullPath[i + 7].stationName === "市布" &&
+                fullPath[i + 8].stationName === "喜々津" &&
+                (fullPath[i + 0].lineName === "ナカサ２" || fullPath[i + 0].lineName === "ナカサキ" || fullPath[i + 0].lineName === "ナカサウ") &&
+                (fullPath[i + 1].lineName === "ナカサ２" || fullPath[i + 1].lineName === "ナカサキ" || fullPath[i + 1].lineName === "ナカサウ") &&
+                (fullPath[i + 2].lineName === "ナカサ２" || fullPath[i + 2].lineName === "ナカサキ" || fullPath[i + 2].lineName === "ナカサウ") &&
+                (fullPath[i + 3].lineName === "ナカサ２" || fullPath[i + 3].lineName === "ナカサウ") &&
+                fullPath[i + 4].lineName === "ナカサ" &&
+                fullPath[i + 5].lineName === "ナカサ" &&
+                fullPath[i + 6].lineName === "ナカサ" &&
+                fullPath[i + 7].lineName === "ナカサ"
+            ) {
+                const idx = i;
+
+                // 長与→喜々津
+                if (idx === 0 &&
+                    8 < fullPath.length &&
+                    fullPath[8].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+
+                // 長与→西諫早方面
+                if (idx === 0 &&
+                    9 < fullPath.length &&
+                    fullPath[8].lineName === "ナカサ" &&
+                    fullPath[9].stationName === "西諫早"
+                ) {
+                    fullPath = [
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        ...fullPath.slice(8)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // 喜々津以遠（西諫早方面）の各駅と、高田駅との相互間（現川経由、本川内経由）
+    if (stationsOnFullPath.has("現川") === true &&
+        stationsOnFullPath.has("東園") === false &&
+        stationsOnFullPath.has("大草") === false &&
+        stationsOnFullPath.has("本川内") === false &&
+        stationsOnFullPath.has("長与") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 7; i++) {
+            if (fullPath[i + 0].stationName === "喜々津" &&
+                fullPath[i + 1].stationName === "市布" &&
+                fullPath[i + 2].stationName === "肥前古賀" &&
+                fullPath[i + 3].stationName === "現川" &&
+                fullPath[i + 4].stationName === "浦上" &&
+                fullPath[i + 5].stationName === "西浦上" &&
+                fullPath[i + 6].stationName === "道ノ尾" &&
+                fullPath[i + 7].stationName === "（長）高田" &&
+                fullPath[i + 0].lineName === "ナカサ" &&
+                fullPath[i + 1].lineName === "ナカサ" &&
+                fullPath[i + 2].lineName === "ナカサ" &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                (fullPath[i + 4].lineName === "ナカサ２" || fullPath[i + 4].lineName === "ナカサウ") &&
+                (fullPath[i + 5].lineName === "ナカサ２" || fullPath[i + 5].lineName === "ナカサキ" || fullPath[i + 5].lineName === "ナカサウ") &&
+                (fullPath[i + 6].lineName === "ナカサ２" || fullPath[i + 6].lineName === "ナカサキ" || fullPath[i + 6].lineName === "ナカサウ")
+            ) {
+                const idx = i;
+
+                // 喜々津→高田
+                if (idx === 0 &&
+                    7 < fullPath.length &&
+                    fullPath[7].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "喜々津", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        ...fullPath.slice(7)
+                    ]
+                    break;
+                }
+
+                // 西諫早方面→高田
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "西諫早" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 7 < fullPath.length &&
+                    fullPath[idx + 7].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "喜々津", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        ...fullPath.slice(idx + 7)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 7; i++) {
+            if (fullPath[i + 0].stationName === "（長）高田" &&
+                fullPath[i + 1].stationName === "道ノ尾" &&
+                fullPath[i + 2].stationName === "西浦上" &&
+                fullPath[i + 3].stationName === "浦上" &&
+                fullPath[i + 4].stationName === "現川" &&
+                fullPath[i + 5].stationName === "肥前古賀" &&
+                fullPath[i + 6].stationName === "市布" &&
+                fullPath[i + 7].stationName === "喜々津" &&
+                (fullPath[i + 0].lineName === "ナカサ２" || fullPath[i + 0].lineName === "ナカサキ" || fullPath[i + 0].lineName === "ナカサウ") &&
+                (fullPath[i + 1].lineName === "ナカサ２" || fullPath[i + 1].lineName === "ナカサキ" || fullPath[i + 1].lineName === "ナカサウ") &&
+                (fullPath[i + 2].lineName === "ナカサ２" || fullPath[i + 2].lineName === "ナカサウ") &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                fullPath[i + 4].lineName === "ナカサ" &&
+                fullPath[i + 5].lineName === "ナカサ" &&
+                fullPath[i + 6].lineName === "ナカサ"
+            ) {
+                const idx = i;
+
+                // 高田→喜々津
+                if (idx === 0 &&
+                    7 < fullPath.length &&
+                    fullPath[7].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        ...fullPath.slice(7)
+                    ]
+                    break;
+                }
+
+                // 高田→西諫早方面
+                if (idx === 0 &&
+                    8 < fullPath.length &&
+                    fullPath[7].lineName === "ナカサ" &&
+                    fullPath[8].stationName === "西諫早"
+                ) {
+                    fullPath = [
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        ...fullPath.slice(7)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // 喜々津以遠（西諫早方面）の各駅と、道ノ尾駅との相互間（現川経由、本川内経由）
+    if (stationsOnFullPath.has("現川") === true &&
+        stationsOnFullPath.has("東園") === false &&
+        stationsOnFullPath.has("大草") === false &&
+        stationsOnFullPath.has("本川内") === false &&
+        stationsOnFullPath.has("長与") === false &&
+        stationsOnFullPath.has("（長）高田") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 6; i++) {
+            if (fullPath[i + 0].stationName === "喜々津" &&
+                fullPath[i + 1].stationName === "市布" &&
+                fullPath[i + 2].stationName === "肥前古賀" &&
+                fullPath[i + 3].stationName === "現川" &&
+                fullPath[i + 4].stationName === "浦上" &&
+                fullPath[i + 5].stationName === "西浦上" &&
+                fullPath[i + 6].stationName === "道ノ尾" &&
+                fullPath[i + 0].lineName === "ナカサ" &&
+                fullPath[i + 1].lineName === "ナカサ" &&
+                fullPath[i + 2].lineName === "ナカサ" &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                (fullPath[i + 4].lineName === "ナカサ２" || fullPath[i + 5].lineName === "ナカサウ") &&
+                (fullPath[i + 5].lineName === "ナカサ２" || fullPath[i + 5].lineName === "ナカサキ" || fullPath[i + 5].lineName === "ナカサウ")
+            ) {
+                const idx = i;
+
+                // 喜々津→道ノ尾
+                if (idx === 0 &&
+                    6 < fullPath.length &&
+                    fullPath[6].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "喜々津", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        ...fullPath.slice(6)
+                    ]
+                    break;
+                }
+
+                // 西諫早方面→道ノ尾
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "西諫早" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 6 < fullPath.length &&
+                    fullPath[idx + 6].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "喜々津", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        ...fullPath.slice(idx + 6)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 6; i++) {
+            if (fullPath[i + 0].stationName === "道ノ尾" &&
+                fullPath[i + 1].stationName === "西浦上" &&
+                fullPath[i + 2].stationName === "浦上" &&
+                fullPath[i + 3].stationName === "現川" &&
+                fullPath[i + 4].stationName === "肥前古賀" &&
+                fullPath[i + 5].stationName === "市布" &&
+                fullPath[i + 6].stationName === "喜々津" &&
+                (fullPath[i + 0].lineName === "ナカサ２" || fullPath[i + 0].lineName === "ナカサキ" || fullPath[i + 0].lineName === "ナカサウ") &&
+                (fullPath[i + 1].lineName === "ナカサ２" || fullPath[i + 1].lineName === "ナカサウ") &&
+                fullPath[i + 2].lineName === "ナカサ" &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                fullPath[i + 4].lineName === "ナカサ" &&
+                fullPath[i + 5].lineName === "ナカサ"
+            ) {
+                const idx = i;
+
+                // 道ノ尾→喜々津
+                if (idx === 0 &&
+                    6 < fullPath.length &&
+                    fullPath[6].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        ...fullPath.slice(6)
+                    ]
+                    break;
+                }
+
+                // 道ノ尾→西諫早方面
+                if (idx === 0 &&
+                    7 < fullPath.length &&
+                    fullPath[6].lineName === "ナカサ" &&
+                    fullPath[7].stationName === "西諫早"
+                ) {
+                    fullPath = [
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        ...fullPath.slice(6)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // 喜々津以遠（西諫早方面）の各駅と、西浦上駅との相互間（現川経由、本川内経由）
+    if (stationsOnFullPath.has("本川内") === true &&
+        stationsOnFullPath.has("市布") === false &&
+        stationsOnFullPath.has("肥前古賀") === false &&
+        stationsOnFullPath.has("現川") === false &&
+        stationsOnFullPath.has("浦上") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 7; i++) {
+            if (fullPath[i + 0].stationName === "喜々津" &&
+                fullPath[i + 1].stationName === "東園" &&
+                fullPath[i + 2].stationName === "大草" &&
+                fullPath[i + 3].stationName === "本川内" &&
+                fullPath[i + 4].stationName === "長与" &&
+                fullPath[i + 5].stationName === "（長）高田" &&
+                fullPath[i + 6].stationName === "道ノ尾" &&
+                fullPath[i + 7].stationName === "西浦上" &&
+                (fullPath[i + 0].lineName === "ナカサ２" || fullPath[i + 0].lineName === "ナカサキ") &&
+                (fullPath[i + 1].lineName === "ナカサ２" || fullPath[i + 1].lineName === "ナカサキ" || fullPath[i + 1].lineName === "ナカサウ") &&
+                (fullPath[i + 2].lineName === "ナカサ２" || fullPath[i + 2].lineName === "ナカサキ" || fullPath[i + 2].lineName === "ナカサウ") &&
+                (fullPath[i + 3].lineName === "ナカサ２" || fullPath[i + 3].lineName === "ナカサキ" || fullPath[i + 3].lineName === "ナカサウ") &&
+                (fullPath[i + 4].lineName === "ナカサ２" || fullPath[i + 4].lineName === "ナカサキ" || fullPath[i + 4].lineName === "ナカサウ") &&
+                (fullPath[i + 5].lineName === "ナカサ２" || fullPath[i + 5].lineName === "ナカサキ" || fullPath[i + 5].lineName === "ナカサウ") &&
+                (fullPath[i + 6].lineName === "ナカサ２" || fullPath[i + 6].lineName === "ナカサキ" || fullPath[i + 6].lineName === "ナカサウ")
+            ) {
+                const idx = i;
+
+                // 喜々津→西浦上
+                if (idx === 0 &&
+                    7 < fullPath.length &&
+                    fullPath[7].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "喜々津", lineName: "ナカサ" },
+                        { stationName: "市布", lineName: "ナカサ" },
+                        { stationName: "肥前古賀", lineName: "ナカサ" },
+                        { stationName: "現川", lineName: "ナカサ" },
+                        { stationName: "浦上", lineName: "ナカサ２" },
+                        ...fullPath.slice(7)
+                    ]
+                    break;
+                }
+
+                // 西諫早方面→西浦上
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "西諫早" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 7 < fullPath.length &&
+                    fullPath[idx + 7].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "喜々津", lineName: "ナカサ" },
+                        { stationName: "市布", lineName: "ナカサ" },
+                        { stationName: "肥前古賀", lineName: "ナカサ" },
+                        { stationName: "現川", lineName: "ナカサ" },
+                        { stationName: "浦上", lineName: "ナカサ２" },
+                        ...fullPath.slice(idx + 7)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 6; i++) {
+            if (fullPath[i + 0].stationName === "道ノ尾" &&
+                fullPath[i + 1].stationName === "西浦上" &&
+                fullPath[i + 2].stationName === "浦上" &&
+                fullPath[i + 3].stationName === "現川" &&
+                fullPath[i + 4].stationName === "肥前古賀" &&
+                fullPath[i + 5].stationName === "市布" &&
+                fullPath[i + 6].stationName === "喜々津" &&
+                (fullPath[i + 0].lineName === "ナカサ２" || fullPath[i + 0].lineName === "ナカサキ" || fullPath[i + 0].lineName === "ナカサウ") &&
+                (fullPath[i + 1].lineName === "ナカサ２" || fullPath[i + 1].lineName === "ナカサウ") &&
+                fullPath[i + 2].lineName === "ナカサ" &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                fullPath[i + 4].lineName === "ナカサ" &&
+                fullPath[i + 5].lineName === "ナカサ"
+            ) {
+                const idx = i;
+
+                // 道ノ尾→喜々津
+                if (idx === 0 &&
+                    6 < fullPath.length &&
+                    fullPath[6].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        ...fullPath.slice(6)
+                    ]
+                    break;
+                }
+
+                // 道ノ尾→西諫早方面
+                if (idx === 0 &&
+                    7 < fullPath.length &&
+                    fullPath[6].lineName === "ナカサ" &&
+                    fullPath[7].stationName === "西諫早"
+                ) {
+                    fullPath = [
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        ...fullPath.slice(6)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // （57）東園・本川内間各駅と、浦上又は長崎駅との相互間（長与経由、現川経由）
+
+    // 東園と、浦上又は長崎駅との相互間（長与経由、現川経由）
+    if (stationsOnFullPath.has("現川") === true &&
+        stationsOnFullPath.has("大草") === false &&
+        stationsOnFullPath.has("本川内") === false &&
+        stationsOnFullPath.has("長与") === false &&
+        stationsOnFullPath.has("（長）高田") === false &&
+        stationsOnFullPath.has("道ノ尾") === false &&
+        stationsOnFullPath.has("西浦上") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 5; i++) {
+            if (fullPath[i + 0].stationName === "東園" &&
+                fullPath[i + 1].stationName === "喜々津" &&
+                fullPath[i + 2].stationName === "市布" &&
+                fullPath[i + 3].stationName === "肥前古賀" &&
+                fullPath[i + 4].stationName === "現川" &&
+                fullPath[i + 5].stationName === "浦上" &&
+                (fullPath[i + 0].lineName === "ナカサ２" || fullPath[i + 0].lineName === "ナカサキ") &&
+                fullPath[i + 1].lineName === "ナカサ" &&
+                fullPath[i + 2].lineName === "ナカサ" &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                fullPath[i + 4].lineName === "ナカサ"
+            ) {
+                const idx = i;
+
+                // 東園→浦上
+                if (idx === 0 &&
+                    5 < fullPath.length &&
+                    fullPath[5].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        ...fullPath.slice(5)
+                    ]
+                    break;
+                }
+
+                // 東園→長崎
+                if (idx === 0 &&
+                    6 < fullPath.length &&
+                    fullPath[5].lineName === "ナカサ" &&
+                    fullPath[6].stationName === "長崎" &&
+                    fullPath[6].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "東園", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        ...fullPath.slice(5)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 5; i++) {
+            if (fullPath[i + 0].stationName === "浦上" &&
+                fullPath[i + 1].stationName === "現川" &&
+                fullPath[i + 2].stationName === "肥前古賀" &&
+                fullPath[i + 3].stationName === "市布" &&
+                fullPath[i + 4].stationName === "喜々津" &&
+                fullPath[i + 5].stationName === "東園" &&
+                fullPath[i + 0].lineName === "ナカサ" &&
+                fullPath[i + 1].lineName === "ナカサ" &&
+                fullPath[i + 2].lineName === "ナカサ" &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                (fullPath[i + 4].lineName === "ナカサ２" || fullPath[i + 4].lineName === "ナカサキ")
+            ) {
+                const idx = i;
+
+                // 浦上→東園
+                if (idx === 0 &&
+                    5 < fullPath.length &&
+                    fullPath[5].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "浦上", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        ...fullPath.slice(5)
+                    ]
+                    break;
+                }
+
+                // 長崎→東園
+                if (idx === 1 &&
+                    fullPath[idx - 1].stationName === "長崎" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 5 < fullPath.length &&
+                    fullPath[idx + 5].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "浦上", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        ...fullPath.slice(idx + 5)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // 大草と、浦上又は長崎駅との相互間（長与経由、現川経由）
+    if (stationsOnFullPath.has("現川") === true &&
+        stationsOnFullPath.has("本川内") === false &&
+        stationsOnFullPath.has("長与") === false &&
+        stationsOnFullPath.has("（長）高田") === false &&
+        stationsOnFullPath.has("道ノ尾") === false &&
+        stationsOnFullPath.has("西浦上") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 6; i++) {
+            if (fullPath[i + 0].stationName === "大草" &&
+                fullPath[i + 1].stationName === "東園" &&
+                fullPath[i + 2].stationName === "喜々津" &&
+                fullPath[i + 3].stationName === "市布" &&
+                fullPath[i + 4].stationName === "肥前古賀" &&
+                fullPath[i + 5].stationName === "現川" &&
+                fullPath[i + 6].stationName === "浦上" &&
+                (fullPath[i + 0].lineName === "ナカサ２" || fullPath[i + 0].lineName === "ナカサキ" || fullPath[i + 0].lineName === "ナカサウ") &&
+                (fullPath[i + 1].lineName === "ナカサ２" || fullPath[i + 1].lineName === "ナカサキ") &&
+                fullPath[i + 2].lineName === "ナカサ" &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                fullPath[i + 4].lineName === "ナカサ" &&
+                fullPath[i + 5].lineName === "ナカサ"
+            ) {
+                const idx = i;
+
+                // 大草→浦上
+                if (idx === 0 &&
+                    6 < fullPath.length &&
+                    fullPath[6].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        ...fullPath.slice(6)
+                    ]
+                    break;
+                }
+
+                // 大草→長崎
+                if (idx === 0 &&
+                    7 < fullPath.length &&
+                    fullPath[6].lineName === "ナカサ" &&
+                    fullPath[7].stationName === "長崎" &&
+                    fullPath[7].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "大草", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        ...fullPath.slice(6)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 6; i++) {
+            if (fullPath[i + 0].stationName === "浦上" &&
+                fullPath[i + 1].stationName === "現川" &&
+                fullPath[i + 2].stationName === "肥前古賀" &&
+                fullPath[i + 3].stationName === "市布" &&
+                fullPath[i + 4].stationName === "喜々津" &&
+                fullPath[i + 5].stationName === "東園" &&
+                fullPath[i + 6].stationName === "大草" &&
+                fullPath[i + 0].lineName === "ナカサ" &&
+                fullPath[i + 1].lineName === "ナカサ" &&
+                fullPath[i + 2].lineName === "ナカサ" &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                (fullPath[i + 4].lineName === "ナカサ２" || fullPath[i + 4].lineName === "ナカサキ") &&
+                (fullPath[i + 5].lineName === "ナカサ２" || fullPath[i + 5].lineName === "ナカサキ" || fullPath[i + 5].lineName === "ナカサウ")
+            ) {
+                const idx = i;
+
+                // 浦上→大草
+                if (idx === 0 &&
+                    6 < fullPath.length &&
+                    fullPath[6].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "浦上", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        ...fullPath.slice(6)
+                    ]
+                    break;
+                }
+
+                // 長崎→大草
+                if (idx === 1 &&
+                    fullPath[idx - 1].stationName === "長崎" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 6 < fullPath.length &&
+                    fullPath[idx + 6].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "浦上", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        ...fullPath.slice(idx + 6)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // 本川内と、浦上又は長崎駅との相互間（長与経由、現川経由）
+    if (stationsOnFullPath.has("現川") === true &&
+        stationsOnFullPath.has("長与") === false &&
+        stationsOnFullPath.has("（長）高田") === false &&
+        stationsOnFullPath.has("道ノ尾") === false &&
+        stationsOnFullPath.has("西浦上") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 7; i++) {
+            if (fullPath[i + 0].stationName === "本川内" &&
+                fullPath[i + 1].stationName === "大草" &&
+                fullPath[i + 2].stationName === "東園" &&
+                fullPath[i + 3].stationName === "喜々津" &&
+                fullPath[i + 4].stationName === "市布" &&
+                fullPath[i + 5].stationName === "肥前古賀" &&
+                fullPath[i + 6].stationName === "現川" &&
+                fullPath[i + 7].stationName === "浦上" &&
+                (fullPath[i + 0].lineName === "ナカサ２" || fullPath[i + 0].lineName === "ナカサキ" || fullPath[i + 0].lineName === "ナカサウ") &&
+                (fullPath[i + 1].lineName === "ナカサ２" || fullPath[i + 1].lineName === "ナカサキ" || fullPath[i + 1].lineName === "ナカサウ") &&
+                (fullPath[i + 2].lineName === "ナカサ２" || fullPath[i + 2].lineName === "ナカサキ") &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                fullPath[i + 4].lineName === "ナカサ" &&
+                fullPath[i + 5].lineName === "ナカサ" &&
+                fullPath[i + 6].lineName === "ナカサ"
+            ) {
+                const idx = i;
+
+                // 本川内→浦上
+                if (idx === 0 &&
+                    7 < fullPath.length &&
+                    fullPath[7].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        ...fullPath.slice(7)
+                    ]
+                    break;
+                }
+
+                // 本川内→長崎
+                if (idx === 0 &&
+                    8 < fullPath.length &&
+                    fullPath[7].lineName === "ナカサ" &&
+                    fullPath[8].stationName === "長崎" &&
+                    fullPath[8].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "本川内", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        ...fullPath.slice(7)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 7; i++) {
+            if (fullPath[i + 0].stationName === "浦上" &&
+                fullPath[i + 1].stationName === "現川" &&
+                fullPath[i + 2].stationName === "肥前古賀" &&
+                fullPath[i + 3].stationName === "市布" &&
+                fullPath[i + 4].stationName === "喜々津" &&
+                fullPath[i + 5].stationName === "東園" &&
+                fullPath[i + 6].stationName === "大草" &&
+                fullPath[i + 7].stationName === "本川内" &&
+                fullPath[i + 0].lineName === "ナカサ" &&
+                fullPath[i + 1].lineName === "ナカサ" &&
+                fullPath[i + 2].lineName === "ナカサ" &&
+                fullPath[i + 3].lineName === "ナカサ" &&
+                (fullPath[i + 4].lineName === "ナカサ２" || fullPath[i + 4].lineName === "ナカサキ") &&
+                (fullPath[i + 5].lineName === "ナカサ２" || fullPath[i + 5].lineName === "ナカサキ" || fullPath[i + 5].lineName === "ナカサウ") &&
+                (fullPath[i + 6].lineName === "ナカサ２" || fullPath[i + 6].lineName === "ナカサキ" || fullPath[i + 6].lineName === "ナカサウ")
+            ) {
+                const idx = i;
+
+                // 浦上→本川内
+                if (idx === 0 &&
+                    7 < fullPath.length &&
+                    fullPath[7].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "浦上", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        ...fullPath.slice(7)
+                    ]
+                    break;
+                }
+
+                // 長崎→本川内
+                if (idx === 1 &&
+                    fullPath[idx - 1].stationName === "長崎" &&
+                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    idx + 7 < fullPath.length &&
+                    fullPath[idx + 7].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "浦上", lineName: "ナカサ２" },
+                        { stationName: "西浦上", lineName: "ナカサ２" },
+                        { stationName: "道ノ尾", lineName: "ナカサ２" },
+                        { stationName: "（長）高田", lineName: "ナカサ２" },
+                        { stationName: "長与", lineName: "ナカサ２" },
+                        ...fullPath.slice(idx + 7)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    // console.log(fullPath);
 
     // 特殊経由線も追加したか？
+    // ["大沼","鹿部","渡島沼尻","渡島砂原","掛澗","尾白内","東森","森"],
+    // ["日暮里","尾久","赤羽"],
+    // ["赤羽","北赤羽","浮間舟渡","戸田公園","（北）戸田","北戸田","武蔵浦和","中浦和","南与野","与野本町","北与野","大宮"],
+    // ["品川","西大井","武蔵小杉","新川崎","鶴見"],
+    // ["東京","八丁堀","越中島","潮見","新木場","葛西臨海公園","舞浜","新浦安","市川塩浜","二俣新町","南船橋","新習志野","幕張豊砂","海浜幕張","検見川浜","稲毛海岸","千葉みなと","蘇我"],
+    // ["山科","大津","膳所","石山","（東）瀬田","南草津","草津","栗東","守山","野洲","篠原","近江八幡","安土","能登川","稲枝","河瀬","南彦根","彦根","米原","坂田","田村","長浜","虎姫","河毛","高月","木ノ本","余呉","近江塩津"],
+    // ["大阪","（環）福島","野田","西九条","弁天町","大正","芦原橋","今宮","新今宮","天王寺"],
+    // ["三原","須波","安芸幸崎","忠海","安芸長浜","大乗","竹原","吉名","安芸津","風早","安浦","安登","安芸川尻","仁方","広","新広","安芸阿賀","呉","川原石","吉浦","かるが浜","天応","呉ポートピア","小屋浦","水尻","坂","矢野","海田市"],
+    // ["岩国","南岩国","藤生","通津","由宇","（陽）神代","大畠","柳井港","柳井","田布施","岩田","（陽）島田","光","（陽）下松","櫛ケ浜"],
+    // ["辰野","川岸","岡谷","みどり湖","塩尻"],
+    // ["相生","西相生","坂越","播州赤穂","天和","備前福河","寒河","日生","伊里","備前片上","西片上","伊部","香登","長船","邑久","大富","西大寺","大多羅","東岡山"],
+    // ["向井原","高野川","伊予上灘","下灘","串","喜多灘","伊予長浜","伊予出石","伊予白滝","八多喜","春賀","五郎","伊予大洲"],
+    // ["居能","妻崎","長門長沢","雀田","小野田港","南小野田","南中川","目出","小野田"],
+    // ["新山口","上嘉川","深溝","周防佐山","岩倉","阿知須","岐波","丸尾","床波","常盤","草江","宇部岬","東新川","琴芝","宇部新川","居能","岩鼻","宇部"],
+    // ["喜々津","東園","大草","本川内","長与","（長）高田","道ノ尾","西浦上","浦上"],
+    // ["喜々津","市布","肥前古賀","現川","浦上","西浦上","道ノ尾","（長）高田","長与"],
+    // ["喜々津","市布","肥前古賀","現川","浦上","西浦上","道ノ尾","（長）高田"],
+    // ["喜々津","市布","肥前古賀","現川","浦上","西浦上","道ノ尾"],
+    // ["喜々津","東園","大草","本川内","長与","（長）高田","道ノ尾","西浦上"],
+    // ["浦上","現川","肥前古賀","市布","喜々津","東園","大草","本川内"],
+    // ["浦上","現川","肥前古賀","市布","喜々津","東園","大草"],
+    // ["浦上","現川","肥前古賀","市布","喜々津","東園"]
+
     return fullPath;
 }
 

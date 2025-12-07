@@ -157,3 +157,8 @@ export interface Kana {
     station0: string;
     station1: string;
 }
+
+export interface OuterSection {
+    stations: string[];
+    routes: PathStep[];
+}

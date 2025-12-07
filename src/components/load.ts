@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { createRouteKey } from '@/app/utils/calc';
-import { City, PathStep, Printing, RouteSegment, Section, SpecificFare, SpecificSection, TrainSpecificSection } from '@/app/types';
+import { City, OuterSection, PathStep, Printing, RouteSegment, Section, SpecificFare, TrainSpecificSection } from '@/app/types';
 
 class Load {
     private passingBoldLineAreaRoutes: Map<string, PathStep[]> = new Map();
@@ -16,6 +16,8 @@ class Load {
     private specificFareMap = new Map<string, number>();
     private trainSpecificSections!: TrainSpecificSection;
     private yamanote!: City;
+    private specificSections: OuterSection[] = [];
+    private selectionSections: OuterSection[] = [];
 
     constructor () {
         this.loadData();
@@ -92,6 +94,14 @@ class Load {
             const yamanotePath = path.join(process.cwd(), 'src', 'data', 'yamanote.json');
             this.yamanote = JSON.parse(fs.readFileSync(yamanotePath, 'utf-8'));
 
+            // specificSections.jsonの読み込み
+            const specificSectionsList = path.join(process.cwd(), 'src', 'data', 'specificSections.json');
+            this.specificSections = JSON.parse(fs.readFileSync(specificSectionsList, 'utf-8'));
+
+            // selectionSections.jsonの読み込み
+            const selectionSectionsList = path.join(process.cwd(), 'src', 'data', 'selectionSections.json');
+            this.selectionSections = JSON.parse(fs.readFileSync(selectionSectionsList, 'utf-8'));
+
         } catch (error) {
             console.error('データ読み込みエラー：', error);
         }
@@ -144,6 +154,15 @@ class Load {
     public getPrinting(kana: string): string | null {
         return this.printings.get(kana) ?? null;
     }
+
+    public getSpecificSections(): OuterSection[] {
+        return this.specificSections;
+    }
+
+    public getSelectionSections(): OuterSection[] {
+        return this.selectionSections;
+    }
+
 }
 
 // シングルトンインスタンスとしてエクスポートし、アプリ全体で一つのインスタンスを共有する

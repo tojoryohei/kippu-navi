@@ -1,0 +1,208 @@
+[
+    {
+        "stations": ["辰野","川岸","岡谷","みどり湖","塩尻"],
+        "routes":[
+            { "stationName": "辰野", "lineName": "チユト２" },
+            { "stationName": "川岸", "lineName": "チユト２" },
+            { "stationName": "岡谷", "lineName": "チユト" },
+            { "stationName": "みどり湖", "lineName": "チユト" },
+            { "stationName": "塩尻", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["塩尻","みどり湖","岡谷","川岸","辰野"],
+        "routes": [
+            { "stationName": "塩尻", "lineName": "チユト" },
+            { "stationName": "みどり湖", "lineName": "チユト" },
+            { "stationName": "岡谷", "lineName": "チユト２" },
+            { "stationName": "川岸", "lineName": "チユト２" },
+            { "stationName": "辰野", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["相生","西相生","坂越","播州赤穂","天和","備前福河","寒河","日生","伊里","備前片上","西片上","伊部","香登","長船","邑久","大富","西大寺","大多羅","東岡山"],
+        "routes": [
+            { "stationName": "相生", "lineName": "アコウ" },
+            { "stationName": "西相生", "lineName": "アコウ" },
+            { "stationName": "坂越", "lineName": "アコウ" },
+            { "stationName": "播州赤穂", "lineName": "アコウ" },
+            { "stationName": "天和", "lineName": "アコウ" },
+            { "stationName": "備前福河", "lineName": "アコウ" },
+            { "stationName": "寒河", "lineName": "アコウ" },
+            { "stationName": "日生", "lineName": "アコウ" },
+            { "stationName": "伊里", "lineName": "アコウ" },
+            { "stationName": "備前片上", "lineName": "アコウ" },
+            { "stationName": "西片上", "lineName": "アコウ" },
+            { "stationName": "伊部", "lineName": "アコウ" },
+            { "stationName": "香登", "lineName": "アコウ" },
+            { "stationName": "長船", "lineName": "アコウ" },
+            { "stationName": "邑久", "lineName": "アコウ" },
+            { "stationName": "大富", "lineName": "アコウ" },
+            { "stationName": "西大寺", "lineName": "アコウ" },
+            { "stationName": "大多羅", "lineName": "アコウ" },
+            { "stationName": "東岡山", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["東岡山","大多羅","西大寺","大富","邑久","長船","香登","伊部","西片上","備前片上","伊里","日生","寒河","備前福河","天和","播州赤穂","坂越","西相生","相生"],
+        "routes": [
+            { "stationName": "東岡山", "lineName": "アコウ" },
+            { "stationName": "大多羅", "lineName": "アコウ" },
+            { "stationName": "西大寺", "lineName": "アコウ" },
+            { "stationName": "大富", "lineName": "アコウ" },
+            { "stationName": "邑久", "lineName": "アコウ" },
+            { "stationName": "長船", "lineName": "アコウ" },
+            { "stationName": "香登", "lineName": "アコウ" },
+            { "stationName": "伊部", "lineName": "アコウ" },
+            { "stationName": "西片上", "lineName": "アコウ" },
+            { "stationName": "備前片上", "lineName": "アコウ" },
+            { "stationName": "伊里", "lineName": "アコウ" },
+            { "stationName": "日生", "lineName": "アコウ" },
+            { "stationName": "寒河", "lineName": "アコウ" },
+            { "stationName": "備前福河", "lineName": "アコウ" },
+            { "stationName": "天和", "lineName": "アコウ" },
+            { "stationName": "播州赤穂", "lineName": "アコウ" },
+            { "stationName": "坂越", "lineName": "アコウ" },
+            { "stationName": "西相生", "lineName": "アコウ" },
+            { "stationName": "相生", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["向井原","高野川","伊予上灘","下灘","串","喜多灘","伊予長浜","伊予出石","伊予白滝","八多喜","春賀","五郎","伊予大洲"],
+        "routes": [
+            { "stationName": "向井原", "lineName": "ヨサン" },
+            { "stationName": "高野川", "lineName": "ヨサン" },
+            { "stationName": "伊予上灘", "lineName": "ヨサン" },
+            { "stationName": "下灘", "lineName": "ヨサン" },
+            { "stationName": "串", "lineName": "ヨサン" },
+            { "stationName": "喜多灘", "lineName": "ヨサン" },
+            { "stationName": "伊予長浜", "lineName": "ヨサン" },
+            { "stationName": "伊予出石", "lineName": "ヨサン" },
+            { "stationName": "伊予白滝", "lineName": "ヨサン" },
+            { "stationName": "八多喜", "lineName": "ヨサン" },
+            { "stationName": "春賀", "lineName": "ヨサン" },
+            { "stationName": "五郎", "lineName": "ヨサン" },
+            { "stationName": "伊予大洲", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["伊予大洲","五郎","春賀","八多喜","伊予白滝","伊予出石","伊予長浜","喜多灘","串","下灘","伊予上灘","高野川","向井原"],
+        "routes": [
+            { "stationName": "伊予大洲", "lineName": "ヨサン" },
+            { "stationName": "五郎", "lineName": "ヨサン" },
+            { "stationName": "春賀", "lineName": "ヨサン" },
+            { "stationName": "八多喜", "lineName": "ヨサン" },
+            { "stationName": "伊予白滝", "lineName": "ヨサン" },
+            { "stationName": "伊予出石", "lineName": "ヨサン" },
+            { "stationName": "伊予長浜", "lineName": "ヨサン" },
+            { "stationName": "喜多灘", "lineName": "ヨサン" },
+            { "stationName": "串", "lineName": "ヨサン" },
+            { "stationName": "下灘", "lineName": "ヨサン" },
+            { "stationName": "伊予上灘", "lineName": "ヨサン" },
+            { "stationName": "高野川", "lineName": "ヨサン" },
+            { "stationName": "向井原", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["居能","妻崎","長門長沢","雀田","小野田港","南小野田","南中川","目出","小野田"],
+        "routes": [
+            { "stationName": "居能", "lineName": "オノタ" },
+            { "stationName": "妻崎", "lineName": "オノタ" },
+            { "stationName": "長門長沢", "lineName": "オノタ" },
+            { "stationName": "雀田", "lineName": "オノタ" },
+            { "stationName": "小野田港", "lineName": "オノタ" },
+            { "stationName": "南小野田", "lineName": "オノタ" },
+            { "stationName": "南中川", "lineName": "オノタ" },
+            { "stationName": "目出", "lineName": "オノタ" },
+            { "stationName": "小野田", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["小野田","目出","南中川","南小野田","小野田港","雀田","長門長沢","妻崎","居能"],
+        "routes": [
+            { "stationName": "小野田", "lineName": "オノタ" },
+            { "stationName": "目出", "lineName": "オノタ" },
+            { "stationName": "南中川", "lineName": "オノタ" },
+            { "stationName": "南小野田", "lineName": "オノタ" },
+            { "stationName": "小野田港", "lineName": "オノタ" },
+            { "stationName": "雀田", "lineName": "オノタ" },
+            { "stationName": "長門長沢", "lineName": "オノタ" },
+            { "stationName": "妻崎", "lineName": "オノタ" },
+            { "stationName": "居能", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["新山口","上嘉川","深溝","周防佐山","岩倉","阿知須","岐波","丸尾","床波","常盤","草江","宇部岬","東新川","琴芝","宇部新川","居能","岩鼻","宇部"],
+        "routes": [
+            { "stationName": "新山口", "lineName": "ウヘ" },
+            { "stationName": "上嘉川", "lineName": "ウヘ" },
+            { "stationName": "深溝", "lineName": "ウヘ" },
+            { "stationName": "周防佐山", "lineName": "ウヘ" },
+            { "stationName": "岩倉", "lineName": "ウヘ" },
+            { "stationName": "阿知須", "lineName": "ウヘ" },
+            { "stationName": "岐波", "lineName": "ウヘ" },
+            { "stationName": "丸尾", "lineName": "ウヘ" },
+            { "stationName": "床波", "lineName": "ウヘ" },
+            { "stationName": "常盤", "lineName": "ウヘ" },
+            { "stationName": "草江", "lineName": "ウヘ" },
+            { "stationName": "宇部岬", "lineName": "ウヘ" },
+            { "stationName": "東新川", "lineName": "ウヘ" },
+            { "stationName": "琴芝", "lineName": "ウヘ" },
+            { "stationName": "宇部新川", "lineName": "ウヘ" },
+            { "stationName": "居能", "lineName": "ウヘ" },
+            { "stationName": "岩鼻", "lineName": "ウヘ" },
+            { "stationName": "宇部", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["宇部","岩鼻","居能","宇部新川","琴芝","東新川","宇部岬","草江","常盤","床波","丸尾","岐波","阿知須","岩倉","周防佐山","深溝","上嘉川","新山口"],
+        "routes": [
+            { "stationName": "宇部", "lineName": "ウヘ" },
+            { "stationName": "岩鼻", "lineName": "ウヘ" },
+            { "stationName": "居能", "lineName": "ウヘ" },
+            { "stationName": "宇部新川", "lineName": "ウヘ" },
+            { "stationName": "琴芝", "lineName": "ウヘ" },
+            { "stationName": "東新川", "lineName": "ウヘ" },
+            { "stationName": "宇部岬", "lineName": "ウヘ" },
+            { "stationName": "草江", "lineName": "ウヘ" },
+            { "stationName": "常盤", "lineName": "ウヘ" },
+            { "stationName": "床波", "lineName": "ウヘ" },
+            { "stationName": "丸尾", "lineName": "ウヘ" },
+            { "stationName": "岐波", "lineName": "ウヘ" },
+            { "stationName": "阿知須", "lineName": "ウヘ" },
+            { "stationName": "岩倉", "lineName": "ウヘ" },
+            { "stationName": "周防佐山", "lineName": "ウヘ" },
+            { "stationName": "深溝", "lineName": "ウヘ" },
+            { "stationName": "上嘉川", "lineName": "ウヘ" },
+            { "stationName": "新山口", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["喜々津","東園","大草","本川内","長与","（長）高田","道ノ尾","西浦上","浦上"],
+        "routes": [
+            { "stationName": "喜々津", "lineName": "ナカサ２" },
+            { "stationName": "東園", "lineName": "ナカサ２" },
+            { "stationName": "大草", "lineName": "ナカサ２" },
+            { "stationName": "本川内", "lineName": "ナカサ２" },
+            { "stationName": "長与", "lineName": "ナカサ２" },
+            { "stationName": "（長）高田", "lineName": "ナカサ２" },
+            { "stationName": "道ノ尾", "lineName": "ナカサ２" },
+            { "stationName": "西浦上", "lineName": "ナカサ２" },
+            { "stationName": "浦上", "lineName": null }
+        ]
+    },
+    {
+        "stations": ["浦上","西浦上","道ノ尾","（長）高田","長与","本川内","大草","東園","喜々津"],
+        "routes": [
+            { "stationName": "浦上", "lineName": "ナカサ２" },
+            { "stationName": "西浦上", "lineName": "ナカサ２" },
+            { "stationName": "道ノ尾", "lineName": "ナカサ２" },
+            { "stationName": "（長）高田", "lineName": "ナカサ２" },
+            { "stationName": "長与", "lineName": "ナカサ２" },
+            { "stationName": "本川内", "lineName": "ナカサ２" },
+            { "stationName": "大草", "lineName": "ナカサ２" },
+            { "stationName": "東園", "lineName": "ナカサ２" },
+            { "stationName": "喜々津", "lineName": null }
+        ]
+    }
+]

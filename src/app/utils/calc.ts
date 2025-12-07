@@ -1,6 +1,7 @@
 import { load } from '@/components/load';
 import { PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
-
+import { correctPath } from '@/components/correctPath';
+import { calculateBarrierFreeFeeFromPath, calculateFareFromPath } from '@/components/calcFare';
 
 export function calculateTotalEigyoKilo(routeSegments: RouteSegment[]): number {
     let totalEigyoKilo: number = 0;
@@ -16,6 +17,11 @@ export function calculateTotalGiseiKilo(routeSegments: RouteSegment[]): number {
         totalGiseiKilo += routeSegment.giseiKilo;
     }
     return totalGiseiKilo;
+}
+
+export function getFareForPath(path: PathStep[]): number {
+    const correctedPath = correctPath(path);
+    return calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
 }
 
 export function createRouteKey(line: string, stationName0: string, stationName1: string): string {

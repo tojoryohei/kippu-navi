@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { processRouteAndCalculateFare } from '@/app/mr/lib/generateTicket';
+import { processRouteAndCalculateFare } from '@/app/mr/lib/generateKippu';
 
 import { RouteRequest } from '@/app/types';
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
             {
                 error: errorMessage,
-                serverCalculationTimeMs: calculationTimeMs
+                time: calculationTimeMs
             },
             { status: 500 }
         );
