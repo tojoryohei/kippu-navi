@@ -1,4 +1,4 @@
-import { load } from '@/components/load';
+import { load } from '@/app/utils/load';
 import { RouteSegment } from '@/app/types';
 
 class LoadSplit {

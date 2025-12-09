@@ -1,4 +1,4 @@
-import { load } from '@/components/load';
+import { load } from '@/app/utils/load';
 import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo, isAllTrainSpecificSections } from '@/app/utils/calc';
 
 import { PathStep, RouteSegment } from '@/app/types';

@@ -1,6 +1,6 @@
 import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings, getFareForPath } from '@/app/utils/calc';
 import { KippuData, PathStep } from '@/app/types';
-import { correctPath } from '@/components/correctPath';
+import { correctPath } from '@/app/utils/correctPath';
 
 export function generateKippu(fullPath: PathStep[]): KippuData {
 

@@ -27,7 +27,7 @@ class Load {
         try {
 
             // boldLineAreaRoutes.jsonの読み込み
-            const boldLineAreaRoutesData = path.join(process.cwd(), 'src', 'data', 'boldLineAreaRoutes.json');
+            const boldLineAreaRoutesData = path.join(process.cwd(), 'src', 'app', 'data', 'boldLineAreaRoutes.json');
             const boldLineAreaRoutes = JSON.parse(fs.readFileSync(boldLineAreaRoutesData, 'utf-8'));
             for (const boldLineAreaRoute of boldLineAreaRoutes["passing"]) {
                 this.passingBoldLineAreaRoutes.set(boldLineAreaRoute.key, boldLineAreaRoute.route);
@@ -40,18 +40,18 @@ class Load {
             }
 
             // cities.jsonの読み込み
-            const citiesData = path.join(process.cwd(), 'src', 'data', 'cities.json');
+            const citiesData = path.join(process.cwd(), 'src', 'app', 'data', 'cities.json');
             this.cities = JSON.parse(fs.readFileSync(citiesData, 'utf-8'));
 
             // printings.jsonの読み込み
-            const printingsData = path.join(process.cwd(), 'src', 'data', 'printings.json');
+            const printingsData = path.join(process.cwd(), 'src', 'app', 'data', 'printings.json');
             const printingsList: Printing[] = JSON.parse(fs.readFileSync(printingsData, 'utf-8'));
             for (const printing of printingsList) {
                 this.printings.set(printing.kana, printing.print);
             }
 
             // routes.jsonの読み込み
-            const routesData = path.join(process.cwd(), 'src', 'data', 'routes.json');
+            const routesData = path.join(process.cwd(), 'src', 'app', 'data', 'routes.json');
             this.routeList = JSON.parse(fs.readFileSync(routesData, 'utf-8'));
             for (const route of this.routeList) {
                 const key = createRouteKey(route.line, route.station0, route.station1);
@@ -59,7 +59,7 @@ class Load {
             }
 
             // additionalRoutes.jsonの読み込み
-            const additionalRoutesData = path.join(process.cwd(), 'src', 'data', 'additionalRoutes.json');
+            const additionalRoutesData = path.join(process.cwd(), 'src', 'app', 'data', 'additionalRoutes.json');
             const additionalRoutesist = JSON.parse(fs.readFileSync(additionalRoutesData, 'utf-8'));
             for (const route of additionalRoutesist) {
                 const key = createRouteKey(route.line, route.station0, route.station1);
@@ -67,7 +67,7 @@ class Load {
             }
 
             // specificFares.jsonの読み込み
-            const specificFaresData = path.join(process.cwd(), 'src', 'data', 'specificFares.json');
+            const specificFaresData = path.join(process.cwd(), 'src', 'app', 'data', 'specificFares.json');
             this.specificFares = JSON.parse(fs.readFileSync(specificFaresData, 'utf-8'));
             for (const specificFare of this.specificFares) {
                 this.specificFareMap.set(specificFare.sections.map(seg => `${seg.stationName}`)
@@ -75,7 +75,7 @@ class Load {
             }
 
             // trainSpecificSections.jsonの読み込み
-            const trainSpecificSectionsData = path.join(process.cwd(), 'src', 'data', 'trainSpecificSections.json');
+            const trainSpecificSectionsData = path.join(process.cwd(), 'src', 'app', 'data', 'trainSpecificSections.json');
             const rawData: Record<string, Section[]> = JSON.parse(fs.readFileSync(trainSpecificSectionsData, 'utf-8'));
             const transformedSections = {} as TrainSpecificSection;
             for (const sectionName in rawData) {
@@ -91,15 +91,15 @@ class Load {
             this.trainSpecificSections = transformedSections;
 
             // yamanote.jsonの読み込み
-            const yamanotePath = path.join(process.cwd(), 'src', 'data', 'yamanote.json');
+            const yamanotePath = path.join(process.cwd(), 'src', 'app', 'data', 'yamanote.json');
             this.yamanote = JSON.parse(fs.readFileSync(yamanotePath, 'utf-8'));
 
             // specificSections.jsonの読み込み
-            const specificSectionsList = path.join(process.cwd(), 'src', 'data', 'specificSections.json');
+            const specificSectionsList = path.join(process.cwd(), 'src', 'app', 'data', 'specificSections.json');
             this.specificSections = JSON.parse(fs.readFileSync(specificSectionsList, 'utf-8'));
 
             // selectionSections.jsonの読み込み
-            const selectionSectionsList = path.join(process.cwd(), 'src', 'data', 'selectionSections.json');
+            const selectionSectionsList = path.join(process.cwd(), 'src', 'app', 'data', 'selectionSections.json');
             this.selectionSections = JSON.parse(fs.readFileSync(selectionSectionsList, 'utf-8'));
 
         } catch (error) {

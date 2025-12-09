@@ -24,9 +24,6 @@ export const metadata: Metadata = {
   description: "JR乗車券の分割運賃計算をするサイトです。",
   metadataBase: new URL('https://kippu-navi.com'),
   openGraph: {
-    title: "きっぷナビ",
-    description: "JR乗車券の分割運賃計算をするサイトです。",
-    url: "https://kippu-navi.com",
     siteName: "きっぷナビ",
     type: "website",
   },

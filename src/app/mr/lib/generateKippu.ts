@@ -1,11 +1,11 @@
 import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings } from '@/app/utils/calc';
 import { loadLines } from '@/app/mr/lib/loadLines';
 import { loadKanas } from '@/app/mr/lib/loadKanas';
-import { correctPath, uncorrectPath } from '@/components/correctPath';
-import { calculateFareFromPath, calculateBarrierFreeFeeFromPath } from '@/components/calcFare';
+import { correctPath, uncorrectPath } from '@/app/utils/correctPath';
+import { calculateFareFromPath, calculateBarrierFreeFeeFromPath } from '@/app/utils/calcFare';
 
 import { RouteRequest, KippuData, PathStep } from '@/app/types';
-import { cheapestPath } from '@/components/cheapestPath';
+import { cheapestPath } from '@/app/utils/cheapestPath';
 
 export function processRouteAndCalculateFare(request: RouteRequest): KippuData {
     const userInputPath = request.path;
@@ -14,7 +14,7 @@ export function processRouteAndCalculateFare(request: RouteRequest): KippuData {
     let fullPath = createFullPath(userInputPath);
 
     // 経路の補正
-    const correctedPath = correctPath(cheapestPath(fullPath));
+    const correctedPath = correctPath(fullPath);
 
     // 出発駅と到着駅の名前を取得して変数に代入
     const departureStation = correctedPath[0].stationName;

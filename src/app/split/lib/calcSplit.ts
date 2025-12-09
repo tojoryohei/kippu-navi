@@ -1,8 +1,8 @@
-import { load } from '@/components/load';
+import { load } from '@/app/utils/load';
 import { loadSplit } from '@/app/split/lib/loadSplit';
 import { generateKippu } from '@/app/split/lib/generateKippu';
 import { PathStep, SplitApiResponse, SplitKippuData, SplitKippuDatas } from '@/app/types';
-import { cheapestPath } from '@/components/cheapestPath';
+import { cheapestPath } from '@/app/utils/cheapestPath';
 import { getFareForPath } from '@/app/utils/calc';
 
 class PriorityQueue {
@@ -59,11 +59,7 @@ class CalculatorSplit {
         this.fareMemo.clear();
         this.splitMemo.clear();
 
-        const startTime = performance.now();
         const candidates: PathStep[][] = this.yensAlgorithm(startStationName, endStationName);
-        const endTime = performance.now();
-        console.log(endTime - startTime);
-        console.log("Candidate paths count:", candidates.length);
 
         if (candidates.length === 0) {
             return null;

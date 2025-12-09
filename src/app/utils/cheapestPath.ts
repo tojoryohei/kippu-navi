@@ -1,7 +1,7 @@
-import { load } from "@/components/load";
+import { load } from "@/app/utils/load";
 import { loadSplit } from "@/app/split/lib/loadSplit";
 import { calculateTotalEigyoKilo, calculateTotalGiseiKilo, convertPathStepsToRouteSegments, getFareForPath } from "@/app/utils/calc";
-import { correctPath } from "@/components/correctPath";
+import { correctPath } from "@/app/utils/correctPath";
 
 import { PathStep } from "@/app/types";
 

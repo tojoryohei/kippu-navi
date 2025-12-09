@@ -1,7 +1,7 @@
-import { load } from '@/components/load';
+import { load } from '@/app/utils/load';
 import { PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
-import { correctPath } from '@/components/correctPath';
-import { calculateBarrierFreeFeeFromPath, calculateFareFromPath } from '@/components/calcFare';
+import { correctPath } from '@/app/utils/correctPath';
+import { calculateBarrierFreeFeeFromPath, calculateFareFromPath } from '@/app/utils/calcFare';
 
 export function calculateTotalEigyoKilo(routeSegments: RouteSegment[]): number {
     let totalEigyoKilo: number = 0;
