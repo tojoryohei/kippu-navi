@@ -387,12 +387,5 @@ export function extendTheRearOfSections(path: PathStep[]): PathStep[] | null {
         if (0 <= idx0 && idx0 + 1 === idx1 && idx1 < outerSpecificSection.stations.length - 1)
             return outerSpecificSection.routes.slice(idx1)
     }
-    const outerSelectionSections = load.getSelectionSections();
-    for (const outerSelectionSection of outerSelectionSections) {
-        const idx0 = outerSelectionSection.stations.indexOf(path[path.length - 2].stationName)
-        const idx1 = outerSelectionSection.stations.indexOf(path[path.length - 1].stationName)
-        if (0 <= idx0 && idx0 + 1 === idx1 && idx1 < outerSelectionSection.stations.length - 1)
-            return outerSelectionSection.routes.slice(idx1)
-    }
     return null;
 }
