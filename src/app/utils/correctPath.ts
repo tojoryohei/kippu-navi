@@ -6818,7 +6818,7 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
                 fullPath[i].lineName === "サンヨ" &&
                 fullPath[i + 1].stationName === "姫路" &&
                 fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "英賀保" ||
+                fullPath[i + 2].stationName === "手柄山平和公園" ||
                 fullPath[i].stationName === "東姫路" &&
                 fullPath[i].lineName === "サンヨ" &&
                 fullPath[i + 1].stationName === "姫路" &&
@@ -6846,7 +6846,7 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
                 fullPath[i].lineName === "サンヨ" &&
                 fullPath[i + 1].stationName === "姫路" &&
                 fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "英賀保" ||
+                fullPath[i + 2].stationName === "手柄山平和公園" ||
                 fullPath[i].stationName === "東姫路" &&
                 fullPath[i].lineName === "サンヨ" &&
                 fullPath[i + 1].stationName === "姫路" &&
@@ -6876,7 +6876,7 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
         }
         for (let i = 0; i < fullPath.length - 2; i++) {
             if (
-                fullPath[i].stationName === "英賀保" &&
+                fullPath[i].stationName === "手柄山平和公園" &&
                 fullPath[i].lineName === "サンヨ" &&
                 fullPath[i + 1].stationName === "姫路" &&
                 fullPath[i + 1].lineName === "サンヨ" &&
@@ -6910,7 +6910,7 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
         }
         for (let i = 0; i < fullPath.length - 2; i++) {
             if (
-                fullPath[i].stationName === "英賀保" &&
+                fullPath[i].stationName === "手柄山平和公園" &&
                 fullPath[i].lineName === "サンヨ" &&
                 fullPath[i + 1].stationName === "姫路" &&
                 fullPath[i + 1].lineName === "サンヨ" &&
