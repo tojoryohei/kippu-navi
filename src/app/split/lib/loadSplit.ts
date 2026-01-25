@@ -1,9 +1,14 @@
+import fs from 'fs';
+import path from 'path';
+
 import { load } from '@/app/utils/load';
 import { RouteSegment } from '@/app/types';
 
 class LoadSplit {
     private adjacencyList: Map<string, string[]> = new Map();
     private stationPairRoutes: Map<string, RouteSegment[]> = new Map();
+    private distanceToCityCenterList: { stationName: string, kilo: number }[] = [];
+    private distancesToCityCenter: Map<string, number> = new Map();
 
     constructor () {
         this.loadData();
@@ -33,6 +38,14 @@ class LoadSplit {
                     this.stationPairRoutes.set(pairKey, []);
                 }
                 this.stationPairRoutes.get(pairKey)!.push(route);
+
+                const distancesToCityCenterData = path.join(process.cwd(), 'src', 'app', 'split', 'data', 'distancesToCityCenter.json');
+                this.distanceToCityCenterList = JSON.parse(fs.readFileSync(distancesToCityCenterData, 'utf-8'));
+
+                for (const distanceToCityCenter of this.distanceToCityCenterList) {
+                    this.distancesToCityCenter.set(distanceToCityCenter.stationName, distanceToCityCenter.kilo);
+                }
+
             }
         } catch (error) {
             console.error('データ読み込みエラー：', error);
@@ -46,6 +59,10 @@ class LoadSplit {
     public getSegmentsForStationPair(stationName0: string, stationName1: string): RouteSegment[] {
         const pairKey = [stationName0, stationName1].sort().join('-');
         return this.stationPairRoutes.get(pairKey) || [];
+    }
+
+    public getdistancesToCityCenter(stationName: string): number {
+        return this.distancesToCityCenter.get(stationName) ?? 0;
     }
 }
 

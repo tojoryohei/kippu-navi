@@ -55,7 +55,6 @@ class CalculatorSplit {
     private splitMemo: Map<string, SplitKippuDatas[] | null> = new Map();
 
     public findOptimalSplitByShortestGiseiKiloPath(startStationName: string, endStationName: string): SplitApiResponse | null {
-
         this.fareMemo.clear();
         this.splitMemo.clear();
 
@@ -82,17 +81,9 @@ class CalculatorSplit {
             }
         }
 
-        // console.log("Candidate paths count:", candidates.length);
-        // console.log("Candidate paths:", candidates);
-        // console.log("Min Through Path:", minThroughPath);
-
-        // ★追加: 重複排除処理 (Deduplication)
-        // 分割駅の構成と、各切符の中身(経由印字など)が完全に一致するものを間引きます
+        // 重複排除処理
         const uniquePatternsMap = new Map<string, SplitKippuDatas>();
-
         for (const pattern of allSplitPatterns) {
-            // シグネチャ生成: 全ての分割区間の [発駅-着駅-切符詳細(JSON)] を連結して一意なキーを作る
-            // kippuDataを含めることで、経由印字や有効期間などが違う場合も区別できます
             const signature = pattern.splitKippuDatas.map(d =>
                 `${d.departureStation}-${d.arrivalStation}:${JSON.stringify(d.kippuData)}`
             ).join("|");
@@ -100,7 +91,6 @@ class CalculatorSplit {
             if (!uniquePatternsMap.has(signature)) {
                 uniquePatternsMap.set(signature, pattern);
             } else {
-                // 万が一シグネチャが同じで合計運賃が安いものがあればそちらを採用（念のため）
                 const existing = uniquePatternsMap.get(signature)!;
                 if (pattern.totalFare < existing.totalFare) {
                     uniquePatternsMap.set(signature, pattern);
@@ -108,10 +98,8 @@ class CalculatorSplit {
             }
         }
 
-        // マップから配列に戻す
         let uniqueSplitPatterns = Array.from(uniquePatternsMap.values());
 
-        // --- 3. グローバル最安値でフィルタリング ---
         if (uniqueSplitPatterns.length === 0) {
             return { shortestData: generateKippu(minThroughPath), splitKippuDatasList: [] };
         }
@@ -139,11 +127,24 @@ class CalculatorSplit {
 
         A.push(firstPath);
 
-        const baseDistance = this.calculateTotalGiseiKilo(firstPath);
-        const MAX_RATIO = 1.25;
-        const MAX_K = 1;
+        // --- ★論文ロジック: 探索打ち切り条件の計算 ---
+        const d_min = this.calculateTotalGiseiKilo(firstPath);
+        const C_base = getFareForPath(firstPath);
 
+        // 基準経路距離までの範囲で理論上最安のキロ単価を取得 (u_best)
+        const u_best = this.getBestUnitPrice(d_min);
+
+        // 特定都区市内補正項 (alpha) の取得
+        const alpha = this.getSpecificCityBuffer(startStation, endStation);
+
+        // d_limit = C_base / u_best + alpha
+        const limitDistance = (C_base / u_best) + alpha;
+        // ----------------------------------------------------
+
+        const MAX_K = 10000; // 安全のため上限は設ける
+        let n = 1;
         for (let k = 1; k < MAX_K; k++) {
+
             const prevPath = A[k - 1];
 
             for (let i = 0; i < prevPath.length - 1; i++) {
@@ -182,7 +183,6 @@ class CalculatorSplit {
                         }
 
                         const totalPath = [...rootPathFixed, ...spurPathPart.slice(1)];
-
                         const totalCost = this.calculateTotalGiseiKilo(totalPath);
                         const signature = this.getPathSignature(totalPath);
 
@@ -199,34 +199,22 @@ class CalculatorSplit {
             B.sort((a, b) => a.cost - b.cost);
             const bestCandidate = B.shift()!;
 
-            if (bestCandidate.cost > baseDistance * MAX_RATIO) {
+            // --- ★論文ロジック: 新しい打ち切り判定 ---
+            if (bestCandidate.cost > limitDistance) {
                 break;
             }
+            // ---------------------------------------------
 
             if (!A.some(p => this.getPathSignature(p) === bestCandidate.signature)) {
                 A.push(bestCandidate.path);
             } else {
                 k--;
             }
+            n = n + 1;
         }
+        console.log(n);
 
         return A;
-    }
-
-    private getPathSignature(path: PathStep[]): string {
-        return path.map(p => p.stationName).join("|");
-    }
-
-    private pathsSharePrefix(fullPath: PathStep[], prefix: PathStep[]): boolean {
-        if (fullPath.length < prefix.length) return false;
-        for (let i = 0; i < prefix.length; i++) {
-            if (fullPath[i].stationName !== prefix[i].stationName) return false;
-        }
-        return true;
-    }
-
-    private getEdgeKey(u: string, v: string): string {
-        return u < v ? `${u}-${v}` : `${v}-${u}`;
     }
 
     private calculateOptimalSplitForPath(fullPath: PathStep[]): SplitKippuDatas[] | null {
@@ -285,9 +273,44 @@ class CalculatorSplit {
         };
 
         reconstruct(n - 1, []);
-
         this.splitMemo.set(key, resultPatterns);
         return resultPatterns;
+    }
+
+    // --- ★追加: 距離dにおける理論上の最安キロ単価を返す (u_best) ---
+    private getBestUnitPrice(distance: number): number {
+
+        return (580 / 428);
+    }
+
+    // --- ★追加: 特定都区市内補正項 (alpha) ---
+    private getSpecificCityBuffer(startStation: string, endStation: string): number {
+        let alpha = 0;
+
+        // 特定都区市内制度の考慮
+        // 発駅または着駅が特定都区市内に含まれる場合、その中心駅までの距離を加算する
+
+        alpha += loadSplit.getdistancesToCityCenter(startStation);
+        alpha += loadSplit.getdistancesToCityCenter(endStation);
+
+        return alpha;
+    }
+
+    // (以下、既存メソッド)
+    private getPathSignature(path: PathStep[]): string {
+        return path.map(p => p.stationName).join("|");
+    }
+
+    private pathsSharePrefix(fullPath: PathStep[], prefix: PathStep[]): boolean {
+        if (fullPath.length < prefix.length) return false;
+        for (let i = 0; i < prefix.length; i++) {
+            if (fullPath[i].stationName !== prefix[i].stationName) return false;
+        }
+        return true;
+    }
+
+    private getEdgeKey(u: string, v: string): string {
+        return u < v ? `${u}-${v}` : `${v}-${u}`;
     }
 
     private calculateTotalGiseiKilo(path: PathStep[]): number {
@@ -306,7 +329,6 @@ class CalculatorSplit {
         excludedEdges: Set<string>,
         excludedNodes: Set<string>
     ): { pathFound: boolean; previous: Map<string, { parentStation: string; lineName: string | null; }> } {
-
         const costs: Map<string, number> = new Map();
         const previous: Map<string, { parentStation: string; lineName: string | null; }> = new Map();
         const pq = new PriorityQueue();
@@ -316,15 +338,12 @@ class CalculatorSplit {
 
         while (!pq.isEmpty()) {
             const { stationName: currentStation, cost: currentCost } = pq.dequeue()!;
-
             if (currentCost > (costs.get(currentStation) || Infinity)) continue;
-
             if (currentStation === endStationName) return { pathFound: true, previous };
 
             const neighbors = loadSplit.getNeighbors(currentStation);
             for (const neighborStation of neighbors) {
                 if (excludedNodes.has(neighborStation)) continue;
-
                 const edgeKey = this.getEdgeKey(currentStation, neighborStation);
                 if (excludedEdges.has(edgeKey)) continue;
 
@@ -339,10 +358,8 @@ class CalculatorSplit {
 
                 const segments = loadSplit.getSegmentsForStationPair(currentStation, neighborStation);
                 if (segments.length === 0) continue;
-
                 const representativeSegment = segments[0];
                 let weight = representativeSegment.giseiKilo;
-
                 const newCost = currentCost + weight;
 
                 if (!costs.has(neighborStation) || newCost < (costs.get(neighborStation) || Infinity)) {
@@ -358,9 +375,7 @@ class CalculatorSplit {
     private reconstructPath(previous: Map<string, { parentStation: string; lineName: string | null; }>, startStationName: string, endStationName: string): PathStep[] | null {
         const path: PathStep[] = [];
         let currentStation = endStationName;
-
         if (!previous.has(endStationName) && startStationName !== endStationName) return null;
-
         while (currentStation !== startStationName) {
             const parentInfo = previous.get(currentStation);
             if (!parentInfo) return null;
@@ -368,7 +383,6 @@ class CalculatorSplit {
             currentStation = parentInfo.parentStation;
         }
         path.unshift({ stationName: startStationName, lineName: null });
-
         const finalPath: PathStep[] = [];
         for (let i = 0; i < path.length; i++) {
             if (i === path.length - 1) finalPath.push({ stationName: path[i].stationName, lineName: null });
@@ -380,9 +394,7 @@ class CalculatorSplit {
     private getMemoizedFare(path: PathStep[]): number {
         const lastIndex = path.length - 1;
         const originalLastStep = path[lastIndex];
-
         path[lastIndex] = { ...originalLastStep, lineName: null };
-
         const key = path.map(seg => `${seg.stationName}-${seg.lineName}`).join("-");
         if (this.fareMemo.has(key)) return this.fareMemo.get(key)!;
 
