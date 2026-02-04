@@ -141,7 +141,7 @@ class CalculatorSplit {
         const limitDistance = (C_base / u_best) + alpha;
         // ----------------------------------------------------
 
-        const MAX_K = 10000; // 安全のため上限は設ける
+        const MAX_K = 10; // 安全のため上限は設ける
         let n = 1;
         for (let k = 1; k < MAX_K; k++) {
 
