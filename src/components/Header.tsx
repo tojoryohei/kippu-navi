@@ -13,7 +13,6 @@ const MENU_ITEMS: menuItem[] = [
     { href: "/guide", icon: FaQuestionCircle, label: "利用案内" },
     { href: "/mr", icon: RiGuideLine, label: "運賃計算" },
     { href: "/split", icon: RiScissorsFill, label: "分割乗車券" }
-
 ];
 
 const Header = () => {
@@ -24,45 +23,47 @@ const Header = () => {
     };
 
     return (
-        <header className="sticky top-0 bg-white z-20 border-b flex items-center justify-between h-14 px-4">
+        <header className="sticky top-0 bg-white/80 backdrop-blur-md z-20 border-b border-slate-200 flex items-center justify-between h-16 px-4 sm:px-6" >
             <h1>
-                <Link href="/" className="text-2xl font-logo">
+                <Link href="/" className="text-2xl font-bold tracking-tight text-blue-600 hover:opacity-80 transition-opacity font-logo">
                     きっぷナビ
                 </Link>
             </h1>
 
             <button
                 onClick={handleMenuToggle}
-                className="text-3xl z-50 md:hidden"
+                className="text-3xl z-50 md:hidden text-slate-700 hover:text-blue-600 transition-colors"
                 aria-label={openMenu ? "メニューバーを閉じる" : "メニューバーを開く"}
                 aria-expanded={openMenu}
             >
                 {openMenu ? <MdClear /> : <MdMenu />}
             </button>
 
-            {openMenu && (
-                <div
-                    className="fixed inset-0 bg-black/40 z-30 md:hidden"
-                    onClick={handleMenuToggle}
-                />
-            )}
+            {
+                openMenu && (
+                    <div
+                        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden transition-opacity"
+                        onClick={handleMenuToggle}
+                    />
+                )
+            }
             <nav
-                className={`fixed top-0 right-0 h-screen w-8/12 sm:w-6/12 bg-slate-100 shadow-lg transform transition-transform duration-300 ease-out z-40
+                className={`fixed top-0 right-0 h-screen w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-40
                 ${openMenu ? "translate-x-0" : "translate-x-full"}
                 md:static md:flex md:h-auto md:w-auto md:translate-x-0 md:bg-transparent md:shadow-none md:z-auto`}
             >
-                <ul className="mt-16 md:mt-0 flex flex-col md:flex-row">
+                <ul className="mt-20 md:mt-0 flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 px-4 md:px-0">
                     {MENU_ITEMS.map((item) => {
                         const IconComponent = item.icon;
                         return (
-                            <li key={item.href} className="p-3">
+                            <li key={item.href}>
                                 <Link
                                     href={item.href}
-                                    onClick={handleMenuToggle}
-                                    className="hover:opacity-50 flex items-center"
+                                    onClick={() => setOpenMenu(false)}
+                                    className="group flex items-center px-4 py-3 md:py-2 md:px-3 rounded-lg hover:bg-blue-50 transition-colors"
                                 >
-                                    <IconComponent className="mr-1" />
-                                    <span className="text-base font-semibold sm:text-lg sm:font-bold text-black hover:underline underline-offset-8 decoration-2">
+                                    <IconComponent className="mr-3 md:mr-2 text-xl text-slate-500 group-hover:text-blue-600 transition-colors" />
+                                    <span className="text-base font-medium text-slate-700 group-hover:text-blue-600 transition-colors">
                                         {item.label}
                                     </span>
                                 </Link>
@@ -71,7 +72,7 @@ const Header = () => {
                     })}
                 </ul>
             </nav>
-        </header>
+        </header >
     );
 };
 

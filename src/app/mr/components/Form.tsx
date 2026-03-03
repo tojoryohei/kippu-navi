@@ -6,8 +6,8 @@ import type { SingleValue } from "react-select";
 
 import stationData from "@/app/mr/data/stations.json";
 import lineData from "@/app/mr/data/lines.json";
-import SelectStation from "@/app/mr/componens/SelectStation";
-import SelectLine from "@/app/mr/componens/SelectLine";
+import SelectStation from "@/app/mr/components/SelectStation";
+import SelectLine from "@/app/mr/components/SelectLine";
 
 import { Station, Line, KippuData, ApiFullResponse, IFormInput, PathStep, RouteRequest } from "@/app/types";
 
@@ -269,7 +269,7 @@ export default function Form() {
                         </div>
                         <span>経由：{result.printedViaLines.length === 0 ? "ーーー" : result.printedViaLines.join("・")}</span>
                         <span className="flex justify-between items-center">
-                            <span>{result.validDays + " 日間有効"}</span>
+                            <span>{/* result.validDays + " 日間有効" */}</span>
                             <span className="text-xl">¥{result.fare > 0 ? result.fare.toLocaleString() : "***"}</span>
                         </span>
                     </div>

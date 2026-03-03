@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 
 import stationData from "@/app/split/data/stations.json";
-import SelectStation from "@/app/split/componens/SelectStation";
+import SelectStation from "@/app/split/components/SelectStation";
 import { ApiSplitFullResponse, SplitApiRequest, SplitApiResponse, SplitFormInput } from "@/app/types";
 
 export default function SplitForm() {

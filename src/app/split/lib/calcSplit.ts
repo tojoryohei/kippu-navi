@@ -142,7 +142,7 @@ class CalculatorSplit {
         // ----------------------------------------------------
 
         const MAX_K = 10; // 安全のため上限は設ける
-        let n = 1;
+
         for (let k = 1; k < MAX_K; k++) {
 
             const prevPath = A[k - 1];
@@ -210,10 +210,7 @@ class CalculatorSplit {
             } else {
                 k--;
             }
-            n = n + 1;
         }
-        console.log(n);
-
         return A;
     }
 
