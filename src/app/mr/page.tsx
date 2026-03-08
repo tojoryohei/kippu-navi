@@ -21,8 +21,9 @@ export default function Page() {
             運賃計算（経路入力）
           </h1>
           <p className="text-sm sm:text-base text-slate-600">
-            乗車するルートの「発駅」「着駅」、および経由を入力してください。<br className="hidden sm:block" />
-            乗車券の正規の基本運賃を計算します。
+            在来線の「発駅」「着駅」、および経由を入力してください。<br className="hidden sm:block" />
+            片道乗車券の運賃を計算します。
+            経路重複による運賃計算の制限は行っていません。
           </p>
         </div>
 

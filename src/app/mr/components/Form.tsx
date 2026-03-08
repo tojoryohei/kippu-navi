@@ -6,6 +6,7 @@ import type { SingleValue } from "react-select";
 
 import stationData from "@/app/mr/data/stations.json";
 import lineData from "@/app/mr/data/lines.json";
+import SelectDepartureStation from "@/app/mr/components/SelectDepartureStation";
 import SelectStation from "@/app/mr/components/SelectStation";
 import SelectLine from "@/app/mr/components/SelectLine";
 
@@ -154,7 +155,7 @@ export default function Form() {
                             control={control}
                             rules={{ required: true }}
                             render={({ field }) => (
-                                <SelectStation
+                                <SelectDepartureStation
                                     instanceId="start-station"
                                     value={field.value}
                                     onChange={(value) => handleFieldChange(value, field.onChange, resetOnStartStationChange)}

@@ -20,6 +20,10 @@ export default function Home() {
             発駅と着駅を指定するだけで、最もお得な分割乗車券の組み合わせを瞬時に計算します。
             また、開発の基盤となっている運賃計算プログラムもお試しいただけます。
           </p>
+          {/* 追加：アップデートお知らせバッジ */}
+          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full text-sm font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            2026/03/14のJR東日本運賃改定に対応しました。
+          </div>
         </div>
 
         {/* リンクカードセクション */}
@@ -38,7 +42,7 @@ export default function Home() {
                 分割運賃プログラム
               </h2>
             </div>
-            <p className="text-slate-600 mb-6 flex-grow">
+            <p className="text-slate-600 mb-6 grow">
               一番お得な分割ルートを検索します。実際の旅行や交通費の節約に活用したい方はこちらをご利用ください。
             </p>
             <div className="text-blue-600 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300">
@@ -63,7 +67,7 @@ export default function Home() {
               </h2>
             </div>
             <p className="text-slate-600 mb-6 flex-grow">
-              分割計算の基礎となる、乗車券の基本運賃を確認できます。運賃の仕組みを知りたい方はこちら。
+              分割計算の基礎となる、乗車券の普通運賃を計算します。運賃の仕組みを知りたい方はこちら。
             </p>
             <div className="text-slate-700 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300">
               運賃を確認する

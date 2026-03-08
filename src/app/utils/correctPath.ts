@@ -41,7 +41,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
         stationsOnFullPath.add(path.stationName);
     }
 
-    // （1）大沼以遠（仁山方面）の各駅と、森以遠（石倉方面）の各駅との相互間
+    // （1）大沼以遠（新函館北斗方面）の各駅と、森以遠（石倉方面）の各駅との相互間
     if (stationsOnFullPath.has("渡島砂原") === true &&
         stationsOnFullPath.has("大沼公園") === false &&
         stationsOnFullPath.has("赤井川") === false &&
@@ -98,9 +98,9 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     break;
                 }
 
-                // 仁山方面→森
+                // 新函館北斗方面→森
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "仁山" &&
+                    fullPath[idx - 1].stationName === "新函館北斗" &&
                     fullPath[idx - 1].lineName === "ハコタ" &&
                     fullPath[idx + 7].lineName === null
                 ) {
@@ -115,9 +115,9 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     break;
                 }
 
-                // 仁山方面→石倉方面
+                // 新函館北斗方面→石倉方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "仁山" &&
+                    fullPath[idx - 1].stationName === "新函館北斗" &&
                     fullPath[idx - 1].lineName === "ハコタ" &&
                     idx + 8 < fullPath.length &&
                     fullPath[idx + 7].lineName === "ハコタ" &&
@@ -168,11 +168,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     break;
                 }
 
-                // 森→仁山方面
+                // 森→新函館北斗方面
                 if (idx === 0 &&
                     8 < fullPath.length &&
                     fullPath[7].lineName === "ハコタ" &&
-                    fullPath[8].stationName === "仁山"
+                    fullPath[8].stationName === "新函館北斗"
                 ) {
                     fullPath = [
                         { stationName: "森", lineName: "ホセイ" },
@@ -201,13 +201,13 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     break;
                 }
 
-                // 石倉方面→仁山方面
+                // 石倉方面→新函館北斗方面
                 if (0 < idx &&
                     fullPath[idx - 1].stationName === "石倉" &&
                     fullPath[idx - 1].lineName === "ハコタ" &&
                     idx + 8 < fullPath.length &&
                     fullPath[idx + 7].lineName === "ハコタ" &&
-                    fullPath[idx + 8].stationName === "仁山"
+                    fullPath[idx + 8].stationName === "新函館北斗"
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),

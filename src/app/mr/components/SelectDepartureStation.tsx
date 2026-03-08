@@ -16,7 +16,7 @@ const CustomOption = (props: OptionProps<Station>) => (
     </components.Option>
 );
 
-const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: SelectStationProps) => {
+const SelectDepartureStation = ({ instanceId, value, onChange, options, isDisabled }: SelectStationProps) => {
     const stationOptions = options || stationData;
     const [inputValue, setInputValue] = useState<string>("");
 
@@ -40,7 +40,7 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: Sel
                 value={value}
                 onChange={onChange}
                 isMulti={false}
-                options={stationOptions}
+                options={inputValue.length > 0 ? stationOptions : []}
                 isDisabled={isDisabled}
                 onInputChange={(input) => setInputValue(input)}
                 getOptionLabel={(option) => option.name}
@@ -59,4 +59,4 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: Sel
     );
 };
 
-export default SelectStation;
+export default SelectDepartureStation;

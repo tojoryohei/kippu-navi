@@ -130,9 +130,7 @@ export interface Section {
 }
 
 export interface TrainSpecificSection {
-    山手線内: Set<string>;
-    東京附近: Set<string>;
-    大阪附近: Set<string>;
+    電車特定区間: Set<string>;
     名古屋附近: Set<string>;
     電車大環状線: Set<string>;
 }
