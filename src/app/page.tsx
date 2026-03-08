@@ -66,7 +66,7 @@ export default function Home() {
                 運賃計算プログラム
               </h2>
             </div>
-            <p className="text-slate-600 mb-6 flex-grow">
+            <p className="text-slate-600 mb-6 grow">
               分割計算の基礎となる、乗車券の普通運賃を計算します。運賃の仕組みを知りたい方はこちら。
             </p>
             <div className="text-slate-700 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300">
