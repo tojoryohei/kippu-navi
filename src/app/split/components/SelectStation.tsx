@@ -40,7 +40,7 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: Sel
                 value={value}
                 onChange={onChange}
                 isMulti={false}
-                options={stationOptions}
+                options={inputValue.length > 0 ? stationOptions : []}
                 isDisabled={isDisabled}
                 onInputChange={(input) => setInputValue(input)}
                 getOptionLabel={(option) => option.name}
