@@ -6829,11 +6829,20 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
                 fullPath[i + 1].stationName === "姫路" &&
                 fullPath[i + 1].lineName === "キシン" &&
                 fullPath[i + 2].stationName === "播磨高岡"
-            )
-                return [
-                    { "stationName": "大阪・新大阪", "lineName": fullPath[1].lineName },
-                    ...fullPath.slice(2)
-                ]
+            ) {
+                if (fullPath[1].stationName === "大阪") {
+                    return [
+                        { "stationName": "大阪・新大阪", "lineName": fullPath[1].lineName },
+                        ...fullPath.slice(2)
+                    ]
+                }
+                else {
+                    return [
+                        { "stationName": "大阪・新大阪", "lineName": fullPath[0].lineName },
+                        ...fullPath.slice(1)
+                    ]
+                }
+            }
         }
     }
     if (fullPath[0].stationName === "大阪") {
@@ -6857,11 +6866,20 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
                 fullPath[i + 1].stationName === "姫路" &&
                 fullPath[i + 1].lineName === "キシン" &&
                 fullPath[i + 2].stationName === "播磨高岡"
-            )
-                return [
-                    { "stationName": "大阪・新大阪", "lineName": fullPath[1].lineName },
-                    ...fullPath.slice(1)
-                ]
+            ) {
+                if (fullPath[1].stationName === "新大阪") {
+                    return [
+                        { "stationName": "大阪・新大阪", "lineName": fullPath[1].lineName },
+                        ...fullPath.slice(2)
+                    ]
+                }
+                else {
+                    return [
+                        { "stationName": "大阪・新大阪", "lineName": fullPath[0].lineName },
+                        ...fullPath.slice(1)
+                    ]
+                }
+            }
         }
     }
     if (fullPath[fullPath.length - 1].stationName === "新大阪") {
@@ -6869,10 +6887,18 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
             fullPath[1].lineName === "サンヨ" &&
             fullPath[1].stationName === "東姫路"
         ) {
-            return [
-                ...fullPath.slice(0, fullPath.length - 2),
-                { "stationName": "大阪・新大阪", "lineName": null }
-            ]
+            if (fullPath[fullPath.length - 2].stationName === "大阪") {
+                return [
+                    ...fullPath.slice(0, fullPath.length - 2),
+                    { "stationName": "大阪・新大阪", "lineName": null }
+                ]
+            }
+            else {
+                return [
+                    ...fullPath.slice(0, fullPath.length - 1),
+                    { "stationName": "大阪・新大阪", "lineName": null }
+                ]
+            }
         }
         for (let i = 0; i < fullPath.length - 2; i++) {
             if (
@@ -6891,11 +6917,20 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
                 fullPath[i + 1].stationName === "姫路" &&
                 fullPath[i + 1].lineName === "サンヨ" &&
                 fullPath[i + 2].stationName === "東姫路"
-            )
-                return [
-                    ...fullPath.slice(0, fullPath.length - 2),
-                    { "stationName": "大阪・新大阪", "lineName": null }
-                ]
+            ) {
+                if (fullPath[fullPath.length - 2].stationName === "大阪") {
+                    return [
+                        ...fullPath.slice(0, fullPath.length - 2),
+                        { "stationName": "大阪・新大阪", "lineName": null }
+                    ]
+                }
+                else {
+                    return [
+                        ...fullPath.slice(0, fullPath.length - 1),
+                        { "stationName": "大阪・新大阪", "lineName": null }
+                    ]
+                }
+            }
         }
     }
     if (fullPath[fullPath.length - 1].stationName === "大阪") {
@@ -6903,10 +6938,18 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
             fullPath[1].lineName === "サンヨ" &&
             fullPath[1].stationName === "東姫路"
         ) {
-            return [
-                ...fullPath.slice(0, fullPath.length - 1),
-                { "stationName": "大阪・新大阪", "lineName": null }
-            ]
+            if (fullPath[fullPath.length - 2].stationName === "新大阪") {
+                return [
+                    ...fullPath.slice(0, fullPath.length - 2),
+                    { "stationName": "大阪・新大阪", "lineName": null }
+                ]
+            }
+            else {
+                return [
+                    ...fullPath.slice(0, fullPath.length - 1),
+                    { "stationName": "大阪・新大阪", "lineName": null }
+                ]
+            }
         }
         for (let i = 0; i < fullPath.length - 2; i++) {
             if (
@@ -6925,11 +6968,20 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
                 fullPath[i + 1].stationName === "姫路" &&
                 fullPath[i + 1].lineName === "サンヨ" &&
                 fullPath[i + 2].stationName === "東姫路"
-            )
-                return [
-                    ...fullPath.slice(0, fullPath.length - 1),
-                    { "stationName": "大阪・新大阪", "lineName": null }
-                ]
+            ) {
+                if (fullPath[fullPath.length - 2].stationName === "新大阪") {
+                    return [
+                        ...fullPath.slice(0, fullPath.length - 2),
+                        { "stationName": "大阪・新大阪", "lineName": null }
+                    ]
+                }
+                else {
+                    return [
+                        ...fullPath.slice(0, fullPath.length - 1),
+                        { "stationName": "大阪・新大阪", "lineName": null }
+                    ]
+                }
+            }
         }
     }
     return fullPath;
