@@ -19,9 +19,19 @@ export function calculateTotalGiseiKilo(routeSegments: RouteSegment[]): number {
     return totalGiseiKilo;
 }
 
+const globalFareCache = new Map<string, number>();
+
 export function getFareForPath(path: PathStep[]): number {
+    const key = path.map(p => `${p.stationName}-${p.lineName}`).join('|');
+    if (globalFareCache.has(key)) {
+        return globalFareCache.get(key)!;
+    }
+
     const correctedPath = correctPath(path);
-    return calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
+    const fare = calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
+
+    globalFareCache.set(key, fare);
+    return fare;
 }
 
 export function createRouteKey(line: string, stationName0: string, stationName1: string): string {

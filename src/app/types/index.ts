@@ -10,7 +10,7 @@ export interface menuItem {
 export interface Station {
     name: string;
     kana: string;
-    lines: string[]
+    lines?: string[]
 }
 
 export interface SelectStationProps {

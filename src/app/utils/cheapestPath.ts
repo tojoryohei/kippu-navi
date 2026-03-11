@@ -5,7 +5,7 @@ import { correctPath } from "@/app/utils/correctPath";
 
 import { PathStep } from "@/app/types";
 
-export function cheapestPath(fullPath: PathStep[]): PathStep[] {
+export function cheapestPathAndFare(fullPath: PathStep[]): { path: PathStep[], fare: number } {
 
     const correctedPath = correctPath(fullPath);
 
@@ -44,7 +44,7 @@ export function cheapestPath(fullPath: PathStep[]): PathStep[] {
         }
     }
 
-    return cheapestPath;
+    return { path: cheapestPath, fare: cheapestFare };
 }
 
 /**
