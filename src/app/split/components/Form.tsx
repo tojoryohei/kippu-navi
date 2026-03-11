@@ -5,10 +5,12 @@ import { useForm, Controller, SubmitHandler } from "react-hook-form";
 
 import stationData from "@/app/split/data/stations.json";
 import SelectStation from "@/app/split/components/SelectStation";
-import { ApiSplitFullResponse, SplitApiRequest, SplitApiResponse, SplitFormInput } from "@/app/types";
+// ※Station型を使用するためimportに追加しています
+import { ApiSplitFullResponse, SplitApiRequest, SplitApiResponse, SplitFormInput, Station } from "@/app/types";
 
 export default function SplitForm() {
-    const { handleSubmit, control, formState: { isValid } } = useForm<SplitFormInput>({
+    // errorsを取り出してインラインエラー表示に活用
+    const { handleSubmit, control, formState: { isValid, errors } } = useForm<SplitFormInput>({
         mode: 'onChange',
         defaultValues: {
             startStation: null,
@@ -20,6 +22,13 @@ export default function SplitForm() {
     const [serverTime, setServerTime] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // 追加: 自由入力されたテキストが候補の駅データに存在するか検証する関数
+    const validateStation = (value: Station | null) => {
+        if (!value || !value.name) return "駅名を入力してください";
+        const exists = stationData.some((s: any) => s.name === value.name);
+        return exists || "正しい駅名を選択または入力してください";
+    };
 
     const onSubmit: SubmitHandler<SplitFormInput> = async (data) => {
         setIsLoading(true);
@@ -61,43 +70,62 @@ export default function SplitForm() {
         <main className="max-w-2xl mx-auto">
             <form onSubmit={handleSubmit(onSubmit)} className="p-8">
                 <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-5 whitespace-nowrap">
-                        <p className="w-12">発駅</p>
-                        <Controller
-                            name="startStation"
-                            control={control}
-                            rules={{ required: true }}
-                            render={({ field }) => (
-                                <SelectStation
-                                    instanceId="start-station-split"
-                                    {...field}
-                                    options={stationData}
-                                />
-                            )}
-                        />
+
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-5 whitespace-nowrap">
+                            <p className="w-12">発駅</p>
+                            <Controller
+                                name="startStation"
+                                control={control}
+                                // rulesを検証関数に変更
+                                rules={{ validate: validateStation }}
+                                render={({ field }) => (
+                                    <SelectStation
+                                        instanceId="start-station-split"
+                                        {...field}
+                                        options={stationData}
+                                    />
+                                )}
+                            />
+                        </div>
+                        {/* バリデーションエラー時のメッセージ（レイアウト崩れを防ぐためマージン調整） */}
+                        {errors.startStation && (
+                            <p className="text-red-500 text-xs mt-1 ml-17">
+                                {errors.startStation.message}
+                            </p>
+                        )}
                     </div>
-                    <div className="flex items-center gap-5 whitespace-nowrap">
-                        <p className="w-12">着駅</p>
-                        <Controller
-                            name="endStation"
-                            control={control}
-                            rules={{ required: true }}
-                            render={({ field }) => (
-                                <SelectStation
-                                    instanceId="end-station-split"
-                                    {...field}
-                                    options={stationData}
-                                />
-                            )}
-                        />
+
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-5 whitespace-nowrap">
+                            <p className="w-12">着駅</p>
+                            <Controller
+                                name="endStation"
+                                control={control}
+                                rules={{ validate: validateStation }}
+                                render={({ field }) => (
+                                    <SelectStation
+                                        instanceId="end-station-split"
+                                        {...field}
+                                        options={stationData}
+                                    />
+                                )}
+                            />
+                        </div>
+                        {errors.endStation && (
+                            <p className="text-red-500 text-xs mt-1 ml-17">
+                                {errors.endStation.message}
+                            </p>
+                        )}
                     </div>
+
                     <div>
                         <button
                             type="submit"
-                            className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors"
+                            className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors mt-2"
                             disabled={!isValid || isLoading}
                         >
-                            {isLoading ? "計算中..." : "最安運賃を計算"}
+                            {isLoading ? "計算中..." : "最安分割運賃を計算"}
                         </button>
                     </div>
                 </div>
@@ -134,9 +162,6 @@ export default function SplitForm() {
                         {/* 2. 分割結果の表示エリア */}
                         {result.splitKippuDatasList.length > 0 ? (
                             <div className="space-y-6">
-                                {/* ★変更点: 分割運賃のサマリー（金額とお得額）をここで一回だけ表示する 
-                                    全ての分割プランは同じ最安値を持っている前提
-                                */}
                                 {(() => {
                                     const bestFare = result.splitKippuDatasList[0].totalFare;
                                     const diff = result.shortestData.fare - bestFare;
@@ -169,7 +194,6 @@ export default function SplitForm() {
                                 <div className="space-y-8">
                                     {result.splitKippuDatasList.map((splitPlan, planIndex) => (
                                         <div key={planIndex} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                            {/* 複数パターンがある場合のみ見出しをつける */}
                                             {result.splitKippuDatasList.length > 1 && (
                                                 <h4 className="font-bold text-gray-700 mb-3 ml-1">
                                                     パターン {planIndex + 1}
@@ -179,13 +203,11 @@ export default function SplitForm() {
                                             <div className="flex flex-col gap-3">
                                                 {splitPlan.splitKippuDatas.map((segment, segIndex) => (
                                                     <div key={segIndex} className="bg-white p-4 rounded border border-gray-200 shadow-sm relative">
-                                                        {/* 実際の乗車区間 */}
                                                         <div className="text-sm text-gray-500 mb-1 flex items-center">
                                                             <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs mr-2">利用区間</span>
                                                             <span>{segment.departureStation} → {segment.arrivalStation}</span>
                                                         </div>
 
-                                                        {/* 切符の区間 (2行目) */}
                                                         <div className="flex justify-between items-center mt-2">
                                                             <div className="flex-1">
                                                                 <div className="text-lg font-bold text-gray-800 flex items-center flex-wrap gap-2">
@@ -193,8 +215,6 @@ export default function SplitForm() {
                                                                     <span>{segment.kippuData.departureStation}</span>
                                                                     <span className="text-gray-400">→</span>
                                                                     <span>{segment.kippuData.arrivalStation}</span>
-
-                                                                    {/* ★追加: 営業キロの表示 */}
                                                                     <span className="text-sm font-normal text-gray-600 ml-1">
                                                                         （{(segment.kippuData.totalEigyoKilo / 10).toFixed(1)}km）
                                                                     </span>
@@ -220,6 +240,19 @@ export default function SplitForm() {
                     </div>
                 )}
             </div>
+            <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
+                <h3 className="font-bold text-gray-600 mb-2">💡 当システムについて</h3>
+                <p className="mb-4 leading-relaxed">
+                    出発駅と到着駅を入力するだけで、分割乗車券の最安解を自動計算するツールです。経路は自動探索します。
+                </p>
+
+                <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
+                <ol className="list-decimal list-inside space-y-1 ml-1">
+                    <li><strong>駅の入力:</strong> 「発駅」と「着駅」に駅名を入力し、候補から選択します。</li>
+                    <li><strong>最安分割運賃の計算:</strong> 「最安分割運賃を計算」ボタンを押すと、自動で最安分割運賃と切符の情報が出力されます。</li>
+                </ol>
+            </div>
+            {/* ★ ここまで追加 */}
         </main>
     );
 }

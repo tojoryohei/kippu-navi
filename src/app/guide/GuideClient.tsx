@@ -4,7 +4,6 @@ import { Link as ScrollLink, Element } from "react-scroll";
 import NextLink from "next/link";
 import { MdOutlineAlternateEmail } from "react-icons/md";
 
-
 export default function GuideClient() {
   return (
     <div className="container mx-auto px-4 py-8">
@@ -60,13 +59,16 @@ export default function GuideClient() {
       <Element name="about">
         <h2 className="text-xl font-semibold mt-8 mb-2">このサイトについて</h2>
         <p className="mb-4">
-          当サイトでは，JRの運賃計算や分割乗車券の最安解を出力するプログラムを公開しています．
+          当サイトでは，JRの運賃計算や分割乗車券の最安解を自動探索するプログラムを公開しています．
           <br />
-          これらのプログラムは大学の卒業研究で使うために作られたものであり，必ずしも正確な出力をすることは保証していません．
-          万が一，実際とは異なる計算結果が表示された場合はご連絡ください．
+          これらのプログラムは大学の卒業研究の一環として開発されたものであり，厳密な最安値の算出を目指していますが、必ずしも正確な出力を保証するものではありません．
+          万が一，実際とは異なる計算結果が表示された場合はご連絡いただけますと幸いです．
+          <br />
+          【予定】※サーバーの計算処理時間の制約上、分割乗車券の自動探索機能は「直線距離120km以内」の中距離区間に限定して提供しております。予めご了承ください。
+          <br />
           <br />
           また，このサイトの情報や計算結果をもとにきっぷを購入するときは，
-          旅客営業規則等を確認してからお買い求めください．
+          必ずJRの旅客営業規則等を確認してからご自身の責任においてお買い求めください．
         </p>
       </Element>
 
@@ -96,7 +98,7 @@ export default function GuideClient() {
 
       <Element name="owner" className="mb-8">
         <h2 className="text-xl font-semibold mt-8 mb-2">運営者情報</h2>
-        <p>運営者：理系の大学4年生</p>
+        <p>運営者：情報工学専攻の大学4年生</p>
         <p>運営開始日：2025年9月</p>
       </Element>
 

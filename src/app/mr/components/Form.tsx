@@ -6,7 +6,6 @@ import type { SingleValue } from "react-select";
 
 import stationData from "@/app/mr/data/stations.json";
 import lineData from "@/app/mr/data/lines.json";
-import SelectDepartureStation from "@/app/mr/components/SelectDepartureStation";
 import SelectStation from "@/app/mr/components/SelectStation";
 import SelectLine from "@/app/mr/components/SelectLine";
 
@@ -28,7 +27,9 @@ export default function Form() {
 
     const lastSegment = formValues.segments[formValues.segments.length - 1];
     const lastDestination = lastSegment?.destinationStation;
-    const canAddTransfer = lastDestination ? lastDestination.lines.length > 1 : false;
+
+    // ★修正: linesがundefinedの可能性を考慮
+    const canAddTransfer = lastDestination ? (lastDestination.lines?.length ?? 0) > 1 : false;
 
     const handleFieldChange = (
         value: SingleValue<Station | Line>,
@@ -59,7 +60,6 @@ export default function Form() {
     };
 
     const createApiRequestBody = (data: IFormInput): RouteRequest | null => {
-        // 出発駅が未選択の場合は処理を中断
         if (data.startStation == null) {
             return null;
         }
@@ -153,13 +153,24 @@ export default function Form() {
                         <Controller
                             name="startStation"
                             control={control}
-                            rules={{ required: true }}
-                            render={({ field }) => (
-                                <SelectDepartureStation
-                                    instanceId="start-station"
-                                    value={field.value}
-                                    onChange={(value) => handleFieldChange(value, field.onChange, resetOnStartStationChange)}
-                                />
+                            rules={{
+                                required: "発駅を入力してください",
+                                validate: (selected) => {
+                                    if (!selected) return "発駅を入力してください";
+                                    const exists = stationData.some(s => s.name === selected.name);
+                                    return exists || "該当する駅が存在しません";
+                                }
+                            }}
+                            render={({ field, fieldState }) => (
+                                <div>
+                                    <SelectStation
+                                        instanceId="start-station"
+                                        value={field.value}
+                                        onChange={(value) => handleFieldChange(value, field.onChange, resetOnStartStationChange)}
+                                        hideMenuWhenEmpty={true}
+                                    />
+                                    {fieldState.error && <p className="text-red-500 text-xs">{fieldState.error.message}</p>}
+                                </div>
                             )}
                         />
                     </div>
@@ -171,7 +182,7 @@ export default function Form() {
 
                         const previousLine = index > 0 ? formValues.segments[index - 1]?.viaLine : null;
 
-                        const availableLineNames = new Set(previousStation?.lines);
+                        const availableLineNames = new Set(previousStation?.lines || []);
 
                         const availableLines = previousStation
                             ? lineData
@@ -181,10 +192,11 @@ export default function Form() {
 
                         const selectedLine = formValues.segments[index]?.viaLine;
 
+                        // ★修正: type述語の型エラーを回避する安全なキャスト
                         const stationsOnLine = selectedLine
-                            ? selectedLine.stations
+                            ? (selectedLine.stations
                                 .map(name => stationMap.get(name))
-                                .filter((station): station is Station => station !== undefined)
+                                .filter(station => station !== undefined) as Station[])
                             : [];
 
                         const isLastStation = index === fields.length - 1;
@@ -195,15 +207,18 @@ export default function Form() {
                                 <Controller
                                     name={`segments.${index}.viaLine`}
                                     control={control}
-                                    rules={{ required: true }}
-                                    render={({ field }) => (
-                                        <SelectLine
-                                            instanceId={`via-line-${index}`}
-                                            options={availableLines}
-                                            isDisabled={!previousStation}
-                                            value={field.value}
-                                            onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnViaLineChange(index))}
-                                        />
+                                    rules={{ required: "経由路線を選択してください" }}
+                                    render={({ field, fieldState }) => (
+                                        <div>
+                                            <SelectLine
+                                                instanceId={`via-line-${index}`}
+                                                options={availableLines}
+                                                isDisabled={!previousStation}
+                                                value={field.value}
+                                                onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnViaLineChange(index))}
+                                            />
+                                            {fieldState.error && <p className="text-red-500 text-xs">{fieldState.error.message}</p>}
+                                        </div>
                                     )}
                                 />
                                 <div className="flex items-center gap-4 whitespace-nowrap">
@@ -211,15 +226,25 @@ export default function Form() {
                                     <Controller
                                         name={`segments.${index}.destinationStation`}
                                         control={control}
-                                        rules={{ required: true }}
-                                        render={({ field }) => (
-                                            <SelectStation
-                                                instanceId={`dest-station-${index}`}
-                                                options={stationsOnLine}
-                                                isDisabled={!selectedLine}
-                                                value={field.value}
-                                                onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnDestinationStationChange(index))}
-                                            />
+                                        rules={{
+                                            required: `${stationLabel}を入力してください`,
+                                            validate: (selected) => {
+                                                if (!selected) return `${stationLabel}を入力してください`;
+                                                const exists = stationsOnLine.some(s => s.name === selected.name);
+                                                return exists || "選択された路線にこの駅は存在しません";
+                                            }
+                                        }}
+                                        render={({ field, fieldState }) => (
+                                            <div>
+                                                <SelectStation
+                                                    instanceId={`dest-station-${index}`}
+                                                    options={stationsOnLine}
+                                                    isDisabled={!selectedLine}
+                                                    value={field.value}
+                                                    onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnDestinationStationChange(index))}
+                                                />
+                                                {fieldState.error && <p className="text-red-500 text-xs">{fieldState.error.message}</p>}
+                                            </div>
                                         )}
                                     />
                                 </div>
@@ -246,7 +271,10 @@ export default function Form() {
             <div className="my-8 p-4">
                 {isLoading && <p className="py-5 border-t">計算中...</p>}
                 {serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
-                {error && <p className="py-5 border-t"></p> && <p className="text-red-500">{error}</p>}
+
+                {/* ★修正: JSXの不正なboolean評価を解消 */}
+                {error && <p className="py-5 border-t text-red-500">{error}</p>}
+
                 {result && (
                     <div>
                         <h2 className="py-5 text-2xl border-t">計算結果</h2>
@@ -275,6 +303,19 @@ export default function Form() {
                         </span>
                     </div>
                 )}
+            </div>
+            <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
+                <h3 className="font-bold text-gray-600 mb-2">💡 当システムについて</h3>
+                <p className="mb-4 leading-relaxed">
+                    出発駅と到着駅、および経由する路線を入力するだけで、JRの正しい乗車券運賃を自動計算するツールです。
+                </p>
+
+                <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
+                <ol className="list-decimal list-inside space-y-1 ml-1">
+                    <li><strong>駅・路線の入力:</strong> 「発駅」と「着駅（または経由駅）」に駅名を入力し、候補から選択します。</li>
+                    <li><strong>経路の追加:</strong> 複数の路線を乗り継ぐ場合は「経由路線を追加」ボタンで区間を増やせます。</li>
+                    <li><strong>運賃の計算:</strong> 「照会」ボタンを押すと、自動で営業キロと最安運賃が算出されます。</li>
+                </ol>
             </div>
         </>
     );
