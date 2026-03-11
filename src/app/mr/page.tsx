@@ -4,7 +4,7 @@ import { RiGuideLine } from "react-icons/ri";
 
 export const metadata: Metadata = {
   title: "運賃計算（経路入力）",
-  description: "乗車券の基本運賃を計算するための経路入力ページです。",
+  description: "乗車券の基本運賃を計算するための経路入力ページです．",
 };
 
 export default function Page() {

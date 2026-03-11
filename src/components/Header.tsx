@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { FaQuestionCircle } from "react-icons/fa";
+import { FaQuestionCircle, FaBookOpen } from "react-icons/fa";
 import { MdMenu, MdClear, MdHome } from "react-icons/md";
 import { RiGuideLine, RiScissorsFill } from "react-icons/ri";
 
@@ -11,6 +11,7 @@ import { menuItem } from "@/app/types";
 const MENU_ITEMS: menuItem[] = [
     { href: "/", icon: MdHome, label: "ホーム" },
     { href: "/guide", icon: FaQuestionCircle, label: "利用案内" },
+    { href: "/about", icon: FaBookOpen, label: "仕組み" },
     { href: "/mr", icon: RiGuideLine, label: "運賃計算" },
     { href: "/split", icon: RiScissorsFill, label: "分割乗車券" }
 ];

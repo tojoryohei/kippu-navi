@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { RiScissorsFill, RiGuideLine } from "react-icons/ri";
 
 export const metadata = {
-  title: "きっぷナビ - 最適な分割乗車券をご案内",
-  description: "発駅と着駅から最適な分割乗車券を計算するプログラムです。",
+  title: "きっぷナビ - 分割乗車券のすすめ",
+  description: "運賃計算や分割乗車券を計算するプログラムを公開しています．",
 };
 
 export default function Home() {

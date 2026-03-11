@@ -4,7 +4,7 @@ import { RiScissorsFill } from "react-icons/ri";
 
 export const metadata: Metadata = {
   title: "分割乗車券プログラム",
-  description: "発駅と着駅から最適な分割乗車券を計算します。",
+  description: "発駅と着駅から分割乗車券の最安解を計算します．",
 };
 
 export default function Page() {
