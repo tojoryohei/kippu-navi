@@ -13,6 +13,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             lastModified: new Date(),
         },
         {
+            url: `${baseUrl}/about`,
+            lastModified: new Date(),
+        },
+        {
             url: `${baseUrl}/mr`,
             lastModified: new Date(),
         },
