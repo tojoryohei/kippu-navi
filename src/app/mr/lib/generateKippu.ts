@@ -5,7 +5,6 @@ import { correctPath, uncorrectPath } from '@/app/utils/correctPath';
 import { calculateFareFromPath, calculateBarrierFreeFeeFromPath } from '@/app/utils/calcFare';
 
 import { RouteRequest, KippuData, PathStep } from '@/app/types';
-import { cheapestPath } from '@/app/utils/cheapestPath';
 
 export function processRouteAndCalculateFare(request: RouteRequest): KippuData {
     const userInputPath = request.path;
