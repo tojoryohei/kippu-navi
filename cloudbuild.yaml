@@ -1,0 +1,46 @@
+steps:
+  # 1. 秘匿バケットから JSON データをダウンロードし、所定のディレクトリに配置する
+  - name: 'gcr.io/cloud-builders/gsutil'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        mkdir -p src/data
+        gsutil -m cp gs://kippu-navi-build-secrets/data/*.json ./src/data/
+        mkdir -p src/app/mr/data
+        gsutil -m cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
+        mkdir -p src/app/split/data
+        gsutil -m cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
+
+  # 2. JSON が揃った状態で Docker ビルドを実行する
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'build'
+      - '-t'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
+      - '.'
+
+  # 3. ビルドしたイメージを Artifact Registry に Push
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'push'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
+
+  # 4. Cloud Run へデプロイする
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'kippu-navi'
+      - '--image'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
+      - '--region'
+      - 'asia-northeast1'
+
+# 正常終了の条件として、指定したイメージが正しくビルド・プッシュされたか検証する
+images:
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
