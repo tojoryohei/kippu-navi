@@ -1,0 +1,51 @@
+steps:
+  # 1. 秘匿バケットから JSON データをダウンロードし、所定のディレクトリに配置する（本番と同様）
+  - name: 'gcr.io/cloud-builders/gsutil'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        mkdir -p src/data
+        gsutil -m cp gs://kippu-navi-build-secrets/data/*.json ./src/data/
+        mkdir -p src/app/mr/data
+        gsutil -m cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
+        mkdir -p src/app/split/data
+        gsutil -m cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
+
+  # 2. JSON が揃った状態で Docker ビルドを実行する（タグを PR 番号に変更）
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'build'
+      - '-t'
+      # $SHORT_SHA の代わりに、組み込み変数 $_PR_NUMBER を使用してイメージを識別します
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
+      - '.'
+
+  # 3. ビルドしたプレビュー用イメージを Artifact Registry に Push
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'push'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
+
+  # 4. Cloud Run へデプロイし、プレビュー用の仮URLを発行する
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'kippu-navi'
+      - '--image'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
+      - '--region'
+      - 'asia-northeast1'
+      # ▼ ここから下がプレビュー環境のための追加設定 ▼
+      - '--tag'
+      - 'pr-$_PR_NUMBER' # リビジョンに「pr-12」のようなタグを付与
+      - '--no-traffic'   # 本番環境（main）へのトラフィック割り当てを0%に保つ
+
+# 正常終了の条件（検証対象のイメージ名をPR用に合わせる）
+images:
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
