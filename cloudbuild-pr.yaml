@@ -19,6 +19,20 @@ steps:
       - '-t'
       # $SHORT_SHA の代わりに、組み込み変数 $_PR_NUMBER を使用してイメージを識別します
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=${_NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_API_KEY=${_NEXT_PUBLIC_FIREBASE_API_KEY}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID}'
       - '.'
 
   # 3. ビルドしたプレビュー用イメージを Artifact Registry に Push
