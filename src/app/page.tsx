@@ -111,7 +111,7 @@ export default function Home() {
           <ul className="space-y-3">
             {changelogData.slice(0, 3).map((item, index) => (
               <li key={index} className="flex flex-col sm:flex-row sm:items-center text-slate-600 pb-2 border-b border-slate-50 last:border-0 last:pb-0">
-                <span className="text-sm font-mono bg-slate-100 px-2 py-1 rounded text-slate-500 mr-4 mb-1 sm:mb-0 w-fit">
+                <span className="text-sm font-mono bg-slate-100 px-2 py-1 rounded text-slate-700 mr-4 mb-1 sm:mb-0 w-fit">
                   {item.date}
                 </span>
                 <span>{item.content}</span>
@@ -137,7 +137,7 @@ export default function Home() {
                 <span className="shrink-0 bg-slate-200 text-slate-600 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">A</span>
                 <div className="mt-0.5 text-slate-600 leading-relaxed">
                   はい、全く問題ありません。JRの旅客営業規則に則った正当な乗車券の購入方法です。
-                  <Link href="https://www.jreast.co.jp/ryokaku/02_hen/04_syo/02_setsu/03.html" className="text-blue-600 hover:underline decoration-blue-300 underline-offset-2 mx-1">
+                  <Link href="https://www.jreast.co.jp/ryokaku/02_hen/04_syo/02_setsu/03.html" className="text-blue-600 underline decoration-blue-600 underline-offset-2 mx-1">
                     旅客営業規則 第157条
                   </Link>
                   にも、複数枚のきっぷを併用して使用することが想定された条文が存在します。
@@ -154,11 +154,11 @@ export default function Home() {
               <div className="mt-3 flex items-start">
                 <span className="shrink-0 bg-slate-200 text-slate-600 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">A</span>
                 <div className="mt-0.5 text-slate-600 leading-relaxed">
-                  <Link href="https://www.eki-net.com" className="text-blue-600 hover:underline decoration-blue-300 underline-offset-2 mr-1">
+                  <Link href="https://www.eki-net.com" className="text-blue-600 underline decoration-blue-600 underline-offset-2 mr-1">
                     えきねっと
                   </Link>
                   や
-                  <Link href="https://e5489.jr-odekake.net/e5489/cspc/CBTopMenuPC" className="text-blue-600 hover:underline decoration-blue-300 underline-offset-2 mx-1">
+                  <Link href="https://e5489.jr-odekake.net/e5489/cspc/CBTopMenuPC" className="text-blue-600 underline decoration-blue-600 underline-offset-2 mx-1">
                     e5489
                   </Link>
                   などのインターネット予約サービスを使うと便利です。駅では発売を断られる可能性があります。
@@ -193,7 +193,7 @@ export default function Home() {
                   <ul className="list-disc list-outside ml-5 mt-2 space-y-1">
                     <li>払い戻しの際に、きっぷの枚数分手数料がかかる。</li>
                     <li>
-                      <Link href="https://www.jreast.co.jp/ryokaku/02_hen/07_syo/03_setsu/10.html" className="text-blue-600 hover:underline decoration-blue-300 underline-offset-2 mr-1">
+                      <Link href="https://www.jreast.co.jp/ryokaku/02_hen/07_syo/03_setsu/10.html" className="text-blue-600 underline decoration-blue-600 underline-offset-2 mr-1">
                         列車の運行不能・遅延等の場合の取扱方
                       </Link>
                       が異なる。
@@ -212,7 +212,7 @@ export default function Home() {
               <div className="mt-3 flex items-start">
                 <span className="shrink-0 bg-slate-200 text-slate-600 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">A</span>
                 <div className="mt-0.5 text-slate-600 leading-relaxed">
-                  <Link href="/about" className="text-blue-600 hover:underline decoration-blue-300 underline-offset-2 mr-1">
+                  <Link href="/about" className="text-blue-600 underline decoration-blue-600 underline-offset-2 mr-1">
                     仕組み
                   </Link>
                   をご覧ください。
