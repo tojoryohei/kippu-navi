@@ -2,9 +2,9 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
+import AdSense from "@/components/AdSense";
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,16 +51,11 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <Script
-        async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1214458177768834"
-        crossOrigin="anonymous"
-        strategy="lazyOnload"
-      />
       <body
         className={`flex flex-col min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {gaId && <GoogleAnalytics gaId={gaId} />}
+        <AdSense />
         <Header />
         <main className="grow">{children}</main>
         <Footer />
