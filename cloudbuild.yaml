@@ -40,17 +40,21 @@ steps:
       - 'push'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
 
-  # 4. Cloud Run へデプロイする
+  # 4. 本番の Cloud Run へデプロイし、トラフィックを100%向ける
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - 'kippu-navi'
-      - '--image'
-      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
-      - '--region'
-      - 'asia-northeast1'
+      - '-c'
+      - |
+        # ① 新しいイメージをデプロイ
+        gcloud run deploy kippu-navi \
+          --image asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA \
+          --region asia-northeast1
+        
+        # ② 強制的にトラフィックを最新リビジョン(100%)に切り替える
+        gcloud run services update-traffic kippu-navi \
+          --to-latest \
+          --region asia-northeast1
 
 # 正常終了の条件として、指定したイメージが正しくビルド・プッシュされたか検証する
 images:
