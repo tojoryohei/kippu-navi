@@ -6,9 +6,14 @@ export type ChangelogItem = {
 
 export const changelogData: ChangelogItem[] = [
     {
+        date: "2026.04.18",
+        tag: "修正",
+        content: "v1.0.2 旅客営業取扱基準規程 第114条適用の足切り閾値を適正化し、特定の距離帯における適用漏れを解消しました。",
+    },
+    {
         date: "2026.04.13",
         tag: "お知らせ",
-        content: "よくある質問（FAQ）のセクションを追加しました。",
+        content: "v1.0.1 よくある質問（FAQ）のセクションを追加しました。",
     },
     {
         date: "2026.04.13",

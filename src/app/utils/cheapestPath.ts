@@ -61,13 +61,13 @@ export function extendFromCity(originalPath: PathStep[]): PathStep[] {
     const currentDistance = calculateTotalGiseiKilo(currentSegments);
 
     // 発着駅が山手線内にあるか確認して足切りラインを決定
-    // 山手線内駅が含まれる場合は120km(1200)、それ以外は220km(2200)
+    // 山手線内駅が含まれる場合は120km(1200)、それ以外は200km(2000)
     const yamanote = load.getYamanote();
     const stationsInYamanote = new Set(yamanote.stations);
     const startInYamanote = stationsInYamanote.has(originalPath[0].stationName);
     const endInYamanote = stationsInYamanote.has(originalPath[originalPath.length - 1].stationName);
 
-    const pruneLimit = (startInYamanote || endInYamanote) ? 1200 : 2200;
+    const pruneLimit = (startInYamanote || endInYamanote) ? 1200 : 2000;
 
     if (currentDistance <= pruneLimit) {
         return originalPath;
@@ -101,7 +101,7 @@ export function extendFromCity(originalPath: PathStep[]): PathStep[] {
     // 着駅側
     tryUpdate(tryExtension(originalPath, "backward", 2000, applyOneSideCityRule));
 
-    return bestPath;
+    return correctPath(bestPath);
 }
 
 /**
