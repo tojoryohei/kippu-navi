@@ -18,3 +18,25 @@
 
 * Core Web Vitals（INP/TBT）の大幅改善とユーザー補助の警告修正 ([ddf7e31](https://github.com/tojoryohei/kippu-navi/commit/ddf7e31d5b555e038645a490861bc11ad00032bb))
 * Core Web Vitals（INP/TBT）の改善とアクセシビリティ修正 ([7215bbf](https://github.com/tojoryohei/kippu-navi/commit/7215bbf0b47e3b2855c8efb2e18d3fa71e718720))
+
+
+## 1.0.2 (2026-04-18)
+
+
+### Bug Fixes
+* 運賃計算プログラムの鹿島線全駅において路線が選択できないバグを修正しました。
+
+
+## 1.0.1 (2026-04-13)
+
+
+### Documentation
+* よくある質問（FAQ）のセクションを追加。
+
+
+## 1.0.0 (2026-03-14)
+
+
+### Features
+* 公式版リリース。
+* JR東日本の運賃改定に対応。

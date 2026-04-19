@@ -28,7 +28,6 @@ export default function Form() {
     const lastSegment = formValues.segments[formValues.segments.length - 1];
     const lastDestination = lastSegment?.destinationStation;
 
-    // ★修正: linesがundefinedの可能性を考慮
     const canAddTransfer = lastDestination ? (lastDestination.lines?.length ?? 0) > 1 : false;
 
     const handleFieldChange = (
@@ -272,7 +271,6 @@ export default function Form() {
                 {isLoading && <p className="py-5 border-t">計算中...</p>}
                 {serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
 
-                {/* ★修正: JSXの不正なboolean評価を解消 */}
                 {error && <p className="py-5 border-t text-red-500">{error}</p>}
 
                 {result && (
@@ -280,8 +278,8 @@ export default function Form() {
                         <h2 className="py-5 text-2xl border-t">計算結果</h2>
                         <div>営業キロ: {(result.totalEigyoKilo / 10).toFixed(1)} km</div>
                         <div className="flex justify-between items-center my-3 gap-2">
-                            <div className="flex-1 text-right text-wrap">
-                                <div className='font-bold text-2xl flex justify-around'>
+                            <div className="flex-1 text-right">
+                                <div className={`font-bold flex justify-around flex-wrap ${result.departureStation.length > 6 ? 'text-lg sm:text-xl' : 'text-2xl'}`}>
                                     {result.departureStation.split('').map((char, idx) => (
                                         <span key={idx}>{char}</span>
                                     ))}
@@ -289,7 +287,7 @@ export default function Form() {
                             </div>
                             <div className="text-2xl shrink-0 text-center">→</div>
                             <div className="flex-1 text-left text-wrap">
-                                <div className='font-bold text-2xl flex justify-around'>
+                                <div className={`font-bold flex justify-around flex-wrap ${result.arrivalStation.length > 6 ? 'text-lg sm:text-xl' : 'text-2xl'}`}>
                                     {result.arrivalStation.split('').map((char, idx) => (
                                         <span key={idx}>{char}</span>
                                     ))}
