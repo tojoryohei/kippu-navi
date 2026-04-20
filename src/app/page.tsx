@@ -1,13 +1,14 @@
-import { changelogData } from '@/app/data/changelogData';
 import Link from 'next/link';
 import { RiScissorsFill, RiGuideLine } from "react-icons/ri";
+import { getChangelogs } from '@/app/lib/changelog';
 
 export const metadata = {
   title: "きっぷナビ - 分割乗車券のすすめ",
   description: "JRの運賃計算や最も安くなる分割乗車券の組み合わせをダイクストラ法で瞬時に計算するプログラムを公開しています。",
 };
 
-export default function Home() {
+export default async function Home() {
+  const recentChangelogs = await getChangelogs(3);
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-12">
@@ -102,21 +103,58 @@ export default function Home() {
         <div className="mt-8 bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
           <div className="flex justify-between items-end mb-4 border-b pb-2">
             <h2 className="text-2xl font-bold text-slate-800">
-              お知らせ・更新情報
+              お知らせ・更新情報（最新3件）
             </h2>
             <Link href="/changelog" className="text-sm text-blue-600 hover:underline font-bold">
               一覧を見る →
             </Link>
           </div>
           <ul className="space-y-3">
-            {changelogData.slice(0, 3).map((item, index) => (
-              <li key={index} className="flex flex-col sm:flex-row sm:items-center text-slate-600 pb-2 border-b border-slate-50 last:border-0 last:pb-0">
-                <span className="text-sm font-mono bg-slate-100 px-2 py-1 rounded text-slate-700 mr-4 mb-1 sm:mb-0 w-fit">
-                  {item.date}
-                </span>
-                <span>{item.content}</span>
-              </li>
-            ))}
+            {recentChangelogs.length > 0 ? (
+              recentChangelogs.map((item, index) => (
+                <li key={index} className="flex flex-col sm:flex-row sm:items-start text-slate-600 pb-3 border-b border-slate-50 last:border-0 last:pb-0">
+
+                  {/* 左側：日付とタグのコンテナ */}
+                  <div className="flex sm:flex-col items-center sm:items-start gap-2 mr-4 mb-2 sm:mb-0 shrink-0 mt-0.5 sm:w-28">
+                    <span className="text-sm font-mono bg-slate-100 px-2 py-1 rounded text-slate-700">
+                      {item.date}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold w-fit
+                      ${item.tag === 'アップデート' ? 'bg-blue-100 text-blue-700' :
+                        item.tag === '修正' ? 'bg-emerald-100 text-emerald-700' :
+                          'bg-slate-200 text-slate-700'}`}
+                    >
+                      {item.tag}
+                    </span>
+                  </div>
+
+                  {/* 右側：バージョンと内容 */}
+                  <div className="space-y-1">
+                    <span className="font-bold text-sm">
+                      {item.url ? (
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                          title="GitHubで確認する"
+                        >
+                          {item.version}
+                        </a>
+                      ) : (
+                        <span className="text-slate-700">{item.version}</span>
+                      )}
+                    </span>
+                    {item.contents.map((text, i) => (
+                      <p key={i} className="text-sm leading-relaxed text-slate-600">{text}</p>
+                    ))}
+                  </div>
+
+                </li>
+              ))
+            ) : (
+              <li className="text-slate-500 text-sm">現在、新しいお知らせはありません。</li>
+            )}
           </ul>
         </div>
 
