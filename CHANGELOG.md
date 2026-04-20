@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.1.1...kippu-navi-v1.2.0) (2026-04-20)
+
+
+### Features
+
+* CHANGELOG.mdからの更新履歴自動生成ロジックを実装 ([8c85e40](https://github.com/tojoryohei/kippu-navi/commit/8c85e408510dbb88e8d13fe5e6086d721df30f9c))
+* 更新履歴の運用自動化（CHANGELOG.md の動的表示と GitHub 連携） ([e125b20](https://github.com/tojoryohei/kippu-navi/commit/e125b2036f3763edd9cb24e65bb157b500b21c64))
+* 更新履歴ページ上部に GitHub Releases への公式導線（ボタン）を追加 ([28af129](https://github.com/tojoryohei/kippu-navi/commit/28af129309866d60ec015e8be14b1ca3d57cc6f9))
+
 ## [1.1.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.1.0...kippu-navi-v1.1.1) (2026-04-19)
 
 
