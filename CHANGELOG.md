@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.3.0...kippu-navi-v1.3.1) (2026-04-22)
+
+
+### Bug Fixes
+
+* バリアフリー料金に伴う運賃逆転現象の特例マスタ更新対応 ([ff6b231](https://github.com/tojoryohei/kippu-navi/commit/ff6b231dc0e5c69a9baeaa139f10d556216737ca))
+
 ## [1.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.2.0...kippu-navi-v1.3.0) (2026-04-22)
 
 
