@@ -9,16 +9,21 @@ import lineData from "@/app/mr/data/lines.json";
 import SelectStation from "@/app/mr/components/SelectStation";
 import SelectLine from "@/app/mr/components/SelectLine";
 
-import { Station, Line, KippuData, ApiFullResponse, IFormInput, PathStep, RouteRequest } from "@/app/types";
+import { Station, Line, KippuData, ApiFullResponse, IFormInput, PathStep, CalculationMode } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 
+interface FormValues extends IFormInput {
+    calculationMode: CalculationMode;
+}
+
 export default function Form() {
-    const { handleSubmit, control, watch, setValue, getValues, formState: { isValid } } = useForm<IFormInput>({
+    const { register, handleSubmit, control, watch, setValue, getValues, formState: { isValid } } = useForm<FormValues>({
         mode: 'onChange',
         defaultValues: {
             startStation: null,
             segments: [{ viaLine: null, destinationStation: null }],
+            calculationMode: "normal",
         },
     });
 
@@ -58,7 +63,7 @@ export default function Form() {
         append({ viaLine: null, destinationStation: null });
     };
 
-    const createApiRequestBody = (data: IFormInput): RouteRequest | null => {
+    const createApiRequestBody = (data: FormValues) => {
         if (data.startStation == null) {
             return null;
         }
@@ -80,7 +85,10 @@ export default function Form() {
             }
         });
 
-        return { path };
+        return {
+            path,
+            calculationMode: data.calculationMode
+        };
     };
 
     const [result, setResult] = useState<KippuData | null>(null);
@@ -88,7 +96,7 @@ export default function Form() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const onSubmit: SubmitHandler<IFormInput> = async (data) => {
+    const onSubmit: SubmitHandler<FormValues> = async (data) => {
         setIsLoading(true);
         setError(null);
         setResult(null);
@@ -191,7 +199,6 @@ export default function Form() {
 
                         const selectedLine = formValues.segments[index]?.viaLine;
 
-                        // ★修正: type述語の型エラーを回避する安全なキャスト
                         const stationsOnLine = selectedLine
                             ? (selectedLine.stations
                                 .map(name => stationMap.get(name))
@@ -260,11 +267,55 @@ export default function Form() {
                             経由路線を追加
                         </button>
                     </div>
-                    <div>
-                        <button type="submit" className="px-6 py-2 bg-blue-400 text-black rounded disabled:bg-gray-400 disabled:text-white" disabled={!isValid}>
-                            <p>照　会</p>
-                        </button>
+                    {/* 運賃計算モード選択（ラジオボタン） */}
+                    <div className="mb-6 flex flex-col items-start bg-slate-50 p-4 rounded-md border border-slate-200 w-full max-w-xl">
+                        <p className="block text-base font-bold text-slate-700 mb-3">
+                            運賃計算モード
+                        </p>
+                        <div className="flex flex-col gap-3 w-full p-3">
+                            {/* ① 通常モード */}
+                            <label className="inline-flex items-center cursor-pointer w-fit">
+                                <input
+                                    type="radio"
+                                    value="normal"
+                                    className="w-4 h-4 text-blue-600 bg-white border-gray-300 focus:ring-blue-500"
+                                    {...register("calculationMode")}
+                                />
+                                <span className="ms-3 text-base font-medium text-slate-700">
+                                    通常 <span className="text-sm text-slate-500 font-normal">（発売可能なルートに自動補正）</span>
+                                </span>
+                            </label>
+
+                            {/* ② 最安探索モード */}
+                            <label className="inline-flex items-center cursor-pointer w-fit">
+                                <input
+                                    type="radio"
+                                    value="cheapest"
+                                    className="w-4 h-4 text-blue-600 bg-white border-gray-300 focus:ring-blue-500"
+                                    {...register("calculationMode")}
+                                />
+                                <span className="ms-3 text-base font-medium text-slate-700">
+                                    最安 <span className="text-sm text-slate-500 font-normal">（経路を延長して安くなる場合は適用）</span>
+                                </span>
+                            </label>
+
+                            {/* ③ 補正禁止モード */}
+                            <label className="inline-flex items-center cursor-pointer w-fit">
+                                <input
+                                    type="radio"
+                                    value="uncorrect"
+                                    className="w-4 h-4 text-blue-600 bg-white border-gray-300 focus:ring-blue-500"
+                                    {...register("calculationMode")}
+                                />
+                                <span className="ms-3 text-base font-medium text-slate-700">
+                                    補正禁止 <span className="text-sm text-red-500 font-normal">※上級者向け</span><span className="text-sm text-slate-500 font-normal">（入力経路のまま計算）</span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
+                    <button type="submit" className="px-6 py-2 bg-blue-400 text-black rounded disabled:bg-gray-400 disabled:text-white" disabled={!isValid}>
+                        <p>運賃計算をする</p>
+                    </button>
                 </div>
             </form>
             <div className="my-8 p-4">

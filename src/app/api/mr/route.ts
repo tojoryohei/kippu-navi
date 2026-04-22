@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { processRouteAndCalculateFare } from '@/app/mr/lib/generateKippu';
+import { generateKippu } from '@/app/mr/lib/generateKippu';
 
 import { RouteRequest } from '@/app/types';
 
@@ -8,12 +8,12 @@ export async function POST(request: Request) {
     try {
         const body: RouteRequest = await request.json();
 
-        if (100 < body.path.length) {
+        if (100 <= body.path.length) {
             const endTime = performance.now();
             const calculationTimeMs = endTime - startTime;
             return NextResponse.json(
                 {
-                    error: '経路の上限は100です．',
+                    error: '経由路線の上限は99です。',
                     time: calculationTimeMs
                 },
                 { status: 400 }
@@ -29,13 +29,17 @@ export async function POST(request: Request) {
             const calculationTimeMs = endTime - startTime;
             return NextResponse.json(
                 {
-                    error: '不正な経路です',
+                    error: '不正な経路です。',
                     time: calculationTimeMs
                 },
                 { status: 400 }
             );
         }
-        const result = processRouteAndCalculateFare(body);
+
+        const result = generateKippu(body, {
+            calculationMode: body.calculationMode
+        });
+
         const endTime = performance.now();
         const calculationTimeMs = endTime - startTime;
         return NextResponse.json(

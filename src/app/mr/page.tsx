@@ -20,11 +20,23 @@ export default function Page() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-3">
             運賃計算（経路入力）
           </h1>
-          <p className="text-sm sm:text-base text-slate-600">
+
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
             在来線の「発駅」「着駅」、および経由を入力してください。<br className="hidden sm:block" />
             片道乗車券の運賃を計算します。
-            経路重複による運賃計算の制限は行っていません。
           </p>
+
+          {/* 仕様・制限事項の枠組み */}
+          <div className="inline-block text-left bg-slate-50 border border-slate-200 rounded-lg p-4 max-w-xl mx-auto">
+            <p className="font-semibold text-xs sm:text-sm text-slate-600 mb-2">
+              【現在の仕様・制限事項】
+            </p>
+            <ul className="text-xs sm:text-sm text-slate-500 list-disc list-inside space-y-1">
+              <li>このプログラムで計算できる経由路線数の上限は99です。</li>
+              <li>経路の重複による運賃計算の制限は行っていません。</li>
+              <li>大都市近郊区間内完結の場合の最安経路への補正には対応していません。</li>
+            </ul>
+          </div>
         </div>
 
         {/* フォーム領域（カードスタイル） */}
