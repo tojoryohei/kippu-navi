@@ -54,6 +54,7 @@ export interface PathStep {
 
 export interface RouteRequest {
     path: PathStep[];
+    calculationMode: CalculationMode;
 }
 
 export interface KippuData {
@@ -160,3 +161,5 @@ export interface OuterSection {
     stations: string[];
     routes: PathStep[];
 }
+
+export type CalculationMode = "normal" | "cheapest" | "uncorrect";
