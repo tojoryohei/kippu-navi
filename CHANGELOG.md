@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.2.0...kippu-navi-v1.3.0) (2026-04-22)
+
+
+### Features
+
+* 運賃計算モード（通常 / 最安 / 補正禁止）の切り替え機能を実装 ([aec1642](https://github.com/tojoryohei/kippu-navi/commit/aec1642ffe43e422a857b3085fad930b8a61adf0))
+* 運賃計算モード（通常/最安/補正禁止）の選択機能を追加 ([e4890c3](https://github.com/tojoryohei/kippu-navi/commit/e4890c32212ae12e0f5ea90c0aabdad0c269588d))
+
 ## [1.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.1.1...kippu-navi-v1.2.0) (2026-04-20)
 
 
