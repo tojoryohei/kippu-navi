@@ -1,8 +1,7 @@
-import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings } from '@/app/utils/calc';
+import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings, getFareForPath } from '@/app/utils/calc';
 import { loadLines } from '@/app/mr/lib/loadLines';
 import { loadKanas } from '@/app/mr/lib/loadKanas';
 import { correctPath, uncorrectPath } from '@/app/utils/correctPath';
-import { calculateFareFromPath, calculateBarrierFreeFeeFromPath } from '@/app/utils/calcFare';
 import { cheapestPathAndFare } from '@/app/utils/cheapestPath';
 
 import { RouteRequest, KippuData, PathStep, CalculationMode } from '@/app/types';
@@ -20,14 +19,13 @@ export function generateKippu(request: RouteRequest, options: GenerateKippuOptio
 
     // 経路の補正
     let correctedPath: PathStep[];
-    let cheapestFare: number | null = null;
+
     switch (calculationMode) {
         case "uncorrect":
             correctedPath = uncorrectPath(fullPath);
             break;
         case "cheapest":
-            const cheapestResult = cheapestPathAndFare(fullPath);
-            correctedPath = cheapestResult.path;
+            correctedPath = correctPath(cheapestPathAndFare(fullPath).path);
             break;
         case "normal":
         default:
@@ -43,9 +41,7 @@ export function generateKippu(request: RouteRequest, options: GenerateKippuOptio
     const routeSegments = convertPathStepsToRouteSegments(correctedPath);
     const totalEigyoKilo = calculateTotalEigyoKilo(routeSegments);
 
-    const fare = cheapestFare !== null
-        ? cheapestFare
-        : calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
+    const fare = getFareForPath(correctedPath);
 
     const validDays = calculateValidDaysFromKilo(totalEigyoKilo);
 
