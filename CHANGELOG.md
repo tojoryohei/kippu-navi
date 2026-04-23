@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.3.1...kippu-navi-v1.3.2) (2026-04-23)
+
+
+### Bug Fixes
+
+* 最安探索モードで算出された安い運賃が結果に反映されない不具合を修正 ([6d6203d](https://github.com/tojoryohei/kippu-navi/commit/6d6203df1ce3389fba9ab775b3cb81f5910cd43a))
+* 最安探索モード適用時に安くなった運賃が正しく出力・表示されない不具合を修正 ([c710d69](https://github.com/tojoryohei/kippu-navi/commit/c710d69d55258337e9f7f80b51e039867dc9928d))
+
 ## [1.3.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.3.0...kippu-navi-v1.3.1) (2026-04-22)
 
 
