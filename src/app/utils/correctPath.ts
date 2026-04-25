@@ -6808,179 +6808,148 @@ function applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
 
 // 第88条 新大阪駅又は大阪駅発又は着となる片道普通旅客運賃の計算方
 function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
-    if (fullPath[0].stationName === "新大阪") {
-        for (let i = 0; i < fullPath.length - 2; i++) {
-            if (fullPath[i + 1].stationName === "東姫路" &&
-                fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "姫路" &&
-                fullPath[i + 2].lineName === null ||
-                fullPath[i].stationName === "東姫路" &&
-                fullPath[i].lineName === "サンヨ" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "手柄山平和公園" ||
-                fullPath[i].stationName === "東姫路" &&
-                fullPath[i].lineName === "サンヨ" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "ハンタ" &&
-                fullPath[i + 2].stationName === "京口" ||
-                fullPath[i].stationName === "東姫路" &&
-                fullPath[i].lineName === "サンヨ" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "キシン" &&
-                fullPath[i + 2].stationName === "播磨高岡"
-            ) {
-                if (fullPath[1].stationName === "大阪") {
-                    return [
-                        { "stationName": "大阪・新大阪", "lineName": fullPath[1].lineName },
-                        ...fullPath.slice(2)
-                    ]
-                }
-                else {
-                    return [
-                        { "stationName": "大阪・新大阪", "lineName": fullPath[0].lineName },
-                        ...fullPath.slice(1)
-                    ]
-                }
+
+    // 西日本旅客鉄道会社内完結であるかの確認
+    for (let i = 0; i < fullPath.length - 1; i++) {
+        const line = fullPath[i].lineName;
+        if (line === null) throw new Error(`applyOsakaRuleでエラーが発生しました.`);
+        const routeSegment = load.getRouteSegment(line, fullPath[i].stationName, fullPath[i + 1].stationName);
+        if (routeSegment.company !== 4) {
+            return fullPath;
+        }
+    }
+
+    // 着駅判定
+    if (fullPath[fullPath.length - 1].stationName === "大阪" || fullPath[fullPath.length - 1].stationName === "新大阪") {
+        const changingIdx: number[] = [];
+        for (let i = 0; i < fullPath.length - 1; i++) {
+            if ((fullPath[i].stationName === "大阪" || fullPath[i].stationName === "新大阪") !== (fullPath[i + 1].stationName === "大阪" || fullPath[i + 1].stationName === "新大阪"))
+                changingIdx.push(i);
+        }
+
+        if (0 < changingIdx.length) {
+            const applyCityRulePath = [
+                ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
+                { "stationName": "大阪・新大阪", "lineName": null }
+            ]
+
+            if (fullPath[0].stationName === "姫路" &&
+                fullPath[1].lineName === "サンヨ" &&
+                fullPath[1].stationName === "東姫路" ||
+                fullPath[0].stationName === "姫路" &&
+                fullPath[1].lineName === "シンカ" &&
+                fullPath[1].stationName === "西明石")
+                fullPath = applyCityRulePath;
+            for (let i = 0; i < fullPath.length - 2; i++) {
+                if (fullPath[i].stationName === "手柄山平和公園" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "東姫路" ||
+                    fullPath[i].stationName === "相生" &&
+                    fullPath[i].lineName === "シンカ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "東姫路" ||
+                    fullPath[i].stationName === "京口" &&
+                    fullPath[i].lineName === "ハンタ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "東姫路" ||
+                    fullPath[i].stationName === "播磨高岡" &&
+                    fullPath[i].lineName === "キシン" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "東姫路" ||
+                    fullPath[i].stationName === "手柄山平和公園" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "シンカ" &&
+                    fullPath[i + 2].stationName === "西明石" ||
+                    fullPath[i].stationName === "相生" &&
+                    fullPath[i].lineName === "シンカ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "シンカ" &&
+                    fullPath[i + 2].stationName === "西明石" ||
+                    fullPath[i].stationName === "京口" &&
+                    fullPath[i].lineName === "ハンタ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "シンカ" &&
+                    fullPath[i + 2].stationName === "西明石" ||
+                    fullPath[i].stationName === "播磨高岡" &&
+                    fullPath[i].lineName === "キシン" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "シンカ" &&
+                    fullPath[i + 2].stationName === "西明石")
+                    fullPath = applyCityRulePath;
             }
         }
     }
-    if (fullPath[0].stationName === "大阪") {
-        for (let i = 0; i < fullPath.length - 2; i++) {
-            if (fullPath[i + 1].stationName === "東姫路" &&
-                fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "姫路" &&
-                fullPath[i + 2].lineName === null ||
-                fullPath[i].stationName === "東姫路" &&
-                fullPath[i].lineName === "サンヨ" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "手柄山平和公園" ||
-                fullPath[i].stationName === "東姫路" &&
-                fullPath[i].lineName === "サンヨ" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "ハンタ" &&
-                fullPath[i + 2].stationName === "京口" ||
-                fullPath[i].stationName === "東姫路" &&
-                fullPath[i].lineName === "サンヨ" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "キシン" &&
-                fullPath[i + 2].stationName === "播磨高岡"
-            ) {
-                if (fullPath[1].stationName === "新大阪") {
-                    return [
-                        { "stationName": "大阪・新大阪", "lineName": fullPath[1].lineName },
-                        ...fullPath.slice(2)
-                    ]
-                }
-                else {
-                    return [
-                        { "stationName": "大阪・新大阪", "lineName": fullPath[0].lineName },
-                        ...fullPath.slice(1)
-                    ]
-                }
-            }
+
+    // 発駅判定
+    if (fullPath[0].stationName === "大阪" || fullPath[0].stationName === "新大阪") {
+        const changingIdx: number[] = [];
+        for (let i = 0; i < fullPath.length - 1; i++) {
+            if ((fullPath[i].stationName === "大阪" || fullPath[i].stationName === "新大阪") !== (fullPath[i + 1].stationName === "大阪" || fullPath[i + 1].stationName === "新大阪"))
+                changingIdx.push(i);
         }
-    }
-    if (fullPath[fullPath.length - 1].stationName === "新大阪") {
-        if (fullPath[0].stationName === "姫路" &&
-            fullPath[1].lineName === "サンヨ" &&
-            fullPath[1].stationName === "東姫路"
-        ) {
-            if (fullPath[fullPath.length - 2].stationName === "大阪") {
-                return [
-                    ...fullPath.slice(0, fullPath.length - 2),
-                    { "stationName": "大阪・新大阪", "lineName": null }
-                ]
-            }
-            else {
-                return [
-                    ...fullPath.slice(0, fullPath.length - 1),
-                    { "stationName": "大阪・新大阪", "lineName": null }
-                ]
-            }
-        }
-        for (let i = 0; i < fullPath.length - 2; i++) {
-            if (
-                fullPath[i].stationName === "手柄山平和公園" &&
-                fullPath[i].lineName === "サンヨ" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "東姫路" ||
-                fullPath[i].stationName === "京口" &&
-                fullPath[i].lineName === "ハンタ" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "東姫路" ||
-                fullPath[i].stationName === "播磨高岡" &&
-                fullPath[i].lineName === "キシン" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "東姫路"
-            ) {
-                if (fullPath[fullPath.length - 2].stationName === "大阪") {
-                    return [
-                        ...fullPath.slice(0, fullPath.length - 2),
-                        { "stationName": "大阪・新大阪", "lineName": null }
-                    ]
-                }
-                else {
-                    return [
-                        ...fullPath.slice(0, fullPath.length - 1),
-                        { "stationName": "大阪・新大阪", "lineName": null }
-                    ]
-                }
-            }
-        }
-    }
-    if (fullPath[fullPath.length - 1].stationName === "大阪") {
-        if (fullPath[0].stationName === "姫路" &&
-            fullPath[1].lineName === "サンヨ" &&
-            fullPath[1].stationName === "東姫路"
-        ) {
-            if (fullPath[fullPath.length - 2].stationName === "新大阪") {
-                return [
-                    ...fullPath.slice(0, fullPath.length - 2),
-                    { "stationName": "大阪・新大阪", "lineName": null }
-                ]
-            }
-            else {
-                return [
-                    ...fullPath.slice(0, fullPath.length - 1),
-                    { "stationName": "大阪・新大阪", "lineName": null }
-                ]
-            }
-        }
-        for (let i = 0; i < fullPath.length - 2; i++) {
-            if (
-                fullPath[i].stationName === "手柄山平和公園" &&
-                fullPath[i].lineName === "サンヨ" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "東姫路" ||
-                fullPath[i].stationName === "京口" &&
-                fullPath[i].lineName === "ハンタ" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "東姫路" ||
-                fullPath[i].stationName === "播磨高岡" &&
-                fullPath[i].lineName === "キシン" &&
-                fullPath[i + 1].stationName === "姫路" &&
-                fullPath[i + 1].lineName === "サンヨ" &&
-                fullPath[i + 2].stationName === "東姫路"
-            ) {
-                if (fullPath[fullPath.length - 2].stationName === "新大阪") {
-                    return [
-                        ...fullPath.slice(0, fullPath.length - 2),
-                        { "stationName": "大阪・新大阪", "lineName": null }
-                    ]
-                }
-                else {
-                    return [
-                        ...fullPath.slice(0, fullPath.length - 1),
-                        { "stationName": "大阪・新大阪", "lineName": null }
-                    ]
-                }
+
+        if (0 < changingIdx.length) {
+            const applyCityRulePath = [
+                { "stationName": "大阪・新大阪", "lineName": fullPath[changingIdx[0]].lineName },
+                ...fullPath.slice(changingIdx[0] + 1)
+            ]
+
+            for (let i = 0; i < fullPath.length - 2; i++) {
+                if (fullPath[i + 1].stationName === "東姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "姫路" &&
+                    fullPath[i + 2].lineName === null ||
+                    fullPath[i].stationName === "東姫路" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "手柄山平和公園" ||
+                    fullPath[i].stationName === "東姫路" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "シンカ" &&
+                    fullPath[i + 2].stationName === "相生" ||
+                    fullPath[i].stationName === "東姫路" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "ハンタ" &&
+                    fullPath[i + 2].stationName === "京口" ||
+                    fullPath[i].stationName === "東姫路" &&
+                    fullPath[i].lineName === "サンヨ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "キシン" &&
+                    fullPath[i + 2].stationName === "播磨高岡" ||
+                    fullPath[i + 1].stationName === "西明石" &&
+                    fullPath[i + 1].lineName === "シンカ" &&
+                    fullPath[i + 2].stationName === "姫路" &&
+                    fullPath[i + 2].lineName === null ||
+                    fullPath[i].stationName === "西明石" &&
+                    fullPath[i].lineName === "シンカ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "サンヨ" &&
+                    fullPath[i + 2].stationName === "手柄山平和公園" ||
+                    fullPath[i].stationName === "西明石" &&
+                    fullPath[i].lineName === "シンカ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "シンカ" &&
+                    fullPath[i + 2].stationName === "相生" ||
+                    fullPath[i].stationName === "西明石" &&
+                    fullPath[i].lineName === "シンカ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "ハンタ" &&
+                    fullPath[i + 2].stationName === "京口" ||
+                    fullPath[i].stationName === "西明石" &&
+                    fullPath[i].lineName === "シンカ" &&
+                    fullPath[i + 1].stationName === "姫路" &&
+                    fullPath[i + 1].lineName === "キシン" &&
+                    fullPath[i + 2].stationName === "播磨高岡")
+                    fullPath = applyCityRulePath;
             }
         }
     }
