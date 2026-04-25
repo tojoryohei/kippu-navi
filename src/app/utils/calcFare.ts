@@ -379,6 +379,8 @@ function calculateFare2(routeSegments: RouteSegment[]): number {
 
     // 第77条 幹線内相互発着の大人片道普通旅客運賃
     if (isAllKansen(routeSegments)) {
+
+        // 別表第２号イの２ 東日本旅客鉄道株式会社線の大人普通旅客運賃の特定額（幹線内相互発着となる場合）
         if (201 <= totalEigyoKilo && totalEigyoKilo <= 220) return 3850;
         if (221 <= totalEigyoKilo && totalEigyoKilo <= 240) return 4180;
         if (321 <= totalEigyoKilo && totalEigyoKilo <= 340) return 5940;
@@ -403,6 +405,8 @@ function calculateFare2(routeSegments: RouteSegment[]): number {
 
     // 第77条の５ 地方交通線内相互発着の大人片道普通旅客運賃
     if (isAllLocal(routeSegments)) {
+
+        // 別表第２号イの６ 東日本旅客鉄道株式会社線の大人普通旅客運賃の特定額（地方交通線内相互発着となる場合）
         if (11 <= totalEigyoKilo && totalEigyoKilo <= 15) return 260;
         if (16 <= totalEigyoKilo && totalEigyoKilo <= 20) return 350;
         if (21 <= totalEigyoKilo && totalEigyoKilo <= 23) return 440;
@@ -439,6 +443,23 @@ function calculateFare2(routeSegments: RouteSegment[]): number {
 
     // 第81条 幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
     const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
+
+    // 別表第２号イの２ 東日本旅客鉄道株式会社線の大人普通旅客運賃の特定額（幹線内相互発着となる場合）
+    if (201 <= totalGiseiKilo && totalGiseiKilo <= 220) return 3850;
+    if (221 <= totalGiseiKilo && totalGiseiKilo <= 240) return 4180;
+    if (321 <= totalGiseiKilo && totalGiseiKilo <= 340) return 5940;
+    if (341 <= totalGiseiKilo && totalGiseiKilo <= 360) return 6270;
+    if (461 <= totalGiseiKilo && totalGiseiKilo <= 480) return 8030;
+    if (841 <= totalGiseiKilo && totalGiseiKilo <= 880) return 11990;
+    if (1521 <= totalGiseiKilo && totalGiseiKilo <= 1560) return 17270;
+    if (1961 <= totalGiseiKilo && totalGiseiKilo <= 2000) return 20680;
+    if (2401 <= totalGiseiKilo && totalGiseiKilo <= 2440) return 24090;
+    if (2841 <= totalGiseiKilo && totalGiseiKilo <= 2880) return 27500;
+    if (3521 <= totalGiseiKilo && totalGiseiKilo <= 3560) return 32780;
+    if (3961 <= totalGiseiKilo && totalGiseiKilo <= 4000) return 36190;
+    if (4401 <= totalGiseiKilo && totalGiseiKilo <= 4440) return 39600;
+    if (4841 <= totalGiseiKilo && totalGiseiKilo <= 4880) return 43010;
+
     const splitKilo = calculateSplitKiloOfKansen(totalGiseiKilo);
     if (totalGiseiKilo <= 100) return ceil1000(ceil1000(1696 * splitKilo) * 11 / 10) / 100;
     if (totalGiseiKilo <= 300) return ceil1000(round10000(1696 * splitKilo) * 11 / 10) / 100;
