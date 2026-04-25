@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.3.2...kippu-navi-v1.3.3) (2026-04-25)
+
+
+### Bug Fixes
+
+* JR東日本の幹線と地方交通線を連続乗車した際の運賃計算を修正 ([0b8a5a3](https://github.com/tojoryohei/kippu-navi/commit/0b8a5a3e84f9c2da9cd02a2a96c2311077c1da0f))
+* JR東日本の幹線と地方交通線を連続乗車した際の運賃計算を修正 ([9abbb1f](https://github.com/tojoryohei/kippu-navi/commit/9abbb1f19d67226279ae8518e5f7c5db0d8869eb))
+
 ## [1.3.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.3.1...kippu-navi-v1.3.2) (2026-04-23)
 
 
