@@ -38,7 +38,7 @@ export function createRouteKey(line: string, stationName0: string, stationName1:
     return [line, ...[stationName0, stationName1].sort()].join('-');
 }
 
-export function isAllTrainSpecificSections(specificSectionName: keyof TrainSpecificSection, routeKeys: string[]): boolean {
+export function isAllTrainSpecificSections(specificSectionName: keyof TrainSpecificSection, routeKeys: Set<string>): boolean {
     const trainSpecificSection = load.getTrainSpecificSections(specificSectionName);
     for (const routeKey of routeKeys) {
         if (trainSpecificSection.has(routeKey) === false) return false;

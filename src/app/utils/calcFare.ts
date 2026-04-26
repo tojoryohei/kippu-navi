@@ -33,7 +33,7 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
 
     // 第78条 電車特定区間内等の大人片道普通旅客運賃
     // 電車特定区間内相互発着の場合
-    if (isAllTrainSpecificSections("電車特定区間", [...routeKeys])) {
+    if (isAllTrainSpecificSections("電車特定区間", routeKeys)) {
         fare = calculateFareInTrainSpecificSection(routeSegments);
     }
 
@@ -715,13 +715,13 @@ function calculateFare6(routeSegments: RouteSegment[]): number {
     return round1000(round10000(1975 * 300 + 1285 * 300 + 705 * (splitKilo - 600)) * 11 / 10) / 100;
 }
 
-function convertPathStepsToRouteKeys(path: PathStep[]): string[] {
-    let routeKeys: string[] = [];
+function convertPathStepsToRouteKeys(path: PathStep[]): Set<string> {
+    const routeKeys = new Set<string>();
     for (let i = 0; i < path.length - 1; i++) {
         const line = path[i].lineName;
         if (line === null) continue;
         const routeKey: string = createRouteKey(line, path[i].stationName, path[i + 1].stationName);
-        routeKeys.push(routeKey);
+        routeKeys.add(routeKey);
     }
     return routeKeys;
 }
@@ -731,5 +731,6 @@ export function calculateBarrierFreeFeeFromPath(fullPath: PathStep[]): number {
     const routeKeys = convertPathStepsToRouteKeys(fullPath);
     if (isAllTrainSpecificSections("電車特定区間", routeKeys)) return 10;
     if (isAllTrainSpecificSections("名古屋附近", routeKeys)) return 10;
+    if (routeKeys.size === 1 || routeKeys.has(createRouteKey("シンカ", "東京", "品川"))) return 10;
     return 0;
 }

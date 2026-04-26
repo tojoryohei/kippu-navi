@@ -34,7 +34,9 @@ export default function Page() {
             <ul className="text-xs sm:text-sm text-slate-500 list-disc list-inside space-y-1">
               <li>このプログラムで計算できる経由路線数の上限は99です。</li>
               <li>経路の重複による運賃計算の制限は行っていません。</li>
-              <li>大都市近郊区間内完結の場合の最安経路への補正には対応していません。</li>
+              <li>大都市近郊区間内完結の場合の最安経路への補正には現在対応していません。</li>
+              <li>出力される経由は実際の経由印字と異なることがあります。</li>
+              <li>新幹線を経由する場合の運賃計算は現在開発中の機能です。</li>
             </ul>
           </div>
         </div>
