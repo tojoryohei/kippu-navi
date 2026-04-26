@@ -4,7 +4,7 @@ import { getChangelogs } from '@/app/lib/changelog';
 
 export const metadata = {
   title: "きっぷナビ - 分割乗車券のすすめ",
-  description: "JRの運賃計算や最も安くなる分割乗車券の組み合わせをダイクストラ法で瞬時に計算するプログラムを公開しています。",
+  description: "JRの運賃計算プログラムや最も安くなるきっぷの組み合わせを計算する最安分割乗車券プログラムを公開しています。",
 };
 
 export default async function Home() {
