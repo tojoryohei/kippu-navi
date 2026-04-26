@@ -314,8 +314,12 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 鶯谷方面→赤羽
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "鶯谷" &&
-                    fullPath[idx - 1].lineName === "トウホ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "鶯谷" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "トホシ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 2 < fullPath.length &&
                     fullPath[idx + 2].lineName === null
                 ) {
@@ -334,8 +338,12 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 鶯谷方面→川口方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "鶯谷" &&
-                    fullPath[idx - 1].lineName === "トウホ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "鶯谷" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "トホシ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 3 < fullPath.length &&
                     (fullPath[idx + 2].lineName === "トウホ" || fullPath[idx + 2].lineName === "ホセイ") &&
                     fullPath[idx + 3].stationName === "川口"
@@ -355,8 +363,12 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 鶯谷方面→北赤羽方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "鶯谷" &&
-                    fullPath[idx - 1].lineName === "トウホ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "鶯谷" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "トホシ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 3 < fullPath.length &&
                     (fullPath[idx + 2].lineName === "トウホ４" || fullPath[idx + 2].lineName === "トウホア") &&
                     fullPath[idx + 3].stationName === "北赤羽"
@@ -376,8 +388,12 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 鶯谷方面→十条方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "鶯谷" &&
-                    fullPath[idx - 1].lineName === "トウホ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "鶯谷" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "トホシ") ||
+                        (fullPath[idx - 1].stationName === "日暮里" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 3 < fullPath.length &&
                     (fullPath[idx + 2].lineName === "アカハ" || fullPath[idx + 2].lineName === "アカハネ") &&
                     fullPath[idx + 3].stationName === "十条"
@@ -509,8 +525,12 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 赤羽→鶯谷方面
                 if (idx === 0 &&
                     3 < fullPath.length &&
-                    fullPath[2].lineName === "トウホ" &&
-                    fullPath[3].stationName === "鶯谷"
+                    (
+                        (fullPath[2].lineName === "トウホ" && fullPath[3].stationName === "鶯谷") ||
+                        (fullPath[2].lineName === "シヨシ" && fullPath[3].stationName === "上野") ||
+                        (fullPath[2].lineName === "トホシ" && fullPath[3].stationName === "上野") ||
+                        (fullPath[2].lineName === "ホクシ" && fullPath[3].stationName === "上野")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "赤羽", lineName: "ホセイ" },
@@ -567,8 +587,12 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "川口" &&
                     (fullPath[idx - 1].lineName === "トウホ" || fullPath[idx - 1].lineName === "ホセイ") &&
                     idx + 3 < fullPath.length &&
-                    fullPath[idx + 2].lineName === "トウホ" &&
-                    fullPath[idx + 3].stationName === "鶯谷"
+                    (
+                        (fullPath[idx + 2].lineName === "トウホ" && fullPath[idx + 3].stationName === "鶯谷") ||
+                        (fullPath[idx + 2].lineName === "シヨシ" && fullPath[idx + 3].stationName === "上野") ||
+                        (fullPath[idx + 2].lineName === "トホシ" && fullPath[idx + 3].stationName === "上野") ||
+                        (fullPath[idx + 2].lineName === "ホクシ" && fullPath[idx + 3].stationName === "上野")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -629,8 +653,12 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "北赤羽" &&
                     (fullPath[idx - 1].lineName === "トウホ４" || fullPath[idx - 1].lineName === "トウホア") &&
                     idx + 3 < fullPath.length &&
-                    fullPath[idx + 2].lineName === "トウホ" &&
-                    fullPath[idx + 3].stationName === "鶯谷"
+                    (
+                        (fullPath[idx + 2].lineName === "トウホ" && fullPath[idx + 3].stationName === "鶯谷") ||
+                        (fullPath[idx + 2].lineName === "シヨシ" && fullPath[idx + 3].stationName === "上野") ||
+                        (fullPath[idx + 2].lineName === "トホシ" && fullPath[idx + 3].stationName === "上野") ||
+                        (fullPath[idx + 2].lineName === "ホクシ" && fullPath[idx + 3].stationName === "上野")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -691,8 +719,12 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "十条" &&
                     (fullPath[idx - 1].lineName === "アカハ" || fullPath[idx - 1].lineName === "アカハネ") &&
                     idx + 3 < fullPath.length &&
-                    fullPath[idx + 2].lineName === "トウホ" &&
-                    fullPath[idx + 3].stationName === "鶯谷"
+                    (
+                        (fullPath[idx + 2].lineName === "トウホ" && fullPath[idx + 3].stationName === "鶯谷") ||
+                        (fullPath[idx + 2].lineName === "シヨシ" && fullPath[idx + 3].stationName === "上野") ||
+                        (fullPath[idx + 2].lineName === "トホシ" && fullPath[idx + 3].stationName === "上野") ||
+                        (fullPath[idx + 2].lineName === "ホクシ" && fullPath[idx + 3].stationName === "上野")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -792,8 +824,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 赤羽→土呂方面
                 if (idx === 0 &&
                     12 < fullPath.length &&
-                    fullPath[11].lineName === "トウホ" &&
-                    fullPath[12].stationName === "土呂"
+                    (
+                        (fullPath[11].lineName === "トウホ" && fullPath[12].stationName === "土呂") ||
+                        (fullPath[11].lineName === "トホシ" && fullPath[12].stationName === "小山")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "赤羽", lineName: "ホセイ" },
@@ -813,8 +847,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 赤羽→宮原方面
                 if (idx === 0 &&
                     12 < fullPath.length &&
-                    fullPath[11].lineName === "タカサ" &&
-                    fullPath[12].stationName === "宮原"
+                    (
+                        (fullPath[11].lineName === "タカサ" && fullPath[12].stationName === "宮原") ||
+                        (fullPath[11].lineName === "シヨシ" && fullPath[12].stationName === "熊谷") ||
+                        (fullPath[11].lineName === "ホクシ" && fullPath[12].stationName === "熊谷")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "赤羽", lineName: "ホセイ" },
@@ -882,8 +919,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "尾久" &&
                     (fullPath[idx - 1].lineName === "トウホ" || fullPath[idx - 1].lineName === "オク") &&
                     idx + 12 < fullPath.length &&
-                    fullPath[idx + 11].lineName === "トウホ" &&
-                    fullPath[idx + 12].stationName === "土呂"
+                    (
+                        (fullPath[idx + 11].lineName === "トウホ" && fullPath[idx + 12].stationName === "土呂") ||
+                        (fullPath[idx + 11].lineName === "トホシ" && fullPath[idx + 12].stationName === "小山")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -906,8 +945,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "尾久" &&
                     (fullPath[idx - 1].lineName === "トウホ" || fullPath[idx - 1].lineName === "オク") &&
                     idx + 12 < fullPath.length &&
-                    fullPath[idx + 11].lineName === "タカサ" &&
-                    fullPath[idx + 12].stationName === "宮原"
+                    (
+                        (fullPath[idx + 11].lineName === "タカサ" && fullPath[idx + 12].stationName === "宮原") ||
+                        (fullPath[idx + 11].lineName === "シヨシ" && fullPath[idx + 12].stationName === "熊谷") ||
+                        (fullPath[idx + 11].lineName === "ホクシ" && fullPath[idx + 12].stationName === "熊谷")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -977,8 +1019,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "東十条" &&
                     (fullPath[idx - 1].lineName === "トウホ２" || fullPath[idx - 1].lineName === "ツウカ" || fullPath[idx - 1].lineName === "ホセイ") &&
                     idx + 12 < fullPath.length &&
-                    fullPath[idx + 11].lineName === "トウホ" &&
-                    fullPath[idx + 12].stationName === "土呂"
+                    (
+                        (fullPath[idx + 11].lineName === "トウホ" && fullPath[idx + 12].stationName === "土呂") ||
+                        (fullPath[idx + 11].lineName === "トホシ" && fullPath[idx + 12].stationName === "小山")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -1001,8 +1045,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "東十条" &&
                     (fullPath[idx - 1].lineName === "トウホ２" || fullPath[idx - 1].lineName === "ツウカ" || fullPath[idx - 1].lineName === "ホセイ") &&
                     idx + 12 < fullPath.length &&
-                    fullPath[idx + 11].lineName === "タカサ" &&
-                    fullPath[idx + 12].stationName === "宮原"
+                    (
+                        (fullPath[idx + 11].lineName === "タカサ" && fullPath[idx + 12].stationName === "宮原") ||
+                        (fullPath[idx + 11].lineName === "シヨシ" && fullPath[idx + 12].stationName === "熊谷") ||
+                        (fullPath[idx + 11].lineName === "ホクシ" && fullPath[idx + 12].stationName === "熊谷")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -1072,8 +1119,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "十条" &&
                     (fullPath[idx - 1].lineName === "アカハ" || fullPath[idx - 1].lineName === "アカハネ" || fullPath[idx - 1].lineName === "ツウカ") &&
                     idx + 12 < fullPath.length &&
-                    fullPath[idx + 11].lineName === "トウホ" &&
-                    fullPath[idx + 12].stationName === "土呂"
+                    (
+                        (fullPath[idx + 11].lineName === "トウホ" && fullPath[idx + 12].stationName === "土呂") ||
+                        (fullPath[idx + 11].lineName === "トホシ" && fullPath[idx + 12].stationName === "小山")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -1096,8 +1145,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "十条" &&
                     (fullPath[idx - 1].lineName === "アカハ" || fullPath[idx - 1].lineName === "アカハネ" || fullPath[idx - 1].lineName === "ツウカ") &&
                     idx + 12 < fullPath.length &&
-                    fullPath[idx + 11].lineName === "タカサ" &&
-                    fullPath[idx + 12].stationName === "宮原"
+                    (
+                        (fullPath[idx + 11].lineName === "タカサ" && fullPath[idx + 12].stationName === "宮原") ||
+                        (fullPath[idx + 11].lineName === "シヨシ" && fullPath[idx + 12].stationName === "熊谷") ||
+                        (fullPath[idx + 11].lineName === "ホクシ" && fullPath[idx + 12].stationName === "熊谷")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -1253,8 +1305,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 土呂方面→赤羽
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "土呂" &&
-                    fullPath[idx - 1].lineName === "トウホ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "土呂" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "小山" && fullPath[idx - 1].lineName === "トホシ")
+                    ) &&
                     idx + 11 < fullPath.length &&
                     fullPath[idx + 11].lineName === null
                 ) {
@@ -1276,8 +1330,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 土呂方面→尾久方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "土呂" &&
-                    fullPath[idx - 1].lineName === "トウホ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "土呂" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "小山" && fullPath[idx - 1].lineName === "トホシ")
+                    ) &&
                     idx + 11 < fullPath.length &&
                     (fullPath[idx + 11].lineName === "トウホ" || fullPath[idx + 11].lineName === "オク") &&
                     fullPath[idx + 12].stationName === "尾久"
@@ -1300,8 +1356,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 土呂方面→東十条方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "土呂" &&
-                    fullPath[idx - 1].lineName === "トウホ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "土呂" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "小山" && fullPath[idx - 1].lineName === "トホシ")
+                    ) &&
                     idx + 12 < fullPath.length &&
                     (fullPath[idx + 11].lineName === "トウホ２" || fullPath[idx + 11].lineName === "ツウカ" || fullPath[idx + 11].lineName === "ホセイ") &&
                     fullPath[idx + 12].stationName === "東十条"
@@ -1324,8 +1382,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 土呂方面→十条方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "土呂" &&
-                    fullPath[idx - 1].lineName === "トウホ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "土呂" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "小山" && fullPath[idx - 1].lineName === "トホシ")
+                    ) &&
                     idx + 11 < fullPath.length &&
                     (fullPath[idx + 11].lineName === "アカハ" || fullPath[idx + 11].lineName === "アカハネ") &&
                     fullPath[idx + 12].stationName === "十条"
@@ -1348,8 +1408,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 宮原方面→赤羽
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "宮原" &&
-                    fullPath[idx - 1].lineName === "タカサ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "宮原" && fullPath[idx - 1].lineName === "タカサ") ||
+                        (fullPath[idx - 1].stationName === "熊谷" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "熊谷" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 11 < fullPath.length &&
                     fullPath[idx + 11].lineName === null
                 ) {
@@ -1371,8 +1434,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 宮原方面→尾久方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "宮原" &&
-                    fullPath[idx - 1].lineName === "タカサ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "宮原" && fullPath[idx - 1].lineName === "タカサ") ||
+                        (fullPath[idx - 1].stationName === "熊谷" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "熊谷" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 11 < fullPath.length &&
                     (fullPath[idx + 11].lineName === "トウホ" || fullPath[idx + 11].lineName === "オク") &&
                     fullPath[idx + 12].stationName === "尾久"
@@ -1395,8 +1461,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 宮原方面→東十条方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "宮原" &&
-                    fullPath[idx - 1].lineName === "タカサ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "宮原" && fullPath[idx - 1].lineName === "タカサ") ||
+                        (fullPath[idx - 1].stationName === "熊谷" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "熊谷" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 12 < fullPath.length &&
                     (fullPath[idx + 11].lineName === "トウホ２" || fullPath[idx + 11].lineName === "ツウカ" || fullPath[idx + 11].lineName === "ホセイ") &&
                     fullPath[idx + 12].stationName === "東十条"
@@ -1419,8 +1488,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 宮原方面→十条方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "宮原" &&
-                    fullPath[idx - 1].lineName === "タカサ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "宮原" && fullPath[idx - 1].lineName === "タカサ") ||
+                        (fullPath[idx - 1].stationName === "熊谷" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "熊谷" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 12 < fullPath.length &&
                     (fullPath[idx + 11].lineName === "アカハ" || fullPath[idx + 11].lineName === "アカハネ") &&
                     fullPath[idx + 12].stationName === "十条"
@@ -2231,8 +2303,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 有楽町方面→鎌取方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "有楽町" &&
-                    (fullPath[idx - 1].lineName === "トウカ" || fullPath[idx - 1].lineName === "ツウカ") &&
+                    (
+                        (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "トウカ") ||
+                        (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "ツウカ") ||
+                        (fullPath[idx - 1].stationName === "品川" && fullPath[idx - 1].lineName === "シンカ")
+                    ) &&
                     idx + 18 < fullPath.length &&
                     fullPath[idx + 17].lineName === "ソトホ" &&
                     fullPath[idx + 18].stationName === "鎌取"
@@ -2268,8 +2343,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 有楽町方面→浜野方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "有楽町" &&
-                    (fullPath[idx - 1].lineName === "トウカ" || fullPath[idx - 1].lineName === "ツウカ") &&
+                    (
+                        (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "トウカ") ||
+                        (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "ツウカ") ||
+                        (fullPath[idx - 1].stationName === "品川" && fullPath[idx - 1].lineName === "シンカ")
+                    ) &&
                     idx + 18 < fullPath.length &&
                     (fullPath[idx + 17].lineName === "ウチホ" || fullPath[idx + 17].lineName === "ウチホソ") &&
                     fullPath[idx + 18].stationName === "浜野"
@@ -2305,8 +2383,14 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 神田方面→蘇我
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "神田" &&
-                    (fullPath[idx - 1].lineName === "チユト" || fullPath[idx - 1].lineName === "トウホ" || fullPath[idx - 1].lineName === "ツウカ") &&
+                    (
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "チユト") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "ツウカ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "トホシ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 17 < fullPath.length &&
                     fullPath[idx + 17].lineName === null
                 ) {
@@ -2341,8 +2425,14 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 神田方面→鎌取方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "神田" &&
-                    (fullPath[idx - 1].lineName === "チユト" || fullPath[idx - 1].lineName === "トウホ" || fullPath[idx - 1].lineName === "ツウカ") &&
+                    (
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "チユト") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "ツウカ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "トホシ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 18 < fullPath.length &&
                     fullPath[idx + 17].lineName === "ソトホ" &&
                     fullPath[idx + 18].stationName === "鎌取"
@@ -2378,8 +2468,14 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 神田方面→浜野方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "神田" &&
-                    (fullPath[idx - 1].lineName === "チユト" || fullPath[idx - 1].lineName === "トウホ" || fullPath[idx - 1].lineName === "ツウカ") &&
+                    (
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "シヨシ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "チユト") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "ツウカ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "トウホ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "トホシ") ||
+                        (fullPath[idx - 1].stationName === "神田" && fullPath[idx - 1].lineName === "ホクシ")
+                    ) &&
                     idx + 18 < fullPath.length &&
                     (fullPath[idx + 17].lineName === "ウチホ" || fullPath[idx + 17].lineName === "ウチホソ") &&
                     fullPath[idx + 18].stationName === "浜野"
@@ -2490,8 +2586,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 蘇我→有楽町方面
                 if (idx === 0 &&
                     18 < fullPath.length &&
-                    (fullPath[17].lineName === "トウカ" || fullPath[17].lineName === "ツウカ") &&
-                    fullPath[18].stationName === "有楽町"
+                    (
+                        (fullPath[17].lineName === "トウカ" && fullPath[18].stationName === "有楽町") ||
+                        (fullPath[17].lineName === "ツウカ" && fullPath[18].stationName === "有楽町") ||
+                        (fullPath[17].lineName === "シンカ" && fullPath[18].stationName === "品川")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "蘇我", lineName: "ソトホ" },
@@ -2524,8 +2623,14 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 蘇我→神田方面
                 if (idx === 0 &&
                     18 < fullPath.length &&
-                    (fullPath[17].lineName === "チユト" || fullPath[17].lineName === "トウホ" || fullPath[17].lineName === "ツウカ") &&
-                    fullPath[18].stationName === "神田"
+                    (
+                        (fullPath[17].lineName === "シヨシ" && fullPath[18].stationName === "神田") ||
+                        (fullPath[17].lineName === "チユト" && fullPath[18].stationName === "神田") ||
+                        (fullPath[17].lineName === "ツウカ" && fullPath[18].stationName === "神田") ||
+                        (fullPath[17].lineName === "トウホ" && fullPath[18].stationName === "神田") ||
+                        (fullPath[17].lineName === "トホシ" && fullPath[18].stationName === "神田") ||
+                        (fullPath[17].lineName === "ホクシ" && fullPath[18].stationName === "神田")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "蘇我", lineName: "ソトホ" },
@@ -2596,8 +2701,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "鎌取" &&
                     fullPath[idx - 1].lineName === "ソトホ" &&
                     idx + 18 < fullPath.length &&
-                    (fullPath[idx + 17].lineName === "トウカ" || fullPath[idx + 17].lineName === "ツウカ") &&
-                    fullPath[idx + 18].stationName === "有楽町"
+                    (
+                        (fullPath[idx + 17].lineName === "トウカ" && fullPath[idx + 18].stationName === "有楽町") ||
+                        (fullPath[idx + 17].lineName === "ツウカ" && fullPath[idx + 18].stationName === "有楽町") ||
+                        (fullPath[idx + 17].lineName === "シンカ" && fullPath[idx + 18].stationName === "品川")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -2633,8 +2741,14 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "鎌取" &&
                     fullPath[idx - 1].lineName === "ソトホ" &&
                     idx + 18 < fullPath.length &&
-                    (fullPath[idx + 17].lineName === "チユト" || fullPath[idx + 17].lineName === "トウホ" || fullPath[idx + 17].lineName === "ツウカ") &&
-                    fullPath[idx + 18].stationName === "神田"
+                    (
+                        (fullPath[idx + 17].lineName === "シヨシ" && fullPath[idx + 18].stationName === "神田") ||
+                        (fullPath[idx + 17].lineName === "チユト" && fullPath[idx + 18].stationName === "神田") ||
+                        (fullPath[idx + 17].lineName === "ツウカ" && fullPath[idx + 18].stationName === "神田") ||
+                        (fullPath[idx + 17].lineName === "トウホ" && fullPath[idx + 18].stationName === "神田") ||
+                        (fullPath[idx + 17].lineName === "トホシ" && fullPath[idx + 18].stationName === "神田") ||
+                        (fullPath[idx + 17].lineName === "ホクシ" && fullPath[idx + 18].stationName === "神田")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -2706,8 +2820,11 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "浜野" &&
                     (fullPath[idx - 1].lineName === "ウチホ" || fullPath[idx - 1].lineName === "ウチホソ") &&
                     idx + 18 < fullPath.length &&
-                    (fullPath[idx + 17].lineName === "トウカ" || fullPath[idx + 17].lineName === "ツウカ") &&
-                    fullPath[idx + 18].stationName === "有楽町"
+                    (
+                        (fullPath[idx + 17].lineName === "トウカ" && fullPath[idx + 18].stationName === "有楽町") ||
+                        (fullPath[idx + 17].lineName === "ツウカ" && fullPath[idx + 18].stationName === "有楽町") ||
+                        (fullPath[idx + 17].lineName === "シンカ" && fullPath[idx + 18].stationName === "品川")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -2743,8 +2860,14 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "浜野" &&
                     (fullPath[idx - 1].lineName === "ウチホ" || fullPath[idx - 1].lineName === "ウチホソ") &&
                     idx + 18 < fullPath.length &&
-                    (fullPath[idx + 17].lineName === "チユト" || fullPath[idx + 17].lineName === "トウホ" || fullPath[idx + 17].lineName === "ツウカ") &&
-                    fullPath[idx + 18].stationName === "神田"
+                    (
+                        (fullPath[idx + 17].lineName === "シヨシ" && fullPath[idx + 18].stationName === "神田") ||
+                        (fullPath[idx + 17].lineName === "チユト" && fullPath[idx + 18].stationName === "神田") ||
+                        (fullPath[idx + 17].lineName === "ツウカ" && fullPath[idx + 18].stationName === "神田") ||
+                        (fullPath[idx + 17].lineName === "トウホ" && fullPath[idx + 18].stationName === "神田") ||
+                        (fullPath[idx + 17].lineName === "トホシ" && fullPath[idx + 18].stationName === "神田") ||
+                        (fullPath[idx + 17].lineName === "ホクシ" && fullPath[idx + 18].stationName === "神田")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -2924,8 +3047,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 京都方面→近江塩津
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "京都" &&
-                    fullPath[idx - 1].stationName === "トウカ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "京都" && fullPath[idx - 1].stationName === "トウカ") ||
+                        (fullPath[idx - 1].stationName === "京都" && fullPath[idx - 1].stationName === "シンカ")
+                    ) &&
                     idx + 27 < fullPath.length &&
                     fullPath[idx + 27].lineName === null
                 ) {
@@ -2958,8 +3083,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 京都方面→新疋田方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "京都" &&
-                    fullPath[idx - 1].stationName === "トウカ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "京都" && fullPath[idx - 1].stationName === "トウカ") ||
+                        (fullPath[idx - 1].stationName === "京都" && fullPath[idx - 1].stationName === "シンカ")
+                    ) &&
                     idx + 28 < fullPath.length &&
                     fullPath[idx + 27].lineName === "ホクリ" &&
                     fullPath[idx + 28].stationName === "新疋田"
@@ -3086,8 +3213,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 近江塩津→京都方面
                 if (idx === 0 &&
                     28 < fullPath.length &&
-                    fullPath[27].lineName === "トウカ" &&
-                    fullPath[27].stationName === "京都"
+                    (
+                        (fullPath[27].lineName === "シンカ" && fullPath[28].stationName === "京都") ||
+                        (fullPath[27].lineName === "トウカ" && fullPath[28].stationName === "京都")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "近江塩津", lineName: "ホセイ" },
@@ -3154,8 +3283,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "新疋田" &&
                     fullPath[idx - 1].lineName === "ホクリ" &&
                     idx + 28 < fullPath.length &&
-                    fullPath[idx + 27].lineName === "トウカ" &&
-                    fullPath[idx + 28].stationName === "京都"
+                    (
+                        (fullPath[idx + 27].lineName === "シンカ" && fullPath[idx + 28].stationName === "京都") ||
+                        (fullPath[idx + 27].lineName === "トウカ" && fullPath[idx + 28].stationName === "京都")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -3180,6 +3311,354 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                         { stationName: "唐崎", lineName: "ホセイ" },
                         { stationName: "大津京", lineName: "ホセイ" },
                         ...fullPath.slice(idx + 27)
+                    ]
+                    break;
+                }
+            }
+        }
+    }
+
+    if (stationsOnFullPath.has("米原") === true &&
+        stationsOnFullPath.has("大津京") === false &&
+        stationsOnFullPath.has("唐崎") === false &&
+        stationsOnFullPath.has("比叡山坂本") === false &&
+        stationsOnFullPath.has("おごと温泉") === false &&
+        stationsOnFullPath.has("堅田") === false &&
+        stationsOnFullPath.has("（湖）小野") === false &&
+        stationsOnFullPath.has("和邇") === false &&
+        stationsOnFullPath.has("蓬莱") === false &&
+        stationsOnFullPath.has("志賀") === false &&
+        stationsOnFullPath.has("比良") === false &&
+        stationsOnFullPath.has("近江舞子") === false &&
+        stationsOnFullPath.has("北小松") === false &&
+        stationsOnFullPath.has("近江高島") === false &&
+        stationsOnFullPath.has("安曇川") === false &&
+        stationsOnFullPath.has("新旭") === false &&
+        stationsOnFullPath.has("近江今津") === false &&
+        stationsOnFullPath.has("近江中庄") === false &&
+        stationsOnFullPath.has("マキノ") === false &&
+        stationsOnFullPath.has("永原") === false
+    ) {
+        for (let i = 0; i < fullPath.length - 10; i++) {
+            if (fullPath[i + 0].stationName === "山科" &&
+                fullPath[i + 1].stationName === "米原" &&
+                fullPath[i + 2].stationName === "坂田" &&
+                fullPath[i + 3].stationName === "田村" &&
+                fullPath[i + 4].stationName === "長浜" &&
+                fullPath[i + 5].stationName === "虎姫" &&
+                fullPath[i + 6].stationName === "河毛" &&
+                fullPath[i + 7].stationName === "高月" &&
+                fullPath[i + 8].stationName === "木ノ本" &&
+                fullPath[i + 9].stationName === "余呉" &&
+                fullPath[i + 10].stationName === "近江塩津" &&
+                fullPath[i + 0].lineName === "シンカ" &&
+                fullPath[i + 1].lineName === "ホクリ" &&
+                fullPath[i + 2].lineName === "ホクリ" &&
+                fullPath[i + 3].lineName === "ホクリ" &&
+                fullPath[i + 4].lineName === "ホクリ" &&
+                fullPath[i + 5].lineName === "ホクリ" &&
+                fullPath[i + 6].lineName === "ホクリ" &&
+                fullPath[i + 7].lineName === "ホクリ" &&
+                fullPath[i + 8].lineName === "ホクリ" &&
+                fullPath[i + 9].lineName === "ホクリ"
+            ) {
+                const idx = i;
+
+                // 山科→近江塩津
+                if (idx === 0 &&
+                    10 < fullPath.length &&
+                    fullPath[10].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "山科", lineName: "ホセイ" },
+                        { stationName: "大津京", lineName: "ホセイ" },
+                        { stationName: "唐崎", lineName: "ホセイ" },
+                        { stationName: "比叡山坂本", lineName: "ホセイ" },
+                        { stationName: "おごと温泉", lineName: "ホセイ" },
+                        { stationName: "堅田", lineName: "ホセイ" },
+                        { stationName: "（湖）小野", lineName: "ホセイ" },
+                        { stationName: "和邇", lineName: "ホセイ" },
+                        { stationName: "蓬莱", lineName: "ホセイ" },
+                        { stationName: "志賀", lineName: "ホセイ" },
+                        { stationName: "比良", lineName: "ホセイ" },
+                        { stationName: "近江舞子", lineName: "ホセイ" },
+                        { stationName: "北小松", lineName: "ホセイ" },
+                        { stationName: "近江高島", lineName: "ホセイ" },
+                        { stationName: "安曇川", lineName: "ホセイ" },
+                        { stationName: "新旭", lineName: "ホセイ" },
+                        { stationName: "近江今津", lineName: "ホセイ" },
+                        { stationName: "近江中庄", lineName: "ホセイ" },
+                        { stationName: "マキノ", lineName: "ホセイ" },
+                        { stationName: "永原", lineName: "ホセイ" },
+                        ...fullPath.slice(10)
+                    ]
+                    break;
+                }
+
+                // 山科→新疋田方面
+                if (idx === 0 &&
+                    11 < fullPath.length &&
+                    fullPath[10].lineName === "ホクリ" &&
+                    fullPath[11].stationName === "新疋田"
+                ) {
+                    fullPath = [
+                        { stationName: "山科", lineName: "ホセイ" },
+                        { stationName: "大津京", lineName: "ホセイ" },
+                        { stationName: "唐崎", lineName: "ホセイ" },
+                        { stationName: "比叡山坂本", lineName: "ホセイ" },
+                        { stationName: "おごと温泉", lineName: "ホセイ" },
+                        { stationName: "堅田", lineName: "ホセイ" },
+                        { stationName: "（湖）小野", lineName: "ホセイ" },
+                        { stationName: "和邇", lineName: "ホセイ" },
+                        { stationName: "蓬莱", lineName: "ホセイ" },
+                        { stationName: "志賀", lineName: "ホセイ" },
+                        { stationName: "比良", lineName: "ホセイ" },
+                        { stationName: "近江舞子", lineName: "ホセイ" },
+                        { stationName: "北小松", lineName: "ホセイ" },
+                        { stationName: "近江高島", lineName: "ホセイ" },
+                        { stationName: "安曇川", lineName: "ホセイ" },
+                        { stationName: "新旭", lineName: "ホセイ" },
+                        { stationName: "近江今津", lineName: "ホセイ" },
+                        { stationName: "近江中庄", lineName: "ホセイ" },
+                        { stationName: "マキノ", lineName: "ホセイ" },
+                        { stationName: "永原", lineName: "ホセイ" },
+                        ...fullPath.slice(10)
+                    ]
+                    break;
+                }
+
+                // 京都方面→近江塩津
+                if (0 < idx &&
+                    (
+                        (fullPath[idx - 1].stationName === "京都" && fullPath[idx - 1].stationName === "トウカ") ||
+                        (fullPath[idx - 1].stationName === "京都" && fullPath[idx - 1].stationName === "シンカ")
+                    ) &&
+                    idx + 10 < fullPath.length &&
+                    fullPath[idx + 10].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "山科", lineName: "ホセイ" },
+                        { stationName: "大津京", lineName: "ホセイ" },
+                        { stationName: "唐崎", lineName: "ホセイ" },
+                        { stationName: "比叡山坂本", lineName: "ホセイ" },
+                        { stationName: "おごと温泉", lineName: "ホセイ" },
+                        { stationName: "堅田", lineName: "ホセイ" },
+                        { stationName: "（湖）小野", lineName: "ホセイ" },
+                        { stationName: "和邇", lineName: "ホセイ" },
+                        { stationName: "蓬莱", lineName: "ホセイ" },
+                        { stationName: "志賀", lineName: "ホセイ" },
+                        { stationName: "比良", lineName: "ホセイ" },
+                        { stationName: "近江舞子", lineName: "ホセイ" },
+                        { stationName: "北小松", lineName: "ホセイ" },
+                        { stationName: "近江高島", lineName: "ホセイ" },
+                        { stationName: "安曇川", lineName: "ホセイ" },
+                        { stationName: "新旭", lineName: "ホセイ" },
+                        { stationName: "近江今津", lineName: "ホセイ" },
+                        { stationName: "近江中庄", lineName: "ホセイ" },
+                        { stationName: "マキノ", lineName: "ホセイ" },
+                        { stationName: "永原", lineName: "ホセイ" },
+                        ...fullPath.slice(idx + 10)
+                    ]
+                    break;
+                }
+
+                // 京都方面→新疋田方面
+                if (0 < idx &&
+                    (
+                        (fullPath[idx - 1].stationName === "京都" && fullPath[idx - 1].stationName === "トウカ") ||
+                        (fullPath[idx - 1].stationName === "京都" && fullPath[idx - 1].stationName === "シンカ")
+                    ) &&
+                    idx + 11 < fullPath.length &&
+                    fullPath[idx + 10].lineName === "ホクリ" &&
+                    fullPath[idx + 11].stationName === "新疋田"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "山科", lineName: "ホセイ" },
+                        { stationName: "大津京", lineName: "ホセイ" },
+                        { stationName: "唐崎", lineName: "ホセイ" },
+                        { stationName: "比叡山坂本", lineName: "ホセイ" },
+                        { stationName: "おごと温泉", lineName: "ホセイ" },
+                        { stationName: "堅田", lineName: "ホセイ" },
+                        { stationName: "（湖）小野", lineName: "ホセイ" },
+                        { stationName: "和邇", lineName: "ホセイ" },
+                        { stationName: "蓬莱", lineName: "ホセイ" },
+                        { stationName: "志賀", lineName: "ホセイ" },
+                        { stationName: "比良", lineName: "ホセイ" },
+                        { stationName: "近江舞子", lineName: "ホセイ" },
+                        { stationName: "北小松", lineName: "ホセイ" },
+                        { stationName: "近江高島", lineName: "ホセイ" },
+                        { stationName: "安曇川", lineName: "ホセイ" },
+                        { stationName: "新旭", lineName: "ホセイ" },
+                        { stationName: "近江今津", lineName: "ホセイ" },
+                        { stationName: "近江中庄", lineName: "ホセイ" },
+                        { stationName: "マキノ", lineName: "ホセイ" },
+                        { stationName: "永原", lineName: "ホセイ" },
+                        ...fullPath.slice(idx + 10)
+                    ]
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < fullPath.length - 10; i++) {
+            if (fullPath[i + 0].stationName === "近江塩津" &&
+                fullPath[i + 1].stationName === "余呉" &&
+                fullPath[i + 2].stationName === "木ノ本" &&
+                fullPath[i + 3].stationName === "高月" &&
+                fullPath[i + 4].stationName === "河毛" &&
+                fullPath[i + 5].stationName === "虎姫" &&
+                fullPath[i + 6].stationName === "長浜" &&
+                fullPath[i + 7].stationName === "田村" &&
+                fullPath[i + 8].stationName === "坂田" &&
+                fullPath[i + 9].stationName === "米原" &&
+                fullPath[i + 10].stationName === "山科" &&
+                fullPath[i + 0].lineName === "ホクリ" &&
+                fullPath[i + 1].lineName === "ホクリ" &&
+                fullPath[i + 2].lineName === "ホクリ" &&
+                fullPath[i + 3].lineName === "ホクリ" &&
+                fullPath[i + 4].lineName === "ホクリ" &&
+                fullPath[i + 5].lineName === "ホクリ" &&
+                fullPath[i + 6].lineName === "ホクリ" &&
+                fullPath[i + 7].lineName === "ホクリ" &&
+                fullPath[i + 8].lineName === "ホクリ" &&
+                fullPath[i + 9].lineName === "シンカ"
+            ) {
+                const idx = i;
+
+                // 近江塩津→山科
+                if (idx === 0 &&
+                    10 < fullPath.length &&
+                    fullPath[10].lineName === null
+                ) {
+                    fullPath = [
+                        { stationName: "近江塩津", lineName: "ホセイ" },
+                        { stationName: "永原", lineName: "ホセイ" },
+                        { stationName: "マキノ", lineName: "ホセイ" },
+                        { stationName: "近江中庄", lineName: "ホセイ" },
+                        { stationName: "近江今津", lineName: "ホセイ" },
+                        { stationName: "新旭", lineName: "ホセイ" },
+                        { stationName: "安曇川", lineName: "ホセイ" },
+                        { stationName: "近江高島", lineName: "ホセイ" },
+                        { stationName: "北小松", lineName: "ホセイ" },
+                        { stationName: "近江舞子", lineName: "ホセイ" },
+                        { stationName: "比良", lineName: "ホセイ" },
+                        { stationName: "志賀", lineName: "ホセイ" },
+                        { stationName: "蓬莱", lineName: "ホセイ" },
+                        { stationName: "和邇", lineName: "ホセイ" },
+                        { stationName: "（湖）小野", lineName: "ホセイ" },
+                        { stationName: "堅田", lineName: "ホセイ" },
+                        { stationName: "おごと温泉", lineName: "ホセイ" },
+                        { stationName: "比叡山坂本", lineName: "ホセイ" },
+                        { stationName: "唐崎", lineName: "ホセイ" },
+                        { stationName: "大津京", lineName: "ホセイ" },
+                        ...fullPath.slice(10)
+                    ]
+                    break;
+                }
+
+                // 近江塩津→京都方面
+                if (idx === 0 &&
+                    11 < fullPath.length &&
+                    (
+                        (fullPath[10].lineName === "シンカ" && fullPath[11].stationName === "京都") ||
+                        (fullPath[10].lineName === "トウカ" && fullPath[11].stationName === "京都")
+                    )
+                ) {
+                    fullPath = [
+                        { stationName: "近江塩津", lineName: "ホセイ" },
+                        { stationName: "永原", lineName: "ホセイ" },
+                        { stationName: "マキノ", lineName: "ホセイ" },
+                        { stationName: "近江中庄", lineName: "ホセイ" },
+                        { stationName: "近江今津", lineName: "ホセイ" },
+                        { stationName: "新旭", lineName: "ホセイ" },
+                        { stationName: "安曇川", lineName: "ホセイ" },
+                        { stationName: "近江高島", lineName: "ホセイ" },
+                        { stationName: "北小松", lineName: "ホセイ" },
+                        { stationName: "近江舞子", lineName: "ホセイ" },
+                        { stationName: "比良", lineName: "ホセイ" },
+                        { stationName: "志賀", lineName: "ホセイ" },
+                        { stationName: "蓬莱", lineName: "ホセイ" },
+                        { stationName: "和邇", lineName: "ホセイ" },
+                        { stationName: "（湖）小野", lineName: "ホセイ" },
+                        { stationName: "堅田", lineName: "ホセイ" },
+                        { stationName: "おごと温泉", lineName: "ホセイ" },
+                        { stationName: "比叡山坂本", lineName: "ホセイ" },
+                        { stationName: "唐崎", lineName: "ホセイ" },
+                        { stationName: "大津京", lineName: "ホセイ" },
+                        ...fullPath.slice(10)
+                    ]
+                    break;
+                }
+
+                // 新疋田方面→山科
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "新疋田" &&
+                    fullPath[idx - 1].lineName === "ホクリ" &&
+                    idx + 10 < fullPath.length &&
+                    fullPath[idx + 10].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "近江塩津", lineName: "ホセイ" },
+                        { stationName: "永原", lineName: "ホセイ" },
+                        { stationName: "マキノ", lineName: "ホセイ" },
+                        { stationName: "近江中庄", lineName: "ホセイ" },
+                        { stationName: "近江今津", lineName: "ホセイ" },
+                        { stationName: "新旭", lineName: "ホセイ" },
+                        { stationName: "安曇川", lineName: "ホセイ" },
+                        { stationName: "近江高島", lineName: "ホセイ" },
+                        { stationName: "北小松", lineName: "ホセイ" },
+                        { stationName: "近江舞子", lineName: "ホセイ" },
+                        { stationName: "比良", lineName: "ホセイ" },
+                        { stationName: "志賀", lineName: "ホセイ" },
+                        { stationName: "蓬莱", lineName: "ホセイ" },
+                        { stationName: "和邇", lineName: "ホセイ" },
+                        { stationName: "（湖）小野", lineName: "ホセイ" },
+                        { stationName: "堅田", lineName: "ホセイ" },
+                        { stationName: "おごと温泉", lineName: "ホセイ" },
+                        { stationName: "比叡山坂本", lineName: "ホセイ" },
+                        { stationName: "唐崎", lineName: "ホセイ" },
+                        { stationName: "大津京", lineName: "ホセイ" },
+                        ...fullPath.slice(idx + 10)
+                    ]
+                    break;
+                }
+
+                // 新疋田方面→京都方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "新疋田" &&
+                    fullPath[idx - 1].lineName === "ホクリ" &&
+                    idx + 11 < fullPath.length &&
+                    (
+                        (fullPath[idx + 10].lineName === "シンカ" && fullPath[idx + 11].stationName === "京都") ||
+                        (fullPath[idx + 10].lineName === "トウカ" && fullPath[idx + 11].stationName === "京都")
+                    )
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "近江塩津", lineName: "ホセイ" },
+                        { stationName: "永原", lineName: "ホセイ" },
+                        { stationName: "マキノ", lineName: "ホセイ" },
+                        { stationName: "近江中庄", lineName: "ホセイ" },
+                        { stationName: "近江今津", lineName: "ホセイ" },
+                        { stationName: "新旭", lineName: "ホセイ" },
+                        { stationName: "安曇川", lineName: "ホセイ" },
+                        { stationName: "近江高島", lineName: "ホセイ" },
+                        { stationName: "北小松", lineName: "ホセイ" },
+                        { stationName: "近江舞子", lineName: "ホセイ" },
+                        { stationName: "比良", lineName: "ホセイ" },
+                        { stationName: "志賀", lineName: "ホセイ" },
+                        { stationName: "蓬莱", lineName: "ホセイ" },
+                        { stationName: "和邇", lineName: "ホセイ" },
+                        { stationName: "（湖）小野", lineName: "ホセイ" },
+                        { stationName: "堅田", lineName: "ホセイ" },
+                        { stationName: "おごと温泉", lineName: "ホセイ" },
+                        { stationName: "比叡山坂本", lineName: "ホセイ" },
+                        { stationName: "唐崎", lineName: "ホセイ" },
+                        { stationName: "大津京", lineName: "ホセイ" },
+                        ...fullPath.slice(idx + 10)
                     ]
                     break;
                 }
@@ -3290,8 +3769,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 塚本方面→天王寺
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "塚本" &&
-                    fullPath[idx - 1].lineName === "トウカ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "新神戸" && fullPath[idx - 1].lineName === "シンカ") ||
+                        (fullPath[idx - 1].stationName === "塚本" && fullPath[idx - 1].lineName === "トウカ")
+                    ) &&
                     idx + 9 < fullPath.length &&
                     fullPath[idx + 9].lineName === null
                 ) {
@@ -3314,8 +3795,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 塚本方面→東部市場前方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "塚本" &&
-                    fullPath[idx - 1].lineName === "トウカ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "新神戸" && fullPath[idx - 1].lineName === "シンカ") ||
+                        (fullPath[idx - 1].stationName === "塚本" && fullPath[idx - 1].lineName === "トウカ")
+                    ) &&
                     idx + 10 < fullPath.length &&
                     fullPath[idx + 9].lineName === "カンサ" &&
                     fullPath[idx + 10].stationName === "東部市場前"
@@ -3339,8 +3822,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 塚本方面→美章園方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "塚本" &&
-                    fullPath[idx - 1].lineName === "トウカ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "新神戸" && fullPath[idx - 1].lineName === "シンカ") ||
+                        (fullPath[idx - 1].stationName === "塚本" && fullPath[idx - 1].lineName === "トウカ")
+                    ) &&
                     idx + 10 < fullPath.length &&
                     fullPath[idx + 9].lineName === "ハンワ" &&
                     fullPath[idx + 10].stationName === "美章園"
@@ -3364,8 +3849,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 新大阪方面→天王寺
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "新大阪" &&
-                    fullPath[idx - 1].lineName === "トウカ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "新大阪" && fullPath[idx - 1].lineName === "シンカ") ||
+                        (fullPath[idx - 1].stationName === "新大阪" && fullPath[idx - 1].lineName === "トウカ")
+                    ) &&
                     idx + 9 < fullPath.length &&
                     fullPath[idx + 9].lineName === null
                 ) {
@@ -3388,8 +3875,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 新大阪方面→東部市場前方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "新大阪" &&
-                    fullPath[idx - 1].lineName === "トウカ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "新大阪" && fullPath[idx - 1].lineName === "シンカ") ||
+                        (fullPath[idx - 1].stationName === "新大阪" && fullPath[idx - 1].lineName === "トウカ")
+                    ) &&
                     idx + 10 < fullPath.length &&
                     fullPath[idx + 9].lineName === "カンサ" &&
                     fullPath[idx + 10].stationName === "東部市場前"
@@ -3413,8 +3902,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 新大阪方面→美章園方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "新大阪" &&
-                    fullPath[idx - 1].lineName === "トウカ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "新大阪" && fullPath[idx - 1].lineName === "シンカ") ||
+                        (fullPath[idx - 1].stationName === "新大阪" && fullPath[idx - 1].lineName === "トウカ")
+                    ) &&
                     idx + 10 < fullPath.length &&
                     fullPath[idx + 9].lineName === "ハンワ" &&
                     fullPath[idx + 10].stationName === "美章園"
@@ -3486,8 +3977,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 天王寺→塚本方面
                 if (idx === 0 &&
                     10 < fullPath.length &&
-                    fullPath[9].lineName === "トウカ" &&
-                    fullPath[10].stationName === "塚本"
+                    (
+                        (fullPath[9].lineName === "シンカ" && fullPath[10].stationName === "新神戸") ||
+                        (fullPath[9].lineName === "トウカ" && fullPath[10].stationName === "塚本")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "天王寺", lineName: "オオサ" },
@@ -3508,8 +4001,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 天王寺→新大阪方面
                 if (idx === 0 &&
                     10 < fullPath.length &&
-                    fullPath[9].lineName === "トウカ" &&
-                    fullPath[10].stationName === "新大阪"
+                    (
+                        (fullPath[9].lineName === "シンカ" && fullPath[10].stationName === "新大阪") ||
+                        (fullPath[9].lineName === "トウカ" && fullPath[10].stationName === "新大阪")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "天王寺", lineName: "オオサ" },
@@ -3556,8 +4051,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "東部市場前" &&
                     fullPath[idx - 1].lineName === "カンサ" &&
                     idx + 10 < fullPath.length &&
-                    fullPath[idx + 9].lineName === "トウカ" &&
-                    fullPath[idx + 10].stationName === "塚本"
+                    (
+                        (fullPath[idx + 9].lineName === "シンカ" && fullPath[idx + 10].stationName === "新神戸") ||
+                        (fullPath[idx + 9].lineName === "トウカ" && fullPath[idx + 10].stationName === "塚本")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -3581,8 +4078,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "東部市場前" &&
                     fullPath[idx - 1].lineName === "カンサ" &&
                     idx + 10 < fullPath.length &&
-                    fullPath[idx + 9].lineName === "トウカ" &&
-                    fullPath[idx + 10].stationName === "新大阪"
+                    (
+                        (fullPath[idx + 9].lineName === "シンカ" && fullPath[idx + 10].stationName === "新大阪") ||
+                        (fullPath[idx + 9].lineName === "トウカ" && fullPath[idx + 10].stationName === "新大阪")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -3630,8 +4129,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "美章園" &&
                     fullPath[idx - 1].lineName === "ハンワ" &&
                     idx + 10 < fullPath.length &&
-                    fullPath[idx + 9].lineName === "トウカ" &&
-                    fullPath[idx + 10].stationName === "塚本"
+                    (
+                        (fullPath[idx + 9].lineName === "シンカ" && fullPath[idx + 10].stationName === "新神戸") ||
+                        (fullPath[idx + 9].lineName === "トウカ" && fullPath[idx + 10].stationName === "塚本")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -3655,8 +4156,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "美章園" &&
                     fullPath[idx - 1].lineName === "ハンワ" &&
                     idx + 10 < fullPath.length &&
-                    fullPath[idx + 9].lineName === "トウカ" &&
-                    fullPath[idx + 10].stationName === "新大阪"
+                    (
+                        (fullPath[idx + 9].lineName === "シンカ" && fullPath[idx + 10].stationName === "新大阪") ||
+                        (fullPath[idx + 9].lineName === "トウカ" && fullPath[idx + 10].stationName === "新大阪")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -3800,8 +4303,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 糸崎方面→海田市
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "糸崎" &&
-                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "糸崎" && fullPath[idx - 1].lineName === "サンヨ") ||
+                        (fullPath[idx - 1].stationName === "新尾道" && fullPath[idx - 1].lineName === "シンカ")
+                    ) &&
                     idx + 27 < fullPath.length &&
                     fullPath[idx + 27].lineName === null
                 ) {
@@ -3826,8 +4331,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 糸崎方面→向洋方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "糸崎" &&
-                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "糸崎" && fullPath[idx - 1].lineName === "サンヨ") ||
+                        (fullPath[idx - 1].stationName === "新尾道" && fullPath[idx - 1].lineName === "シンカ")
+                    ) &&
                     idx + 28 < fullPath.length &&
                     fullPath[idx + 27].lineName === "サンヨ" &&
                     fullPath[idx + 28].stationName === "向洋"
@@ -3938,8 +4445,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 海田市→糸崎方面
                 if (idx === 0 &&
                     28 < fullPath.length &&
-                    fullPath[27].lineName === "サンヨ" &&
-                    fullPath[28].stationName === "糸崎"
+                    (
+                        (fullPath[27].lineName === "サンヨ" && fullPath[28].stationName === "糸崎") ||
+                        (fullPath[27].lineName === "シンカ" && fullPath[28].stationName === "新尾道")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "海田市", lineName: "ホセイ" },
@@ -3990,8 +4499,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "向洋" &&
                     fullPath[idx - 1].lineName === "サンヨ" &&
                     idx + 28 < fullPath.length &&
-                    fullPath[idx + 27].lineName === "サンヨ" &&
-                    fullPath[idx + 28].stationName === "糸崎"
+                    (
+                        (fullPath[idx + 27].lineName === "サンヨ" && fullPath[idx + 28].stationName === "糸崎") ||
+                        (fullPath[idx + 27].lineName === "シンカ" && fullPath[idx + 28].stationName === "新尾道")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -4626,8 +5137,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 相生→高島方面
                 if (idx === 0 &&
                     19 < fullPath.length &&
-                    fullPath[18].lineName === "サンヨ" &&
-                    fullPath[19].stationName === "高島"
+                    (
+                        (fullPath[18].lineName === "サンヨ" && fullPath[19].stationName === "高島") ||
+                        (fullPath[18].lineName === "シンカ" && fullPath[19].stationName === "岡山")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "相生", lineName: "サンヨ" },
@@ -4647,8 +5160,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 竜野方面→東岡山
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "竜野" &&
-                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "竜野" && fullPath[idx - 1].lineName === "サンヨ") ||
+                        (fullPath[idx - 1].stationName === "姫路" && fullPath[idx - 1].lineName === "シンカ")
+                    ) &&
                     idx + 18 < fullPath.length &&
                     fullPath[idx + 18].lineName === null
                 ) {
@@ -4671,11 +5186,15 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 竜野方面→高島方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "竜野" &&
-                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "竜野" && fullPath[idx - 1].lineName === "サンヨ") ||
+                        (fullPath[idx - 1].stationName === "姫路" && fullPath[idx - 1].lineName === "シンカ")
+                    ) &&
                     idx + 19 < fullPath.length &&
-                    fullPath[idx + 18].lineName === "サンヨ" &&
-                    fullPath[idx + 19].stationName === "高島"
+                    (
+                        (fullPath[idx + 18].lineName === "サンヨ" && fullPath[idx + 19].stationName === "高島") ||
+                        (fullPath[idx + 18].lineName === "シンカ" && fullPath[idx + 19].stationName === "岡山")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -4762,8 +5281,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
             // 東岡山→竜野方面
             if (idx === 0 &&
                 18 < fullPath.length &&
-                fullPath[18].lineName === "サンヨ" &&
-                fullPath[19].stationName === "竜野"
+                (
+                    (fullPath[18].lineName === "サンヨ" && fullPath[19].stationName === "竜野") ||
+                    (fullPath[18].lineName === "シンカ" && fullPath[19].stationName === "姫路")
+                )
             ) {
                 fullPath = [
                     { stationName: "東岡山", lineName: "サンヨ" },
@@ -4783,8 +5304,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
             // 高島方面→相生
             if (0 < idx &&
-                fullPath[idx - 1].stationName === "高島" &&
-                fullPath[idx - 1].lineName === "サンヨ" &&
+                (
+                    (fullPath[idx - 1].stationName === "高島" && fullPath[idx - 1].lineName === "サンヨ") ||
+                    (fullPath[idx - 1].stationName === "岡山" && fullPath[idx - 1].lineName === "シンカ")
+                ) &&
                 idx + 18 < fullPath.length &&
                 fullPath[idx + 18].lineName === null
             ) {
@@ -4807,11 +5330,15 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
             // 高島方面→竜野方面
             if (0 < idx &&
-                fullPath[idx - 1].stationName === "高島" &&
-                fullPath[idx - 1].lineName === "サンヨ" &&
+                (
+                    (fullPath[idx - 1].stationName === "高島" && fullPath[idx - 1].lineName === "サンヨ") ||
+                    (fullPath[idx - 1].stationName === "岡山" && fullPath[idx - 1].lineName === "シンカ")
+                ) &&
                 idx + 19 < fullPath.length &&
-                fullPath[idx + 18].lineName === "サンヨ" &&
-                fullPath[idx + 19].stationName === "竜野"
+                (
+                    (fullPath[idx + 18].lineName === "サンヨ" && fullPath[idx + 19].stationName === "竜野") ||
+                    (fullPath[idx + 18].lineName === "シンカ" && fullPath[idx + 19].stationName === "姫路")
+                )
             ) {
                 fullPath = [
                     ...fullPath.slice(0, idx),
@@ -5331,8 +5858,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 四辻方面→宇部
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "四辻" &&
-                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "四辻" && fullPath[idx - 1].lineName === "サンヨ") ||
+                        (fullPath[idx - 1].stationName === "徳山" && fullPath[idx - 1].lineName === "シンカ")
+                    ) &&
                     idx + 17 < fullPath.length &&
                     fullPath[idx + 17].lineName === null
                 ) {
@@ -5349,8 +5878,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 四辻方面→小野田方面
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "四辻" &&
-                    fullPath[idx - 1].lineName === "サンヨ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "四辻" && fullPath[idx - 1].lineName === "サンヨ") ||
+                        (fullPath[idx - 1].stationName === "徳山" && fullPath[idx - 1].lineName === "シンカ")
+                    ) &&
                     idx + 18 < fullPath.length &&
                     fullPath[idx + 17].lineName === "サンヨ" &&
                     fullPath[idx + 18].stationName === "小野田"
@@ -5462,8 +5993,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 宇部→四辻方面
                 if (idx === 0 &&
                     18 < fullPath.length &&
-                    fullPath[17].lineName === "サンヨ" &&
-                    fullPath[18].stationName === "四辻"
+                    (
+                        (fullPath[17].lineName === "サンヨ" && fullPath[18].stationName === "四辻") ||
+                        (fullPath[17].lineName === "シンカ" && fullPath[18].stationName === "徳山")
+                    )
                 ) {
                     fullPath = [
                         { stationName: "宇部", lineName: "サンヨ" },
@@ -5514,8 +6047,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "小野田" &&
                     fullPath[idx - 1].lineName === "サンヨ" &&
                     idx + 18 < fullPath.length &&
-                    fullPath[idx + 17].lineName === "サンヨ" &&
-                    fullPath[idx + 18].stationName === "四辻"
+                    (
+                        (fullPath[idx + 17].lineName === "サンヨ" && fullPath[idx + 18].stationName === "四辻") ||
+                        (fullPath[idx + 17].lineName === "シンカ" && fullPath[idx + 18].stationName === "徳山")
+                    )
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -5595,8 +6130,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 喜々津→長崎
                 if (idx === 0 &&
                     9 < fullPath.length &&
-                    fullPath[8].lineName === "ナカサ" &&
-                    fullPath[9].stationName === "長崎" &&
+                    (
+                        (fullPath[8].lineName === "ナカサ" && fullPath[9].stationName === "長崎") ||
+                        (fullPath[8].lineName === "ニキシ" && fullPath[9].stationName === "長崎")
+                    ) &&
                     fullPath[9].lineName === null
                 ) {
                     fullPath = [
@@ -5632,8 +6169,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].stationName === "西諫早" &&
                     fullPath[idx - 1].lineName === "ナカサ" &&
                     idx + 9 < fullPath.length &&
-                    fullPath[idx + 8].lineName === "ナカサ" &&
-                    fullPath[idx + 9].stationName === "長崎" &&
+                    (
+                        (fullPath[idx + 8].lineName === "ナカサ" && fullPath[idx + 9].stationName === "長崎") ||
+                        (fullPath[idx + 8].lineName === "ニキシ" && fullPath[idx + 9].stationName === "長崎")
+                    ) &&
                     fullPath[idx + 9].lineName === null
                 ) {
                     fullPath = [
@@ -5703,8 +6242,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 長崎→喜々津
                 if (idx === 1 &&
-                    fullPath[idx - 1].stationName === "長崎" &&
-                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "長崎" && fullPath[idx - 1].lineName === "ナカサ") ||
+                        (fullPath[idx - 1].stationName === "長崎" && fullPath[idx - 1].lineName === "ニキシ")
+                    ) &&
                     idx + 8 < fullPath.length &&
                     fullPath[idx + 8].lineName === null
                 ) {
@@ -5721,8 +6262,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 長崎→西諫早方面
                 if (idx === 1 &&
-                    fullPath[idx - 1].stationName === "長崎" &&
-                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "長崎" && fullPath[idx - 1].lineName === "ナカサ") ||
+                        (fullPath[idx - 1].stationName === "長崎" && fullPath[idx - 1].lineName === "ニキシ")
+                    ) &&
                     idx + 9 < fullPath.length &&
                     fullPath[idx + 8].lineName === "ナカサ" &&
                     fullPath[idx + 9].stationName === "西諫早"
@@ -6260,8 +6803,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 東園→長崎
                 if (idx === 0 &&
                     6 < fullPath.length &&
-                    fullPath[5].lineName === "ナカサ" &&
-                    fullPath[6].stationName === "長崎" &&
+                    (
+                        (fullPath[5].lineName === "ナカサ" && fullPath[6].stationName === "長崎") ||
+                        (fullPath[5].lineName === "ニキシ" && fullPath[6].stationName === "長崎")
+                    ) &&
                     fullPath[6].lineName === null
                 ) {
                     fullPath = [
@@ -6314,8 +6859,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 長崎→東園
                 if (idx === 1 &&
-                    fullPath[idx - 1].stationName === "長崎" &&
-                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "長崎" && fullPath[idx - 1].lineName === "ナカサ") ||
+                        (fullPath[idx - 1].stationName === "長崎" && fullPath[idx - 1].lineName === "ニキシ")
+                    ) &&
                     idx + 5 < fullPath.length &&
                     fullPath[idx + 5].lineName === null
                 ) {
@@ -6381,8 +6928,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 大草→長崎
                 if (idx === 0 &&
                     7 < fullPath.length &&
-                    fullPath[6].lineName === "ナカサ" &&
-                    fullPath[7].stationName === "長崎" &&
+                    (
+                        (fullPath[6].lineName === "ナカサ" && fullPath[7].stationName === "長崎") ||
+                        (fullPath[6].lineName === "ニキシ" && fullPath[7].stationName === "長崎")
+                    ) &&
                     fullPath[7].lineName === null
                 ) {
                     fullPath = [
@@ -6435,8 +6984,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 長崎→大草
                 if (idx === 1 &&
-                    fullPath[idx - 1].stationName === "長崎" &&
-                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "長崎" && fullPath[idx - 1].lineName === "ナカサ") ||
+                        (fullPath[idx - 1].stationName === "長崎" && fullPath[idx - 1].lineName === "ニキシ")
+                    ) &&
                     idx + 6 < fullPath.length &&
                     fullPath[idx + 6].lineName === null
                 ) {
@@ -6501,8 +7052,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 本川内→長崎
                 if (idx === 0 &&
                     8 < fullPath.length &&
-                    fullPath[7].lineName === "ナカサ" &&
-                    fullPath[8].stationName === "長崎" &&
+                    (
+                        (fullPath[7].lineName === "ナカサ" && fullPath[8].stationName === "長崎") ||
+                        (fullPath[7].lineName === "ニキシ" && fullPath[8].stationName === "長崎")
+                    ) &&
                     fullPath[8].lineName === null
                 ) {
                     fullPath = [
@@ -6555,8 +7108,10 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
                 // 長崎→本川内
                 if (idx === 1 &&
-                    fullPath[idx - 1].stationName === "長崎" &&
-                    fullPath[idx - 1].lineName === "ナカサ" &&
+                    (
+                        (fullPath[idx - 1].stationName === "長崎" && fullPath[idx - 1].lineName === "ナカサ") ||
+                        (fullPath[idx - 1].stationName === "長崎" && fullPath[idx - 1].lineName === "ニキシ")
+                    ) &&
                     idx + 7 < fullPath.length &&
                     fullPath[idx + 7].lineName === null
                 ) {
