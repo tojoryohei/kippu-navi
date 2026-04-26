@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.4.0...kippu-navi-v1.4.1) (2026-04-26)
+
+
+### Bug Fixes
+
+* 鉄道駅バリアフリー料金の判定条件の誤りを修正 ([#32](https://github.com/tojoryohei/kippu-navi/issues/32)) ([c29b834](https://github.com/tojoryohei/kippu-navi/commit/c29b834a4fc1fcdc8c9fdadced980a0afaf8335d))
+
 ## [1.4.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.3.3...kippu-navi-v1.4.0) (2026-04-26)
 
 
