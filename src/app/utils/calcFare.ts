@@ -731,6 +731,6 @@ export function calculateBarrierFreeFeeFromPath(fullPath: PathStep[]): number {
     const routeKeys = convertPathStepsToRouteKeys(fullPath);
     if (isAllTrainSpecificSections("電車特定区間", routeKeys)) return 10;
     if (isAllTrainSpecificSections("名古屋附近", routeKeys)) return 10;
-    if (routeKeys.size === 1 || routeKeys.has(createRouteKey("シンカ", "東京", "品川"))) return 10;
+    if (routeKeys.size === 1 && routeKeys.has(createRouteKey("シンカ", "東京", "品川"))) return 10;
     return 0;
 }
