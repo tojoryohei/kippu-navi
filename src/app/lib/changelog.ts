@@ -4,7 +4,7 @@ import path from 'path';
 export interface ChangelogItem {
     date: string;
     version: string;
-    url?: string; // GitHubへのリンクURLを追加
+    url?: string;
     tag: 'アップデート' | '修正' | 'お知らせ';
     contents: string[];
 }
@@ -37,14 +37,17 @@ export async function getChangelogs(limit?: number): Promise<ChangelogItem[]> {
             if (section.includes('### Bug Fixes')) tag = '修正';
             else if (section.includes('### Features')) tag = 'アップデート';
 
-            // 箇条書きの更新内容を綺麗に抽出
             const contents = lines
                 .filter(line => line.trim().startsWith('*') || line.trim().startsWith('-'))
                 .map(line => {
-                    let text = line.replace(/^[\*\-]\s+/, ''); // 先頭の * や - を削除
+                    // 1. 先にtrim()して見えない改行コード(\r)や前後の空白を確実に除去
+                    let text = line.trim().replace(/^[\*\-]\s+/, '');
                     text = text.replace(/\*\*/g, ''); // 太字の ** を削除
-                    // 行末のコミットハッシュリンク "([3c6e0de](https:...))" を削除
-                    text = text.replace(/\s*\(\[[a-f0-9]+\]\([^)]+\)\)\s*$/, '');
+
+                    // 2. 行末の Issueリンク、コミットハッシュリンク、closes 等をまとめて削除
+                    // ※ [#32] や [c29b834] のような Issue番号・コミットハッシュの形式のみを対象としています
+                    text = text.replace(/(?:\s*(?:,?\s*closes\s*)?\(?\[(?:#[0-9]+|[a-f0-9]+)\]\([^)]+\)\)?)+$/i, '');
+
                     return text.trim();
                 });
 
