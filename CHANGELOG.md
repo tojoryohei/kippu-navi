@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.3.3...kippu-navi-v1.4.0) (2026-04-26)
+
+
+### Features
+
+* 新幹線経由の運賃計算機能の追加 ([#30](https://github.com/tojoryohei/kippu-navi/issues/30)) ([2e94b13](https://github.com/tojoryohei/kippu-navi/commit/2e94b1352ea7d90554a10b3b11e82b8fb096c04e)), closes [#18](https://github.com/tojoryohei/kippu-navi/issues/18)
+
 ## [1.3.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.3.2...kippu-navi-v1.3.3) (2026-04-25)
 
 
