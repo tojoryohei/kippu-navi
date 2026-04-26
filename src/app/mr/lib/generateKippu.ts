@@ -1,7 +1,8 @@
-import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings, getFareForPath } from '@/app/utils/calc';
+import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings } from '@/app/utils/calc';
 import { loadLines } from '@/app/mr/lib/loadLines';
 import { loadKanas } from '@/app/mr/lib/loadKanas';
 import { correctPath, uncorrectPath } from '@/app/utils/correctPath';
+import { calculateBarrierFreeFeeFromPath, calculateFareFromPath } from '@/app/utils/calcFare';
 import { cheapestPathAndFare } from '@/app/utils/cheapestPath';
 
 import { RouteRequest, KippuData, PathStep, CalculationMode } from '@/app/types';
@@ -41,7 +42,7 @@ export function generateKippu(request: RouteRequest, options: GenerateKippuOptio
     const routeSegments = convertPathStepsToRouteSegments(correctedPath);
     const totalEigyoKilo = calculateTotalEigyoKilo(routeSegments);
 
-    const fare = getFareForPath(correctedPath);
+    const fare = calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
 
     const validDays = calculateValidDaysFromKilo(totalEigyoKilo);
 
