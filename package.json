@@ -1,6 +1,6 @@
 {
   "name": "kippu-navi",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -H 0.0.0.0 -p 3000",
