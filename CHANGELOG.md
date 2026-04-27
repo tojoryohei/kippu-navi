@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.5.0...kippu-navi-v1.5.1) (2026-04-27)
+
+
+### Bug Fixes
+
+* スマホメニュー展開時のオーバーレイ表示領域と背景スクロールのバグ修正 ([#38](https://github.com/tojoryohei/kippu-navi/issues/38)) ([cec6ec2](https://github.com/tojoryohei/kippu-navi/commit/cec6ec28b90389cc8d28046894de5c5b860fc45a))
+
 ## [1.5.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.4.1...kippu-navi-v1.5.0) (2026-04-27)
 
 
