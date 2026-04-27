@@ -56,7 +56,7 @@ const Header = () => {
 
             {openMenu && (
                 <div
-                    className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden transition-opacity"
+                    className="fixed top-16 inset-x-0 bottom-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden transition-opacity"
                     onClick={handleMenuToggle}
                 />
             )}

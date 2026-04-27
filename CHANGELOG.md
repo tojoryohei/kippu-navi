@@ -68,7 +68,7 @@
 
 ### Bug Fixes
 
-* **ui:** 発着駅名が長い場合に画面外にはみ出るレイアウト問題を修正 ([3c6e0de](https://github.com/tojoryohei/kippu-navi/commit/3c6e0de03be2b23970eaa3879645bc4a22c11bac))
+* 発着駅名が長い場合に画面外にはみ出るレイアウト問題を修正 ([3c6e0de](https://github.com/tojoryohei/kippu-navi/commit/3c6e0de03be2b23970eaa3879645bc4a22c11bac))
 
 
 ## [1.1.0](https://github.com/tojoryohei/kippu-navi/releases/tag/kippu-navi-v1.1.0) (2026-04-18)
