@@ -1,5 +1,5 @@
 import { GoogleAnalytics } from "@next/third-parties/google";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
 import AdSense from "@/components/AdSense";
@@ -16,15 +16,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#155dfc",
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL('https://kippu-navi.com'),
   title: {
     default: "きっぷナビ",
     template: "%s | きっぷナビ",
   },
-  description: "JR乗車券の分割運賃計算をするサイトです。",
-  metadataBase: new URL('https://kippu-navi.com'),
+  description: "JRの最安分割運賃計算をするサイトです。",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
+    title: "きっぷナビ",
+    description: "JRの最安分割運賃計算をするサイトです。",
+    url: "https://kippu-navi.com/",
     siteName: "きっぷナビ",
+    locale: "ja_JP",
     type: "website",
   },
 };

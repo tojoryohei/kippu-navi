@@ -3,7 +3,7 @@ import { RiScissorsFill, RiGuideLine } from "react-icons/ri";
 import { getChangelogs } from '@/app/lib/changelog';
 
 export const metadata = {
-  title: "きっぷナビ - 分割乗車券のすすめ",
+  title: "きっぷナビ",
   description: "JRの運賃計算プログラムや最も安くなるきっぷの組み合わせを計算する最安分割乗車券プログラムを公開しています。",
 };
 
