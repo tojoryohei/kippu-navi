@@ -3,7 +3,7 @@ import { RiScissorsFill, RiGuideLine } from "react-icons/ri";
 import { getChangelogs } from '@/app/lib/changelog';
 
 export const metadata = {
-  title: "きっぷナビ - 分割乗車券のすすめ",
+  title: "きっぷナビ",
   description: "JRの運賃計算プログラムや最も安くなるきっぷの組み合わせを計算する最安分割乗車券プログラムを公開しています。",
 };
 
@@ -19,7 +19,7 @@ export default async function Home() {
             きっぷナビへようこそ
           </h1>
           <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-600 leading-relaxed">
-            発駅と着駅を指定するだけで、最もお得な分割乗車券の組み合わせを計算します。
+            発駅と着駅を指定するだけで、最も安い分割乗車券の組み合わせを計算します。
             また、開発の基盤となっている運賃計算プログラムもお試しいただけます。
           </p>
         </div>
@@ -40,7 +40,7 @@ export default async function Home() {
               一番お得な分割ルートを検索します。実際の旅行や交通費の節約に活用したい方はこちらをご利用ください。
             </p>
             <div className="text-blue-600 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300">
-              計算してみる
+              分割計算をする
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
             </div>
           </Link>
@@ -56,10 +56,10 @@ export default async function Home() {
               </h2>
             </div>
             <p className="text-slate-600 mb-6 grow">
-              分割計算の基礎となる、乗車券の普通運賃を計算します。運賃の仕組みを知りたい方はこちら。
+              分割計算の基礎となる、乗車券の普通運賃を計算します。
             </p>
             <div className="text-slate-700 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300">
-              運賃を確認する
+              運賃を計算する
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
             </div>
           </Link>
@@ -72,10 +72,10 @@ export default async function Home() {
           </h2>
           <div className="space-y-4 text-slate-600 leading-relaxed">
             <p>
-              JRの運賃は乗車距離に応じて計算されますが、特定の駅で乗車券を区切って購入する「分割乗車券」を利用することで、通しで購入するよりも全体の交通費を安く抑えられるケースが数多く存在します。
+              JRの運賃は乗車経路に応じて計算されますが、途中の駅で乗車券を区切って購入する「分割乗車券」を利用することで、通しで購入するよりも全体の交通費を安く抑えられるケースが数多く存在します。
             </p>
             <p>
-              しかし、数ある駅の中から最も安くなる分割パターンを手作業で見つけ出すのは非常に困難です。当サイトでは、情報工学に基づいた独自の経路探索アルゴリズムを活用し、出発駅から到着駅までの何万通りもの組み合わせから「最安となる分割経路」を自動算出します。
+              しかし、数ある駅の中から最も安くなる分割パターンを見つけ出すのは非常に困難です。当サイトでは、情報工学に基づいた独自の経路探索アルゴリズムを活用し、出発駅から到着駅までの多くの組み合わせから「最安となる分割乗車券の組み合わせ」を自動算出します。
             </p>
           </div>
         </div>
@@ -262,12 +262,12 @@ export default async function Home() {
             <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
               <h3 className="font-bold text-slate-800 flex items-start">
                 <span className="shrink-0 bg-blue-100 text-blue-600 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">Q</span>
-                <span className="mt-0.5">定期券や学割と併用できますか？</span>
+                <span className="mt-0.5">定期券や割引乗車券を使った計算できますか？</span>
               </h3>
               <div className="mt-3 flex items-start">
                 <span className="shrink-0 bg-slate-200 text-slate-600 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">A</span>
                 <div className="mt-0.5 text-slate-600 leading-relaxed">
-                  現在のプログラムは大人の普通乗車券の計算にのみ対応しています。学割との併用計算や定期乗車券の対応はもうしばらくお待ちください。
+                  現在のプログラムは大人の普通乗車券の計算にのみ対応しています。割引乗車券との併用計算や定期乗車券の対応は今しばらくお待ちください。
                 </div>
               </div>
             </div>
