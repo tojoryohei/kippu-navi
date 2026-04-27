@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaBookOpen } from "react-icons/fa";
 import { MdMenu, MdClear, MdHome } from "react-icons/md";
 import { RiGuideLine, RiScissorsFill } from "react-icons/ri";
@@ -22,31 +22,45 @@ const Header = () => {
         setOpenMenu((prev) => !prev);
     };
 
+    useEffect(() => {
+        if (openMenu) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [openMenu]);
+
     return (
-        <header className="sticky top-0 bg-white/80 backdrop-blur-md z-20 border-b border-slate-200 flex items-center justify-between h-16 px-4 sm:px-6" >
+        <header className="sticky top-0 z-20 border-b border-slate-200 flex items-center justify-between h-16 px-4 sm:px-6">
+
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-md -z-10" />
+
             <h1>
-                <Link href="/" className="text-2xl font-bold tracking-tight text-blue-600 hover:opacity-80 transition-opacity font-logo">
+                <Link href="/" className="text-2xl font-bold tracking-tight text-blue-600 hover:opacity-80 transition-opacity font-logo relative z-50">
                     きっぷナビ
                 </Link>
             </h1>
 
             <button
                 onClick={handleMenuToggle}
-                className="text-3xl z-50 md:hidden text-slate-700 hover:text-blue-600 transition-colors"
+                className="relative text-3xl z-50 md:hidden text-slate-700 hover:text-blue-600 transition-colors"
                 aria-label={openMenu ? "メニューバーを閉じる" : "メニューバーを開く"}
                 aria-expanded={openMenu}
             >
                 {openMenu ? <MdClear /> : <MdMenu />}
             </button>
 
-            {
-                openMenu && (
-                    <div
-                        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden transition-opacity"
-                        onClick={handleMenuToggle}
-                    />
-                )
-            }
+            {openMenu && (
+                <div
+                    className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden transition-opacity"
+                    onClick={handleMenuToggle}
+                />
+            )}
+
             <nav
                 className={`fixed top-0 right-0 h-screen w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-40
                 ${openMenu ? "translate-x-0" : "translate-x-full"}
@@ -72,7 +86,7 @@ const Header = () => {
                     })}
                 </ul>
             </nav>
-        </header >
+        </header>
     );
 };
 
