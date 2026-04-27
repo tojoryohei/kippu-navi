@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { RiGuideLine } from "react-icons/ri";
 
 export const metadata: Metadata = {
-  title: "運賃計算（経路入力）",
-  description: "乗車券の基本運賃を計算するための経路入力ページです．",
+  title: "運賃計算プログラム",
+  description: "経路を入力してJRの運賃を計算するためのページです。",
 };
 
 export default function Page() {
@@ -18,7 +18,7 @@ export default function Page() {
             <RiGuideLine className="w-8 h-8 text-slate-700" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-3">
-            運賃計算（経路入力）
+            運賃計算プログラム
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
