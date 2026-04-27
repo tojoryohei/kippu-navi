@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.4.1...kippu-navi-v1.5.0) (2026-04-27)
+
+
+### Features
+
+* 検索エンジン最適の強化とユーザー目線でのタイトル改修 ([#36](https://github.com/tojoryohei/kippu-navi/issues/36)) ([1042244](https://github.com/tojoryohei/kippu-navi/commit/10422441f15f22d0858140b3091c11753ba10304))
+
 ## [1.4.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.4.0...kippu-navi-v1.4.1) (2026-04-26)
 
 
