@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.5.1...kippu-navi-v1.5.2) (2026-04-28)
+
+
+### Bug Fixes
+
+* 依存パッケージの脆弱性対応 ([#44](https://github.com/tojoryohei/kippu-navi/issues/44)) ([550d4b3](https://github.com/tojoryohei/kippu-navi/commit/550d4b39f3ed3ce9f352f5ed210e589265dd7726))
+
 ## [1.5.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.5.0...kippu-navi-v1.5.1) (2026-04-27)
 
 
