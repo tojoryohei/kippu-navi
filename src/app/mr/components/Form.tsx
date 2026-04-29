@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useForm, Controller, SubmitHandler, useFieldArray } from "react-hook-form";
 import type { SingleValue } from "react-select";
+import { useState } from "react";
+import { RiArrowUpDownLine } from "react-icons/ri";
 
 import stationData from "@/app/mr/data/stations.json";
 import lineData from "@/app/mr/data/lines.json";
@@ -27,13 +28,18 @@ export default function Form() {
         },
     });
 
-    const { fields, append } = useFieldArray({ control, name: "segments" });
+    const { fields, append, replace } = useFieldArray({ control, name: "segments" });
     const formValues = watch();
 
     const lastSegment = formValues.segments[formValues.segments.length - 1];
     const lastDestination = lastSegment?.destinationStation;
 
     const canAddTransfer = lastDestination ? (lastDestination.lines?.length ?? 0) > 1 : false;
+
+    // 経路がすべて入力されているか判定（逆転ボタンの活性/非活性に使用）
+    const canReverse = !!formValues.startStation &&
+        formValues.segments.length > 0 &&
+        formValues.segments.every(seg => seg.viaLine && seg.destinationStation);
 
     const handleFieldChange = (
         value: SingleValue<Station | Line>,
@@ -61,6 +67,28 @@ export default function Form() {
 
     const addSegment = () => {
         append({ viaLine: null, destinationStation: null });
+    };
+
+    // フォームの入力値のみを逆転させる処理（計算やResultの操作は行わない）
+    const handleReverseRoute = () => {
+        if (!canReverse) return;
+
+        const currentStart = getValues("startStation");
+        const currentSegments = getValues("segments");
+
+        if (!currentStart) return;
+
+        const reversedSegments = [];
+        const newStart = currentSegments[currentSegments.length - 1].destinationStation;
+
+        for (let i = currentSegments.length - 1; i >= 0; i--) {
+            const dest = i === 0 ? currentStart : currentSegments[i - 1].destinationStation;
+            const line = currentSegments[i].viaLine;
+            reversedSegments.push({ viaLine: line, destinationStation: dest });
+        }
+
+        setValue("startStation", newStart, { shouldValidate: true });
+        replace(reversedSegments);
     };
 
     const createApiRequestBody = (data: FormValues) => {
@@ -257,16 +285,29 @@ export default function Form() {
                             </div>
                         );
                     })}
-                    <div>
+
+                    {/* 経路追加 ＆ 経路逆転 ボタン群 */}
+                    <div className="flex items-center gap-3 my-4">
                         <button
                             type="button"
                             onClick={addSegment}
                             disabled={!canAddTransfer}
-                            className="my-4 px-4 py-2 bg-gray-500 text-white rounded disabled:bg-gray-300"
+                            className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm"
                         >
                             経由路線を追加
                         </button>
+                        <button
+                            type="button"
+                            onClick={handleReverseRoute}
+                            disabled={!canReverse}
+                            className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded hover:bg-slate-50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 flex items-center gap-2 transition-colors shadow-sm"
+                            title="入力フォームの発着駅と経路を逆転させます"
+                        >
+                            <RiArrowUpDownLine className="w-5 h-5" />
+                            経路を逆転
+                        </button>
                     </div>
+
                     {/* 運賃計算モード選択（ラジオボタン） */}
                     <div className="mb-6 flex flex-col items-start bg-slate-50 p-4 rounded-md border border-slate-200 w-full max-w-xl">
                         <p className="block text-base font-bold text-slate-700 mb-3">
@@ -313,7 +354,7 @@ export default function Form() {
                             </label>
                         </div>
                     </div>
-                    <button type="submit" className="px-6 py-2 bg-blue-400 text-black rounded disabled:bg-gray-400 disabled:text-white" disabled={!isValid}>
+                    <button type="submit" className="px-6 py-2 bg-blue-400 text-black rounded hover:bg-blue-500 disabled:bg-gray-400 disabled:text-white transition-colors" disabled={!isValid}>
                         <p>運賃計算をする</p>
                     </button>
                 </div>
@@ -336,7 +377,9 @@ export default function Form() {
                                     ))}
                                 </div>
                             </div>
-                            <div className="text-2xl shrink-0 text-center">→</div>
+
+                            <div className="text-2xl shrink-0 text-center text-slate-400">→</div>
+
                             <div className="flex-1 text-left text-wrap">
                                 <div className={`font-bold flex justify-around flex-wrap ${result.arrivalStation.length > 6 ? 'text-lg sm:text-xl' : 'text-2xl'}`}>
                                     {result.arrivalStation.split('').map((char, idx) => (
@@ -346,7 +389,7 @@ export default function Form() {
                             </div>
                         </div>
                         <span>経由：{result.printedViaLines.length === 0 ? "ーーー" : result.printedViaLines.join("・")}</span>
-                        <span className="flex justify-between items-center">
+                        <span className="flex justify-between items-center mt-2">
                             <span>{/* result.validDays + " 日間有効" */}</span>
                             <span className="text-xl">¥{result.fare > 0 ? result.fare.toLocaleString() : "***"}</span>
                         </span>
@@ -361,9 +404,10 @@ export default function Form() {
 
                 <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
                 <ol className="list-decimal list-inside space-y-1 ml-1">
-                    <li><strong>駅・路線の入力:</strong> 「発駅」と「着駅（または経由駅）」に駅名を入力し、候補から選択します。</li>
-                    <li><strong>経路の追加:</strong> 複数の路線を乗り継ぐ場合は「経由路線を追加」ボタンで区間を増やせます。</li>
-                    <li><strong>運賃の計算:</strong> 「照会」ボタンを押すと、自動で営業キロと最安運賃が算出されます。</li>
+                    <li><strong>駅・路線の入力:</strong> 発駅から着駅までの経路を入力してください。</li>
+                    <li><strong>経路の追加:</strong> 「経由路線を追加」ボタンで複数の路線を乗り継ぐことができます。</li>
+                    <li><strong>経路の逆転:</strong> 経路を逆にしたい場合は「経路を逆転」ボタンを押してください。</li>
+                    <li><strong>運賃の計算:</strong> 「運賃計算をする」ボタンを押すと、営業キロと運賃が算出されます。</li>
                 </ol>
             </div>
         </>
