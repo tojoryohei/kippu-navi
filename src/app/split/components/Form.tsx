@@ -2,15 +2,14 @@
 
 import { useState } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
+import { RiArrowUpDownLine } from "react-icons/ri";
 
 import stationData from "@/app/split/data/stations.json";
 import SelectStation from "@/app/split/components/SelectStation";
-// ※Station型を使用するためimportに追加しています
 import { ApiSplitFullResponse, SplitApiRequest, SplitApiResponse, SplitFormInput, Station } from "@/app/types";
 
 export default function SplitForm() {
-    // errorsを取り出してインラインエラー表示に活用
-    const { handleSubmit, control, formState: { isValid, errors } } = useForm<SplitFormInput>({
+    const { handleSubmit, control, setValue, getValues, watch, formState: { isValid, errors } } = useForm<SplitFormInput>({
         mode: 'onChange',
         defaultValues: {
             startStation: null,
@@ -23,7 +22,22 @@ export default function SplitForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // 追加: 自由入力されたテキストが候補の駅データに存在するか検証する関数
+    // 発駅か着駅のどちらかが入力されていれば入れ替え可能とする
+    const startStationVal = watch("startStation");
+    const endStationVal = watch("endStation");
+    const canSwap = !!startStationVal || !!endStationVal;
+
+    // 追加: 発駅と着駅の入力値を入れ替える関数（計算は実行しない）
+    const handleSwapStations = () => {
+        if (!canSwap) return;
+
+        const currentStart = getValues("startStation");
+        const currentEnd = getValues("endStation");
+
+        setValue("startStation", currentEnd, { shouldValidate: true });
+        setValue("endStation", currentStart, { shouldValidate: true });
+    };
+
     const validateStation = (value: Station | null) => {
         if (!value || !value.name) return "駅名を入力してください";
         const exists = stationData.some((s: any) => s.name === value.name);
@@ -71,58 +85,78 @@ export default function SplitForm() {
             <form onSubmit={handleSubmit(onSubmit)} className="p-8">
                 <div className="flex flex-col gap-4">
 
-                    <div className="flex flex-col">
-                        <div className="flex items-center gap-5 whitespace-nowrap">
-                            <p className="w-12">発駅</p>
-                            <Controller
-                                name="startStation"
-                                control={control}
-                                // rulesを検証関数に変更
-                                rules={{ validate: validateStation }}
-                                render={({ field }) => (
-                                    <SelectStation
-                                        instanceId="start-station-split"
-                                        {...field}
-                                        options={stationData}
+                    {/* 入力欄と入れ替えボタンを横並びにするラッパー */}
+                    <div className="flex flex-row items-center gap-4">
+
+                        {/* 左側: 発着駅の入力欄 */}
+                        <div className="flex flex-col gap-4 flex-1">
+                            {/* 発駅 */}
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-5 whitespace-nowrap">
+                                    <p className="w-12">発駅</p>
+                                    <Controller
+                                        name="startStation"
+                                        control={control}
+                                        rules={{ validate: validateStation }}
+                                        render={({ field }) => (
+                                            <SelectStation
+                                                instanceId="start-station-split"
+                                                {...field}
+                                                options={stationData}
+                                            />
+                                        )}
                                     />
+                                </div>
+                                {errors.startStation && (
+                                    <p className="text-red-500 text-xs mt-1 ml-17">
+                                        {errors.startStation.message}
+                                    </p>
                                 )}
-                            />
+                            </div>
+
+                            {/* 着駅 */}
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-5 whitespace-nowrap">
+                                    <p className="w-12">着駅</p>
+                                    <Controller
+                                        name="endStation"
+                                        control={control}
+                                        rules={{ validate: validateStation }}
+                                        render={({ field }) => (
+                                            <SelectStation
+                                                instanceId="end-station-split"
+                                                {...field}
+                                                options={stationData}
+                                            />
+                                        )}
+                                    />
+                                </div>
+                                {errors.endStation && (
+                                    <p className="text-red-500 text-xs mt-1 ml-17">
+                                        {errors.endStation.message}
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        {/* バリデーションエラー時のメッセージ（レイアウト崩れを防ぐためマージン調整） */}
-                        {errors.startStation && (
-                            <p className="text-red-500 text-xs mt-1 ml-17">
-                                {errors.startStation.message}
-                            </p>
-                        )}
+
+                        {/* 右側: 入れ替えボタン */}
+                        <div className="flex items-center justify-center shrink-0">
+                            <button
+                                type="button"
+                                onClick={handleSwapStations}
+                                disabled={!canSwap}
+                                className="p-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 bg-white rounded-full border border-slate-200 shadow-sm transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-slate-500"
+                                title="発駅と着駅を入れ替える"
+                            >
+                                <RiArrowUpDownLine className="w-6 h-6" />
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="flex flex-col">
-                        <div className="flex items-center gap-5 whitespace-nowrap">
-                            <p className="w-12">着駅</p>
-                            <Controller
-                                name="endStation"
-                                control={control}
-                                rules={{ validate: validateStation }}
-                                render={({ field }) => (
-                                    <SelectStation
-                                        instanceId="end-station-split"
-                                        {...field}
-                                        options={stationData}
-                                    />
-                                )}
-                            />
-                        </div>
-                        {errors.endStation && (
-                            <p className="text-red-500 text-xs mt-1 ml-17">
-                                {errors.endStation.message}
-                            </p>
-                        )}
-                    </div>
-
-                    <div>
+                    <div className="mt-2">
                         <button
                             type="submit"
-                            className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors mt-2"
+                            className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors"
                             disabled={!isValid || isLoading}
                         >
                             {isLoading ? "計算中..." : "最安分割運賃を計算"}
@@ -254,10 +288,10 @@ export default function SplitForm() {
                 <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
                 <ol className="list-decimal list-inside space-y-1 ml-1">
                     <li><strong>駅の入力:</strong> 「発駅」と「着駅」に駅名を入力し、候補から選択します。</li>
+                    <li><strong>駅の入れ替え:</strong> 検索フォームの入力を逆にしたい場合は ⇄ ボタンを押すことで切り替わります。</li>
                     <li><strong>最安分割運賃の計算:</strong> 「最安分割運賃を計算」ボタンを押すと、自動で最安分割運賃と切符の情報が出力されます。</li>
                 </ol>
             </div>
-            {/* ★ ここまで追加 */}
         </main>
     );
 }
