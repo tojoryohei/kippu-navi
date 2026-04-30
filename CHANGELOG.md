@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.1...kippu-navi-v1.6.2) (2026-04-30)
+
+
+### Bug Fixes
+
+* スマホ表示時のボタンテキストの意図しない改行を修正 ([#50](https://github.com/tojoryohei/kippu-navi/issues/50)) ([6009185](https://github.com/tojoryohei/kippu-navi/commit/600918529e47bf96e5324e47560b77ea03735fd4))
+
 ## [1.6.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.0...kippu-navi-v1.6.1) (2026-04-30)
 
 
@@ -12,7 +19,7 @@
 
 ### Features
 
-* 発着駅の入れ替えボタンおよび経路逆転機能の実装Feature/swap button ([#46](https://github.com/tojoryohei/kippu-navi/issues/46)) ([802b157](https://github.com/tojoryohei/kippu-navi/commit/802b1577c9695924e1436a961d4971fc4cea7f35))
+* 発着駅の入れ替えボタンおよび経路逆転機能の実装 ([#46](https://github.com/tojoryohei/kippu-navi/issues/46)) ([802b157](https://github.com/tojoryohei/kippu-navi/commit/802b1577c9695924e1436a961d4971fc4cea7f35))
 
 ## [1.5.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.5.1...kippu-navi-v1.5.2) (2026-04-28)
 
