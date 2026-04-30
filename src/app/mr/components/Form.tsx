@@ -181,10 +181,12 @@ export default function Form() {
 
     return (
         <>
-            <form onSubmit={handleSubmit(onSubmit)} className="p-8">
-                <div className="flex flex-col">
-                    <div className="flex items-center gap-5 whitespace-nowrap">
-                        <p>発駅</p>
+            <form onSubmit={handleSubmit(onSubmit)} className="p-8 w-full">
+                <div className="flex flex-col gap-4 w-full">
+
+                    {/* 発駅 */}
+                    <div className="flex items-center gap-5 w-full whitespace-nowrap">
+                        <p className="w-12 shrink-0">発駅</p>
                         <Controller
                             name="startStation"
                             control={control}
@@ -197,19 +199,20 @@ export default function Form() {
                                 }
                             }}
                             render={({ field, fieldState }) => (
-                                <div>
+                                <div className="flex-1 min-w-0">
                                     <SelectStation
                                         instanceId="start-station"
                                         value={field.value}
                                         onChange={(value) => handleFieldChange(value, field.onChange, resetOnStartStationChange)}
                                         hideMenuWhenEmpty={true}
                                     />
-                                    {fieldState.error && <p className="text-red-500 text-xs">{fieldState.error.message}</p>}
+                                    {fieldState.error && <p className="text-red-500 text-xs mt-1">{fieldState.error.message}</p>}
                                 </div>
                             )}
                         />
                     </div>
 
+                    {/* 経由路線と着駅 */}
                     {fields.map((item, index) => {
                         const previousStation = index === 0
                             ? formValues.startStation
@@ -237,26 +240,31 @@ export default function Form() {
                         const stationLabel = isLastStation ? "着駅" : "経由";
 
                         return (
-                            <div key={item.id} >
-                                <Controller
-                                    name={`segments.${index}.viaLine`}
-                                    control={control}
-                                    rules={{ required: "経由路線を選択してください" }}
-                                    render={({ field, fieldState }) => (
-                                        <div>
-                                            <SelectLine
-                                                instanceId={`via-line-${index}`}
-                                                options={availableLines}
-                                                isDisabled={!previousStation}
-                                                value={field.value}
-                                                onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnViaLineChange(index))}
-                                            />
-                                            {fieldState.error && <p className="text-red-500 text-xs">{fieldState.error.message}</p>}
-                                        </div>
-                                    )}
-                                />
-                                <div className="flex items-center gap-4 whitespace-nowrap">
-                                    <p>{stationLabel}</p>
+                            <div key={item.id} className="flex flex-col gap-4 w-full">
+                                {/* 路線（ラベルなしで、コンテナ幅いっぱいに広げる） */}
+                                <div className="w-full">
+                                    <Controller
+                                        name={`segments.${index}.viaLine`}
+                                        control={control}
+                                        rules={{ required: "経由路線を選択してください" }}
+                                        render={({ field, fieldState }) => (
+                                            <div className="w-full">
+                                                <SelectLine
+                                                    instanceId={`via-line-${index}`}
+                                                    options={availableLines}
+                                                    isDisabled={!previousStation}
+                                                    value={field.value}
+                                                    onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnViaLineChange(index))}
+                                                />
+                                                {fieldState.error && <p className="text-red-500 text-xs mt-1">{fieldState.error.message}</p>}
+                                            </div>
+                                        )}
+                                    />
+                                </div>
+
+                                {/* 駅 */}
+                                <div className="flex items-center gap-5 w-full whitespace-nowrap">
+                                    <p className="w-12 shrink-0">{stationLabel}</p>
                                     <Controller
                                         name={`segments.${index}.destinationStation`}
                                         control={control}
@@ -269,7 +277,7 @@ export default function Form() {
                                             }
                                         }}
                                         render={({ field, fieldState }) => (
-                                            <div>
+                                            <div className="flex-1 min-w-0">
                                                 <SelectStation
                                                     instanceId={`dest-station-${index}`}
                                                     options={stationsOnLine}
@@ -277,7 +285,7 @@ export default function Form() {
                                                     value={field.value}
                                                     onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnDestinationStationChange(index))}
                                                 />
-                                                {fieldState.error && <p className="text-red-500 text-xs">{fieldState.error.message}</p>}
+                                                {fieldState.error && <p className="text-red-500 text-xs mt-1">{fieldState.error.message}</p>}
                                             </div>
                                         )}
                                     />
@@ -287,12 +295,12 @@ export default function Form() {
                     })}
 
                     {/* 経路追加 ＆ 経路逆転 ボタン群 */}
-                    <div className="flex items-center gap-3 my-4">
+                    <div className="flex items-center flex-wrap gap-3 my-2 w-full">
                         <button
                             type="button"
                             onClick={addSegment}
                             disabled={!canAddTransfer}
-                            className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm"
+                            className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm whitespace-nowrap"
                         >
                             経由路線を追加
                         </button>
@@ -300,7 +308,7 @@ export default function Form() {
                             type="button"
                             onClick={handleReverseRoute}
                             disabled={!canReverse}
-                            className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded hover:bg-slate-50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 flex items-center gap-2 transition-colors shadow-sm"
+                            className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded hover:bg-slate-50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
                             title="入力フォームの発着駅と経路を逆転させます"
                         >
                             <RiArrowUpDownLine className="w-5 h-5" />
@@ -309,12 +317,11 @@ export default function Form() {
                     </div>
 
                     {/* 運賃計算モード選択（ラジオボタン） */}
-                    <div className="mb-6 flex flex-col items-start bg-slate-50 p-4 rounded-md border border-slate-200 w-full max-w-xl">
+                    <div className="my-4 flex flex-col items-start bg-slate-50 p-4 rounded-md border border-slate-200 w-full">
                         <p className="block text-base font-bold text-slate-700 mb-3">
                             運賃計算モード
                         </p>
-                        <div className="flex flex-col gap-3 w-full p-3">
-                            {/* ① 通常モード */}
+                        <div className="flex flex-col gap-3 w-full px-2">
                             <label className="inline-flex items-center cursor-pointer w-fit">
                                 <input
                                     type="radio"
@@ -327,7 +334,6 @@ export default function Form() {
                                 </span>
                             </label>
 
-                            {/* ② 最安探索モード */}
                             <label className="inline-flex items-center cursor-pointer w-fit">
                                 <input
                                     type="radio"
@@ -340,7 +346,6 @@ export default function Form() {
                                 </span>
                             </label>
 
-                            {/* ③ 補正禁止モード */}
                             <label className="inline-flex items-center cursor-pointer w-fit">
                                 <input
                                     type="radio"
@@ -354,11 +359,13 @@ export default function Form() {
                             </label>
                         </div>
                     </div>
-                    <button type="submit" className="px-6 py-2 bg-blue-400 text-black rounded hover:bg-blue-500 disabled:bg-gray-400 disabled:text-white transition-colors" disabled={!isValid}>
-                        <p>運賃計算をする</p>
+
+                    <button type="submit" className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2" disabled={!isValid}>
+                        運賃計算をする
                     </button>
                 </div>
             </form>
+
             <div className="my-8 p-4">
                 {isLoading && <p className="py-5 border-t">計算中...</p>}
                 {serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
@@ -406,7 +413,7 @@ export default function Form() {
                 <ol className="list-decimal list-inside space-y-1 ml-1">
                     <li><strong>駅・路線の入力:</strong> 発駅から着駅までの経路を入力してください。</li>
                     <li><strong>経路の追加:</strong> 「経由路線を追加」ボタンで複数の路線を乗り継ぐことができます。</li>
-                    <li><strong>経路の逆転:</strong> 経路を逆にしたい場合は「経路を逆転」ボタンを押してください。</li>
+                    <li><strong>経路の逆転:</strong> 経路を逆にしたい場合は「⇅ 経路を逆転」ボタンを押してください。</li>
                     <li><strong>運賃の計算:</strong> 「運賃計算をする」ボタンを押すと、営業キロと運賃が算出されます。</li>
                 </ol>
             </div>

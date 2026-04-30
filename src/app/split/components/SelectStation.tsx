@@ -56,7 +56,7 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: Sel
     };
 
     return (
-        <div className="my-2 w-47">
+        <div className="my-2 w-full">
             <Select
                 instanceId={safeInstanceId}
                 value={value}

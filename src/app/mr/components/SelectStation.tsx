@@ -62,7 +62,7 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled, hideM
     const menuIsOpen = (hideMenuWhenEmpty && inputValue.length === 0) ? false : undefined;
 
     return (
-        <div className="my-2 w-47">
+        <div className="my-2 w-full">
             <Select
                 instanceId={safeInstanceId}
                 value={value}
