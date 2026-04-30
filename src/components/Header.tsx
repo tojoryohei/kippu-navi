@@ -35,9 +35,9 @@ const Header = () => {
     }, [openMenu]);
 
     return (
-        <header className="sticky top-0 z-20 border-b border-slate-200 flex items-center justify-between h-16 px-4 sm:px-6">
+        <header className="sticky top-0 z-50 border-b border-slate-200 flex items-center justify-between h-16 px-4 sm:px-6">
 
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-md -z-10" />
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-40" />
 
             <h1>
                 <Link href="/" className="text-2xl font-bold tracking-tight text-blue-600 hover:opacity-80 transition-opacity font-logo relative z-50">
@@ -56,13 +56,13 @@ const Header = () => {
 
             {openMenu && (
                 <div
-                    className="fixed top-16 inset-x-0 bottom-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden transition-opacity"
+                    className="fixed top-16 inset-x-0 bottom-0 bg-slate-900/50 backdrop-blur-sm z-20 md:hidden transition-opacity"
                     onClick={handleMenuToggle}
                 />
             )}
 
             <nav
-                className={`fixed top-0 right-0 h-screen w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-40
+                className={`fixed top-0 right-0 h-screen w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-30
                 ${openMenu ? "translate-x-0" : "translate-x-full"}
                 md:static md:flex md:h-auto md:w-auto md:translate-x-0 md:bg-transparent md:shadow-none md:z-auto`}
             >
