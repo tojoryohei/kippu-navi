@@ -86,29 +86,31 @@ export default function SplitForm() {
                 <div className="flex flex-col gap-4">
 
                     {/* 入力欄と入れ替えボタンを横並びにするラッパー */}
-                    <div className="flex flex-row items-center gap-4">
+                    <div className="flex flex-row items-center gap-2 sm:gap-4 w-full">
 
                         {/* 左側: 発着駅の入力欄 */}
-                        <div className="flex flex-col gap-4 flex-1">
+                        <div className="flex flex-col gap-4 flex-1 min-w-0">
                             {/* 発駅 */}
                             <div className="flex flex-col">
-                                <div className="flex items-center gap-5 whitespace-nowrap">
-                                    <p className="w-12">発駅</p>
-                                    <Controller
-                                        name="startStation"
-                                        control={control}
-                                        rules={{ validate: validateStation }}
-                                        render={({ field }) => (
-                                            <SelectStation
-                                                instanceId="start-station-split"
-                                                {...field}
-                                                options={stationData}
-                                            />
-                                        )}
-                                    />
+                                <div className="flex items-center gap-3 sm:gap-5 whitespace-nowrap">
+                                    <p className="w-10 sm:w-12 shrink-0">発駅</p>
+                                    <div className="flex-1 min-w-0">
+                                        <Controller
+                                            name="startStation"
+                                            control={control}
+                                            rules={{ validate: validateStation }}
+                                            render={({ field }) => (
+                                                <SelectStation
+                                                    instanceId="start-station-split"
+                                                    {...field}
+                                                    options={stationData}
+                                                />
+                                            )}
+                                        />
+                                    </div>
                                 </div>
                                 {errors.startStation && (
-                                    <p className="text-red-500 text-xs mt-1 ml-17">
+                                    <p className="text-red-500 text-xs mt-1 ml-13 sm:ml-17">
                                         {errors.startStation.message}
                                     </p>
                                 )}
@@ -116,23 +118,25 @@ export default function SplitForm() {
 
                             {/* 着駅 */}
                             <div className="flex flex-col">
-                                <div className="flex items-center gap-5 whitespace-nowrap">
-                                    <p className="w-12">着駅</p>
-                                    <Controller
-                                        name="endStation"
-                                        control={control}
-                                        rules={{ validate: validateStation }}
-                                        render={({ field }) => (
-                                            <SelectStation
-                                                instanceId="end-station-split"
-                                                {...field}
-                                                options={stationData}
-                                            />
-                                        )}
-                                    />
+                                <div className="flex items-center gap-3 sm:gap-5 whitespace-nowrap">
+                                    <p className="w-10 sm:w-12 shrink-0">着駅</p>
+                                    <div className="flex-1 min-w-0">
+                                        <Controller
+                                            name="endStation"
+                                            control={control}
+                                            rules={{ validate: validateStation }}
+                                            render={({ field }) => (
+                                                <SelectStation
+                                                    instanceId="end-station-split"
+                                                    {...field}
+                                                    options={stationData}
+                                                />
+                                            )}
+                                        />
+                                    </div>
                                 </div>
                                 {errors.endStation && (
-                                    <p className="text-red-500 text-xs mt-1 ml-17">
+                                    <p className="text-red-500 text-xs mt-1 ml-13 sm:ml-17">
                                         {errors.endStation.message}
                                     </p>
                                 )}
@@ -145,10 +149,10 @@ export default function SplitForm() {
                                 type="button"
                                 onClick={handleSwapStations}
                                 disabled={!canSwap}
-                                className="p-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 bg-white rounded-full border border-slate-200 shadow-sm transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-slate-500"
+                                className="p-2 sm:p-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 bg-white rounded-full border border-slate-200 shadow-sm transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-slate-500"
                                 title="発駅と着駅を入れ替える"
                             >
-                                <RiArrowUpDownLine className="w-6 h-6" />
+                                <RiArrowUpDownLine className="w-5 h-5 sm:w-6 sm:h-6" />
                             </button>
                         </div>
                     </div>
