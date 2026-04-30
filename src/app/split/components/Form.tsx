@@ -9,7 +9,7 @@ import SelectStation from "@/app/split/components/SelectStation";
 import { ApiSplitFullResponse, SplitApiRequest, SplitApiResponse, SplitFormInput, Station } from "@/app/types";
 
 export default function SplitForm() {
-    const { handleSubmit, control, setValue, getValues, watch, formState: { isValid, errors } } = useForm<SplitFormInput>({
+    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, watch } = useForm<SplitFormInput>({
         mode: 'onChange',
         defaultValues: {
             startStation: null,
@@ -22,18 +22,15 @@ export default function SplitForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // 発駅か着駅のどちらかが入力されていれば入れ替え可能とする
+    // 発駅と着駅の現在の値を監視し、どちらかが入力されているか判定
     const startStationVal = watch("startStation");
     const endStationVal = watch("endStation");
     const canSwap = !!startStationVal || !!endStationVal;
 
-    // 追加: 発駅と着駅の入力値を入れ替える関数（計算は実行しない）
+    // 駅を入れ替える関数
     const handleSwapStations = () => {
-        if (!canSwap) return;
-
         const currentStart = getValues("startStation");
         const currentEnd = getValues("endStation");
-
         setValue("startStation", currentEnd, { shouldValidate: true });
         setValue("endStation", currentStart, { shouldValidate: true });
     };
@@ -81,79 +78,75 @@ export default function SplitForm() {
     };
 
     return (
-        <main className="max-w-2xl mx-auto">
-            <form onSubmit={handleSubmit(onSubmit)} className="p-8">
-                <div className="flex flex-col gap-4">
+        <main className="max-w-2xl mx-auto w-full">
+            <form onSubmit={handleSubmit(onSubmit)} className="p-8 w-full">
+                {/* フォーム全体を w-full にして幅を統一 */}
+                <div className="flex flex-col gap-4 w-full">
 
-                    {/* 入力欄と入れ替えボタンを横並びにするラッパー */}
-                    <div className="flex flex-row items-center gap-4">
-
-                        {/* 左側: 発着駅の入力欄 */}
-                        <div className="flex flex-col gap-4 flex-1">
-                            {/* 発駅 */}
-                            <div className="flex flex-col">
-                                <div className="flex items-center gap-5 whitespace-nowrap">
-                                    <p className="w-12">発駅</p>
-                                    <Controller
-                                        name="startStation"
-                                        control={control}
-                                        rules={{ validate: validateStation }}
-                                        render={({ field }) => (
-                                            <SelectStation
-                                                instanceId="start-station-split"
-                                                {...field}
-                                                options={stationData}
-                                            />
-                                        )}
-                                    />
-                                </div>
-                                {errors.startStation && (
-                                    <p className="text-red-500 text-xs mt-1 ml-17">
-                                        {errors.startStation.message}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* 着駅 */}
-                            <div className="flex flex-col">
-                                <div className="flex items-center gap-5 whitespace-nowrap">
-                                    <p className="w-12">着駅</p>
-                                    <Controller
-                                        name="endStation"
-                                        control={control}
-                                        rules={{ validate: validateStation }}
-                                        render={({ field }) => (
-                                            <SelectStation
-                                                instanceId="end-station-split"
-                                                {...field}
-                                                options={stationData}
-                                            />
-                                        )}
-                                    />
-                                </div>
-                                {errors.endStation && (
-                                    <p className="text-red-500 text-xs mt-1 ml-17">
-                                        {errors.endStation.message}
-                                    </p>
-                                )}
+                    <div className="flex flex-col w-full">
+                        <div className="flex items-center gap-5 w-full">
+                            <p className="w-12 shrink-0 whitespace-nowrap">発駅</p>
+                            <div className="flex-1 w-full min-w-0">
+                                <Controller
+                                    name="startStation"
+                                    control={control}
+                                    rules={{ validate: validateStation }}
+                                    render={({ field }) => (
+                                        <SelectStation
+                                            instanceId="start-station-split"
+                                            {...field}
+                                            options={stationData}
+                                        />
+                                    )}
+                                />
                             </div>
                         </div>
-
-                        {/* 右側: 入れ替えボタン */}
-                        <div className="flex items-center justify-center shrink-0">
-                            <button
-                                type="button"
-                                onClick={handleSwapStations}
-                                disabled={!canSwap}
-                                className="p-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 bg-white rounded-full border border-slate-200 shadow-sm transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-slate-500"
-                                title="発駅と着駅を入れ替える"
-                            >
-                                <RiArrowUpDownLine className="w-6 h-6" />
-                            </button>
-                        </div>
+                        {errors.startStation && (
+                            <p className="text-red-500 text-xs mt-1 ml-17">
+                                {errors.startStation.message}
+                            </p>
+                        )}
                     </div>
 
-                    <div className="mt-2">
+                    <div className="flex justify-center w-full -my-3 relative z-0">
+                        <button
+                            type="button"
+                            onClick={handleSwapStations}
+                            disabled={!canSwap}
+                            className="p-2 bg-white border border-gray-300 rounded-full shadow-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            aria-label="発駅と着駅を入れ替える"
+                            title="駅を入れ替える"
+                        >
+                            <RiArrowUpDownLine className="text-xl" />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-col w-full">
+                        <div className="flex items-center gap-5 w-full">
+                            <p className="w-12 shrink-0 whitespace-nowrap">着駅</p>
+                            <div className="flex-1 w-full min-w-0">
+                                <Controller
+                                    name="endStation"
+                                    control={control}
+                                    rules={{ validate: validateStation }}
+                                    render={({ field }) => (
+                                        <SelectStation
+                                            instanceId="end-station-split"
+                                            {...field}
+                                            options={stationData}
+                                        />
+                                    )}
+                                />
+                            </div>
+                        </div>
+                        {errors.endStation && (
+                            <p className="text-red-500 text-xs mt-1 ml-17">
+                                {errors.endStation.message}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="mt-2 w-full">
                         <button
                             type="submit"
                             className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors"
@@ -175,7 +168,6 @@ export default function SplitForm() {
                     <div className="border-t pt-8 space-y-8">
                         <h2 className="text-2xl font-bold text-center mb-6">計算結果</h2>
 
-                        {/* 1. 通し運賃の表示 */}
                         <section className="bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-200">
                             <h3 className="font-bold text-lg mb-4 text-gray-700 border-b pb-2">通常の運賃（分割なし）</h3>
                             <div className="flex justify-between items-center">
@@ -198,7 +190,6 @@ export default function SplitForm() {
                             </div>
                         </section>
 
-                        {/* 2. 分割結果の表示エリア */}
                         {result.splitKippuDatasList.length > 0 ? (
                             <div className="space-y-6">
                                 {(() => {
@@ -229,7 +220,6 @@ export default function SplitForm() {
                                     );
                                 })()}
 
-                                {/* 3. 実際の分割パターンのリスト表示 */}
                                 <div className="space-y-8">
                                     {result.splitKippuDatasList.map((splitPlan, planIndex) => (
                                         <div key={planIndex} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -288,7 +278,7 @@ export default function SplitForm() {
                 <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
                 <ol className="list-decimal list-inside space-y-1 ml-1">
                     <li><strong>駅の入力:</strong> 「発駅」と「着駅」に駅名を入力し、候補から選択します。</li>
-                    <li><strong>駅の入れ替え:</strong> 検索フォームの入力を逆にしたい場合は ⇄ ボタンを押すことで切り替わります。</li>
+                    <li><strong>駅の入れ替え:</strong> 検索フォームの入力を逆にしたい場合は ⇅ ボタンを押すことで切り替わります。</li>
                     <li><strong>最安分割運賃の計算:</strong> 「最安分割運賃を計算」ボタンを押すと、自動で最安分割運賃と切符の情報が出力されます。</li>
                 </ol>
             </div>
