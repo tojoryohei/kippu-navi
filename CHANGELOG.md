@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.1...kippu-navi-v1.6.2) (2026-04-30)
+
+
+### Bug Fixes
+
+* スマホ表示時のボタンテキストの意図しない改行を修正 ([#50](https://github.com/tojoryohei/kippu-navi/issues/50)) ([6009185](https://github.com/tojoryohei/kippu-navi/commit/600918529e47bf96e5324e47560b77ea03735fd4))
+
 ## [1.6.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.0...kippu-navi-v1.6.1) (2026-04-30)
 
 
