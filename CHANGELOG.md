@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.3...kippu-navi-v1.6.4) (2026-04-30)
+
+
+### Bug Fixes
+
+* 上野～大宮を新幹線を使って70条区間を通過する際、最短経路で運賃計算されるように修正 ([#54](https://github.com/tojoryohei/kippu-navi/issues/54)) ([4231a71](https://github.com/tojoryohei/kippu-navi/commit/4231a71a5458710db07550aeb748e17e3f8312c0))
+
 ## [1.6.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.2...kippu-navi-v1.6.3) (2026-04-30)
 
 
