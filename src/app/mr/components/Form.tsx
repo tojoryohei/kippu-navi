@@ -287,12 +287,12 @@ export default function Form() {
                     })}
 
                     {/* 経路追加 ＆ 経路逆転 ボタン群 */}
-                    <div className="flex items-center gap-3 my-4">
+                    <div className="flex items-center flex-wrap gap-3 my-4">
                         <button
                             type="button"
                             onClick={addSegment}
                             disabled={!canAddTransfer}
-                            className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm"
+                            className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm whitespace-nowrap"
                         >
                             経由路線を追加
                         </button>
@@ -300,7 +300,7 @@ export default function Form() {
                             type="button"
                             onClick={handleReverseRoute}
                             disabled={!canReverse}
-                            className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded hover:bg-slate-50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 flex items-center gap-2 transition-colors shadow-sm"
+                            className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded hover:bg-slate-50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
                             title="入力フォームの発着駅と経路を逆転させます"
                         >
                             <RiArrowUpDownLine className="w-5 h-5" />
