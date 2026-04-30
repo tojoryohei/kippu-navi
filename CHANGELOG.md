@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.2...kippu-navi-v1.6.3) (2026-04-30)
+
+
+### Bug Fixes
+
+* スマホ用メニューがヘッダーの背面からスライドインするようにz-indexを修正 ([#52](https://github.com/tojoryohei/kippu-navi/issues/52)) ([b812461](https://github.com/tojoryohei/kippu-navi/commit/b812461a80f8bbdce33b659e58ddc7acf0ee343a))
+
 ## [1.6.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.1...kippu-navi-v1.6.2) (2026-04-30)
 
 
