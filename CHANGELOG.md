@@ -19,7 +19,7 @@
 
 ### Features
 
-* 発着駅の入れ替えボタンおよび経路逆転機能の実装Feature/swap button ([#46](https://github.com/tojoryohei/kippu-navi/issues/46)) ([802b157](https://github.com/tojoryohei/kippu-navi/commit/802b1577c9695924e1436a961d4971fc4cea7f35))
+* 発着駅の入れ替えボタンおよび経路逆転機能の実装 ([#46](https://github.com/tojoryohei/kippu-navi/issues/46)) ([802b157](https://github.com/tojoryohei/kippu-navi/commit/802b1577c9695924e1436a961d4971fc4cea7f35))
 
 ## [1.5.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.5.1...kippu-navi-v1.5.2) (2026-04-28)
 
