@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.0...kippu-navi-v1.6.1) (2026-04-30)
+
+
+### Bug Fixes
+
+* 山手線内発着における第114条適用の足切り閾値を適正化し、適用漏れを解消 ([#48](https://github.com/tojoryohei/kippu-navi/issues/48)) ([b4f32ee](https://github.com/tojoryohei/kippu-navi/commit/b4f32eee26ab1183eaa4b82fcc61de7c6a5248e0))
+
 ## [1.6.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.5.2...kippu-navi-v1.6.0) (2026-04-29)
 
 
