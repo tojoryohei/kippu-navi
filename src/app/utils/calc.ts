@@ -34,6 +34,10 @@ export function getFareForPath(path: PathStep[]): number {
     return fare;
 }
 
+export function createPairKey(stationName0: string, stationName1: string): string {
+    return [stationName0, stationName1].sort().join('-');
+}
+
 export function createRouteKey(line: string, stationName0: string, stationName1: string): string {
     return [line, ...[stationName0, stationName1].sort()].join('-');
 }

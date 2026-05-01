@@ -1,5 +1,4 @@
 import { load } from "@/app/utils/load";
-import { loadSplit } from "@/app/split/lib/loadSplit";
 import { calculateTotalEigyoKilo, calculateTotalGiseiKilo, convertPathStepsToRouteSegments, getFareForPath } from "@/app/utils/calc";
 import { correctPath } from "@/app/utils/correctPath";
 
@@ -199,13 +198,13 @@ function searchExtension(
             searchNodeName = currentPath[0].stationName;
         }
 
-        const neighbors = loadSplit.getNeighbors(searchNodeName);
+        const neighbors = load.getAdjacentStations(searchNodeName);
 
         for (const neighborName of neighbors) {
             if (visitedStations.has(neighborName)) continue;
             if (currentPath.some(p => p.stationName === neighborName)) continue;
 
-            const segmentsInfo = loadSplit.getSegmentsForStationPair(searchNodeName, neighborName);
+            const segmentsInfo = load.getSegmentsForStationPair(searchNodeName, neighborName);
             if (segmentsInfo.length === 0) continue;
 
             const lineName = segmentsInfo[0].line;
@@ -389,3 +388,4 @@ export function extendTheRearOfSections(path: PathStep[]): PathStep[] | null {
     }
     return null;
 }
+

@@ -325,7 +325,7 @@ export class CalculatorSplit {
             if (currentCost > (costs.get(currentStation) || Infinity)) continue;
             if (currentStation === endStationName) return { pathFound: true, previous };
 
-            const neighbors = loadSplit.getNeighbors(currentStation);
+            const neighbors = load.getAdjacentStations(currentStation);
             for (const neighborStation of neighbors) {
                 if (excludedNodes.has(neighborStation)) continue;
                 const edgeKey = this.getEdgeKey(currentStation, neighborStation);
@@ -340,7 +340,7 @@ export class CalculatorSplit {
                 }
                 if (isLoop) continue;
 
-                const segments = loadSplit.getSegmentsForStationPair(currentStation, neighborStation);
+                const segments = load.getSegmentsForStationPair(currentStation, neighborStation);
                 if (segments.length === 0) continue;
                 const representativeSegment = segments[0];
                 let weight = representativeSegment.giseiKilo;
