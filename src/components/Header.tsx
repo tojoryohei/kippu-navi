@@ -64,7 +64,7 @@ const Header = () => {
             <nav
                 className={`fixed top-0 right-0 h-screen w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-30
                 ${openMenu ? "translate-x-0" : "translate-x-full"}
-                md:static md:flex md:h-auto md:w-auto md:translate-x-0 md:bg-transparent md:shadow-none md:z-auto`}
+                md:relative md:flex md:h-auto md:w-auto md:translate-x-0 md:bg-transparent md:shadow-none md:z-50`}
             >
                 <ul className="mt-20 md:mt-0 flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 px-4 md:px-0">
                     {MENU_ITEMS.map((item) => {
