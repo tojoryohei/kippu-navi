@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.4...kippu-navi-v1.6.5) (2026-05-01)
+
+
+### Bug Fixes
+
+* PC表示時にヘッダーメニューが背景に隠れてしまう不具合を修正 ([#56](https://github.com/tojoryohei/kippu-navi/issues/56)) ([762a9af](https://github.com/tojoryohei/kippu-navi/commit/762a9afbf93da29b5f4f34285f5c1f86c1581e30))
+
 ## [1.6.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.3...kippu-navi-v1.6.4) (2026-04-30)
 
 
