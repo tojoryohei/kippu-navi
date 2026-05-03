@@ -135,6 +135,15 @@ export interface TrainSpecificSection {
     名古屋附近: Set<string>;
     電車大環状線: Set<string>;
 }
+
+export interface MajorCitySuburbanSection {
+    東京近郊区間: Set<string>;
+    新潟近郊区間: Set<string>;
+    仙台近郊区間: Set<string>;
+    大阪近郊区間: Set<string>;
+    福岡近郊区間: Set<string>;
+}
+
 export interface BoldLineAreaRoute {
     key: string;
     route: PathStep[];
