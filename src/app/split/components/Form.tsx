@@ -173,19 +173,19 @@ export default function SplitForm() {
                             <div className="flex justify-between items-center">
                                 <div>
                                     <div className="text-lg font-bold">
-                                        <span>{result.shortestData.departureStation}</span>
+                                        <span>{result.cheapestKippuData.departureStation}</span>
                                         <span className="text-gray-400 mx-2">→</span>
-                                        <span>{result.shortestData.arrivalStation}</span>
+                                        <span>{result.cheapestKippuData.arrivalStation}</span>
                                         <span className="text-sm font-normal text-gray-600 ml-1">
-                                            （{(result.shortestData.totalEigyoKilo / 10).toFixed(1)}km）
+                                            （{(result.cheapestKippuData.totalEigyoKilo / 10).toFixed(1)}km）
                                         </span>
                                     </div>
                                     <div className="text-sm text-gray-600 mt-1">
-                                        経由：{result.shortestData.printedViaLines.join('・') || '---'}
+                                        経由：{result.cheapestKippuData.printedViaLines.join('・') || '---'}
                                     </div>
                                 </div>
                                 <div className="text-3xl font-bold text-gray-800">
-                                    ¥{result.shortestData.fare.toLocaleString()}
+                                    ¥{result.cheapestKippuData.fare.toLocaleString()}
                                 </div>
                             </div>
                         </section>
@@ -194,7 +194,7 @@ export default function SplitForm() {
                             <div className="space-y-6">
                                 {(() => {
                                     const bestFare = result.splitKippuDatasList[0].totalFare;
-                                    const diff = result.shortestData.fare - bestFare;
+                                    const diff = result.cheapestKippuData.fare - bestFare;
                                     const isCheaper = diff > 0;
 
                                     return (

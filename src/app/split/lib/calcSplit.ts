@@ -1,7 +1,7 @@
 import { load } from '@/app/utils/load';
 import { loadSplit } from '@/app/split/lib/loadSplit';
 import { generateKippu } from '@/app/split/lib/generateKippu';
-import { PathStep, SplitApiResponse, SplitKippuData, SplitKippuDatas } from '@/app/types';
+import { KippuData, PathStep, SplitApiResponse, SplitKippuData, SplitKippuDatas } from '@/app/types';
 import { cheapestPathAndFare } from '@/app/utils/cheapestPath';
 import { getFareForPath } from '@/app/utils/calc';
 
@@ -65,12 +65,17 @@ export class CalculatorSplit {
         }
 
         let allSplitPatterns: SplitKippuDatas[] = [];
+        let cheapestKippuData: KippuData = generateKippu(candidates[0]);
 
         // フェーズ2: 各候補ルートに対する1次元DPでの最適分割の並列評価
         for (const path of candidates) {
             const splitPatterns = this.calculateOptimalSplitForPath(path);
             if (splitPatterns) {
                 allSplitPatterns = allSplitPatterns.concat(splitPatterns);
+            }
+            const candidateKippuData = generateKippu(path)
+            if (candidateKippuData.fare < cheapestKippuData.fare) {
+                cheapestKippuData = candidateKippuData
             }
         }
 
@@ -94,8 +99,8 @@ export class CalculatorSplit {
         let uniqueSplitPatterns = Array.from(uniquePatternsMap.values());
 
         if (uniqueSplitPatterns.length === 0) {
-            // 分割のメリットが一切ない場合は、最短経路の通し切符を返す
-            return { shortestData: generateKippu(candidates[0]), splitKippuDatasList: [] };
+            // 分割のメリットが一切ない場合は、最安経路の通し切符を返す
+            return { cheapestKippuData: cheapestKippuData, splitKippuDatasList: [] };
         }
 
         // 全候補の中で最も安い「大域的最適解」を抽出（同額の別パターンも全て含む）
@@ -103,7 +108,7 @@ export class CalculatorSplit {
         const optimalPatterns = uniqueSplitPatterns.filter(p => p.totalFare === globalMinFare);
 
         return {
-            shortestData: generateKippu(this.clonePath(candidates[0])),
+            cheapestKippuData: cheapestKippuData,
             splitKippuDatasList: optimalPatterns
         };
     }

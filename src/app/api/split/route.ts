@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         const result = await getOptimalSplitWithCache(startStationName, endStationName);
 
         // 3. 結果の判定
-        if (result === null || result.shortestData.fare === Infinity) {
+        if (result === null || result.cheapestKippuData.fare === Infinity) {
             return NextResponse.json({ error: '経路が見つかりませんでした。' }, { status: 404 });
         }
 

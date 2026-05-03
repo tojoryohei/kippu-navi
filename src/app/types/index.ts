@@ -83,7 +83,7 @@ export interface SplitKippuDatas {
 }
 
 export interface SplitApiResponse {
-    shortestData: KippuData;
+    cheapestKippuData: KippuData;
     splitKippuDatasList: SplitKippuDatas[];
 }
 
