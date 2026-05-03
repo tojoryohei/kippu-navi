@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.5...kippu-navi-v1.7.0) (2026-05-03)
+
+
+### Features
+
+* 比較基準となる非分割乗車券を「最短経路」から「最安経路」に変更 ([#59](https://github.com/tojoryohei/kippu-navi/issues/59)) ([f87709d](https://github.com/tojoryohei/kippu-navi/commit/f87709d7cb842d390b37d14c66ff0fd04cd1435f))
+
 ## [1.6.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.4...kippu-navi-v1.6.5) (2026-05-01)
 
 
