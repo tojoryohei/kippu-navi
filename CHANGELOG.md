@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.8.0...kippu-navi-v1.8.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* 鉄道駅バリアフリー料金が運賃に加算されない不具合の修正 ([#64](https://github.com/tojoryohei/kippu-navi/issues/64)) ([9d9816e](https://github.com/tojoryohei/kippu-navi/commit/9d9816e1cd89886d89d5348ee52e2bd1af8daac3))
+
 ## [1.8.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.7.0...kippu-navi-v1.8.0) (2026-05-06)
 
 
