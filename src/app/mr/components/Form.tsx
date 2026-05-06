@@ -34,9 +34,10 @@ export default function Form() {
     const lastSegment = formValues.segments[formValues.segments.length - 1];
     const lastDestination = lastSegment?.destinationStation;
 
-    const canAddTransfer = lastDestination ? (lastDestination.lines?.length ?? 0) > 1 : false;
+    const isUnderPathLimit = formValues.segments.length < 99;
 
-    // 経路がすべて入力されているか判定（逆転ボタンの活性/非活性に使用）
+    const canAddTransfer = (lastDestination ? (lastDestination.lines?.length ?? 0) > 1 : false) && isUnderPathLimit;
+
     const canReverse = !!formValues.startStation &&
         formValues.segments.length > 0 &&
         formValues.segments.every(seg => seg.viaLine && seg.destinationStation);
@@ -301,6 +302,7 @@ export default function Form() {
                             onClick={addSegment}
                             disabled={!canAddTransfer}
                             className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm whitespace-nowrap"
+                            title={!isUnderPathLimit ? "経路数の上限（99件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
                         >
                             経由路線を追加
                         </button>

@@ -4,13 +4,14 @@ import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo, isAll
 import { PathStep, RouteSegment } from '@/app/types';
 
 export function calculateFareFromPath(fullPath: PathStep[]): number {
-    let fare: number = 0;
+    let fare: number = calculateBarrierFreeFeeFromPath(fullPath);
 
     if (fullPath.length <= 1) return fare;
     // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
     const specificFare = load.getSpecificFares(fullPath);
     if (specificFare !== null) {
-        return specificFare;
+        fare += specificFare
+        return fare;
     }
 
     const routeKeys = new Set<string>();
@@ -20,7 +21,7 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
 
     for (let i = 0; i < fullPath.length - 1; i++) {
         const line = fullPath[i].lineName;
-        if (line === null) throw new Error(`calculateFareFromCorrectedPathでエラーが発生しました.`);
+        if (line === null) throw new Error(`calculateFareFromCorrectedPathでエラーが発生しました。`);
         const routeSegment = load.getRouteSegment(line, fullPath[i].stationName, fullPath[i + 1].stationName);
 
         // 全ての駅間のデータを取得
@@ -113,12 +114,12 @@ function calculateSplitKiloOfKansen(totalKilo: number): number {
     if (50 < totalKilo && totalKilo <= 100) return Math.floor((totalKilo - 1) / 10) * 10 + 5;
     if (100 < totalKilo && totalKilo <= 600) return Math.floor((totalKilo - 1) / 20) * 20 + 10;
     if (600 < totalKilo) return Math.floor((totalKilo - 1) / 40) * 40 + 20;
-    throw new Error(`calculateSplitKiloOfKansenでエラーが発生しました.`);
+    throw new Error(`calculateSplitKiloOfKansenでエラーが発生しました。`);
 }
 
 // 別表第２号イの４ 地方交通線の営業キロの区間
 function calculateSplitKiloOfLocal(totalKilo: number): number {
-    if (totalKilo <= 10) throw new Error(`calculateSplitKiloOfLocalで範囲外アクセスが発生しました.`);
+    if (totalKilo <= 10) throw new Error(`calculateSplitKiloOfLocalで範囲外アクセスが発生しました。`);
     if (totalKilo <= 15) return 13;
     if (totalKilo <= 20) return 18;
     if (totalKilo <= 23) return 22;
@@ -176,7 +177,7 @@ function calculateSplitKiloOfLocal(totalKilo: number): number {
     if (totalKilo <= 1128) return 1110;
     if (totalKilo <= 1164) return 1146;
     if (totalKilo <= 1200) return 1182;
-    throw new Error(`calculateSplitKiloOfLocalで範囲外アクセスが発生しました.`);
+    throw new Error(`calculateSplitKiloOfLocalで範囲外アクセスが発生しました。`);
 }
 
 function calculateFare(routeSegments: RouteSegment[]): number {
@@ -251,7 +252,7 @@ function calculateFareInTrainSpecificSection(routeSegments: RouteSegment[]): num
     if (totalEigyoKilo <= 300) return round1000(round10000(1550 * splitKilo) * 11 / 10) / 100;
     if (totalEigyoKilo <= 600) return round1000(round10000(1550 * 300 + 1230 * (splitKilo - 300)) * 11 / 10) / 100;
 
-    throw new Error(`calculateFareInTrainSpecificSectionで範囲外アクセスが発生しました.`);
+    throw new Error(`calculateFareInTrainSpecificSectionで範囲外アクセスが発生しました。`);
 }
 
 function calculateFare1(routeSegments: RouteSegment[]): number {
@@ -727,7 +728,7 @@ function convertPathStepsToRouteKeys(path: PathStep[]): Set<string> {
 }
 
 // 第140条 鉄道駅バリアフリー料金
-export function calculateBarrierFreeFeeFromPath(fullPath: PathStep[]): number {
+function calculateBarrierFreeFeeFromPath(fullPath: PathStep[]): number {
     const routeKeys = convertPathStepsToRouteKeys(fullPath);
     if (isAllTrainSpecificSections("電車特定区間", routeKeys)) return 10;
     if (isAllTrainSpecificSections("名古屋附近", routeKeys)) return 10;

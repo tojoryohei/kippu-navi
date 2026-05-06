@@ -1,7 +1,5 @@
 import { load } from '@/app/utils/load';
-import { PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
-import { correctPath } from '@/app/utils/correctPath';
-import { calculateBarrierFreeFeeFromPath, calculateFareFromPath } from '@/app/utils/calcFare';
+import { MajorCitySuburbanSection, MajorCitySuburbanSectionFares, PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
 
 export function calculateTotalEigyoKilo(routeSegments: RouteSegment[]): number {
     let totalEigyoKilo: number = 0;
@@ -19,35 +17,37 @@ export function calculateTotalGiseiKilo(routeSegments: RouteSegment[]): number {
     return totalGiseiKilo;
 }
 
-const globalFareCache = new Map<string, number>();
-
-export function getFareForPath(path: PathStep[]): number {
-    const key = path.map(p => `${p.stationName}-${p.lineName}`).join('|');
-    if (globalFareCache.has(key)) {
-        return globalFareCache.get(key)!;
-    }
-
-    const correctedPath = correctPath(path);
-    const fare = calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
-
-    globalFareCache.set(key, fare);
-    return fare;
+export function createPairKey(station0: string, station1: string): string {
+    return [station0, station1].sort().join('-');
 }
 
-export function createPairKey(stationName0: string, stationName1: string): string {
-    return [stationName0, stationName1].sort().join('-');
+export function createRouteKey(line: string, station0: string, station1: string): string {
+    return [line, ...[station0, station1].sort()].join('-');
 }
 
-export function createRouteKey(line: string, stationName0: string, stationName1: string): string {
-    return [line, ...[stationName0, stationName1].sort()].join('-');
-}
-
-export function isAllTrainSpecificSections(specificSectionName: keyof TrainSpecificSection, routeKeys: Set<string>): boolean {
-    const trainSpecificSection = load.getTrainSpecificSections(specificSectionName);
+export function isAllTrainSpecificSections(specificSection: keyof TrainSpecificSection, routeKeys: Set<string>): boolean {
+    const trainSpecificSections = load.getTrainSpecificSections(specificSection);
     for (const routeKey of routeKeys) {
-        if (trainSpecificSection.has(routeKey) === false) return false;
+        if (trainSpecificSections.has(routeKey) === false) return false;
     }
     return true;
+}
+
+export function whichMajorCitySuburbanSections(fullPath: PathStep[]): keyof MajorCitySuburbanSection | null {
+    const routeKeys: string[] = [];
+    for (let i = 0; i < fullPath.length - 1; i++) {
+        routeKeys.push(createRouteKey(fullPath[i].lineName!, fullPath[i].stationName, fullPath[i + 1].stationName));
+    }
+    const majorCitySuburbanSections = load.getMajorCitySuburbanSections();
+    const majorCityNames = Object.keys(majorCitySuburbanSections) as (keyof MajorCitySuburbanSection)[];
+    for (const majorCityName of majorCityNames) {
+        const sectionRouteSet = majorCitySuburbanSections[majorCityName];
+        const isFullyContained = routeKeys.every(routeKey => sectionRouteSet.has(routeKey));
+        if (isFullyContained === true) {
+            return majorCityName;
+        }
+    }
+    return null;
 }
 
 export function calculateValidDaysFromKilo(totalEigyoKilo: number): number {
@@ -63,6 +63,145 @@ export function convertPathStepsToRouteSegments(path: PathStep[]): RouteSegment[
         routeSegments.push(routeSegment);
     }
     return routeSegments;
+}
+
+export function applyOneSideCityRule(fullPath: PathStep[], direction: string): PathStep[] | null {
+    const cities = load.getCities();
+
+    if (direction === "forward") {
+        for (const city of cities) {
+            const stationsInCity = new Set(city.stations);
+
+            // 発駅適用
+            if (stationsInCity.has(fullPath[0].stationName)) {
+                const changingIdx: number[] = [];
+                for (let i = 0; i < fullPath.length - 1; i++) {
+                    if (i !== 0 &&
+                        city.name === "大阪市内" &&
+                        fullPath[i - 1].stationName === "加島" &&
+                        fullPath[i].stationName === "尼崎" &&
+                        fullPath[i + 1].stationName === "塚本")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        city.name === "大阪市内" &&
+                        fullPath[i - 1].stationName === "塚本" &&
+                        fullPath[i].stationName === "尼崎" &&
+                        fullPath[i + 1].stationName === "加島")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        city.name === "大阪市内" &&
+                        fullPath[i - 1].stationName === "加美" &&
+                        fullPath[i].stationName === "久宝寺" &&
+                        fullPath[i + 1].stationName === "新加美")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        city.name === "大阪市内" &&
+                        fullPath[i - 1].stationName === "新加美" &&
+                        fullPath[i].stationName === "久宝寺" &&
+                        fullPath[i + 1].stationName === "加美")
+                        changingIdx.pop();
+                    else if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
+                        changingIdx.push(i);
+                }
+                if (changingIdx.length === 1 || changingIdx.length === 2) {
+                    const applyCityRulePath = [
+                        { "stationName": city.name, "lineName": fullPath[changingIdx[0]].lineName },
+                        ...fullPath.slice(changingIdx[0] + 1)
+                    ];
+                    return applyCityRulePath;
+                }
+            }
+        }
+    }
+
+    else {
+        for (const city of cities) {
+            const stationsInCity = new Set(city.stations);
+
+            // 着駅適用
+            if (stationsInCity.has(fullPath[fullPath.length - 1].stationName)) {
+                const changingIdx: number[] = [];
+                for (let i = 0; i < fullPath.length - 1; i++) {
+                    if (i !== 0 &&
+                        city.name === "大阪市内" &&
+                        fullPath[i - 1].stationName === "加島" &&
+                        fullPath[i].stationName === "尼崎" &&
+                        fullPath[i + 1].stationName === "塚本")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        city.name === "大阪市内" &&
+                        fullPath[i - 1].stationName === "塚本" &&
+                        fullPath[i].stationName === "尼崎" &&
+                        fullPath[i + 1].stationName === "加島")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        city.name === "大阪市内" &&
+                        fullPath[i - 1].stationName === "加美" &&
+                        fullPath[i].stationName === "久宝寺" &&
+                        fullPath[i + 1].stationName === "新加美")
+                        changingIdx.pop();
+                    else if (i !== 0 &&
+                        city.name === "大阪市内" &&
+                        fullPath[i - 1].stationName === "新加美" &&
+                        fullPath[i].stationName === "久宝寺" &&
+                        fullPath[i + 1].stationName === "加美")
+                        changingIdx.pop();
+                    else if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
+                        changingIdx.push(i);
+
+                }
+                if (changingIdx.length === 1 || changingIdx.length === 2) {
+                    const applyCityRulePath = [
+                        ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
+                        { "stationName": city.name, "lineName": null }
+                    ];
+                    return applyCityRulePath;
+                }
+            }
+        }
+    }
+    return null;
+}
+
+export function applyOneSideYamanoteRule(fullPath: PathStep[], direction: string): PathStep[] | null {
+    const yamanote = load.getYamanote();
+    const stationsInYamanote = new Set(yamanote.stations);
+
+    if (direction === "forward") {
+        // 発駅適用
+        if (stationsInYamanote.has(fullPath[0].stationName)) {
+            const changingIdx: number[] = [];
+            for (let i = 0; i < fullPath.length - 1; i++) {
+                if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
+                    changingIdx.push(i);
+            }
+            if (changingIdx.length === 1 || changingIdx.length === 2) {
+                const applyCityRulePath = [
+                    { "stationName": yamanote.name, "lineName": fullPath[changingIdx[0]].lineName },
+                    ...fullPath.slice(changingIdx[0] + 1)
+                ];
+                return applyCityRulePath;
+            }
+        }
+    }
+    else {
+        // 着駅適用
+        if (stationsInYamanote.has(fullPath[fullPath.length - 1].stationName)) {
+            const changingIdx: number[] = [];
+            for (let i = 0; i < fullPath.length - 1; i++) {
+                if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
+                    changingIdx.push(i);
+            }
+            if (changingIdx.length === 1 || changingIdx.length === 2) {
+                const applyCityRulePath = [
+                    ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
+                    { "stationName": yamanote.name, "lineName": null }
+                ];
+                return applyCityRulePath;
+            }
+        }
+    }
+    return null;
 }
 
 export function generatePrintedViaStrings(fullPath: PathStep[]): string[] {
