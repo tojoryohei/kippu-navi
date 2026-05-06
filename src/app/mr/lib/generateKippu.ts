@@ -1,8 +1,9 @@
-import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings } from '@/app/utils/calc';
+import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings, whichMajorCitySuburbanSections } from '@/app/utils/calc';
+import { load } from '@/app/utils/load';
 import { loadLines } from '@/app/mr/lib/loadLines';
 import { loadKanas } from '@/app/mr/lib/loadKanas';
 import { correctPath, uncorrectPath } from '@/app/utils/correctPath';
-import { calculateBarrierFreeFeeFromPath, calculateFareFromPath } from '@/app/utils/calcFare';
+import { calculateFareFromPath } from '@/app/utils/calcFare';
 import { cheapestPathAndFare } from '@/app/utils/cheapestPath';
 
 import { RouteRequest, KippuData, PathStep, CalculationMode } from '@/app/types';
@@ -18,6 +19,8 @@ export function generateKippu(request: RouteRequest, options: GenerateKippuOptio
     // 経路の展開
     let fullPath = createFullPath(userInputPath);
 
+    const majorCitySuburbanSection = whichMajorCitySuburbanSections(fullPath);
+
     // 経路の補正
     let correctedPath: PathStep[];
 
@@ -26,10 +29,24 @@ export function generateKippu(request: RouteRequest, options: GenerateKippuOptio
             correctedPath = uncorrectPath(fullPath);
             break;
         case "cheapest":
-            correctedPath = correctPath(cheapestPathAndFare(fullPath).path);
+            if (majorCitySuburbanSection !== null) {
+                return load.getMajorCitySuburbanSectionFares(
+                    majorCitySuburbanSection,
+                    fullPath[0].stationName,
+                    fullPath[fullPath.length - 1].stationName
+                );
+            }
+            correctedPath = cheapestPathAndFare(fullPath).path;
             break;
         case "normal":
         default:
+            if (majorCitySuburbanSection !== null) {
+                return load.getMajorCitySuburbanSectionFares(
+                    majorCitySuburbanSection,
+                    fullPath[0].stationName,
+                    fullPath[fullPath.length - 1].stationName
+                );
+            }
             correctedPath = correctPath(fullPath);
             break;
     }
@@ -41,12 +58,8 @@ export function generateKippu(request: RouteRequest, options: GenerateKippuOptio
     // 営業キロと運賃の計算
     const routeSegments = convertPathStepsToRouteSegments(correctedPath);
     const totalEigyoKilo = calculateTotalEigyoKilo(routeSegments);
-
-    const fare = calculateFareFromPath(correctedPath) + calculateBarrierFreeFeeFromPath(correctedPath);
-
-    const validDays = calculateValidDaysFromKilo(totalEigyoKilo);
-
-    // 経由文字列の生成 (ユーザー入力の経路を使用)
+    const fare = calculateFareFromPath(correctedPath);
+    const validDays = majorCitySuburbanSection === null ? calculateValidDaysFromKilo(totalEigyoKilo) : 1;
     const printedViaLines = generatePrintedViaStrings(correctedPath);
 
     return {

@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     try {
         const body: RouteRequest = await request.json();
 
-        if (100 <= body.path.length) {
+        if (100 < body.path.length) {
             const endTime = performance.now();
             const calculationTimeMs = endTime - startTime;
             return NextResponse.json(

@@ -2,12 +2,13 @@ import fs from 'fs';
 import path from 'path';
 
 import { createPairKey, createRouteKey } from '@/app/utils/calc';
-import { City, MajorCitySuburbanSection, OuterSection, PathStep, Printing, RouteSegment, Section, SpecificFare, TrainSpecificSection } from '@/app/types';
+import { City, KippuData, MajorCitySuburbanSection, MajorCitySuburbanSectionFare, MajorCitySuburbanSectionFares, OuterSection, PathStep, Printing, RouteSegment, Section, SpecificFare, TrainSpecificSection } from '@/app/types';
 
 class Load {
     private adjacentStationsList: Map<string, string[]> = new Map();
     private cities: City[] = [];
     private fromBoldLineAreaRoutes: Map<string, PathStep[]> = new Map();
+    private majorCitySuburbanSectionFares!: MajorCitySuburbanSectionFares;
     private majorCitySuburbanSections!: MajorCitySuburbanSection;
     private passingBoldLineAreaRoutes: Map<string, PathStep[]> = new Map();
     private printings: Map<string, string> = new Map();
@@ -36,7 +37,7 @@ class Load {
 
             // boldLineAreaRoutes.jsonの読み込み
             const boldLineAreaRoutesData = path.join(process.cwd(), 'src', 'data', 'boldLineAreaRoutes.json');
-            const boldLineAreaRoutes = JSON.parse(fs.readFileSync(boldLineAreaRoutesData, 'utf-8'));
+            const boldLineAreaRoutes: Record<string, { key: string, route: PathStep[] }[]> = JSON.parse(fs.readFileSync(boldLineAreaRoutesData, 'utf-8'));
             for (const boldLineAreaRoute of boldLineAreaRoutes["passing"]) {
                 this.passingBoldLineAreaRoutes.set(boldLineAreaRoute.key, boldLineAreaRoute.route);
             }
@@ -53,19 +54,36 @@ class Load {
 
             // majorCitySuburbanSections.jsonの読み込み
             const majorCitySuburbanSectionsData = path.join(process.cwd(), 'src', 'data', 'majorCitySuburbanSections.json');
-            const rawmajorCitySuburbanSectionsData: Record<string, Section[]> = JSON.parse(fs.readFileSync(majorCitySuburbanSectionsData, 'utf-8'));
-            const transformedmajorCitySuburbanSections = {} as MajorCitySuburbanSection;
-            for (const sectionName in rawmajorCitySuburbanSectionsData) {
-                if (Object.prototype.hasOwnProperty.call(rawmajorCitySuburbanSectionsData, sectionName)) {
-                    const key = sectionName as keyof MajorCitySuburbanSection;
-                    const segments = rawmajorCitySuburbanSectionsData[key];
+            const rawMajorCitySuburbanSectionsData: Record<string, Section[]> = JSON.parse(fs.readFileSync(majorCitySuburbanSectionsData, 'utf-8'));
+            const transformedMajorCitySuburbanSections = {} as MajorCitySuburbanSection;
+            for (const majorCityName in rawMajorCitySuburbanSectionsData) {
+                if (Object.prototype.hasOwnProperty.call(rawMajorCitySuburbanSectionsData, majorCityName)) {
+                    const key = majorCityName as keyof MajorCitySuburbanSection;
+                    const segments = rawMajorCitySuburbanSectionsData[key];
                     const routeKeys = segments.map(segment =>
                         createRouteKey(segment.line, segment.station0, segment.station1)
-                    );
-                    transformedmajorCitySuburbanSections[key] = new Set(routeKeys);
+                    )
+                    transformedMajorCitySuburbanSections[key] = new Set(routeKeys);
                 }
             }
-            this.majorCitySuburbanSections = transformedmajorCitySuburbanSections;
+            this.majorCitySuburbanSections = transformedMajorCitySuburbanSections;
+
+            // majorCitySuburbanSectionFares.jsonの読み込み
+            const majorCitySuburbanSectionFaresData = path.join(process.cwd(), 'src', 'data', 'majorCitySuburbanSectionFares.json');
+            const rawMajorCitySuburbanSectionFaresData: Record<string, MajorCitySuburbanSectionFare[]> = JSON.parse(fs.readFileSync(majorCitySuburbanSectionFaresData, 'utf-8'));
+            const transformedMajorCitySuburbanSectionFares = {} as MajorCitySuburbanSectionFares;
+            for (const majorCityName in rawMajorCitySuburbanSectionFaresData) {
+                if (Object.prototype.hasOwnProperty.call(rawMajorCitySuburbanSectionFaresData, majorCityName)) {
+                    const key = majorCityName as keyof MajorCitySuburbanSectionFares;
+                    const dataArray = rawMajorCitySuburbanSectionFaresData[key];
+                    const map = new Map<string, KippuData>();
+                    for (const item of dataArray) {
+                        map.set(item.key, item.kippuData);
+                    }
+                    transformedMajorCitySuburbanSectionFares[key] = map;
+                }
+            }
+            this.majorCitySuburbanSectionFares = transformedMajorCitySuburbanSectionFares;
 
             // printings.jsonの読み込み
             const printingsData = path.join(process.cwd(), 'src', 'data', 'printings.json');
@@ -152,8 +170,21 @@ class Load {
         return this.fromBoldLineAreaRoutes.get(key) ?? null;
     }
 
-    public getMajorCitySuburbanSections(majorCitySuburbanSectionName: keyof MajorCitySuburbanSection): Set<string> {
-        return this.majorCitySuburbanSections[majorCitySuburbanSectionName];
+    public getMajorCitySuburbanSections(): MajorCitySuburbanSection {
+        return this.majorCitySuburbanSections;
+    }
+
+    public getMajorCitySuburbanSectionFares(
+        majorCitySuburbanSection: keyof MajorCitySuburbanSectionFares,
+        startStation: string,
+        endStation: string
+    ): KippuData {
+        const key = `${startStation}-${endStation}`;
+        const data = this.majorCitySuburbanSectionFares[majorCitySuburbanSection].get(key);
+        if (data === undefined) {
+            throw new Error("再考：要求区間誤り");
+        }
+        return data;
     }
 
     public getPassingBoldLineAreaRoute(key: string): PathStep[] | null {

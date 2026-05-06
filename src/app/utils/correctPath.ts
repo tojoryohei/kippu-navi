@@ -7231,7 +7231,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
 
 // 第70条 旅客が次に掲げる図の太線区間を通過する場合
 // 第160条 特定区間発着の場合のう回乗車
-function applyBoldLineAreaRule(fullPath: PathStep[]) {
+export function applyBoldLineAreaRule(fullPath: PathStep[]) {
     const boldLineArea = load.getTrainSpecificSections("電車大環状線");
     const changeIdx: number[] = [];
 
@@ -7292,7 +7292,7 @@ function applyBoldLineAreaRule(fullPath: PathStep[]) {
 }
 
 // 第86条 特定都区市内にある駅に関連する片道普通旅客運賃の計算方
-function applyCityRule(fullPath: PathStep[]): PathStep[] {
+export function applyCityRule(fullPath: PathStep[]): PathStep[] {
     const cities = load.getCities();
     const threshold: number = 2000;
 
@@ -7388,7 +7388,7 @@ function applyCityRule(fullPath: PathStep[]): PathStep[] {
 }
 
 // 第87条 東京山手線内にある駅に関連する片道普通旅客運賃の計算方
-function applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
+export function applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
     const yamanote = load.getYamanote();
     const stationsInYamanote = new Set(yamanote.stations);
     const threshold: number = 1000;
@@ -7432,7 +7432,7 @@ function applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
 }
 
 // 第88条 新大阪駅又は大阪駅発又は着となる片道普通旅客運賃の計算方
-function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
+export function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
 
     // 西日本旅客鉄道会社内完結であるかの確認
     for (let i = 0; i < fullPath.length - 1; i++) {
@@ -7582,7 +7582,7 @@ function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
 }
 
 // 第89条 北新地駅発又は着となる片道普通旅客運賃の計算方
-function applyKitashinchiRule(fullPath: PathStep[]): PathStep[] {
+export function applyKitashinchiRule(fullPath: PathStep[]): PathStep[] {
     let cnt = 0;
     if (fullPath.length === 6 &&
         fullPath[0].stationName === "北新地" &&

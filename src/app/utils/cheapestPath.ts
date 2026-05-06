@@ -1,21 +1,21 @@
 import { load } from "@/app/utils/load";
-import { calculateTotalEigyoKilo, calculateTotalGiseiKilo, convertPathStepsToRouteSegments, getFareForPath } from "@/app/utils/calc";
-import { correctPath } from "@/app/utils/correctPath";
-
+import { applyOneSideCityRule, applyOneSideYamanoteRule, calculateTotalEigyoKilo, calculateTotalGiseiKilo, convertPathStepsToRouteSegments } from "@/app/utils/calc";
+import { applyCityRule, applyYamanoteRule, correctPath } from "@/app/utils/correctPath";
 import { PathStep } from "@/app/types";
+import { calculateFareFromPath } from "@/app/utils/calcFare";
 
 export function cheapestPathAndFare(fullPath: PathStep[]): { path: PathStep[], fare: number } {
 
     const correctedPath = correctPath(fullPath);
 
     let cheapestPath = extendFromCity(correctedPath);
-    let cheapestFare = getFareForPath(cheapestPath);
+    let cheapestFare = calculateFareFromPath(correctedPath);
 
     // Start Extension
     const startExtentionPath = extendTheFrontOfSections(correctedPath);
     if (startExtentionPath !== null) {
-        const extentionPath = [...startExtentionPath, ...correctedPath];
-        const extentionFare = getFareForPath(extendFromCity(extentionPath));
+        const extentionPath = extendFromCity(correctPath([...startExtentionPath, ...correctedPath]));
+        const extentionFare = calculateFareFromPath(extentionPath);
         if (extentionFare < cheapestFare) {
             cheapestPath = extentionPath;
             cheapestFare = extentionFare;
@@ -25,8 +25,8 @@ export function cheapestPathAndFare(fullPath: PathStep[]): { path: PathStep[], f
     // Goal Extension
     const goalExtentionPath = extendTheRearOfSections(correctedPath);
     if (goalExtentionPath !== null) {
-        const extentionPath = [...correctedPath.slice(0, -1), ...goalExtentionPath];
-        const extentionFare = getFareForPath(extendFromCity(extentionPath));
+        const extentionPath = extendFromCity(correctPath([...correctedPath.slice(0, -1), ...goalExtentionPath]));
+        const extentionFare = calculateFareFromPath(extentionPath);
         if (extentionFare < cheapestFare) {
             cheapestPath = extentionPath;
             cheapestFare = extentionFare;
@@ -35,8 +35,8 @@ export function cheapestPathAndFare(fullPath: PathStep[]): { path: PathStep[], f
 
     // Dual Extension
     if (startExtentionPath !== null && goalExtentionPath !== null) {
-        const dualExtentionPath = [...startExtentionPath, ...correctedPath.slice(0, -1), ...goalExtentionPath];
-        const dualExtentionFare = getFareForPath(extendFromCity(dualExtentionPath));
+        const dualExtentionPath = extendFromCity(correctPath([...startExtentionPath, ...correctedPath.slice(0, -1), ...goalExtentionPath]));
+        const dualExtentionFare = calculateFareFromPath(dualExtentionPath);
         if (dualExtentionFare < cheapestFare) {
             cheapestPath = dualExtentionPath;
             cheapestFare = dualExtentionFare;
@@ -73,7 +73,7 @@ export function extendFromCity(originalPath: PathStep[]): PathStep[] {
     }
 
     let bestPath = [...originalPath];
-    let minFare = getFareForPath(originalPath);
+    let minFare = calculateFareFromPath(applyYamanoteRule(applyCityRule(originalPath)));
 
     // -------------------------------------------------------------
     // 探索実行: 山手線ルール(100km) と 特定都区市内ルール(200km) の両方を試す
@@ -81,7 +81,7 @@ export function extendFromCity(originalPath: PathStep[]): PathStep[] {
 
     // ヘルパー: 試行と最安値更新
     const tryUpdate = (path: PathStep[]) => {
-        const fare = getFareForPath(path);
+        const fare = calculateFareFromPath(applyYamanoteRule(applyCityRule(path)));
         if (fare < minFare) {
             minFare = fare;
             bestPath = path;
@@ -100,7 +100,7 @@ export function extendFromCity(originalPath: PathStep[]): PathStep[] {
     // 着駅側
     tryUpdate(tryExtension(originalPath, "backward", 2000, applyOneSideCityRule));
 
-    return correctPath(bestPath);
+    return applyYamanoteRule(applyCityRule(bestPath));
 }
 
 /**
@@ -172,7 +172,7 @@ function searchExtension(
             // 2. 判定: 中心駅からの距離が閾値を超えたか？
             if (distFromCenter > threshold) {
                 // 初めて超えた駅で運賃計算
-                const fare = getFareForPath(currentPath);
+                const fare = calculateFareFromPath(correctPath(currentPath));
 
                 // 比較適用
                 if (fare < bestExtendedFare) {
@@ -226,145 +226,6 @@ function searchExtension(
     return found ? bestExtendedPath : basePath;
 }
 
-function applyOneSideCityRule(fullPath: PathStep[], direction: string): PathStep[] | null {
-    const cities = load.getCities();
-
-    if (direction === "forward") {
-        for (const city of cities) {
-            const stationsInCity = new Set(city.stations);
-
-            // 発駅適用
-            if (stationsInCity.has(fullPath[0].stationName)) {
-                const changingIdx: number[] = [];
-                for (let i = 0; i < fullPath.length - 1; i++) {
-                    if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "加島" &&
-                        fullPath[i].stationName === "尼崎" &&
-                        fullPath[i + 1].stationName === "塚本")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "塚本" &&
-                        fullPath[i].stationName === "尼崎" &&
-                        fullPath[i + 1].stationName === "加島")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "加美" &&
-                        fullPath[i].stationName === "久宝寺" &&
-                        fullPath[i + 1].stationName === "新加美")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "新加美" &&
-                        fullPath[i].stationName === "久宝寺" &&
-                        fullPath[i + 1].stationName === "加美")
-                        changingIdx.pop();
-                    else if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
-                        changingIdx.push(i);
-                }
-                if (changingIdx.length === 1 || changingIdx.length === 2) {
-                    const applyCityRulePath = [
-                        { "stationName": city.name, "lineName": fullPath[changingIdx[0]].lineName },
-                        ...fullPath.slice(changingIdx[0] + 1)
-                    ];
-                    return applyCityRulePath;
-                }
-            }
-        }
-    }
-
-    else {
-        for (const city of cities) {
-            const stationsInCity = new Set(city.stations);
-
-            // 着駅適用
-            if (stationsInCity.has(fullPath[fullPath.length - 1].stationName)) {
-                const changingIdx: number[] = [];
-                for (let i = 0; i < fullPath.length - 1; i++) {
-                    if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "加島" &&
-                        fullPath[i].stationName === "尼崎" &&
-                        fullPath[i + 1].stationName === "塚本")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "塚本" &&
-                        fullPath[i].stationName === "尼崎" &&
-                        fullPath[i + 1].stationName === "加島")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "加美" &&
-                        fullPath[i].stationName === "久宝寺" &&
-                        fullPath[i + 1].stationName === "新加美")
-                        changingIdx.pop();
-                    else if (i !== 0 &&
-                        city.name === "大阪市内" &&
-                        fullPath[i - 1].stationName === "新加美" &&
-                        fullPath[i].stationName === "久宝寺" &&
-                        fullPath[i + 1].stationName === "加美")
-                        changingIdx.pop();
-                    else if (stationsInCity.has(fullPath[i].stationName) !== stationsInCity.has(fullPath[i + 1].stationName))
-                        changingIdx.push(i);
-
-                }
-                if (changingIdx.length === 1 || changingIdx.length === 2) {
-                    const applyCityRulePath = [
-                        ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
-                        { "stationName": city.name, "lineName": null }
-                    ];
-                    return applyCityRulePath;
-                }
-            }
-        }
-    }
-    return null;
-}
-
-function applyOneSideYamanoteRule(fullPath: PathStep[], direction: string): PathStep[] | null {
-    const yamanote = load.getYamanote();
-    const stationsInYamanote = new Set(yamanote.stations);
-
-    if (direction === "forward") {
-        // 発駅適用
-        if (stationsInYamanote.has(fullPath[0].stationName)) {
-            const changingIdx: number[] = [];
-            for (let i = 0; i < fullPath.length - 1; i++) {
-                if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
-                    changingIdx.push(i);
-            }
-            if (changingIdx.length === 1 || changingIdx.length === 2) {
-                const applyCityRulePath = [
-                    { "stationName": yamanote.name, "lineName": fullPath[changingIdx[0]].lineName },
-                    ...fullPath.slice(changingIdx[0] + 1)
-                ];
-                return applyCityRulePath;
-            }
-        }
-    }
-    else {
-        // 着駅適用
-        if (stationsInYamanote.has(fullPath[fullPath.length - 1].stationName)) {
-            const changingIdx: number[] = [];
-            for (let i = 0; i < fullPath.length - 1; i++) {
-                if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
-                    changingIdx.push(i);
-            }
-            if (changingIdx.length === 1 || changingIdx.length === 2) {
-                const applyCityRulePath = [
-                    ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
-                    { "stationName": yamanote.name, "lineName": null }
-                ];
-                return applyCityRulePath;
-            }
-        }
-    }
-    return null;
-}
-
 export function extendTheFrontOfSections(path: PathStep[]): PathStep[] | null {
     if (path.length < 2) return null;
     const outerSpecificSections = load.getSpecificSections();
@@ -388,4 +249,3 @@ export function extendTheRearOfSections(path: PathStep[]): PathStep[] | null {
     }
     return null;
 }
-

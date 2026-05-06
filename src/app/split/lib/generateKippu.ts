@@ -1,6 +1,7 @@
-import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings, getFareForPath } from '@/app/utils/calc';
+import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings, whichMajorCitySuburbanSections } from '@/app/utils/calc';
 import { KippuData, PathStep } from '@/app/types';
 import { correctPath } from '@/app/utils/correctPath';
+import { calculateFareFromPath } from '@/app/utils/calcFare';
 
 export function generateKippu(fullPath: PathStep[]): KippuData {
 
@@ -14,7 +15,7 @@ export function generateKippu(fullPath: PathStep[]): KippuData {
     // 営業キロと運賃の計算
     const routeSegments = convertPathStepsToRouteSegments(correctedPath);
     const totalEigyoKilo = calculateTotalEigyoKilo(routeSegments);
-    const fare = getFareForPath(correctedPath);
+    const fare = calculateFareFromPath(correctedPath);
     const validDays = calculateValidDaysFromKilo(totalEigyoKilo);
 
     // 経由文字列の生成 (ユーザー入力の経路を使用)
