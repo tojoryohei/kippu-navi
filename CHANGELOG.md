@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.7.0...kippu-navi-v1.8.0) (2026-05-06)
+
+
+### Features
+
+* 大都市近郊区間内相互発着の最安経路計算特例の実装および最適化 ([#62](https://github.com/tojoryohei/kippu-navi/issues/62)) ([9ed9782](https://github.com/tojoryohei/kippu-navi/commit/9ed9782913d35c4a6b12310f6034b02a970c3bdf))
+
 ## [1.7.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.6.5...kippu-navi-v1.7.0) (2026-05-03)
 
 
