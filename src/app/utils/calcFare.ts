@@ -35,11 +35,11 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
     // 第78条 電車特定区間内等の大人片道普通旅客運賃
     // 電車特定区間内相互発着の場合
     if (isAllTrainSpecificSections("電車特定区間", routeKeys)) {
-        fare = calculateFareInTrainSpecificSection(routeSegments);
+        fare += calculateFareInTrainSpecificSection(routeSegments);
     }
 
     // 第85条 他の旅客鉄道会社線を連続して乗車する場合の大人片道普通旅客運賃
-    else fare = calculateFare(routeSegments);
+    else fare += calculateFare(routeSegments);
 
     // （1）北海道旅客鉄道会社線の乗車区間に対する普通旅客運賃の加算額
     if (0 < routeSegmentsByCompany[1].length) {
