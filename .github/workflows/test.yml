@@ -19,32 +19,48 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
-      # 1. GCPへの認証 (GitHub Secretsに登録したJSONキーを使用)
+      # 1. JSONファイルを保存するディレクトリをあらかじめ作成
+      - name: Create data directories
+        run: |
+          mkdir -p src/data
+          mkdir -p src/app/mr/data
+          mkdir -p src/app/split/data
+
+      # 2. GitHub Actionsのキャッシュ機能でJSONデータを復元（保存）
+      - name: Cache JSON data
+        id: cache-json
+        uses: actions/cache@v4
+        with:
+          path: |
+            src/data/*.json
+            src/app/mr/data/*.json
+            src/app/split/data/*.json
+          key: kippu-navi-json-data-v20260507-${{ hashFiles('.github/workflows/test.yml') }}
+
+      # 3. GCPへの認証
       - name: Authenticate to Google Cloud
+        if: steps.cache-json.outputs.cache-hit != 'true'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      # 2. gcloud / gsutil コマンドのセットアップ
+      # 4. gcloud / gsutil コマンドのセットアップ
       - name: Set up Cloud SDK
+        if: steps.cache-json.outputs.cache-hit != 'true'
         uses: google-github-actions/setup-gcloud@v2
 
-      # 3. 秘匿バケットからJSONデータをダウンロードし、所定のディレクトリに配置
+      # 5. 秘匿バケットからJSONデータをダウンロード
       - name: Download JSON data from private GCS
+        if: steps.cache-json.outputs.cache-hit != 'true'
         run: |
-          mkdir -p src/data
           gsutil -m cp gs://kippu-navi-build-secrets/data/*.json ./src/data/
-          
-          mkdir -p src/app/mr/data
           gsutil -m cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
-          
-          mkdir -p src/app/split/data
           gsutil -m cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
 
-      # 4. パッケージのインストール
+      # 6. パッケージのインストール
       - name: Install dependencies
         run: npm ci
 
-      # 5. テストの実行
+      # 7. テストの実行
       - name: Run Vitest
         run: npm run test
