@@ -482,7 +482,7 @@ export default function Page() {
                     <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
                         <h3 className="text-lg font-bold mb-3 text-blue-700">経路指定不要の自動探索</h3>
                         <p className="text-sm text-gray-700">
-                            K-最短経路アルゴリズム（Yen's Algorithm）を応用することで、利用者が自ら経路を指定することなく、分割乗車券によって安価となる「迂回経路」も含めた候補ルートの列挙を自動で行います。
+                            K-最短経路アルゴリズム（{"Yen's Algorithm"}）を応用することで、利用者が自ら経路を指定することなく、分割乗車券によって安価となる「迂回経路」も含めた候補ルートの列挙を自動で行います。
                         </p>
                     </div>
 
