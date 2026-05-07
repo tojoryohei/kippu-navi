@@ -3,7 +3,7 @@ import { loadSplit } from '@/app/split/lib/loadSplit';
 import { generateKippu } from '@/app/split/lib/generateKippu';
 import { KippuData, PathStep, SplitApiResponse, SplitKippuData, SplitKippuDatas } from '@/app/types';
 import { cheapestPathAndFare } from '@/app/utils/cheapestPath';
-import { calculateTotalGiseiKilo, convertPathStepsToRouteSegments, createPairKey, whichMajorCitySuburbanSections } from '@/app/utils/calc';
+import { calculateTotalGiseiKilo, convertPathStepsToRouteSegments, createPairKey, round1000, round10000, whichMajorCitySuburbanSections } from '@/app/utils/calc';
 import { calculateFareFromPath } from '@/app/utils/calcFare';
 
 class PriorityQueue {
@@ -281,7 +281,11 @@ export class CalculatorSplit {
     }
 
     private getBestUnitPrice(distance: number): number {
-        return (580 / 428);
+        if (distance <= 8000) return (580 / 428);
+        const totalKilo = Math.ceil(distance / 10);
+        const splitKilo = Math.floor((totalKilo - 1) / 40) * 40 + 20;
+        const fare = round1000(round10000(1620 * 300 + 1285 * 300 + 705 * (splitKilo - 600)) * 11 / 10) / 100;
+        return (fare / (splitKilo + 20));
     }
 
     private getSpecificCityBuffer(startStation: string, endStation: string): number {

@@ -1,5 +1,5 @@
 import { load } from '@/app/utils/load';
-import { MajorCitySuburbanSection, MajorCitySuburbanSectionFares, PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
+import { MajorCitySuburbanSection, PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
 
 export function calculateTotalEigyoKilo(routeSegments: RouteSegment[]): number {
     let totalEigyoKilo: number = 0;
@@ -15,6 +15,18 @@ export function calculateTotalGiseiKilo(routeSegments: RouteSegment[]): number {
         totalGiseiKilo += routeSegment.giseiKilo;
     }
     return totalGiseiKilo;
+}
+
+export function ceil1000(n: number): number {
+    return Math.ceil(n / 1000) * 1000;
+}
+
+export function round1000(n: number): number {
+    return Math.round(n / 1000) * 1000;
+}
+
+export function round10000(n: number): number {
+    return Math.round(n / 10000) * 10000;
 }
 
 export function createPairKey(station0: string, station1: string): string {

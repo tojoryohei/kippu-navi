@@ -1,5 +1,5 @@
 import { load } from '@/app/utils/load';
-import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo, isAllTrainSpecificSections } from '@/app/utils/calc';
+import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo, isAllTrainSpecificSections, round1000, ceil1000, round10000 } from '@/app/utils/calc';
 
 import { PathStep, RouteSegment } from '@/app/types';
 
@@ -95,18 +95,6 @@ function isAllLocal(routeSegments: RouteSegment[]): boolean {
         if (routeSegment.isLocal === false) return false;
     }
     return true;
-}
-
-function ceil1000(n: number): number {
-    return Math.ceil(n / 1000) * 1000;
-}
-
-function round1000(n: number): number {
-    return Math.round(n / 1000) * 1000;
-}
-
-function round10000(n: number): number {
-    return Math.round(n / 10000) * 10000;
 }
 
 function calculateSplitKiloOfKansen(totalKilo: number): number {
