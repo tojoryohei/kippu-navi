@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   # ---------------------------------------------------
   # 1. Lintジョブ: コードの書き方や潜在的なバグをチェック
@@ -21,6 +25,9 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+
+      - name: Setup Takumi Guard
+        uses: flatt-security/setup-takumi-guard-npm@v1
 
       - name: Install dependencies
         run: npm ci
@@ -43,6 +50,9 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+
+      - name: Setup Takumi Guard
+        uses: flatt-security/setup-takumi-guard-npm@v1
 
       # JSONファイルを保存するディレクトリを作成
       - name: Create data directories
