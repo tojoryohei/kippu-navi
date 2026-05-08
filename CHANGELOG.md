@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.8.2...kippu-navi-v1.9.0) (2026-05-08)
+
+
+### Features
+
+* 大都市近郊区間の最安運賃算出ロジックの改善 ([#72](https://github.com/tojoryohei/kippu-navi/issues/72)) ([420c238](https://github.com/tojoryohei/kippu-navi/commit/420c238907542040adaa9925652aa9d9d11077c2))
+
 ## [1.8.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.8.1...kippu-navi-v1.8.2) (2026-05-07)
 
 
