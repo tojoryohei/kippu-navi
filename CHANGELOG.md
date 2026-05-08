@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.8.1...kippu-navi-v1.8.2) (2026-05-07)
+
+
+### Performance Improvements
+
+* 距離に応じた最安キロ単価の算出による、経路探索の枝刈りの強化 ([#70](https://github.com/tojoryohei/kippu-navi/issues/70)) ([015a4fe](https://github.com/tojoryohei/kippu-navi/commit/015a4fe9a7ebe400f7d92c0cd2979bd9f6d4315b))
+
 ## [1.8.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.8.0...kippu-navi-v1.8.1) (2026-05-06)
 
 
