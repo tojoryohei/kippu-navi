@@ -7434,16 +7434,6 @@ export function applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
 // 第88条 新大阪駅又は大阪駅発又は着となる片道普通旅客運賃の計算方
 export function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
 
-    // 西日本旅客鉄道会社内完結であるかの確認
-    for (let i = 0; i < fullPath.length - 1; i++) {
-        const line = fullPath[i].lineName;
-        if (line === null) throw new Error(`applyOsakaRuleでエラーが発生しました.`);
-        const routeSegment = load.getRouteSegment(line, fullPath[i].stationName, fullPath[i + 1].stationName);
-        if (routeSegment.company !== 4) {
-            return fullPath;
-        }
-    }
-
     // 着駅判定
     if (fullPath[fullPath.length - 1].stationName === "大阪" || fullPath[fullPath.length - 1].stationName === "新大阪") {
         const changingIdx: number[] = [];
