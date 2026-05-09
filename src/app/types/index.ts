@@ -145,16 +145,9 @@ export interface MajorCitySuburbanSection {
 }
 
 export interface MajorCitySuburbanSectionFare {
-    key: string;
+    startStation: string;
+    endStation: string;
     kippuData: KippuData;
-}
-
-export interface MajorCitySuburbanSectionFares {
-    東京近郊区間: Map<string, KippuData>;
-    大阪近郊区間: Map<string, KippuData>;
-    福岡近郊区間: Map<string, KippuData>;
-    新潟近郊区間: Map<string, KippuData>;
-    仙台近郊区間: Map<string, KippuData>;
 }
 
 export interface BoldLineAreaRoute {

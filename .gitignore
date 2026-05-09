@@ -36,6 +36,7 @@ yarn-error.log*
 .gitconfig
 
 # secret data
+src/data/*.db
 src/data/*.json
 src/app/mr/data/*.json
 src/app/split/data/*.json

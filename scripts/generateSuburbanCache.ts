@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import Database from 'better-sqlite3';
 import { load } from '@/app/utils/load';
 import { KippuData, MajorCitySuburbanSectionFare, PathStep, Section } from '@/app/types';
-import { applyOneSideCityRule, applyOneSideYamanoteRule, calculateTotalEigyoKilo, convertPathStepsToRouteSegments, createPairKey, createRouteKey, generatePrintedViaStrings } from '@/app/utils/calc';
+import { applyOneSideCityRule, applyOneSideYamanoteRule, calculateTotalEigyoKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings } from '@/app/utils/calc';
 import { calculateFareFromPath } from '@/app/utils/calcFare';
 import { applyBoldLineAreaRule, applyKitashinchiRule, applyOsakaRule } from '@/app/utils/correctPath';
 
@@ -225,10 +226,7 @@ class SuburbanCacheGenerator {
     private trainSpecificRoutes = new trainSpecificRoute();
     private majorCitySuburbanSection = new majorCitySuburbanSection();
 
-    /**
-     * 指定された駅のリストから、全組み合わせの最安KippuDataを計算してJSONに出力します
-     */
-    public async generateAndSaveCache(majorCityName: keyof MajorCitySuburbanStation) {
+    public async generateCacheForArea(majorCityName: keyof MajorCitySuburbanStation): Promise<MajorCitySuburbanSectionFare[]> {
         const cacheResult: MajorCitySuburbanSectionFare[] = [];
         const stations = Array.from(this.majorCitySuburbanSection.getMajorCitySuburbanStations(majorCityName));
         const totalStations = stations.length;
@@ -336,6 +334,31 @@ class SuburbanCacheGenerator {
                     correctedPath = applyOsakaRule(correctedPath);
                     correctedPath = applyKitashinchiRule(correctedPath);
 
+                    if (stationsInYamanote.has(startStation) === true || stationsInYamanote.has(endStation) === true) {
+                        for (let i = 0; i < correctedPath.length - 2; i++) {
+                            if (correctedPath[i].stationName === "東京" &&
+                                correctedPath[i].lineName === "トウホ" &&
+                                correctedPath[i + 1].stationName === "神田" &&
+                                correctedPath[i + 1].lineName === "チユト" &&
+                                correctedPath[i + 2].stationName === "御茶ノ水"
+                            ) {
+                                correctedPath[i].lineName = "チユト";
+                                console.log("東京-神田を中央東に補正", startStation, endStation);
+                                break;
+                            }
+                            if (correctedPath[i].stationName === "御茶ノ水" &&
+                                correctedPath[i].lineName === "チユト" &&
+                                correctedPath[i + 1].stationName === "神田" &&
+                                correctedPath[i + 1].lineName === "トウホ" &&
+                                correctedPath[i + 2].stationName === "東京"
+                            ) {
+                                correctedPath[i + 1].lineName = "チユト";
+                                console.log("神田-東京を中央東に補正", startStation, endStation);
+                                break;
+                            }
+                        }
+                    }
+
                     const kippuData: KippuData = {
                         totalEigyoKilo: calculateTotalEigyoKilo(convertPathStepsToRouteSegments(correctedPath)),
                         departureStation: correctedPath[0].stationName,
@@ -355,9 +378,9 @@ class SuburbanCacheGenerator {
                 }
 
                 if (cheapestKippu) {
-                    const key = `${startStation}-${endStation}`;
                     cacheResult.push({
-                        key: key,
+                        startStation: startStation,
+                        endStation: endStation,
                         kippuData: cheapestKippu
                     });
                 }
@@ -406,8 +429,12 @@ class SuburbanCacheGenerator {
                 const representativeSegment = segments[0];
                 let weight = representativeSegment.giseiKilo;
 
-                if (createPairKey(representativeSegment.station0, representativeSegment.station1) === "南船橋-西船橋") weight = 55;
-                if (createPairKey(representativeSegment.station0, representativeSegment.station1) === "千葉みなと-蘇我") weight = 41;
+                if (representativeSegment.station0 === "南船橋" && representativeSegment.station1 === "西船橋") weight += 1;
+                if (representativeSegment.station0 === "西船橋" && representativeSegment.station1 === "南船橋") weight += 1;
+                if (representativeSegment.station0 === "千葉みなと" && representativeSegment.station1 === "蘇我") weight += 1;
+                if (representativeSegment.station0 === "蘇我" && representativeSegment.station1 === "千葉みなと") weight += 1;
+                if (representativeSegment.station0 === "京終", representativeSegment.station1 === "奈良") weight += 1;
+                if (representativeSegment.station0 === "奈良", representativeSegment.station1 === "京終") weight += 1;
 
                 const newCost = currentCost + weight;
 
@@ -448,8 +475,10 @@ class SuburbanCacheGenerator {
                 const representativeSegment = segments[0];
                 let weight = representativeSegment.eigyoKilo;
 
-                if (createPairKey(representativeSegment.station0, representativeSegment.station1) === "南船橋-西船橋") weight = 55;
-                if (createPairKey(representativeSegment.station0, representativeSegment.station1) === "千葉みなと-蘇我") weight = 41;
+                if (representativeSegment.station0 === "南船橋" && representativeSegment.station1 === "西船橋") weight += 1;
+                if (representativeSegment.station0 === "西船橋" && representativeSegment.station1 === "南船橋") weight += 1;
+                if (representativeSegment.station0 === "千葉みなと" && representativeSegment.station1 === "蘇我") weight += 1;
+                if (representativeSegment.station0 === "蘇我" && representativeSegment.station1 === "千葉みなと") weight += 1;
 
                 const newCost = currentCost + weight;
 
@@ -522,26 +551,54 @@ class SuburbanCacheGenerator {
 }
 
 // ----------------------------------------------------------------------
-// 実行部分
+// 実行部分 (SQLite への出力処理)
 // ----------------------------------------------------------------------
 async function main() {
-
     const generator = new SuburbanCacheGenerator();
-
     console.time("CacheGenerationTime");
 
-    const result = {
-        "東京近郊区間": await generator.generateAndSaveCache("東京近郊区間"),
-        "大阪近郊区間": await generator.generateAndSaveCache("大阪近郊区間"),
-        "福岡近郊区間": await generator.generateAndSaveCache("福岡近郊区間"),
-        "新潟近郊区間": await generator.generateAndSaveCache("新潟近郊区間"),
-        "仙台近郊区間": await generator.generateAndSaveCache("仙台近郊区間")
-    };
+    // データベースファイルの準備（新規作成）
+    const dbPath = path.join(process.cwd(), 'src/data/majorCitySuburbanSectionFares.db');
+    if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+    }
+    const db = new Database(dbPath);
 
-    // 一つのJSONファイルとして書き出し
-    fs.writeFileSync("./src/data/majorCitySuburbanSectionFares.json", JSON.stringify(result), 'utf-8');
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS fares (
+            area_name TEXT NOT NULL,
+            station_start TEXT NOT NULL,
+            station_end TEXT NOT NULL,
+            kippu_data_json TEXT NOT NULL,
+            PRIMARY KEY (area_name, station_start, station_end)
+        );
+    `);
 
+    const insertStmt = db.prepare('INSERT OR REPLACE INTO fares (area_name, station_start, station_end, kippu_data_json) VALUES (?, ?, ?, ?)');
+    const insertMany = db.transaction((areaName: string, items: MajorCitySuburbanSectionFare[]) => {
+        for (const item of items) {
+            insertStmt.run(areaName, item.startStation, item.endStation, JSON.stringify(item.kippuData));
+        }
+    });
+
+    const areas: (keyof MajorCitySuburbanStation)[] = [
+        "東京近郊区間",
+        "大阪近郊区間",
+        "福岡近郊区間",
+        "新潟近郊区間",
+        "仙台近郊区間"
+    ];
+
+    for (const area of areas) {
+        console.log(`\n=== ${area} のキャッシュ生成を開始 ===`);
+        const result = await generator.generateCacheForArea(area);
+        insertMany(area, result);
+        console.log(`[DB Insert] ${area} のデータをDBに保存しました。（${result.length} 件）`);
+    }
+
+    db.close();
     console.timeEnd("CacheGenerationTime");
+    console.log("すべての区間のデータ生成とDB保存が完了しました。");
 }
 
 main().catch(error => {

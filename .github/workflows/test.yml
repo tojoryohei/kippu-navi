@@ -54,7 +54,7 @@ jobs:
       - name: Setup Takumi Guard
         uses: flatt-security/setup-takumi-guard-npm@v1
 
-      # JSONファイルを保存するディレクトリを作成
+      # DB・JSONファイルを保存するディレクトリを作成
       - name: Create data directories
         run: |
           mkdir -p src/data
@@ -62,32 +62,34 @@ jobs:
           mkdir -p src/app/split/data
 
       # GitHub Actionsのキャッシュ機能でJSONデータを復元
-      - name: Cache JSON data
-        id: cache-json
+      - name: Cache data
+        id: cache
         uses: actions/cache@v4
         with:
           path: |
+            src/data/*.db
             src/data/*.json
             src/app/mr/data/*.json
             src/app/split/data/*.json
-          key: kippu-navi-json-data-v20260507-${{ hashFiles('.github/workflows/test.yml') }}
+          key: kippu-navi-data-v20260509-${{ hashFiles('.github/workflows/test.yml') }}
 
       # キャッシュが無い場合のみGCP認証
       - name: Authenticate to Google Cloud
-        if: steps.cache-json.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
       # キャッシュが無い場合のみSDKセットアップ
       - name: Set up Cloud SDK
-        if: steps.cache-json.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: google-github-actions/setup-gcloud@v2
 
       # キャッシュが無い場合のみGCSからダウンロード
-      - name: Download JSON data from private GCS
-        if: steps.cache-json.outputs.cache-hit != 'true'
+      - name: Download data from private GCS
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
+          gsutil -m cp gs://kippu-navi-build-secrets/data/*.db ./src/data/
           gsutil -m cp gs://kippu-navi-build-secrets/data/*.json ./src/data/
           gsutil -m cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
           gsutil -m cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
