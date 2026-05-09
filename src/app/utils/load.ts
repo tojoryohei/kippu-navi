@@ -1,14 +1,15 @@
 import fs from 'fs';
 import path from 'path';
-
+import Database from 'better-sqlite3';
 import { createPairKey, createRouteKey } from '@/app/utils/calc';
-import { City, KippuData, MajorCitySuburbanSection, MajorCitySuburbanSectionFare, MajorCitySuburbanSectionFares, OuterSection, PathStep, Printing, RouteSegment, Section, SpecificFare, TrainSpecificSection } from '@/app/types';
+import { City, KippuData, MajorCitySuburbanSection, OuterSection, PathStep, Printing, RouteSegment, Section, SpecificFare, TrainSpecificSection } from '@/app/types';
 
 class Load {
     private adjacentStationsList: Map<string, string[]> = new Map();
     private cities: City[] = [];
+    private db: Database.Database | null = null;
+    private _getFareStmt: Database.Statement | null = null;
     private fromBoldLineAreaRoutes: Map<string, PathStep[]> = new Map();
-    private majorCitySuburbanSectionFares!: MajorCitySuburbanSectionFares;
     private majorCitySuburbanSections!: MajorCitySuburbanSection;
     private passingBoldLineAreaRoutes: Map<string, PathStep[]> = new Map();
     private printings: Map<string, string> = new Map();
@@ -67,23 +68,6 @@ class Load {
                 }
             }
             this.majorCitySuburbanSections = transformedMajorCitySuburbanSections;
-
-            // majorCitySuburbanSectionFares.jsonの読み込み
-            const majorCitySuburbanSectionFaresData = path.join(process.cwd(), 'src', 'data', 'majorCitySuburbanSectionFares.json');
-            const rawMajorCitySuburbanSectionFaresData: Record<string, MajorCitySuburbanSectionFare[]> = JSON.parse(fs.readFileSync(majorCitySuburbanSectionFaresData, 'utf-8'));
-            const transformedMajorCitySuburbanSectionFares = {} as MajorCitySuburbanSectionFares;
-            for (const majorCityName in rawMajorCitySuburbanSectionFaresData) {
-                if (Object.prototype.hasOwnProperty.call(rawMajorCitySuburbanSectionFaresData, majorCityName)) {
-                    const key = majorCityName as keyof MajorCitySuburbanSectionFares;
-                    const dataArray = rawMajorCitySuburbanSectionFaresData[key];
-                    const map = new Map<string, KippuData>();
-                    for (const item of dataArray) {
-                        map.set(item.key, item.kippuData);
-                    }
-                    transformedMajorCitySuburbanSectionFares[key] = map;
-                }
-            }
-            this.majorCitySuburbanSectionFares = transformedMajorCitySuburbanSectionFares;
 
             // printings.jsonの読み込み
             const printingsData = path.join(process.cwd(), 'src', 'data', 'printings.json');
@@ -166,6 +150,23 @@ class Load {
         return this.cities;
     }
 
+    private getFareStatement(): Database.Statement {
+        if (!this._getFareStmt) {
+            const dbPath = path.join(process.cwd(), 'src', 'data', 'majorCitySuburbanSectionFares.db');
+
+            // DBがない場合のエラーハンドリング
+            if (!fs.existsSync(dbPath)) {
+                throw new Error("DBファイルが見つかりません。先にキャッシュ生成スクリプトを実行してください。");
+            }
+
+            this.db = new Database(dbPath, { readonly: true });
+            this._getFareStmt = this.db.prepare(
+                'SELECT kippu_data_json FROM fares WHERE area_name = ? AND station_start = ? AND station_end = ?'
+            );
+        }
+        return this._getFareStmt;
+    }
+
     public getFromBoldLineAreaRoute(key: string): PathStep[] | null {
         return this.fromBoldLineAreaRoutes.get(key) ?? null;
     }
@@ -175,16 +176,16 @@ class Load {
     }
 
     public getMajorCitySuburbanSectionFares(
-        majorCitySuburbanSection: keyof MajorCitySuburbanSectionFares,
+        majorCitySuburbanSection: keyof MajorCitySuburbanSection,
         startStation: string,
         endStation: string
     ): KippuData {
-        const key = `${startStation}-${endStation}`;
-        const data = this.majorCitySuburbanSectionFares[majorCitySuburbanSection].get(key);
-        if (data === undefined) {
-            throw new Error("再考：要求区間誤り");
-        }
-        return data;
+        const stmt = this.getFareStatement();
+        const row = stmt.get(majorCitySuburbanSection, startStation, endStation) as { kippu_data_json: string } | undefined;
+
+        if (row === undefined) throw new Error(`再考：要求区間誤り`);
+
+        return JSON.parse(row.kippu_data_json) as KippuData;
     }
 
     public getPassingBoldLineAreaRoute(key: string): PathStep[] | null {
