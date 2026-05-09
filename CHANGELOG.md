@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.9.0...kippu-navi-v1.9.1) (2026-05-09)
+
+
+### Bug Fixes
+
+* 新大阪・大阪〜姫路以遠の特例判定から「JR西日本完結」の誤条件を削除 ([#75](https://github.com/tojoryohei/kippu-navi/issues/75)) ([915ba20](https://github.com/tojoryohei/kippu-navi/commit/915ba20025e628701f3464bfed2e3685f4d1fa8d))
+
 ## [1.9.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.8.2...kippu-navi-v1.9.0) (2026-05-08)
 
 
