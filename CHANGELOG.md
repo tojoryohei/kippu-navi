@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.9.2...kippu-navi-v1.9.3) (2026-05-13)
+
+
+### Bug Fixes
+
+* 特定運賃の早期リターンによるバリデーション漏れの修正 ([#80](https://github.com/tojoryohei/kippu-navi/issues/80)) ([4cdc2b8](https://github.com/tojoryohei/kippu-navi/commit/4cdc2b8932fc54bd7475312eb78756ec568e5dd0))
+
 ## [1.9.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.9.1...kippu-navi-v1.9.2) (2026-05-13)
 
 
