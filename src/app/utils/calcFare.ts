@@ -4,9 +4,10 @@ import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo, isAll
 import { PathStep, RouteSegment } from '@/app/types';
 
 export function calculateFareFromPath(fullPath: PathStep[]): number {
+    if (fullPath.length < 2) throw new Error(`calculateFareFromPath: 経路が不正です。運賃計算には2駅以上の経路が必要です。`);
+
     let fare: number = calculateBarrierFreeFeeFromPath(fullPath);
 
-    if (fullPath.length <= 1) return fare;
     // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
     const specificFare = load.getSpecificFares(fullPath);
     if (specificFare !== null) {
@@ -21,7 +22,7 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
 
     for (let i = 0; i < fullPath.length - 1; i++) {
         const line = fullPath[i].lineName;
-        if (line === null) throw new Error(`calculateFareFromCorrectedPathでエラーが発生しました。`);
+        if (line === null) throw new Error(`calculateFareFromPath: 経路が不正です。経路の途中でlineNameにnullは使えません。`);
         const routeSegment = load.getRouteSegment(line, fullPath[i].stationName, fullPath[i + 1].stationName);
 
         // 全ての駅間のデータを取得
