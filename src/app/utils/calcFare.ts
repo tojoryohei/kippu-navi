@@ -6,6 +6,11 @@ import { PathStep, RouteSegment } from '@/app/types';
 export function calculateFareFromPath(fullPath: PathStep[]): number {
     if (fullPath.length < 2) throw new Error(`calculateFareFromPath: 経路が不正です。運賃計算には2駅以上の経路が必要です。`);
 
+    for (let i = 0; i < fullPath.length - 1; i++) {
+        const line = fullPath[i].lineName;
+        if (line === null) throw new Error(`calculateFareFromPath: 経路が不正です。経路の途中でlineNameにnullは使えません。`);
+    }
+
     let fare: number = calculateBarrierFreeFeeFromPath(fullPath);
 
     // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
@@ -21,8 +26,7 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
     // 0 = その他, 1 = JR北海道, 2 = JR東日本, 3 = JR東海, 4 = JR西日本, 5 = JR四国, 6 = JR九州
 
     for (let i = 0; i < fullPath.length - 1; i++) {
-        const line = fullPath[i].lineName;
-        if (line === null) throw new Error(`calculateFareFromPath: 経路が不正です。経路の途中でlineNameにnullは使えません。`);
+        const line = fullPath[i].lineName!;
         const routeSegment = load.getRouteSegment(line, fullPath[i].stationName, fullPath[i + 1].stationName);
 
         // 全ての駅間のデータを取得
