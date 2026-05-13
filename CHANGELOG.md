@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.9.1...kippu-navi-v1.9.2) (2026-05-13)
+
+
+### Bug Fixes
+
+* 経路が存在しない(経路数1未満)場合の運賃計算でエラーを投げる仕様変更 ([#78](https://github.com/tojoryohei/kippu-navi/issues/78)) ([77d2190](https://github.com/tojoryohei/kippu-navi/commit/77d219026670b71895e93b31c8e6d8b5475888a6))
+
 ## [1.9.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.9.0...kippu-navi-v1.9.1) (2026-05-09)
 
 
