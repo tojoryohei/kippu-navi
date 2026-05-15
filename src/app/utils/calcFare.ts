@@ -13,7 +13,7 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
 
     let fare: number = calculateBarrierFreeFeeFromPath(fullPath);
 
-    // 第79条 東京附近等の特定区間等における大人片道普通旅客運賃の特定
+    // 第79条 東京附近等の特定区間等における大人普通旅客運賃の特定
     const specificFare = load.getSpecificFares(fullPath);
     if (specificFare !== null) {
         fare += specificFare
@@ -37,13 +37,13 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
         routeSegmentsByCompany[routeSegment.company].push(routeSegment);
     }
 
-    // 第78条 電車特定区間内等の大人片道普通旅客運賃
+    // 第78条 電車特定区間内等の大人普通旅客運賃
     // 電車特定区間内相互発着の場合
     if (isAllTrainSpecificSections("電車特定区間", routeKeys)) {
         fare += calculateFareInTrainSpecificSection(routeSegments);
     }
 
-    // 第85条 他の旅客鉄道会社線を連続して乗車する場合の大人片道普通旅客運賃
+    // 第85条 他の旅客鉄道会社線を連続して乗車する場合の大人普通旅客運賃
     else fare += calculateFare(routeSegments);
 
     // （1）北海道旅客鉄道会社線の乗車区間に対する普通旅客運賃の加算額
@@ -176,7 +176,7 @@ function calculateSplitKiloOfLocal(totalKilo: number): number {
 function calculateFare(routeSegments: RouteSegment[]): number {
     const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
 
-    // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
+    // 第84条 営業キロが10キロメートルまでの普通旅客運賃
     // （1）幹線内相互発着の場合
     if (isAllKansen(routeSegments)) {
         if (totalEigyoKilo <= 3) return 150;
@@ -191,7 +191,7 @@ function calculateFare(routeSegments: RouteSegment[]): number {
         if (totalEigyoKilo <= 10) return 210;
     }
 
-    // 第77条 幹線内相互発着の大人片道普通旅客運賃
+    // 第77条 幹線内相互発着の大人普通旅客運賃
     if (isAllKansen(routeSegments)) {
         const splitKilo = calculateSplitKiloOfKansen(totalEigyoKilo);
         if (totalEigyoKilo <= 100) return round1000(ceil1000(1620 * splitKilo) * 11 / 10) / 100;
@@ -200,7 +200,7 @@ function calculateFare(routeSegments: RouteSegment[]): number {
         return round1000(round10000(1620 * 300 + 1285 * 300 + 705 * (splitKilo - 600)) * 11 / 10) / 100;
     }
 
-    // 第77条の５ 地方交通線内相互発着の大人片道普通旅客運賃
+    // 第77条の６ 地方交通線内相互発着の大人普通旅客運賃
     if (isAllLocal(routeSegments)) {
         if (11 <= totalEigyoKilo && totalEigyoKilo <= 15) return 240;
         if (16 <= totalEigyoKilo && totalEigyoKilo <= 20) return 330;
@@ -223,7 +223,7 @@ function calculateFare(routeSegments: RouteSegment[]): number {
         return round1000(round10000(1780 * 273 + 1410 * 273 + 770 * (splitKilo - 546)) * 11 / 10) / 100;
     }
 
-    // 第81条 幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
+    // 第81条 幹線と地方交通線を連続して乗車する場合の大人普通旅客運賃
     const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
     const splitKilo = calculateSplitKiloOfKansen(totalGiseiKilo);
     if (totalGiseiKilo <= 100) return round1000(ceil1000(1620 * splitKilo) * 11 / 10) / 100;
@@ -235,7 +235,7 @@ function calculateFare(routeSegments: RouteSegment[]): number {
 function calculateFareInTrainSpecificSection(routeSegments: RouteSegment[]): number {
     const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
 
-    // 第84条 営業キロが10キロメートルまでの片道普通旅客運賃
+    // 第84条 営業キロが10キロメートルまでの普通旅客運賃
     if (totalEigyoKilo <= 3) return 140;
     if (totalEigyoKilo <= 6) return 170;
     if (totalEigyoKilo <= 10) return 190;
@@ -251,7 +251,7 @@ function calculateFareInTrainSpecificSection(routeSegments: RouteSegment[]): num
 function calculateFare1(routeSegments: RouteSegment[]): number {
     const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
 
-    // 第84条の２ 北海道旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
+    // 第84条の２ 北海道旅客鉄道会社線内の営業キロが10キロメートルまでの普通旅客運賃
     // （1）幹線内相互発着の場合
     if (isAllKansen(routeSegments)) {
         if (totalEigyoKilo <= 3) return 210;
@@ -266,7 +266,7 @@ function calculateFare1(routeSegments: RouteSegment[]): number {
         if (totalEigyoKilo <= 10) return 320;
     }
 
-    // 第77条の２ 北海道旅客鉄道会社内の幹線内相互発着の大人片道普通旅客運賃
+    // 第77条の２ 北海道旅客鉄道会社内の幹線内相互発着の大人普通旅客運賃
     if (isAllKansen(routeSegments)) {
 
         // 別表第２号イ 北海道旅客鉄道株式会社線の大人普通旅客運賃の特定額（幹線内相互発着となる場合）
@@ -296,7 +296,7 @@ function calculateFare1(routeSegments: RouteSegment[]): number {
         return round1000(round10000(2116 * 200 + 1636 * 100 + 1283 * 300 + 705 * (splitKilo - 600)) * 11 / 10) / 100;
     }
 
-    // 第77条の７ 北海道旅客鉄道会社内の地方交通線内相互発着の大人片道普通旅客運賃
+    // 第77条の７ 北海道旅客鉄道会社内の地方交通線内相互発着の大人普通旅客運賃
     if (isAllLocal(routeSegments)) {
 
         // 別表第2号イの5 北海道旅客鉄道株式会社線の大人普通旅客運賃の特定額（地方交通線内相互発着となる場合）
@@ -327,7 +327,7 @@ function calculateFare1(routeSegments: RouteSegment[]): number {
         return round1000(round10000(2311 * 182 + 1835 * 91 + 1402 * 273 + 772 * (splitKilo - 546)) * 11 / 10) / 100;
     }
 
-    // 第81条の２ 北海道旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
+    // 第81条の２ 北海道旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人普通旅客運賃
     const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
 
     // （1）運賃計算キロが11キロメートルから100キロメートルまでの場合
@@ -356,7 +356,7 @@ function calculateFare1(routeSegments: RouteSegment[]): number {
 function calculateFare2(routeSegments: RouteSegment[]): number {
     const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
 
-    // 第84条の３ 東日本旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
+    // 第84条の３ 東日本旅客鉄道会社線内の営業キロが10キロメートルまでの普通旅客運賃
     // （1）幹線内相互発着の場合
     if (isAllKansen(routeSegments)) {
         if (totalEigyoKilo <= 3) return 160;
@@ -371,7 +371,7 @@ function calculateFare2(routeSegments: RouteSegment[]): number {
         if (totalEigyoKilo <= 10) return 220;
     }
 
-    // 第77条 幹線内相互発着の大人片道普通旅客運賃
+    // 第77条の３ 東日本旅客鉄道会社内の幹線内相互発着の大人普通旅客運賃
     if (isAllKansen(routeSegments)) {
 
         // 別表第２号イの２ 東日本旅客鉄道株式会社線の大人普通旅客運賃の特定額（幹線内相互発着となる場合）
@@ -397,7 +397,7 @@ function calculateFare2(routeSegments: RouteSegment[]): number {
         return ceil1000(round10000(1696 * 300 + 1345 * 300 + 705 * (splitKilo - 600)) * 11 / 10) / 100;
     }
 
-    // 第77条の５ 地方交通線内相互発着の大人片道普通旅客運賃
+    // 第77条の８ 東日本旅客鉄道会社内の地方交通線内相互発着の大人普通旅客運賃
     if (isAllLocal(routeSegments)) {
 
         // 別表第２号イの６ 東日本旅客鉄道株式会社線の大人普通旅客運賃の特定額（地方交通線内相互発着となる場合）
@@ -435,7 +435,7 @@ function calculateFare2(routeSegments: RouteSegment[]): number {
         return ceil1000(round10000(1866 * 273 + 1480 * 273 + 770 * (splitKilo - 546)) * 11 / 10) / 100;
     }
 
-    // 第81条 幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
+    // 第81条 幹線と地方交通線を連続して乗車する場合の大人普通旅客運賃
     const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
 
     // 別表第２号イの２ 東日本旅客鉄道株式会社線の大人普通旅客運賃の特定額（幹線内相互発着となる場合）
@@ -466,16 +466,16 @@ function calculateFare5(routeSegments: RouteSegment[]): number {
     const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
     if (totalGiseiKilo == 0) return 0;
 
-    // 第84条の４ 四国旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
+    // 第84条の４ 四国旅客鉄道会社線内の営業キロが10キロメートルまでの普通旅客運賃
     if (totalEigyoKilo <= 10) {
         if (totalGiseiKilo <= 3) return 190;
         if (totalGiseiKilo <= 6) return 240;
         if (totalGiseiKilo <= 10) return 280;
     }
 
-    // 第77条の４ 四国旅客鉄道会社内の幹線内相互発着の大人片道普通旅客運賃
-    // 第77条の９ 四国旅客鉄道会社内の地方交通線内相互発着の大人片道普通旅客運賃
-    // 第81条の４ 四国旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
+    // 第77条の４ 四国旅客鉄道会社内の幹線内相互発着の大人普通旅客運賃
+    // 第77条の９ 四国旅客鉄道会社内の地方交通線内相互発着の大人普通旅客運賃
+    // 第81条の４ 四国旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人普通旅客運賃
 
     // （1）営業キロが11キロメートルから100キロメートルまでの場合
     if (totalGiseiKilo <= 15) return 330;
@@ -504,14 +504,14 @@ function calculateFare6(routeSegments: RouteSegment[]): number {
     const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
     const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
 
-    // 第84条の５ 九州旅客鉄道会社線内の営業キロが10キロメートルまでの片道普通旅客運賃
+    // 第84条の５ 九州旅客鉄道会社線内の営業キロが10キロメートルまでの普通旅客運賃
     if (totalGiseiKilo == 4 && totalEigyoKilo == 3) return 210;
     if (totalGiseiKilo == 11 && totalEigyoKilo == 10) return 320;
     if (totalGiseiKilo <= 3) return 200;
     if (totalGiseiKilo <= 6) return 240;
     if (totalGiseiKilo <= 10) return 270;
 
-    // 第77条の５ 九州旅客鉄道会社内の幹線内相互発着の大人片道普通旅客運賃
+    // 第77条の５ 九州旅客鉄道会社内の幹線内相互発着の大人普通旅客運賃
     if (isAllKansen(routeSegments)) {
 
         // （1）営業キロが11キロメートルから100キロメートルまでの場合
@@ -571,7 +571,7 @@ function calculateFare6(routeSegments: RouteSegment[]): number {
         return round1000(round10000(1975 * 300 + 1285 * 300 + 705 * (splitKilo - 600)) * 11 / 10) / 100;
     }
 
-    // 第77条の１０ 九州旅客鉄道会社線内の地方交通線内相互発着の大人片道普通旅客運賃
+    // 第77条の１０ 九州旅客鉄道会社線内の地方交通線内相互発着の大人普通旅客運賃
     if (isAllLocal(routeSegments)) {
         if (totalGiseiKilo == 11) return 320;
         if (totalGiseiKilo == 16) return 360;
@@ -651,7 +651,7 @@ function calculateFare6(routeSegments: RouteSegment[]): number {
         return round1000(round10000(1975 * 300 + 1285 * 300 + 705 * (splitKilo - 600)) * 11 / 10) / 100;
     }
 
-    // 第81条の５ 九州旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人片道普通旅客運賃
+    // 第81条の５ 九州旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人普通旅客運賃
     // （1）擬制キロが11キロメートルから100キロメートルまでの場合
     if (totalGiseiKilo <= 15) return 340;
     if (totalGiseiKilo <= 20) return 450;
