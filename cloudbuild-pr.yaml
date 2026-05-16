@@ -1,5 +1,5 @@
 steps:
-  # 1. 秘匿バケットから DB・JSON データをダウンロードし、所定のディレクトリに配置する（本番と同様）
+  # 1. 秘匿バケットからのデータダウンロード
   - name: 'gcr.io/cloud-builders/gsutil'
     entrypoint: 'bash'
     args:
@@ -13,13 +13,20 @@ steps:
         mkdir -p src/app/split/data
         gsutil -m cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
 
-  # 2. JSON が揃った状態で Docker ビルドを実行する（タグを PR 番号に変更）
+  # 2. Buildx ビルダーのセットアップ
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['buildx', 'create', '--name', 'mybuilder', '--use']
+
+  # 3. Docker ビルドと Push
   - name: 'gcr.io/cloud-builders/docker'
     args: 
+      - 'buildx'
       - 'build'
+      - '--push'
       - '-t'
-      # $SHORT_SHA の代わりに、組み込み変数 $_PR_NUMBER を使用してイメージを識別します
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
+      - '--cache-from=type=registry,ref=asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi-cache:main'
+      - '--cache-to=type=registry,ref=asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi-cache:pr-$_PR_NUMBER,mode=max'
       - '--build-arg'
       - 'NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=${_NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}'
       - '--build-arg'
@@ -36,13 +43,7 @@ steps:
       - 'NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID}'
       - '.'
 
-  # 3. ビルドしたプレビュー用イメージを Artifact Registry に Push
-  - name: 'gcr.io/cloud-builders/docker'
-    args: 
-      - 'push'
-      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
-
-  # 4. Cloud Run へデプロイし、プレビュー用の仮URLを発行する
+  # 4. Cloud Run へプレビューデプロイ
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -53,14 +54,9 @@ steps:
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
       - '--region'
       - 'asia-northeast1'
-      # ▼ ここから下がプレビュー環境のための追加設定 ▼
       - '--tag'
-      - 'pr-$_PR_NUMBER' # リビジョンに「pr-12」のようなタグを付与
-      - '--no-traffic'   # 本番環境（main）へのトラフィック割り当てを0%に保つ
-
-# 正常終了の条件（検証対象のイメージ名をPR用に合わせる）
-images:
-  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
+      - 'pr-$_PR_NUMBER'
+      - '--no-traffic'
 
 options:
   logging: CLOUD_LOGGING_ONLY
