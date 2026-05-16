@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.10.0...kippu-navi-v1.11.0) (2026-05-16)
+
+
+### Features
+
+* **ui:** 長い計算結果一覧のナビゲーション改善（トップへ戻るボタンの追加） ([#85](https://github.com/tojoryohei/kippu-navi/issues/85)) ([e2bd1f1](https://github.com/tojoryohei/kippu-navi/commit/e2bd1f130bc4f20fcafc0964b9809c4987b72ca9))
+
 ## [1.10.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.9.3...kippu-navi-v1.10.0) (2026-05-16)
 
 
