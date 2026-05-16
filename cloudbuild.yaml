@@ -1,5 +1,5 @@
 steps:
-  # 1. 秘匿バケットからのデータダウンロード
+  # 1. 秘匿バケットから DB・JSON データをダウンロードし、所定のディレクトリに配置する
   - name: 'gcr.io/cloud-builders/gsutil'
     entrypoint: 'bash'
     args:
@@ -13,20 +13,12 @@ steps:
         mkdir -p src/app/split/data
         gsutil -m cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
 
-  # 2. Buildx ビルダーのセットアップ
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['buildx', 'create', '--name', 'mybuilder', '--use']
-
-  # 3. Docker ビルドと Push
+  # 2. JSON が揃った状態で Docker ビルドを実行する
   - name: 'gcr.io/cloud-builders/docker'
     args: 
-      - 'buildx'
       - 'build'
-      - '--push'
       - '-t'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
-      - '--cache-from=type=registry,ref=asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi-cache:main'
-      - '--cache-to=type=registry,ref=asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi-cache:main,mode=max'
       - '--build-arg'
       - 'NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=${_NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}'
       - '--build-arg'
@@ -43,17 +35,31 @@ steps:
       - 'NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID}'
       - '.'
 
+  # 3. ビルドしたイメージを Artifact Registry に Push
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'push'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
+
+  # 4. 本番の Cloud Run へデプロイし、トラフィックを100%向ける
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
+        # ① 新しいイメージをデプロイ
         gcloud run deploy kippu-navi \
           --image asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA \
           --region asia-northeast1
+        
+        # ② 強制的にトラフィックを最新リビジョン(100%)に切り替える
         gcloud run services update-traffic kippu-navi \
           --to-latest \
           --region asia-northeast1
+
+# 正常終了の条件として、指定したイメージが正しくビルド・プッシュされたか検証する
+images:
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
