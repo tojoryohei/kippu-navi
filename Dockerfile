@@ -1,4 +1,4 @@
-FROM node:20-slim AS deps
+FROM node:20 AS deps
 WORKDIR /app
 RUN npm install -g npm@11.14.1
 COPY package.json package-lock.json ./
