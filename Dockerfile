@@ -8,7 +8,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# 環境変数の定義
+# 環境変数の定義 (ビルド時に埋め込まれる値)
 ARG NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
 ENV NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=$NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
 ARG NEXT_PUBLIC_FIREBASE_API_KEY
