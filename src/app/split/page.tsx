@@ -1,6 +1,7 @@
 import Form from "@/app/split/components/Form";
 import type { Metadata } from "next";
 import { RiScissorsFill } from "react-icons/ri";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 
 export const metadata: Metadata = {
   title: "分割乗車券プログラム",
@@ -11,8 +12,6 @@ export default function Page() {
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8">
       <main className="max-w-xl mx-auto">
-
-        {/* ページヘッダー領域 */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-4 bg-blue-100 rounded-full mb-4 shadow-sm">
             <RiScissorsFill className="w-8 h-8 text-blue-600" />
@@ -25,13 +24,11 @@ export default function Page() {
             在来線において最もお得な分割ルートを計算します。
           </p>
         </div>
-
-        {/* フォーム領域（カードスタイル） */}
         <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200">
           <Form />
         </div>
-
       </main>
+      <ScrollToTopButton />
     </div>
   );
 }
