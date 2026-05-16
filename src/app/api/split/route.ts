@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             { status: 200 }
         );
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         // 予期せぬエラーのログ出力と、クライアントへの安全なエラーメッセージ返却
         console.error('[API/Split Route Error]:', error);
         return NextResponse.json(
