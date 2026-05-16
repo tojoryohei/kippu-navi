@@ -1,4 +1,4 @@
-import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings, whichMajorCitySuburbanSections } from '@/app/utils/calc';
+import { calculateTotalEigyoKilo, calculateValidDaysFromKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings } from '@/app/utils/calc';
 import { KippuData, PathStep } from '@/app/types';
 import { correctPath } from '@/app/utils/correctPath';
 import { calculateFareFromPath } from '@/app/utils/calcFare';

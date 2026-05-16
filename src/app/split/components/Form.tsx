@@ -37,7 +37,7 @@ export default function SplitForm() {
 
     const validateStation = (value: Station | null) => {
         if (!value || !value.name) return "駅名を入力してください";
-        const exists = stationData.some((s: any) => s.name === value.name);
+        const exists = (stationData as Station[]).some((s) => s.name === value.name);
         return exists || "正しい駅名を選択または入力してください";
     };
 
@@ -72,8 +72,12 @@ export default function SplitForm() {
             } else {
                 throw new Error("サーバーからのレスポンス形式が不正です。");
             }
-        } catch (err: any) {
-            setError(err.message || "計算に失敗しました。");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message || "計算に失敗しました。");
+            } else {
+                setError("計算に失敗しました。");
+            }
         } finally {
             setIsLoading(false);
         }

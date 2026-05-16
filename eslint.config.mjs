@@ -26,10 +26,6 @@ export default [
             ...tsPlugin.configs.recommended.rules,
             ...nextPlugin.configs.recommended.rules,
             ...nextPlugin.configs["core-web-vitals"].rules,
-
-            // 一時的な措置：設定移行を優先するため、既存のエラーを警告に引き下げる
-            "@typescript-eslint/no-explicit-any": "warn",
-            "@typescript-eslint/no-unused-vars": "warn"
         },
     },
 ];

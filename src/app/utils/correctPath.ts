@@ -7573,7 +7573,6 @@ export function applyOsakaRule(fullPath: PathStep[]): PathStep[] {
 
 // 第89条 北新地駅発又は着となる片道普通旅客運賃の計算方
 export function applyKitashinchiRule(fullPath: PathStep[]): PathStep[] {
-    let cnt = 0;
     if (fullPath.length === 6 &&
         fullPath[0].stationName === "北新地" &&
         fullPath[0].lineName === "トウサ" &&

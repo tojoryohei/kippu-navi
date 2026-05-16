@@ -1,7 +1,7 @@
 "use client";
 
-import Select, { components, OptionProps, FilterOptionOption } from "react-select";
-import { useState, useEffect, useId } from "react";
+import Select, { components, OptionProps, FilterOptionOption, InputProps } from "react-select";
+import { useState, useEffect, useId, FocusEvent, CSSProperties } from "react";
 import stationData from "@/app/mr/data/stations.json";
 
 import { Station, SelectStationProps } from '@/app/types';
@@ -20,12 +20,12 @@ const CustomOption = (props: OptionProps<Station>) => (
     </components.Option>
 );
 
-const CustomInput = (props: any) => {
+const CustomInput = (props: InputProps<Station, false>) => {
     return (
         <components.Input
             {...props}
             isHidden={false}
-            onFocus={(e: any) => {
+            onFocus={(e: FocusEvent<HTMLInputElement>) => {
                 if (props.onFocus) {
                     props.onFocus(e);
                 }
@@ -123,8 +123,8 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled, hideM
                 styles={{
                     input: (base) => ({
                         ...base,
-                        opacity: '1 !important' as any,
-                        visibility: 'visible !important' as any,
+                        opacity: '1 !important' as unknown as number,
+                        visibility: 'visible !important' as unknown as CSSProperties['visibility'],
                         color: 'inherit'
                     })
                 }}
