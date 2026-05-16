@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
+import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 
 import stationData from "@/app/split/data/stations.json";
 import SelectStation from "@/app/split/components/SelectStation";
@@ -21,13 +22,12 @@ export default function SplitForm() {
     const [serverTime, setServerTime] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showAllPatterns, setShowAllPatterns] = useState(false);
 
-    // 発駅と着駅の現在の値を監視し、どちらかが入力されているか判定
     const startStationVal = watch("startStation");
     const endStationVal = watch("endStation");
     const canSwap = !!startStationVal || !!endStationVal;
 
-    // 駅を入れ替える関数
     const handleSwapStations = () => {
         const currentStart = getValues("startStation");
         const currentEnd = getValues("endStation");
@@ -46,6 +46,8 @@ export default function SplitForm() {
         setError(null);
         setResult(null);
         setServerTime(null);
+        setShowAllPatterns(false);
+
         const apiRequestBody: SplitApiRequest = {
             startStationName: data.startStation!.name,
             endStationName: data.endStation!.name,
@@ -80,7 +82,6 @@ export default function SplitForm() {
     return (
         <main className="max-w-2xl mx-auto w-full">
             <form onSubmit={handleSubmit(onSubmit)} className="p-8 w-full">
-                {/* フォーム全体を w-full にして幅を統一 */}
                 <div className="flex flex-col gap-4 w-full">
 
                     <div className="flex flex-col w-full">
@@ -161,7 +162,6 @@ export default function SplitForm() {
             <div className="my-8 p-4">
                 {isLoading && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
                 {serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
-
                 {error && <p className="py-5 border-t text-red-500 text-center">{error}</p>}
 
                 {result && (
@@ -220,47 +220,88 @@ export default function SplitForm() {
                                     );
                                 })()}
 
-                                <div className="space-y-8">
-                                    {result.splitKippuDatasList.map((splitPlan, planIndex) => (
-                                        <div key={planIndex} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                            {result.splitKippuDatasList.length > 1 && (
-                                                <h4 className="font-bold text-gray-700 mb-3 ml-1">
-                                                    パターン {planIndex + 1}
-                                                </h4>
-                                            )}
+                                <div className="space-y-6">
+                                    {result.splitKippuDatasList.map((splitPlan, planIndex) => {
+                                        if (!showAllPatterns && planIndex > 1) return null;
 
-                                            <div className="flex flex-col gap-3">
-                                                {splitPlan.splitKippuDatas.map((segment, segIndex) => (
-                                                    <div key={segIndex} className="bg-white p-4 rounded border border-gray-200 shadow-sm relative">
-                                                        <div className="text-sm text-gray-500 mb-1 flex items-center">
-                                                            <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs mr-2">利用区間</span>
-                                                            <span>{segment.departureStation} → {segment.arrivalStation}</span>
-                                                        </div>
+                                        const isFadedItem = !showAllPatterns && planIndex === 1;
 
-                                                        <div className="flex justify-between items-center mt-2">
-                                                            <div className="flex-1">
-                                                                <div className="text-lg font-bold text-gray-800 flex items-center flex-wrap gap-2">
-                                                                    <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">切符</span>
-                                                                    <span>{segment.kippuData.departureStation}</span>
-                                                                    <span className="text-gray-400">→</span>
-                                                                    <span>{segment.kippuData.arrivalStation}</span>
-                                                                    <span className="text-sm font-normal text-gray-600 ml-1">
-                                                                        （{(segment.kippuData.totalEigyoKilo / 10).toFixed(1)}km）
-                                                                    </span>
+                                        return (
+                                            <div
+                                                key={planIndex}
+                                                className={`bg-gray-50 rounded-lg border border-gray-200 relative transition-all duration-300 ${isFadedItem ? 'h-32 overflow-hidden' : 'p-4'
+                                                    }`}
+                                            >
+                                                <div className={isFadedItem ? 'p-4' : ''}>
+                                                    {result.splitKippuDatasList.length > 1 && (
+                                                        <h4 className="font-bold text-gray-700 mb-3 ml-1">
+                                                            パターン {planIndex + 1}
+                                                        </h4>
+                                                    )}
+
+                                                    <div className="flex flex-col gap-3">
+                                                        {splitPlan.splitKippuDatas.map((segment, segIndex) => (
+                                                            <div key={segIndex} className="bg-white p-4 rounded border border-gray-200 shadow-sm relative">
+                                                                <div className="text-sm text-gray-500 mb-1 flex items-center">
+                                                                    <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs mr-2">利用区間</span>
+                                                                    <span>{segment.departureStation} → {segment.arrivalStation}</span>
                                                                 </div>
-                                                                <div className="text-xs text-gray-500 mt-1 ml-10">
-                                                                    経由：{segment.kippuData.printedViaLines.length === 0 ? "---" : segment.kippuData.printedViaLines.join("・")}
+
+                                                                <div className="flex justify-between items-center mt-2">
+                                                                    <div className="flex-1">
+                                                                        <div className="text-lg font-bold text-gray-800 flex items-center flex-wrap gap-2">
+                                                                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">切符</span>
+                                                                            <span>{segment.kippuData.departureStation}</span>
+                                                                            <span className="text-gray-400">→</span>
+                                                                            <span>{segment.kippuData.arrivalStation}</span>
+                                                                            <span className="text-sm font-normal text-gray-600 ml-1">
+                                                                                （{(segment.kippuData.totalEigyoKilo / 10).toFixed(1)}km）
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="text-xs text-gray-500 mt-1 ml-10">
+                                                                            経由：{segment.kippuData.printedViaLines.length === 0 ? "---" : segment.kippuData.printedViaLines.join("・")}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="font-bold text-xl ml-4">
+                                                                        ¥{segment.kippuData.fare.toLocaleString()}
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="font-bold text-xl ml-4">
-                                                                ¥{segment.kippuData.fare.toLocaleString()}
-                                                            </div>
-                                                        </div>
+                                                        ))}
                                                     </div>
-                                                ))}
+                                                </div>
+
+                                                {isFadedItem && (
+                                                    <button
+                                                        type="button"
+                                                        className="absolute inset-x-0 bottom-0 h-24 flex items-end justify-center pb-3 bg-linear-to-t from-gray-50 via-gray-50/80 to-transparent cursor-pointer group w-full"
+                                                        onClick={() => setShowAllPatterns(true)}
+                                                        title="残りのパターンを展開する"
+                                                        aria-label="残りのパターンを展開する"
+                                                    >
+                                                        <div className="bg-white border border-gray-200 shadow-sm p-2 rounded-full text-blue-500 group-hover:bg-blue-50 group-hover:border-blue-300 transition-all flex items-center justify-center">
+                                                            <HiChevronDown className="text-2xl" />
+                                                        </div>
+                                                    </button>
+                                                )}
                                             </div>
+                                        );
+                                    })}
+
+                                    {showAllPatterns && result.splitKippuDatasList.length > 1 && (
+                                        <div className="flex justify-center mt-8 pb-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowAllPatterns(false);
+                                                }}
+                                                className="px-5 py-2.5 bg-white border border-gray-300 text-gray-600 font-medium rounded-full hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-2 text-sm"
+                                            >
+                                                <HiChevronUp className="text-lg" />
+                                                追加のパターンを閉じる
+                                            </button>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </div>
                         ) : (
