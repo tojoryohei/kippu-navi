@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.9.3...kippu-navi-v1.10.0) (2026-05-16)
+
+
+### Features
+
+* 分割乗車券の計算結果表示の改善（複数パターンの折り畳みとアクセシビリティ対応） ([#83](https://github.com/tojoryohei/kippu-navi/issues/83)) ([82f50ae](https://github.com/tojoryohei/kippu-navi/commit/82f50ae1fb55f0b560b8384f04b9e3ff03d6f86f))
+
 ## [1.9.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.9.2...kippu-navi-v1.9.3) (2026-05-13)
 
 
