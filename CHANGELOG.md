@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.11.0...kippu-navi-v1.11.1) (2026-05-17)
+
+
+### Bug Fixes
+
+* トップページFAQの「仕組み」リンク先を修正 ([#96](https://github.com/tojoryohei/kippu-navi/issues/96)) ([707f8b2](https://github.com/tojoryohei/kippu-navi/commit/707f8b2687e422686dc3eb3f773eeae1870be99e))
+
 ## [1.11.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.10.0...kippu-navi-v1.11.0) (2026-05-16)
 
 
