@@ -250,7 +250,7 @@ export default async function Home() {
               <div className="mt-3 flex items-start">
                 <span className="shrink-0 bg-slate-200 text-slate-600 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">A</span>
                 <div className="mt-0.5 text-slate-600 leading-relaxed">
-                  <Link href="/about" className="text-blue-600 underline decoration-blue-600 underline-offset-2 mr-1">
+                  <Link href="/logic" className="text-blue-600 underline decoration-blue-600 underline-offset-2 mr-1">
                     仕組み
                   </Link>
                   をご覧ください。
