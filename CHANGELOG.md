@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.12.0...kippu-navi-v1.13.0) (2026-05-19)
+
+
+### Features
+
+* 経路計算の負荷制限を「直線距離」から計算量に直結する「経由駅数（200駅）」へ変更 ([#101](https://github.com/tojoryohei/kippu-navi/issues/101)) ([6868eff](https://github.com/tojoryohei/kippu-navi/commit/6868efff6624a3268138ff48e5a547c00efadd3a))
+
 ## [1.12.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.11.1...kippu-navi-v1.12.0) (2026-05-19)
 
 
