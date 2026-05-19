@@ -13,6 +13,13 @@ export interface Station {
     lines?: string[]
 }
 
+export interface StationData {
+    name: string;
+    kana: string;
+    lat: number;
+    lon: number;
+}
+
 export interface SelectStationProps {
     instanceId: string;
     value: Station | null;
