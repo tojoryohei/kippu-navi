@@ -5,7 +5,7 @@ import { KippuData, PathStep, SplitApiResponse, SplitKippuData, SplitKippuDatas 
 import { cheapestPathAndFare } from '@/app/utils/cheapestPath';
 import { calculateTotalGiseiKilo, convertPathStepsToRouteSegments, createPairKey, round1000, round10000, whichMajorCitySuburbanSections } from '@/app/utils/calc';
 import { calculateFareFromPath } from '@/app/utils/calcFare';
-import { DistanceLimitExceededError, RouteNotFoundError } from '@/app/utils/errors';
+import { StationCountLimitExceededError, RouteNotFoundError } from '@/app/utils/errors';
 
 class PriorityQueue {
     private heap: { stationName: string; cost: number }[] = [];
@@ -56,13 +56,6 @@ export class CalculatorSplit {
     private splitMemo: Map<string, SplitKippuDatas[] | null> = new Map();
 
     public findOptimalSplitByShortestGiseiKiloPath(startStationName: string, endStationName: string): SplitApiResponse {
-
-        const DISTANCE_LIMIT = 300;
-
-        const distance = loadSplit.getDistanceBetween(startStationName, endStationName);
-        if (distance > DISTANCE_LIMIT) {
-            throw new DistanceLimitExceededError(distance, DISTANCE_LIMIT);
-        }
 
         this.kippuMemo.clear();
         this.splitMemo.clear();
@@ -135,6 +128,9 @@ export class CalculatorSplit {
     }
 
     private yensAlgorithm(startStation: string, endStation: string): PathStep[][] {
+        // 【追加】駅数の上限（ノード数制限）
+        const STATIONS_LIMIT = 200;
+
         const A: PathStep[][] = [];
         const B: { path: PathStep[]; cost: number; signature: string }[] = [];
         const bSignatures = new Set<string>();
@@ -146,6 +142,11 @@ export class CalculatorSplit {
 
         const firstPath = this.reconstructPath(firstPathResult.previous, startStation, endStation);
         if (!firstPath) return [];
+
+        // 【追加】最短経路の時点で上限駅数を超えている場合、計算が爆発するため即座にエラーを投げる
+        if (firstPath.length > STATIONS_LIMIT) {
+            throw new StationCountLimitExceededError(firstPath.length, STATIONS_LIMIT);
+        }
 
         A.push(firstPath);
 

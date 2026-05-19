@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOptimalSplitWithCache } from '@/app/split/lib/getOptimalSplitWithCache';
 
 import { SplitApiRequest } from '@/app/types';
-import { DistanceLimitExceededError, RouteNotFoundError } from '@/app/utils/errors';
+import { StationCountLimitExceededError, RouteNotFoundError } from '@/app/utils/errors';
 
 export async function POST(request: NextRequest) {
     let startStationName: string | undefined;
@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
         const safeStart = startStationName ?? '不明';
         const safeEnd = endStationName ?? '不明';
 
-        if (error instanceof DistanceLimitExceededError) {
-            console.warn(`[API/DistanceLimit]: ${error.message} (Request: ${safeStart} -> ${safeEnd})`);
+        if (error instanceof StationCountLimitExceededError) {
+            console.warn(`[API/StationCountLimit]: ${error.message} (Request: ${safeStart} -> ${safeEnd})`);
             return NextResponse.json({ error: error.message }, { status: 422 });
         }
 
