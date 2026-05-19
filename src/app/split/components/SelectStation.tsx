@@ -2,7 +2,7 @@
 
 import Select, { components, OptionProps, FilterOptionOption, InputProps } from "react-select";
 import { useState, useEffect, useId, FocusEvent, CSSProperties } from "react";
-import stationData from "@/app/split/data/stations.json";
+import stationDatas from "@/app/split/data/stationDatas.json";
 
 import { Station, SelectStationProps } from '@/app/types';
 
@@ -32,7 +32,7 @@ const CustomInput = (props: InputProps<Station, false>) => {
 };
 
 const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: SelectStationProps) => {
-    const stationOptions = options || (stationData as Station[]);
+    const stationOptions = options || (stationDatas as Station[]);
     const [inputValue, setInputValue] = useState<string>("");
 
     const reactId = useId();

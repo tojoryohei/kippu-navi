@@ -5,9 +5,9 @@ import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 
-import stationData from "@/app/split/data/stations.json";
+import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
-import { ApiSplitFullResponse, SplitApiRequest, SplitApiResponse, SplitFormInput, Station } from "@/app/types";
+import { ApiSplitFullResponse, SplitApiRequest, SplitApiResponse, SplitFormInput, Station, StationData } from "@/app/types";
 
 export default function SplitForm() {
     const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, watch } = useForm<SplitFormInput>({
@@ -35,9 +35,11 @@ export default function SplitForm() {
         setValue("endStation", currentStart, { shouldValidate: true });
     };
 
+    const stations = new Set((stationDatas as StationData[]).map((s) => s.name))
+
     const validateStation = (value: Station | null) => {
         if (!value || !value.name) return "駅名を入力してください";
-        const exists = (stationData as Station[]).some((s) => s.name === value.name);
+        const exists = stations.has(value.name);
         return exists || "正しい駅名を選択または入力してください";
     };
 
@@ -100,7 +102,7 @@ export default function SplitForm() {
                                         <SelectStation
                                             instanceId="start-station-split"
                                             {...field}
-                                            options={stationData}
+                                            options={stationDatas}
                                         />
                                     )}
                                 />
@@ -138,7 +140,7 @@ export default function SplitForm() {
                                         <SelectStation
                                             instanceId="end-station-split"
                                             {...field}
-                                            options={stationData}
+                                            options={stationDatas}
                                         />
                                     )}
                                 />

@@ -5,6 +5,7 @@ import { KippuData, PathStep, SplitApiResponse, SplitKippuData, SplitKippuDatas 
 import { cheapestPathAndFare } from '@/app/utils/cheapestPath';
 import { calculateTotalGiseiKilo, convertPathStepsToRouteSegments, createPairKey, round1000, round10000, whichMajorCitySuburbanSections } from '@/app/utils/calc';
 import { calculateFareFromPath } from '@/app/utils/calcFare';
+import { DistanceLimitExceededError, RouteNotFoundError } from '@/app/utils/errors';
 
 class PriorityQueue {
     private heap: { stationName: string; cost: number }[] = [];
@@ -54,7 +55,15 @@ export class CalculatorSplit {
     private kippuMemo: Map<string, KippuData> = new Map();
     private splitMemo: Map<string, SplitKippuDatas[] | null> = new Map();
 
-    public findOptimalSplitByShortestGiseiKiloPath(startStationName: string, endStationName: string): SplitApiResponse | null {
+    public findOptimalSplitByShortestGiseiKiloPath(startStationName: string, endStationName: string): SplitApiResponse {
+
+        const DISTANCE_LIMIT = 400;
+
+        const distance = loadSplit.getDistanceBetween(startStationName, endStationName);
+        if (distance > DISTANCE_LIMIT) {
+            throw new DistanceLimitExceededError(distance, DISTANCE_LIMIT);
+        }
+
         this.kippuMemo.clear();
         this.splitMemo.clear();
 
@@ -62,7 +71,7 @@ export class CalculatorSplit {
         const candidates: PathStep[][] = this.yensAlgorithm(startStationName, endStationName);
 
         if (candidates.length === 0) {
-            return null;
+            throw new RouteNotFoundError();
         }
 
         const allSplitPatterns: SplitKippuDatas[] = [];
@@ -72,7 +81,6 @@ export class CalculatorSplit {
         for (const candidate of candidates) {
             const splitPatterns = this.calculateOptimalSplitForPath(candidate);
             if (splitPatterns) {
-                // 【リファクタリング4】concatを排除し、pushスプレッド構文でメモリ割り当てを最適化
                 allSplitPatterns.push(...splitPatterns);
             }
             const majorCitySuburbanSection = whichMajorCitySuburbanSections(candidate);
@@ -89,7 +97,7 @@ export class CalculatorSplit {
         }
 
         if (cheapestKippuData === null) {
-            return null;
+            throw new RouteNotFoundError();
         }
 
         // 重複排除処理（異なる物理ルートでも、分割結果の切符が同じになるケースをマージ）
@@ -204,7 +212,6 @@ export class CalculatorSplit {
 
             bSignatures.delete(bestCandidate.signature);
 
-            // 打ち切り判定：これ以上遠回りしても安くなる可能性が数学的にゼロ
             if (bestCandidate.cost > limitDistance) {
                 break;
             }
@@ -243,7 +250,6 @@ export class CalculatorSplit {
                     dp[i] = newTotalFare;
                     from[i] = [j];
                 } else if (newTotalFare === dp[i]) {
-                    // 同額の別分割パターンを保存する完璧なロジック
                     from[i].push(j);
                 }
             }
@@ -290,8 +296,8 @@ export class CalculatorSplit {
 
     private getSpecificCityBuffer(startStation: string, endStation: string): number {
         let alpha = 0;
-        alpha += loadSplit.getdistancesToCityCenter(startStation);
-        alpha += loadSplit.getdistancesToCityCenter(endStation);
+        alpha += loadSplit.getdistanceToCityCenter(startStation);
+        alpha += loadSplit.getdistanceToCityCenter(endStation);
         return alpha;
     }
 

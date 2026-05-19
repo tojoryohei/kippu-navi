@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOptimalSplitWithCache } from '@/app/utils/getOptimalSplitWithCache';
+import { getOptimalSplitWithCache } from '@/app/split/lib/getOptimalSplitWithCache';
 
 import { SplitApiRequest } from '@/app/types';
+import { DistanceLimitExceededError, RouteNotFoundError } from '@/app/utils/errors';
 
 export async function POST(request: NextRequest) {
+    let startStationName: string | undefined;
+    let endStationName: string | undefined;
     const startTime = performance.now();
     try {
         const body: SplitApiRequest = await request.json();
 
-        const { startStationName, endStationName } = body;
+        startStationName = body.startStationName;
+        endStationName = body.endStationName;
 
         // 1. バリデーション
         if (!startStationName || !endStationName) {
@@ -22,12 +26,7 @@ export async function POST(request: NextRequest) {
         // 2. 最適分割経路の計算（キャッシュから取得、または新規計算してキャッシュへ保存）
         const result = await getOptimalSplitWithCache(startStationName, endStationName);
 
-        // 3. 結果の判定
-        if (result === null || result.cheapestKippuData.fare === Infinity) {
-            return NextResponse.json({ error: '経路が見つかりませんでした。' }, { status: 404 });
-        }
-
-        // 4. レスポンスの返却
+        // 3. レスポンスの返却
         const endTime = performance.now();
         const calculationTimeMs = endTime - startTime;
 
@@ -40,7 +39,19 @@ export async function POST(request: NextRequest) {
         );
 
     } catch (error: unknown) {
-        // 予期せぬエラーのログ出力と、クライアントへの安全なエラーメッセージ返却
+        const safeStart = startStationName ?? '不明';
+        const safeEnd = endStationName ?? '不明';
+
+        if (error instanceof DistanceLimitExceededError) {
+            console.warn(`[API/DistanceLimit]: ${error.message} (Request: ${safeStart} -> ${safeEnd})`);
+            return NextResponse.json({ error: error.message }, { status: 422 });
+        }
+
+        if (error instanceof RouteNotFoundError) {
+            console.info(`[API/NotFound]: ${error.message} (Request: ${safeStart} -> ${safeEnd})`);
+            return NextResponse.json({ error: error.message }, { status: 404 });
+        }
+
         console.error('[API/Split Route Error]:', error);
         return NextResponse.json(
             { error: 'サーバー内部でエラーが発生しました。' },
