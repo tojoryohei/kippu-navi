@@ -57,7 +57,7 @@ export class CalculatorSplit {
 
     public findOptimalSplitByShortestGiseiKiloPath(startStationName: string, endStationName: string): SplitApiResponse {
 
-        const DISTANCE_LIMIT = 400;
+        const DISTANCE_LIMIT = 300;
 
         const distance = loadSplit.getDistanceBetween(startStationName, endStationName);
         if (distance > DISTANCE_LIMIT) {
