@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.11.1...kippu-navi-v1.12.0) (2026-05-19)
+
+
+### Features
+
+* 分割乗車券の経路計算に発着駅間の距離制限（300km）を追加 ([#99](https://github.com/tojoryohei/kippu-navi/issues/99)) ([cea29ec](https://github.com/tojoryohei/kippu-navi/commit/cea29ec8b81eecba52f6cf5b29349513a288bec0))
+
 ## [1.11.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.11.0...kippu-navi-v1.11.1) (2026-05-17)
 
 
