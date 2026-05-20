@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.13.1...kippu-navi-v1.13.2) (2026-05-20)
+
+
+### Performance Improvements
+
+* 15kmルールのドメイン知識を活用した運賃計算DPの枝刈りと計算量爆発の抑制 ([#107](https://github.com/tojoryohei/kippu-navi/issues/107)) ([8cb06b2](https://github.com/tojoryohei/kippu-navi/commit/8cb06b2374d03f2c56bf4f2f80d3c5b1c2fb06c5))
+
 ## [1.13.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.13.0...kippu-navi-v1.13.1) (2026-05-20)
 
 
