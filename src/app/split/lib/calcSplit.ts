@@ -410,11 +410,16 @@ export class CalculatorSplit {
             if (k < path.length - 1) key += "-";
         }
 
-        if (this.kippuMemo.has(key)) return this.kippuMemo.get(key)!;
+        const cached = this.kippuMemo.get(key);
+        if (cached !== undefined) return cached;
 
-        const calcPath = this.clonePath(path);
+        const calcPath = path.slice();
         const lastIndex = calcPath.length - 1;
-        calcPath[lastIndex].lineName = null;
+
+        calcPath[lastIndex] = {
+            stationName: calcPath[lastIndex].stationName,
+            lineName: null
+        };
 
         const majorCitySuburbanSection = whichMajorCitySuburbanSections(calcPath);
         let kippuData: KippuData;
@@ -431,10 +436,6 @@ export class CalculatorSplit {
 
         this.kippuMemo.set(key, kippuData);
         return kippuData;
-    }
-
-    private clonePath(path: PathStep[]): PathStep[] {
-        return path.map(p => ({ ...p }));
     }
 }
 
