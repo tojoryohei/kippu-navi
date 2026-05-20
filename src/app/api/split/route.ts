@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
         const endTime = performance.now();
         const calculationTimeMs = endTime - startTime;
 
+        // 4. 正常完了時にもログを出力し、オブザーバビリティを向上
+        console.info(`[API/Success]: ${startStationName} -> ${endStationName}`);
+
         return NextResponse.json(
             {
                 data: result,
