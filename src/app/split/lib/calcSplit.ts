@@ -157,7 +157,7 @@ export class CalculatorSplit {
     }
 
     private yensAlgorithm(startStation: string, endStation: string): PathStep[][] {
-        const STATIONS_LIMIT = 100;
+        const STATIONS_LIMIT = 1000;
 
         const A: PathStep[][] = [];
         const B: { path: PathStep[]; cost: number; signature: string }[] = [];
@@ -278,6 +278,13 @@ export class CalculatorSplit {
         const n = fullPath.length;
         if (n <= 1) return null;
 
+        const segments = convertPathStepsToRouteSegments(fullPath);
+        const cumEigyo = new Float64Array(n);
+        cumEigyo[0] = 0;
+        for (let x = 1; x < n; x++) {
+            cumEigyo[x] = cumEigyo[x - 1] + segments[x - 1].eigyoKilo;
+        }
+
         const dp = new Float64Array(n);
         dp.fill(Infinity);
         const from: number[][] = Array.from({ length: n }, () => []);
@@ -286,6 +293,19 @@ export class CalculatorSplit {
 
         for (let i = 1; i < n; i++) {
             for (let j = 0; j < i; j++) {
+                if (j > 0) {
+                    let canSkip = true;
+                    for (let pIdx = 0; pIdx < from[j].length; pIdx++) {
+                        const k = from[j][pIdx];
+                        const eigyo = cumEigyo[i] - cumEigyo[k];
+                        if (eigyo > 150) {
+                            canSkip = false;
+                            break;
+                        }
+                    }
+                    if (canSkip) continue;
+                }
+
                 const subPath = fullPath.slice(j, i + 1);
                 const segmentKippu = this.getMemoizedKippuData(subPath);
                 const newTotalFare = dp[j] + segmentKippu.fare;
