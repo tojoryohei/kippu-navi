@@ -8,46 +8,75 @@ import { calculateFareFromPath } from '@/app/utils/calcFare';
 import { StationCountLimitExceededError, RouteNotFoundError } from '@/app/utils/errors';
 
 class PriorityQueue {
-    private heap: { stationName: string; cost: number }[] = [];
-    isEmpty(): boolean { return this.heap.length === 0; }
+    private names: string[] = [];
+    private costs: number[] = [];
+
+    isEmpty(): boolean { return this.names.length === 0; }
+
     enqueue(stationName: string, cost: number): void {
-        this.heap.push({ stationName, cost });
-        this.bubbleUp(this.heap.length - 1);
+        this.names.push(stationName);
+        this.costs.push(cost);
+        this.bubbleUp(this.names.length - 1);
     }
+
     dequeue(): { stationName: string; cost: number } | null {
         if (this.isEmpty()) return null;
-        if (this.heap.length === 1) return this.heap.pop()!;
-        const root = this.heap[0];
-        this.heap[0] = this.heap.pop()!;
+
+        const rootName = this.names[0];
+        const rootCost = this.costs[0];
+
+        if (this.names.length === 1) {
+            this.names.pop();
+            this.costs.pop();
+            return { stationName: rootName, cost: rootCost };
+        }
+
+        this.names[0] = this.names.pop()!;
+        this.costs[0] = this.costs.pop()!;
         this.bubbleDown(0);
-        return root;
+
+        return { stationName: rootName, cost: rootCost };
     }
+
     private bubbleUp(index: number): void {
         while (index > 0) {
-            const parentIndex = Math.floor((index - 1) / 2);
-            if (this.heap[index].cost < this.heap[parentIndex].cost) {
-                [this.heap[index], this.heap[parentIndex]] = [this.heap[parentIndex], this.heap[index]];
+            const parentIndex = (index - 1) >> 1; // Math.floor((index - 1) / 2)のビット演算化（わずかに高速）
+            if (this.costs[index] < this.costs[parentIndex]) {
+                this.swap(index, parentIndex);
                 index = parentIndex;
             } else { break; }
         }
     }
+
     private bubbleDown(index: number): void {
-        const lastIndex = this.heap.length - 1;
+        const lastIndex = this.names.length - 1;
         while (true) {
-            let leftChildIndex = 2 * index + 1;
-            let rightChildIndex = 2 * index + 2;
+            let leftChildIndex = (index << 1) + 1;  // 2 * index + 1
+            let rightChildIndex = (index << 1) + 2; // 2 * index + 2
             let smallestIndex = index;
-            if (leftChildIndex <= lastIndex && this.heap[leftChildIndex].cost < this.heap[smallestIndex].cost) {
+
+            if (leftChildIndex <= lastIndex && this.costs[leftChildIndex] < this.costs[smallestIndex]) {
                 smallestIndex = leftChildIndex;
             }
-            if (rightChildIndex <= lastIndex && this.heap[rightChildIndex].cost < this.heap[smallestIndex].cost) {
+            if (rightChildIndex <= lastIndex && this.costs[rightChildIndex] < this.costs[smallestIndex]) {
                 smallestIndex = rightChildIndex;
             }
+
             if (smallestIndex !== index) {
-                [this.heap[index], this.heap[smallestIndex]] = [this.heap[smallestIndex], this.heap[index]];
+                this.swap(index, smallestIndex);
                 index = smallestIndex;
             } else { break; }
         }
+    }
+
+    private swap(i: number, j: number): void {
+        const tempName = this.names[i];
+        this.names[i] = this.names[j];
+        this.names[j] = tempName;
+
+        const tempCost = this.costs[i];
+        this.costs[i] = this.costs[j];
+        this.costs[j] = tempCost;
     }
 }
 
@@ -381,11 +410,16 @@ export class CalculatorSplit {
             if (k < path.length - 1) key += "-";
         }
 
-        if (this.kippuMemo.has(key)) return this.kippuMemo.get(key)!;
+        const cached = this.kippuMemo.get(key);
+        if (cached !== undefined) return cached;
 
-        const calcPath = this.clonePath(path);
+        const calcPath = path.slice();
         const lastIndex = calcPath.length - 1;
-        calcPath[lastIndex].lineName = null;
+
+        calcPath[lastIndex] = {
+            stationName: calcPath[lastIndex].stationName,
+            lineName: null
+        };
 
         const majorCitySuburbanSection = whichMajorCitySuburbanSections(calcPath);
         let kippuData: KippuData;
@@ -402,10 +436,6 @@ export class CalculatorSplit {
 
         this.kippuMemo.set(key, kippuData);
         return kippuData;
-    }
-
-    private clonePath(path: PathStep[]): PathStep[] {
-        return path.map(p => ({ ...p }));
     }
 }
 
