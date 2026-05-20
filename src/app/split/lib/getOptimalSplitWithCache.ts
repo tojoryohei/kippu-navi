@@ -1,6 +1,6 @@
 import { getDb } from '@/app/utils/firebase';
 import { calcSplit } from '@/app/split/lib/calcSplit';
-import { SplitApiResponse } from '@/app/types';
+import { CacheResult, SplitApiResponse } from '@/app/types';
 
 const FARE_DATA_VERSION = '2026-03';
 
@@ -13,7 +13,7 @@ interface CachedSplitTicket {
 export async function getOptimalSplitWithCache(
     startStation: string,
     endStation: string
-): Promise<SplitApiResponse | null> {
+): Promise<CacheResult | null> {
     const cacheKey = `${startStation}_${endStation}`;
 
     // 1. キャッシュからの読み込みを試行
@@ -27,7 +27,7 @@ export async function getOptimalSplitWithCache(
             const data = docSnap.data() as CachedSplitTicket;
 
             if (data.version === FARE_DATA_VERSION) {
-                return data.result;
+                return { data: data.result, isCacheHit: true };
             }
         }
     } catch (error) {
@@ -61,5 +61,5 @@ export async function getOptimalSplitWithCache(
         console.error(`[Firestore Setup Error] Failed to prepare cache write for ${cacheKey}:`, error);
     }
 
-    return result;
+    return { data: result, isCacheHit: false };
 }
