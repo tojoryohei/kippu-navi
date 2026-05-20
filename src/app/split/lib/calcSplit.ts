@@ -129,7 +129,7 @@ export class CalculatorSplit {
 
     private yensAlgorithm(startStation: string, endStation: string): PathStep[][] {
         // 【追加】駅数の上限（ノード数制限）
-        const STATIONS_LIMIT = 200;
+        const STATIONS_LIMIT = 100;
 
         const A: PathStep[][] = [];
         const B: { path: PathStep[]; cost: number; signature: string }[] = [];

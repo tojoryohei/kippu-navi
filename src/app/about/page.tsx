@@ -32,8 +32,7 @@ export default function AboutPage() {
                             これらのプログラムは大学の卒業研究の一環として開発されたものであり、厳密な最安値の算出を目指していますが、必ずしも正確な出力を保証するものではありません。万が一、実際とは異なる計算結果が表示された場合は<Link href="/contact" className="text-blue-600 font-bold hover:underline decoration-blue-300 underline-offset-2 mx-1">お問い合わせ</Link>よりご連絡いただけますと幸いです。
                         </p>
                         <p className="bg-slate-50 p-4 rounded-lg text-sm text-slate-700">
-                            <strong>【予定】</strong><br />
-                            ※サーバーの計算処理時間の制約上、分割乗車券の自動探索機能は「直線距離120km以内」の中距離区間に限定して提供しております。
+                            ※サーバーの計算処理時間の制約上、分割乗車券の自動探索機能は「運賃計算キロが最短となる経路の駅数が100以下」の中距離区間に限定して提供しております。
                         </p>
                         <p className="text-red-600 font-medium">
                             また、このサイトの情報や計算結果をもとにきっぷを購入するときは、必ずJRの旅客営業規則等を確認してからご自身の責任においてお買い求めください。

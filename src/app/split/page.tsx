@@ -29,7 +29,7 @@ export default function Page() {
           <div className="text-sm text-amber-800 leading-relaxed">
             <span className="font-bold block mb-1">【お知らせ】長距離区間の計算制限について</span>
             <p>
-              システム負荷軽減のため、<strong>発着駅間の運賃計算キロが最短となる経路上に駅数が200を超える場合</strong>の新規計算を一時的に停止しております。
+              システム負荷軽減のため、<strong>発着駅間の駅数が100を超える場合</strong>の新規計算を一時的に停止しております。
             </p>
           </div>
         </div>
