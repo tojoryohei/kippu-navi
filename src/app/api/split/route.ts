@@ -24,18 +24,22 @@ export async function POST(request: NextRequest) {
         }
 
         // 2. 最適分割経路の計算（キャッシュから取得、または新規計算してキャッシュへ保存）
-        const result = await getOptimalSplitWithCache(startStationName, endStationName);
+        const cacheResult = await getOptimalSplitWithCache(startStationName, endStationName);
+        if (!cacheResult) {
+            throw new RouteNotFoundError();
+        }
 
         // 3. レスポンスの返却
         const endTime = performance.now();
         const calculationTimeMs = endTime - startTime;
 
         // 4. 正常完了時にもログを出力し、オブザーバビリティを向上
-        console.info(`[API/Success]: ${startStationName} -> ${endStationName}`);
+        const cacheStatus = cacheResult.isCacheHit ? 'HIT' : 'MISS';
+        console.info(`[API/Success]: ${startStationName} -> ${endStationName} [${cacheStatus}]`);
 
         return NextResponse.json(
             {
-                data: result,
+                data: cacheResult.data,
                 time: calculationTimeMs
             },
             { status: 200 }
@@ -51,7 +55,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (error instanceof RouteNotFoundError) {
-            console.info(`[API/NotFound]: ${error.message} (Request: ${safeStart} -> ${safeEnd})`);
+            console.info(`[API/RouteNotFound]: ${error.message} (Request: ${safeStart} -> ${safeEnd})`);
             return NextResponse.json({ error: error.message }, { status: 404 });
         }
 

@@ -157,7 +157,7 @@ export class CalculatorSplit {
     }
 
     private yensAlgorithm(startStation: string, endStation: string): PathStep[][] {
-        const STATIONS_LIMIT = 1000;
+        const STATIONS_LIMIT = 100;
 
         const A: PathStep[][] = [];
         const B: { path: PathStep[]; cost: number; signature: string }[] = [];
