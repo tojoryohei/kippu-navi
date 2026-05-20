@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.13.0...kippu-navi-v1.13.1) (2026-05-20)
+
+
+### Performance Improvements
+
+* 経路計算の負荷対策を強化（経由駅数上限を200駅から100駅へ引き下げ） ([#103](https://github.com/tojoryohei/kippu-navi/issues/103)) ([9868a12](https://github.com/tojoryohei/kippu-navi/commit/9868a127a284ab307c73ec0551c2c1a39b79aa13))
+
 ## [1.13.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.12.0...kippu-navi-v1.13.0) (2026-05-19)
 
 
