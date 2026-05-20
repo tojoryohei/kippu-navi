@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.13.2...kippu-navi-v1.14.0) (2026-05-20)
+
+
+### Features
+
+* オブザーバビリティ向上のためのAPIログ拡張（キャッシュHit/Missステータスの可視化） ([#111](https://github.com/tojoryohei/kippu-navi/issues/111)) ([4fcdc4d](https://github.com/tojoryohei/kippu-navi/commit/4fcdc4d2405a3c4a62de0538aaf8a6d16b3691bd))
+
 ## [1.13.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.13.1...kippu-navi-v1.13.2) (2026-05-20)
 
 
