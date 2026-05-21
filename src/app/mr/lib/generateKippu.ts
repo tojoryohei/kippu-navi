@@ -8,7 +8,7 @@ import { cheapestPathAndFare } from '@/app/utils/cheapestPath';
 
 import { RouteRequest, KippuData, PathStep, CalculationMode } from '@/app/types';
 
-export interface GenerateKippuOptions {
+interface GenerateKippuOptions {
     calculationMode?: CalculationMode;
 }
 

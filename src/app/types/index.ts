@@ -13,11 +13,10 @@ export interface Station {
     lines?: string[]
 }
 
-export interface StationData {
-    name: string;
-    kana: string;
-    lat: number;
-    lon: number;
+export interface MajorCitySuburbanSectionFare {
+    startStation: string;
+    endStation: string;
+    kippuData: KippuData;
 }
 
 export interface SelectStationProps {
@@ -119,21 +118,9 @@ export interface RouteSegment {
     company: number;
 }
 
-export interface SplitSegment {
-    departureStation: string;
-    arrivalStation: string;
-    fare: number;
-    printedViaLines: string[];
-}
-
 export interface SpecificFare {
     sections: PathStep[];
     fare: number;
-}
-
-export interface SpecificSection {
-    incorrectPath: PathStep[];
-    correctPath: PathStep[];
 }
 
 export interface Section {
@@ -156,16 +143,6 @@ export interface MajorCitySuburbanSection {
     仙台近郊区間: Set<string>;
 }
 
-export interface MajorCitySuburbanSectionFare {
-    startStation: string;
-    endStation: string;
-    kippuData: KippuData;
-}
-
-export interface BoldLineAreaRoute {
-    key: string;
-    route: PathStep[];
-}
 
 export interface City {
     name: string;

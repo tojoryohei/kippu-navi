@@ -80,7 +80,7 @@ class PriorityQueue {
     }
 }
 
-export class CalculatorSplit {
+class CalculatorSplit {
     private kippuMemo: Map<string, KippuData> = new Map();
     private splitMemo: Map<string, SplitKippuDatas[] | null> = new Map();
 

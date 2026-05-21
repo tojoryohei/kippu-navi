@@ -49,7 +49,7 @@ export function cheapestPathAndFare(fullPath: PathStep[]): { path: PathStep[], f
 /**
  * 第114条（および第87条関連）適用メイン関数
  */
-export function extendFromCity(originalPath: PathStep[]): PathStep[] {
+function extendFromCity(originalPath: PathStep[]): PathStep[] {
     // パスが短すぎる場合は無視
     if (!originalPath || originalPath.length < 2) return originalPath;
 
@@ -226,7 +226,7 @@ function searchExtension(
     return found ? bestExtendedPath : basePath;
 }
 
-export function extendTheFrontOfSections(path: PathStep[]): PathStep[] | null {
+function extendTheFrontOfSections(path: PathStep[]): PathStep[] | null {
     if (path.length < 2) return null;
     const outerSpecificSections = load.getSpecificSections();
     for (const outerSpecificSection of outerSpecificSections) {
@@ -238,7 +238,7 @@ export function extendTheFrontOfSections(path: PathStep[]): PathStep[] | null {
     return null;
 }
 
-export function extendTheRearOfSections(path: PathStep[]): PathStep[] | null {
+function extendTheRearOfSections(path: PathStep[]): PathStep[] | null {
     if (path.length < 2) return null;
     const outerSpecificSections = load.getSpecificSections();
     for (const outerSpecificSection of outerSpecificSections) {
