@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.14.0...kippu-navi-v1.14.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* 経路分割ロジックでの TypeError を防止し、バグ調査用のJSONダンプを出力するガード節を追加 ([#116](https://github.com/tojoryohei/kippu-navi/issues/116)) ([9063161](https://github.com/tojoryohei/kippu-navi/commit/906316143e7ff689d0d987c15806c92a538a0a10))
+
 ## [1.14.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.13.2...kippu-navi-v1.14.0) (2026-05-20)
 
 
