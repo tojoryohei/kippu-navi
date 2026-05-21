@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: error.message }, { status: 404 });
         }
 
-        console.error('[API/Split Route Error]:', error);
+        console.error(`[API/Split Route Error] (Request: ${safeStart} -> ${safeEnd}):`, error);
         return NextResponse.json(
             { error: 'サーバー内部でエラーが発生しました。' },
             { status: 500 }
