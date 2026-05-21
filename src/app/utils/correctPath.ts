@@ -5856,7 +5856,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
         stationsOnFullPath.has("本由良") === false &&
         stationsOnFullPath.has("厚東") === false
     ) {
-        for (let i = 0; i < fullPath.length - 8; i++) {
+        for (let i = 0; i < fullPath.length - 17; i++) {
             if (fullPath[i + 0].stationName === "新山口" &&
                 fullPath[i + 1].stationName === "上嘉川" &&
                 fullPath[i + 2].stationName === "深溝" &&
@@ -6006,7 +6006,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
             }
         }
 
-        for (let i = 0; i < fullPath.length - 8; i++) {
+        for (let i = 0; i < fullPath.length - 17; i++) {
             if (fullPath[i + 0].stationName === "宇部" &&
                 fullPath[i + 1].stationName === "岩鼻" &&
                 fullPath[i + 2].stationName === "居能" &&
