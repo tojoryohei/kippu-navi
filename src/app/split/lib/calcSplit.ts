@@ -308,6 +308,9 @@ class CalculatorSplit {
 
                 const subPath = fullPath.slice(j, i + 1);
                 const segmentKippu = this.getMemoizedKippuData(subPath);
+
+                if (!segmentKippu) continue;
+
                 const newTotalFare = dp[j] + segmentKippu.fare;
 
                 if (newTotalFare < dp[i]) {
@@ -322,6 +325,11 @@ class CalculatorSplit {
         const resultPatterns: SplitKippuDatas[] = [];
         const totalFare = dp[n - 1];
 
+        if (totalFare === Infinity) {
+            this.splitMemo.set(key, null);
+            return null;
+        }
+
         const reconstruct = (currentIndex: number, currentSegments: SplitKippuData[]) => {
             if (currentIndex === 0) {
                 resultPatterns.push({
@@ -335,11 +343,14 @@ class CalculatorSplit {
             for (let pIdx = 0; pIdx < parents.length; pIdx++) {
                 const prevIndex = parents[pIdx];
                 const segmentPath = fullPath.slice(prevIndex, currentIndex + 1);
+                const kippuData = this.getMemoizedKippuData(segmentPath);
+
+                if (!kippuData) continue;
 
                 const newSegment = {
                     departureStation: fullPath[prevIndex].stationName,
                     arrivalStation: fullPath[currentIndex].stationName,
-                    kippuData: this.getMemoizedKippuData(segmentPath)
+                    kippuData: kippuData
                 };
 
                 reconstruct(prevIndex, [newSegment, ...currentSegments]);
@@ -457,11 +468,22 @@ class CalculatorSplit {
         return finalPath;
     }
 
-    private getMemoizedKippuData(path: PathStep[]): KippuData {
+    private getMemoizedKippuData(path: PathStep[]): KippuData | null {
+        if (!path || path.length === 0) {
+            throw new Error(`[API/Bug] getMemoizedKippuData: Received empty or undefined path.`);
+        }
+
         let key = "";
         for (let k = 0; k < path.length; k++) {
-            const line = (k === path.length - 1) ? "null" : path[k].lineName;
-            key += `${path[k].stationName}-${line}`;
+            const step = path[k];
+
+            if (!step || typeof step !== 'object' || !('stationName' in step)) {
+                const dumpedPath = JSON.stringify(path);
+                throw new Error(`[API/Bug] getMemoizedKippuData: path[${k}] is undefined or invalid. Dump: ${dumpedPath}`);
+            }
+
+            const line = (k === path.length - 1) ? "null" : step.lineName;
+            key += `${step.stationName}-${line}`;
             if (k < path.length - 1) key += "-";
         }
 
