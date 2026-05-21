@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, Controller, SubmitHandler, useFieldArray } from "react-hook-form";
+import { useForm, Controller, SubmitHandler, useFieldArray, useWatch } from "react-hook-form";
 import type { SingleValue } from "react-select";
 import { useState } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
@@ -19,7 +19,7 @@ interface FormValues extends IFormInput {
 }
 
 export default function Form() {
-    const { register, handleSubmit, control, watch, setValue, getValues, formState: { isValid } } = useForm<FormValues>({
+    const { register, handleSubmit, control, setValue, getValues, formState: { isValid } } = useForm<FormValues>({
         mode: 'onChange',
         defaultValues: {
             startStation: null,
@@ -29,18 +29,19 @@ export default function Form() {
     });
 
     const { fields, append, replace } = useFieldArray({ control, name: "segments" });
-    const formValues = watch();
+    
+    const formValues = useWatch({ control }) as FormValues;
 
-    const lastSegment = formValues.segments[formValues.segments.length - 1];
+    const lastSegment = formValues.segments?.[formValues.segments?.length - 1];
     const lastDestination = lastSegment?.destinationStation;
 
-    const isUnderPathLimit = formValues.segments.length < 99;
+    const isUnderPathLimit = (formValues.segments?.length ?? 0) < 99;
 
     const canAddTransfer = (lastDestination ? (lastDestination.lines?.length ?? 0) > 1 : false) && isUnderPathLimit;
 
     const canReverse = !!formValues.startStation &&
-        formValues.segments.length > 0 &&
-        formValues.segments.every(seg => seg.viaLine && seg.destinationStation);
+        (formValues.segments?.length ?? 0) > 0 &&
+        formValues.segments.every((seg: { viaLine: Line | null, destinationStation: Station | null }) => seg.viaLine && seg.destinationStation);
 
     const handleFieldChange = (
         value: SingleValue<Station | Line>,
@@ -420,5 +421,5 @@ export default function Form() {
                 </ol>
             </div>
         </>
-    );
-}
+        );
+        }

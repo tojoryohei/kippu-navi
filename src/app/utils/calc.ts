@@ -249,26 +249,3 @@ export function generatePrintedViaStrings(fullPath: PathStep[]): string[] {
     }
     return printedViaLines;
 }
-
-export function calculateDistanceKm(
-    lat0: number,
-    lon0: number,
-    lat1: number,
-    lon1: number
-): number {
-    const R = 6371; // 地球の平均半径 (km)
-
-    const dLat = ((lat1 - lat0) * Math.PI) / 180;
-    const dLon = ((lon1 - lon0) * Math.PI) / 180;
-
-    const rLat0 = (lat0 * Math.PI) / 180;
-    const rLat1 = (lat1 * Math.PI) / 180;
-
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat0) * Math.cos(rLat1);
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // 距離 (km)
-}

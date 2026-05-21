@@ -1,7 +1,7 @@
 "use client";
 
 import Select, { components, OptionProps, FilterOptionOption, InputProps } from "react-select";
-import { useState, useEffect, useId, FocusEvent, CSSProperties } from "react";
+import { useState, FocusEvent, CSSProperties } from "react";
 import stationDatas from "@/app/split/data/stationDatas.json";
 
 import { Station, SelectStationProps } from '@/app/types';
@@ -31,20 +31,15 @@ const CustomInput = (props: InputProps<Station, false>) => {
     );
 };
 
-const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: SelectStationProps) => {
+const SelectStation = ({ value, onChange, options, isDisabled }: SelectStationProps) => {
     const stationOptions = options || (stationDatas as Station[]);
-    const [inputValue, setInputValue] = useState<string>("");
+    const [inputValue, setInputValue] = useState<string>(value ? value.name : "");
+    const [prevValue, setPrevValue] = useState(value);
 
-    const reactId = useId();
-    const safeInstanceId = instanceId || reactId;
-
-    useEffect(() => {
-        if (value) {
-            setInputValue(value.name);
-        } else {
-            setInputValue("");
-        }
-    }, [value]);
+    if (value !== prevValue) {
+        setPrevValue(value);
+        setInputValue(value ? value.name : "");
+    }
 
     const filterOption = (option: FilterOptionOption<Station>, rawInput: string) => {
         const target = option.data;
@@ -58,7 +53,6 @@ const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: Sel
     return (
         <div className="my-2 w-full">
             <Select
-                instanceId={safeInstanceId}
                 value={value}
                 isDisabled={isDisabled}
                 options={stationOptions}

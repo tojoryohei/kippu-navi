@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, Controller, SubmitHandler } from "react-hook-form";
+import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
-import { ApiSplitFullResponse, SplitApiRequest, SplitApiResponse, SplitFormInput, Station, StationData } from "@/app/types";
+import { ApiSplitFullResponse, SplitApiRequest, SplitApiResponse, SplitFormInput, Station } from "@/app/types";
 
 export default function SplitForm() {
-    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, watch } = useForm<SplitFormInput>({
+    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue } = useForm<SplitFormInput>({
         mode: 'onChange',
         defaultValues: {
             startStation: null,
@@ -24,8 +24,8 @@ export default function SplitForm() {
     const [error, setError] = useState<string | null>(null);
     const [showAllPatterns, setShowAllPatterns] = useState(false);
 
-    const startStationVal = watch("startStation");
-    const endStationVal = watch("endStation");
+    const startStationVal = useWatch({ control, name: "startStation" });
+    const endStationVal = useWatch({ control, name: "endStation" });
     const canSwap = !!startStationVal || !!endStationVal;
 
     const handleSwapStations = () => {
@@ -35,7 +35,7 @@ export default function SplitForm() {
         setValue("endStation", currentStart, { shouldValidate: true });
     };
 
-    const stations = new Set((stationDatas as StationData[]).map((s) => s.name))
+    const stations = new Set((stationDatas as Station[]).map((s) => s.name))
 
     const validateStation = (value: Station | null) => {
         if (!value || !value.name) return "駅名を入力してください";

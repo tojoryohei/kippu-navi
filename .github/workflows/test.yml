@@ -36,7 +36,32 @@ jobs:
         run: npm run lint
 
   # ---------------------------------------------------
-  # 2. Testジョブ: 運賃計算ロジックなどのユニットテストを実行
+  # 2. Knipジョブ: 未使用のコードや依存関係をチェック
+  # ---------------------------------------------------
+  knip:
+    name: Run Knip
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Setup Takumi Guard
+        uses: flatt-security/setup-takumi-guard-npm@v1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Knip
+        run: npx knip
+
+  # ---------------------------------------------------
+  # 3. Testジョブ: 運賃計算ロジックなどのユニットテストを実行
   # ---------------------------------------------------
   test:
     name: Run Vitest

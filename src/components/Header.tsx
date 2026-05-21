@@ -58,6 +58,15 @@ const Header = () => {
                 <div
                     className="fixed top-16 inset-x-0 bottom-0 bg-slate-900/50 backdrop-blur-sm z-20 md:hidden transition-opacity"
                     onClick={handleMenuToggle}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleMenuToggle();
+                        }
+                    }}
+                    aria-label="メニューを閉じる"
                 />
             )}
 
