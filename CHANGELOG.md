@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.14.1...kippu-navi-v1.14.2) (2026-05-21)
+
+
+### Bug Fixes
+
+* 宇部線（宇部〜新山口）の経路補正処理における配列範囲外アクセスによるエラーの修正 ([#118](https://github.com/tojoryohei/kippu-navi/issues/118)) ([29e216a](https://github.com/tojoryohei/kippu-navi/commit/29e216ac53f3303a2336767f1e0027e2a765e3c4)), closes [#115](https://github.com/tojoryohei/kippu-navi/issues/115)
+
 ## [1.14.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.14.0...kippu-navi-v1.14.1) (2026-05-21)
 
 
