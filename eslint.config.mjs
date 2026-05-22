@@ -4,8 +4,10 @@ import hooksPlugin from "eslint-plugin-react-hooks";
 import jsxA11yPlugin from "eslint-plugin-jsx-a11y";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
+import securityPlugin from "eslint-plugin-security";
 
 export default [
+    securityPlugin.configs.recommended,
     {
         ignores: [
             ".next/**",
@@ -47,6 +49,9 @@ export default [
                     caughtErrorsIgnorePattern: "^_",
                 },
             ],
+            "security/detect-object-injection": "off",
+            "security/detect-non-literal-regexp": "warn",
+            "security/detect-non-literal-fs-filename": "off",
         },
         settings: {
             react: {

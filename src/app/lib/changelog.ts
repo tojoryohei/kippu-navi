@@ -46,6 +46,7 @@ export async function getChangelogs(limit?: number): Promise<ChangelogItem[]> {
 
                     // 2. 行末の Issueリンク、コミットハッシュリンク、closes 等をまとめて削除
                     // ※ [#32] や [c29b834] のような Issue番号・コミットハッシュの形式のみを対象としています
+                    // eslint-disable-next-line security/detect-unsafe-regex
                     text = text.replace(/(?:\s*(?:,?\s*closes\s*)?\(?\[(?:#[0-9]+|[a-f0-9]+)\]\([^)]+\)\)?)+$/i, '');
 
                     return text.trim();
