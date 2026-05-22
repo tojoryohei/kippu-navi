@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.15.1...kippu-navi-v1.16.0) (2026-05-22)
+
+
+### Features
+
+* URLクエリパラメータを用いた検索状態の同期とUX最適化 ([#129](https://github.com/tojoryohei/kippu-navi/issues/129)) ([c4ca4d5](https://github.com/tojoryohei/kippu-navi/commit/c4ca4d5a2137b2045dc73502a4e969f771dc7ad3))
+
 ## [1.15.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.15.0...kippu-navi-v1.15.1) (2026-05-22)
 
 
