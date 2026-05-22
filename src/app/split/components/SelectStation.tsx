@@ -1,7 +1,7 @@
 "use client";
 
 import Select, { components, OptionProps, FilterOptionOption, InputProps } from "react-select";
-import { useState, FocusEvent, CSSProperties } from "react";
+import { useState, FocusEvent, CSSProperties, useId } from "react";
 import stationDatas from "@/app/split/data/stationDatas.json";
 
 import { Station, SelectStationProps } from '@/app/types';
@@ -31,7 +31,7 @@ const CustomInput = (props: InputProps<Station, false>) => {
     );
 };
 
-const SelectStation = ({ value, onChange, options, isDisabled }: SelectStationProps) => {
+const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: SelectStationProps) => {
     const stationOptions = options || (stationDatas as Station[]);
     const [inputValue, setInputValue] = useState<string>(value ? value.name : "");
     const [prevValue, setPrevValue] = useState(value);
@@ -41,18 +41,22 @@ const SelectStation = ({ value, onChange, options, isDisabled }: SelectStationPr
         setInputValue(value ? value.name : "");
     }
 
+    const reactId = useId();
+    const safeInstanceId = instanceId ?? reactId;
+
     const filterOption = (option: FilterOptionOption<Station>, rawInput: string) => {
         const target = option.data;
-        rawInput = rawInput
+        const normalizedInput = rawInput
             .replace(/[jJｊ]/g, 'Ｊ')
             .replace(/[rRｒ]/g, 'Ｒ')
             .replace(/ヶ/g, 'ケ');
-        return target.name.includes(rawInput) || target.kana.startsWith(rawInput);
+        return target.name.includes(normalizedInput) || target.kana.startsWith(normalizedInput);
     };
 
     return (
         <div className="my-2 w-full">
             <Select
+                instanceId={safeInstanceId}
                 value={value}
                 isDisabled={isDisabled}
                 options={stationOptions}
@@ -62,7 +66,6 @@ const SelectStation = ({ value, onChange, options, isDisabled }: SelectStationPr
                 inputValue={inputValue}
 
                 onInputChange={(newInputValue, { action }) => {
-                    // 純粋なタイピングのみを受け付ける
                     if (action === "input-change") {
                         setInputValue(newInputValue);
                         onChange(newInputValue ? { name: newInputValue, kana: newInputValue, lines: [] } : null);
@@ -70,7 +73,6 @@ const SelectStation = ({ value, onChange, options, isDisabled }: SelectStationPr
                 }}
 
                 onChange={(newValue) => {
-                    // サジェストを選択した時
                     if (newValue) {
                         setInputValue(newValue.name);
                         onChange(newValue);
@@ -88,7 +90,6 @@ const SelectStation = ({ value, onChange, options, isDisabled }: SelectStationPr
                 filterOption={filterOption}
                 noOptionsMessage={() => (inputValue ? "該当する駅がありません" : null)}
 
-                // ★追加: CSSレベルでも透明化を絶対に許さない（強制表示）
                 styles={{
                     input: (base) => ({
                         ...base,
@@ -102,7 +103,7 @@ const SelectStation = ({ value, onChange, options, isDisabled }: SelectStationPr
                     DropdownIndicator: () => null,
                     IndicatorSeparator: () => null,
                     Option: CustomOption,
-                    Input: CustomInput, // ★ 上記で定義した透明にならないInputを適用
+                    Input: CustomInput,
                 }}
             />
         </div>
