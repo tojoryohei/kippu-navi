@@ -1,7 +1,6 @@
 import Form from "@/app/split/components/Form";
 import type { Metadata } from "next";
 import { RiScissorsFill, RiErrorWarningLine } from "react-icons/ri";
-import ScrollToTopButton from "@/components/ScrollToTopButton";
 import { getOptimalSplitWithCache } from '@/app/split/lib/getOptimalSplitWithCache';
 import { StationCountLimitExceededError, RouteNotFoundError } from '@/app/utils/errors';
 import stationDatas from "@/app/split/data/stationDatas.json";
@@ -79,7 +78,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ [
           <Form initialFrom={from} initialTo={to} result={result} error={error} serverTime={serverTime} />
         </div>
       </main>
-      <ScrollToTopButton />
     </div>
   );
 }

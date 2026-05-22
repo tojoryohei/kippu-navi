@@ -5,6 +5,7 @@ import "@/app/globals.css";
 import AdSense from "@/components/AdSense";
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import ScrollToTopButton from '@/components/ScrollToTopButton';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,20 +59,17 @@ export default function RootLayout({
 
   return (
     <html lang="ja">
-      <head>
+      <body className={`flex flex-col min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden ${geistSans.variable} ${geistMono.variable} antialiased`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-      </head>
-      <body
-        className={`flex flex-col min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden ${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
         {gaId && <GoogleAnalytics gaId={gaId} />}
         <AdSense />
         <Header />
         <main className="grow">{children}</main>
         <Footer />
+        <ScrollToTopButton />
       </body>
     </html>
   );
