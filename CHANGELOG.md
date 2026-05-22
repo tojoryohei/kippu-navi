@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.16.0...kippu-navi-v1.17.0) (2026-05-22)
+
+
+### Features
+
+* セキュリティヘッダ（CSP, HSTS等）の導入 ([#132](https://github.com/tojoryohei/kippu-navi/issues/132)) ([dc900b8](https://github.com/tojoryohei/kippu-navi/commit/dc900b80715b1a16be6e76edc9c30071efd927c4))
+
 ## [1.16.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.15.1...kippu-navi-v1.16.0) (2026-05-22)
 
 
@@ -12,7 +19,7 @@
 
 ### Bug Fixes
 
-* [#121](https://github.com/tojoryohei/kippu-navi/issues/121) で修正を忘れた [#113](https://github.com/tojoryohei/kippu-navi/issues/113) に起因するSelectStationのハイドレーションエラー解消および状態同期の修正 ([#126](https://github.com/tojoryohei/kippu-navi/issues/126)) ([52625ae](https://github.com/tojoryohei/kippu-navi/commit/52625ae260553310e39c5b583c3a596bd60c32b8))
+* SelectStationのハイドレーションエラー解消および状態同期の修正 ([#126](https://github.com/tojoryohei/kippu-navi/issues/126)) ([52625ae](https://github.com/tojoryohei/kippu-navi/commit/52625ae260553310e39c5b583c3a596bd60c32b8))
 
 ## [1.15.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.14.3...kippu-navi-v1.15.0) (2026-05-22)
 
@@ -26,7 +33,7 @@
 
 ### Bug Fixes
 
-* [#113](https://github.com/tojoryohei/kippu-navi/issues/113) に起因するSelectStationのハイドレーションエラー解消および状態同期の修正 ([#121](https://github.com/tojoryohei/kippu-navi/issues/121)) ([7edf934](https://github.com/tojoryohei/kippu-navi/commit/7edf934bb1b0b6e9451c69e0f4e129965159cfb8))
+* SelectStationのハイドレーションエラー解消および状態同期の修正 ([#121](https://github.com/tojoryohei/kippu-navi/issues/121)) ([7edf934](https://github.com/tojoryohei/kippu-navi/commit/7edf934bb1b0b6e9451c69e0f4e129965159cfb8))
 
 ## [1.14.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.14.1...kippu-navi-v1.14.2) (2026-05-21)
 
