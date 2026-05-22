@@ -29,7 +29,7 @@ export default function Form() {
     });
 
     const { fields, append, replace } = useFieldArray({ control, name: "segments" });
-    
+
     const formValues = useWatch({ control }) as FormValues;
 
     const lastSegment = formValues.segments?.[formValues.segments?.length - 1];
@@ -400,7 +400,7 @@ export default function Form() {
                         </div>
                         <span>経由：{result.printedViaLines.length === 0 ? "ーーー" : result.printedViaLines.join("・")}</span>
                         <span className="flex justify-between items-center mt-2">
-                            <span>{/* result.validDays + " 日間有効" */}</span>
+                            <span>{result.validDays + " 日間有効"}</span>
                             <span className="text-xl">¥{result.fare > 0 ? result.fare.toLocaleString() : "***"}</span>
                         </span>
                     </div>
@@ -421,5 +421,5 @@ export default function Form() {
                 </ol>
             </div>
         </>
-        );
-        }
+    );
+}
