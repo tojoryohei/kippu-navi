@@ -2,13 +2,54 @@ import Form from "@/app/split/components/Form";
 import type { Metadata } from "next";
 import { RiScissorsFill, RiErrorWarningLine } from "react-icons/ri";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
+import { getOptimalSplitWithCache } from '@/app/split/lib/getOptimalSplitWithCache';
+import { StationCountLimitExceededError, RouteNotFoundError } from '@/app/utils/errors';
+import stationDatas from "@/app/split/data/stationDatas.json";
 
 export const metadata: Metadata = {
   title: "分割乗車券プログラム",
-  description: "発駅と着駅から分割乗車券の最安解を計算します．",
+  description: "発駅と着駅から分割乗車券の最安解を計算します。",
 };
 
-export default function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const params = await searchParams;
+  const from = typeof params.from === 'string' ? params.from : undefined;
+  const to = typeof params.to === 'string' ? params.to : undefined;
+
+  let result = null;
+  let error = null;
+  let serverTime = null;
+
+  if (from && to) {
+    if (from === to) {
+      error = "出発駅と到着駅が同じです。";
+    } else {
+      const stations = new Set(stationDatas.map((s) => s.name));
+      if (!stations.has(from) || !stations.has(to)) {
+        error = "駅名が正しくありません。正しい駅名を選択または入力してください。";
+      } else {
+        try {
+
+          const cacheResult = await getOptimalSplitWithCache(from, to);
+          if (!cacheResult) {
+            error = "指定された区間の経路が見つかりませんでした。";
+          } else {
+            result = cacheResult.data;
+            serverTime = cacheResult.time;
+          }
+        } catch (err: unknown) {
+          if (err instanceof StationCountLimitExceededError) {
+            error = err.message;
+          } else if (err instanceof RouteNotFoundError) {
+            error = err.message;
+          } else {
+            error = "サーバー内部でエラーが発生しました。";
+          }
+        }
+      }
+    }
+  }
+
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8">
       <main className="max-w-xl mx-auto">
@@ -35,7 +76,7 @@ export default function Page() {
         </div>
 
         <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200">
-          <Form />
+          <Form initialFrom={from} initialTo={to} result={result} error={error} serverTime={serverTime} />
         </div>
       </main>
       <ScrollToTopButton />
