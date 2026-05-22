@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.15.0...kippu-navi-v1.15.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* [#121](https://github.com/tojoryohei/kippu-navi/issues/121) で修正を忘れた [#113](https://github.com/tojoryohei/kippu-navi/issues/113) に起因するSelectStationのハイドレーションエラー解消および状態同期の修正 ([#126](https://github.com/tojoryohei/kippu-navi/issues/126)) ([52625ae](https://github.com/tojoryohei/kippu-navi/commit/52625ae260553310e39c5b583c3a596bd60c32b8))
+
 ## [1.15.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.14.3...kippu-navi-v1.15.0) (2026-05-22)
 
 
