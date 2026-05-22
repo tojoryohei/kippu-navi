@@ -1,7 +1,7 @@
 "use client";
 
 import Select, { components, OptionProps, FilterOptionOption, InputProps } from "react-select";
-import { useState, FocusEvent, CSSProperties } from "react";
+import { useState, useId, FocusEvent, CSSProperties } from "react";
 import stationData from "@/app/mr/data/stations.json";
 
 import { Station, SelectStationProps } from '@/app/types';
@@ -35,11 +35,15 @@ const CustomInput = (props: InputProps<Station, false>) => {
     );
 };
 
-const SelectStation = ({ value, onChange, options, isDisabled, hideMenuWhenEmpty = false }: ExtendedSelectStationProps) => {
+const SelectStation = ({ instanceId, value, onChange, options, isDisabled, hideMenuWhenEmpty = false }: ExtendedSelectStationProps) => {
     const stationOptions = options || (stationData as Station[]);
-    const [inputValue, setInputValue] = useState<string>(value ? value.name : "");
-    const [prevValue, setPrevValue] = useState(value);
 
+    const [inputValue, setInputValue] = useState<string>(value ? value.name : "");
+
+    const reactId = useId();
+    const safeInstanceId = instanceId ?? reactId;
+
+    const [prevValue, setPrevValue] = useState(value);
     if (value !== prevValue) {
         setPrevValue(value);
         setInputValue(value ? value.name : "");
@@ -47,11 +51,11 @@ const SelectStation = ({ value, onChange, options, isDisabled, hideMenuWhenEmpty
 
     const filterOption = (option: FilterOptionOption<Station>, rawInput: string) => {
         const target = option.data;
-        rawInput = rawInput
+        const normalizedInput = rawInput
             .replace(/[jJｊ]/g, 'Ｊ')
             .replace(/[rRｒ]/g, 'Ｒ')
             .replace(/ヶ/g, 'ケ');
-        return target.name.includes(rawInput) || target.kana.startsWith(rawInput);
+        return target.name.includes(normalizedInput) || target.kana.startsWith(normalizedInput);
     };
 
     const menuIsOpen = (hideMenuWhenEmpty && inputValue.length === 0) ? false : undefined;
@@ -59,12 +63,11 @@ const SelectStation = ({ value, onChange, options, isDisabled, hideMenuWhenEmpty
     return (
         <div className="my-2 w-full">
             <Select
+                instanceId={safeInstanceId}
                 value={value}
                 isDisabled={isDisabled}
                 options={stationOptions}
-
                 menuIsOpen={menuIsOpen}
-
                 controlShouldRenderValue={false}
                 inputValue={inputValue}
                 blurInputOnSelect={false}
@@ -77,17 +80,12 @@ const SelectStation = ({ value, onChange, options, isDisabled, hideMenuWhenEmpty
                 }}
 
                 onBlur={() => {
-                    // 直前の値から変更があった場合のみ処理
                     if (inputValue !== (value?.name || "")) {
                         if (inputValue) {
-                            // ★修正: 入力された名前に完全一致する実在の駅を探す
                             const matchedStation = stationOptions.find(s => s.name === inputValue);
-
                             if (matchedStation) {
-                                // 実在する駅なら、その正しいデータ（路線情報を含む）を渡す
                                 onChange(matchedStation);
                             } else {
-                                // 存在しない駅名の場合は、バリデーションで弾かせるためにダミーを渡す
                                 onChange({ name: inputValue, kana: inputValue, lines: [] });
                             }
                         } else {
