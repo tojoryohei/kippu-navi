@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.14.3...kippu-navi-v1.15.0) (2026-05-22)
+
+
+### Features
+
+* 乗車券の有効日数を表示する機能の追加 ([#124](https://github.com/tojoryohei/kippu-navi/issues/124)) ([515cb0a](https://github.com/tojoryohei/kippu-navi/commit/515cb0af5be4f93b70343d7df84a4d8bcef00520))
+
 ## [1.14.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.14.2...kippu-navi-v1.14.3) (2026-05-22)
 
 
