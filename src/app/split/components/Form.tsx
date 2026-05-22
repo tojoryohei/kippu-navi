@@ -1,27 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
+import { useRouter } from "next/navigation";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
-import { ApiSplitFullResponse, SplitApiRequest, SplitApiResponse, SplitFormInput, Station } from "@/app/types";
+import { SplitApiResponse, SplitFormInput, Station } from "@/app/types";
 
-export default function SplitForm() {
-    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue } = useForm<SplitFormInput>({
+interface SplitFormProps {
+    initialFrom?: string;
+    initialTo?: string;
+    result?: SplitApiResponse | null;
+    error?: string | null;
+    serverTime?: number | null;
+}
+
+export default function SplitForm({
+    initialFrom,
+    initialTo,
+    result: initialResult,
+    error: initialError,
+    serverTime: initialServerTime,
+}: SplitFormProps) {
+    const router = useRouter();
+    const [isPending, startTransition] = useTransition();
+
+    const initialStartStation = initialFrom ? stationDatas.find(s => s.name === initialFrom) || { name: initialFrom, kana: "" } : null;
+    const initialEndStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
+
+    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, reset } = useForm<SplitFormInput>({
         mode: 'onChange',
         defaultValues: {
-            startStation: null,
-            endStation: null,
+            startStation: initialStartStation,
+            endStation: initialEndStation,
         },
     });
 
-    const [result, setResult] = useState<SplitApiResponse | null>(null);
-    const [serverTime, setServerTime] = useState<number | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    useEffect(() => {
+        const startStation = initialFrom ? stationDatas.find(s => s.name === initialFrom) || { name: initialFrom, kana: "" } : null;
+        const endStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
+        reset({
+            startStation,
+            endStation,
+        });
+    }, [initialFrom, initialTo, reset]);
+
     const [showAllPatterns, setShowAllPatterns] = useState(false);
 
     const startStationVal = useWatch({ control, name: "startStation" });
@@ -43,46 +69,15 @@ export default function SplitForm() {
         return exists || "正しい駅名を選択または入力してください";
     };
 
-    const onSubmit: SubmitHandler<SplitFormInput> = async (data) => {
-        setIsLoading(true);
-        setError(null);
-        setResult(null);
-        setServerTime(null);
+    const onSubmit: SubmitHandler<SplitFormInput> = (data) => {
         setShowAllPatterns(false);
+        const searchParams = new URLSearchParams();
+        if (data.startStation?.name) searchParams.set("from", data.startStation.name);
+        if (data.endStation?.name) searchParams.set("to", data.endStation.name);
 
-        const apiRequestBody: SplitApiRequest = {
-            startStationName: data.startStation!.name,
-            endStationName: data.endStation!.name,
-        };
-
-        try {
-            const response = await fetch('/api/split', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(apiRequestBody),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "サーバーでエラーが発生しました。");
-            }
-
-            const responseData: ApiSplitFullResponse = await response.json();
-            if (responseData.data && typeof responseData.time === "number") {
-                setResult(responseData.data);
-                setServerTime(responseData.time);
-            } else {
-                throw new Error("サーバーからのレスポンス形式が不正です。");
-            }
-        } catch (err: unknown) {
-            if (err instanceof Error) {
-                setError(err.message || "計算に失敗しました。");
-            } else {
-                setError("計算に失敗しました。");
-            }
-        } finally {
-            setIsLoading(false);
-        }
+        startTransition(() => {
+            router.push(`?${searchParams.toString()}`, { scroll: false });
+        });
     };
 
     return (
@@ -119,7 +114,7 @@ export default function SplitForm() {
                         <button
                             type="button"
                             onClick={handleSwapStations}
-                            disabled={!canSwap}
+                            disabled={!canSwap || isPending}
                             className="p-2 bg-white border border-gray-300 rounded-full shadow-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             aria-label="発駅と着駅を入れ替える"
                             title="駅を入れ替える"
@@ -157,20 +152,20 @@ export default function SplitForm() {
                         <button
                             type="submit"
                             className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors"
-                            disabled={!isValid || isLoading}
+                            disabled={!isValid || isPending}
                         >
-                            {isLoading ? "計算中..." : "最安分割運賃を計算"}
+                            {isPending ? "計算中..." : "最安分割運賃を計算"}
                         </button>
                     </div>
                 </div>
             </form>
 
             <div className="my-8 p-4">
-                {isLoading && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
-                {serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
-                {error && <p className="py-5 border-t text-red-500 text-center">{error}</p>}
+                {isPending && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
+                {!isPending && initialServerTime != null && <p className="text-right text-xs text-gray-400">計算時間: {initialServerTime}ms</p>}
+                {!isPending && initialError && <p className="py-5 border-t text-red-500 text-center">{initialError}</p>}
 
-                {result && (
+                {!isPending && initialResult && (
                     <div className="border-t pt-8 space-y-8">
                         <h2 className="text-2xl font-bold text-center mb-6">計算結果</h2>
 
@@ -179,28 +174,28 @@ export default function SplitForm() {
                             <div className="flex justify-between items-center">
                                 <div>
                                     <div className="text-lg font-bold">
-                                        <span>{result.cheapestKippuData.departureStation}</span>
+                                        <span>{initialResult.cheapestKippuData.departureStation}</span>
                                         <span className="text-gray-400 mx-2">→</span>
-                                        <span>{result.cheapestKippuData.arrivalStation}</span>
+                                        <span>{initialResult.cheapestKippuData.arrivalStation}</span>
                                         <span className="text-sm font-normal text-gray-600 ml-1">
-                                            （{(result.cheapestKippuData.totalEigyoKilo / 10).toFixed(1)}km）
+                                            （{(initialResult.cheapestKippuData.totalEigyoKilo / 10).toFixed(1)}km）
                                         </span>
                                     </div>
                                     <div className="text-sm text-gray-600 mt-1">
-                                        経由：{result.cheapestKippuData.printedViaLines.join('・') || '---'}
+                                        経由：{initialResult.cheapestKippuData.printedViaLines.join('・') || '---'}
                                     </div>
                                 </div>
                                 <div className="text-3xl font-bold text-gray-800">
-                                    ¥{result.cheapestKippuData.fare.toLocaleString()}
+                                    ¥{initialResult.cheapestKippuData.fare.toLocaleString()}
                                 </div>
                             </div>
                         </section>
 
-                        {result.splitKippuDatasList.length > 0 ? (
+                        {initialResult.splitKippuDatasList.length > 0 ? (
                             <div className="space-y-6">
                                 {(() => {
-                                    const bestFare = result.splitKippuDatasList[0].totalFare;
-                                    const diff = result.cheapestKippuData.fare - bestFare;
+                                    const bestFare = initialResult.splitKippuDatasList[0].totalFare;
+                                    const diff = initialResult.cheapestKippuData.fare - bestFare;
                                     const isCheaper = diff > 0;
 
                                     return (
@@ -227,7 +222,7 @@ export default function SplitForm() {
                                 })()}
 
                                 <div className="space-y-6">
-                                    {result.splitKippuDatasList.map((splitPlan, planIndex) => {
+                                    {initialResult.splitKippuDatasList.map((splitPlan, planIndex) => {
                                         if (!showAllPatterns && planIndex > 1) return null;
 
                                         const isFadedItem = !showAllPatterns && planIndex === 1;
@@ -239,7 +234,7 @@ export default function SplitForm() {
                                                     }`}
                                             >
                                                 <div className={isFadedItem ? 'p-4' : ''}>
-                                                    {result.splitKippuDatasList.length > 1 && (
+                                                    {initialResult.splitKippuDatasList.length > 1 && (
                                                         <h4 className="font-bold text-gray-700 mb-3 ml-1">
                                                             パターン {planIndex + 1}
                                                         </h4>
@@ -294,7 +289,7 @@ export default function SplitForm() {
                                         );
                                     })}
 
-                                    {showAllPatterns && result.splitKippuDatasList.length > 1 && (
+                                    {showAllPatterns && initialResult.splitKippuDatasList.length > 1 && (
                                         <div className="flex justify-center mt-8 pb-4">
                                             <button
                                                 type="button"
@@ -311,7 +306,7 @@ export default function SplitForm() {
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-center text-gray-500">有効な分割候補が見つかりませんでした。</p>
+                            !isPending && initialResult && <p className="text-center text-gray-500">有効な分割候補が見つかりませんでした。</p>
                         )}
                     </div>
                 )}
