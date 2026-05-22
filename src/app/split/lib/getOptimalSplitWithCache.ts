@@ -16,6 +16,8 @@ export async function getOptimalSplitWithCache(
 ): Promise<CacheResult | null> {
     const cacheKey = `${startStation}_${endStation}`;
 
+    const startTime = performance.now();
+
     // 1. キャッシュからの読み込みを試行
     try {
         // 実行時に初めてFirestoreインスタンスを取得（ビルド時のクラッシュを防止）
@@ -27,7 +29,8 @@ export async function getOptimalSplitWithCache(
             const data = docSnap.data() as CachedSplitTicket;
 
             if (data.version === FARE_DATA_VERSION) {
-                return { data: data.result, isCacheHit: true };
+                const endTime = performance.now();
+                return { data: data.result, isCacheHit: true, time: endTime - startTime };
             }
         }
     } catch (error) {
@@ -61,5 +64,6 @@ export async function getOptimalSplitWithCache(
         console.error(`[Firestore Setup Error] Failed to prepare cache write for ${cacheKey}:`, error);
     }
 
-    return { data: result, isCacheHit: false };
+    const endTime = performance.now();
+    return { data: result, isCacheHit: false, time: endTime - startTime };
 }

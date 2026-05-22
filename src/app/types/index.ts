@@ -106,6 +106,7 @@ export interface ApiSplitFullResponse {
 export interface CacheResult {
     data: SplitApiResponse;
     isCacheHit: boolean;
+    time: number;
 }
 
 export interface RouteSegment {
