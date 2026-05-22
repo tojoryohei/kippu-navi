@@ -5,6 +5,7 @@ import "@/app/globals.css";
 import AdSense from "@/components/AdSense";
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import ScrollToTopButton from '@/components/ScrollToTopButton';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -68,6 +69,7 @@ export default function RootLayout({
         <Header />
         <main className="grow">{children}</main>
         <Footer />
+        <ScrollToTopButton />
       </body>
     </html>
   );
