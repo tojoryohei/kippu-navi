@@ -1,4 +1,4 @@
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
 
 export interface ChangelogItem {
@@ -12,43 +12,45 @@ export interface ChangelogItem {
 export async function getChangelogs(limit?: number): Promise<ChangelogItem[]> {
     try {
         const filePath = path.join(process.cwd(), 'CHANGELOG.md');
-        if (!fs.existsSync(filePath)) return [];
+        let fileContent: string;
+        try {
+            fileContent = await fs.readFile(filePath, 'utf8');
+        } catch (error: unknown) {
+            if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+                return [];
+            }
+            throw error;
+        }
 
-        const fileContent = fs.readFileSync(filePath, 'utf8');
         // ヘッダー(# Changelog)を飛ばして、バージョンごとに分割
         const sections = fileContent.split('\n## [').slice(1);
 
         const logs = sections.map((section) => {
             const lines = section.split('\n');
-            // 例: "1.1.1](https://github.com/...) (2026-04-19)"
             const headerLine = lines[0];
-
-            // バージョン、URL、日付を正規表現で抽出
             const versionMatch = headerLine.match(/^([^\]]+)\]/);
-            const urlMatch = headerLine.match(/\]\(([^)]+)\)/); // ]( と ) の間を抽出
+            const urlMatch = headerLine.match(/\]\(([^)]+)\)/);
             const dateMatch = headerLine.match(/(\d{4}-\d{2}-\d{2})/);
 
             const version = versionMatch ? `v${versionMatch[1]}` : 'Unknown';
-            const url = urlMatch ? urlMatch[1] : undefined; // GitHubの差分URL
+            const url = urlMatch ? urlMatch[1] : undefined;
             const date = dateMatch ? dateMatch[1].replace(/-/g, '.') : '';
 
-            // タグの判定
             let tag: 'アップデート' | '修正' | 'お知らせ' = 'お知らせ';
-            if (section.includes('### Bug Fixes')) tag = '修正';
-            else if (section.includes('### Features')) tag = 'アップデート';
+            if (section.includes('### Features')) {
+                tag = 'アップデート';
+            } else if (section.includes('### Bug Fixes')) {
+                tag = '修正';
+            }
 
             const contents = lines
                 .filter(line => line.trim().startsWith('*') || line.trim().startsWith('-'))
                 .map(line => {
-                    // 1. 先にtrim()して見えない改行コード(\r)や前後の空白を確実に除去
                     let text = line.trim().replace(/^[\*\-]\s+/, '');
-                    text = text.replace(/\*\*/g, ''); // 太字の ** を削除
-
-                    // 2. 行末の Issueリンク、コミットハッシュリンク、closes 等をまとめて削除
-                    // ※ [#32] や [c29b834] のような Issue番号・コミットハッシュの形式のみを対象としています
-                    // eslint-disable-next-line security/detect-unsafe-regex
-                    text = text.replace(/(?:\s*(?:,?\s*closes\s*)?\(?\[(?:#[0-9]+|[a-f0-9]+)\]\([^)]+\)\)?)+$/i, '');
-
+                    text = text.replace(/\*\*/g, '');
+                    text = text.replace(/\[(?:#[0-9]+|[a-f0-9]+)\]\([^)]+\)/g, '');
+                    text = text.replace(/closes[\s,()]*$/i, '');
+                    text = text.replace(/[\s,()]+$/, '');
                     return text.trim();
                 });
 
@@ -60,7 +62,7 @@ export async function getChangelogs(limit?: number): Promise<ChangelogItem[]> {
         });
 
         return limit ? logs.slice(0, limit) : logs;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Error parsing CHANGELOG.md:', error);
         return [];
     }
