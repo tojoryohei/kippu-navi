@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.17.0...kippu-navi-v1.18.0) (2026-05-22)
+
+
+### Features
+
+* スクロールトップボタンの全ページ共通化とレイアウトの品質改善 ([#141](https://github.com/tojoryohei/kippu-navi/issues/141)) ([155c3f6](https://github.com/tojoryohei/kippu-navi/commit/155c3f69764b1f581d1770f8265c870985de9e28))
+
 ## [1.17.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.16.0...kippu-navi-v1.17.0) (2026-05-22)
 
 
