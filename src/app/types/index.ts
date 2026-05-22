@@ -72,11 +72,6 @@ export interface KippuData {
     validDays: number;
 }
 
-export interface SplitApiRequest {
-    startStationName: string;
-    endStationName: string;
-}
-
 export interface SplitKippuData {
     departureStation: string;
     arrivalStation: string;
@@ -98,14 +93,10 @@ export interface ApiFullResponse {
     time: number;
 }
 
-export interface ApiSplitFullResponse {
-    data: SplitApiResponse;
-    time: number;
-}
-
 export interface CacheResult {
     data: SplitApiResponse;
     isCacheHit: boolean;
+    time: number;
 }
 
 export interface RouteSegment {
