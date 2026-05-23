@@ -279,17 +279,18 @@ class CalculatorSplit {
         if (n <= 1) return null;
 
         const segments = convertPathStepsToRouteSegments(fullPath);
-        const cumEigyo = new Float64Array(n);
-        cumEigyo[0] = 0;
+        const cumGiseiKilo = new Int32Array(n);
+        cumGiseiKilo[0] = 0;
         for (let x = 1; x < n; x++) {
-            cumEigyo[x] = cumEigyo[x - 1] + segments[x - 1].eigyoKilo;
+            cumGiseiKilo[x] = cumGiseiKilo[x - 1] + segments[x - 1].giseiKilo;
         }
 
-        const dp = new Float64Array(n);
+        const dp = new Int32Array(n);
         dp.fill(Infinity);
         const from: number[][] = Array.from({ length: n }, () => []);
 
         dp[0] = 0;
+        const MIN_PROFITABLE_SPLIT_CALC_KILO_INT = 200;
 
         for (let i = 1; i < n; i++) {
             for (let j = 0; j < i; j++) {
@@ -297,8 +298,8 @@ class CalculatorSplit {
                     let canSkip = true;
                     for (let pIdx = 0; pIdx < from[j].length; pIdx++) {
                         const k = from[j][pIdx];
-                        const eigyo = cumEigyo[i] - cumEigyo[k];
-                        if (eigyo > 150) {
+                        const giseiKilo = cumGiseiKilo[i] - cumGiseiKilo[k];
+                        if (giseiKilo > MIN_PROFITABLE_SPLIT_CALC_KILO_INT) {
                             canSkip = false;
                             break;
                         }
