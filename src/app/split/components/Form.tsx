@@ -75,8 +75,11 @@ export default function SplitForm({
         if (data.startStation?.name) searchParams.set("from", data.startStation.name);
         if (data.endStation?.name) searchParams.set("to", data.endStation.name);
 
+        const newUrl = `?${searchParams.toString()}`;
+        window.history.pushState(null, "", newUrl);
+
         startTransition(() => {
-            router.push(`?${searchParams.toString()}`, { scroll: false });
+            router.replace(newUrl, { scroll: false });
         });
     };
 
