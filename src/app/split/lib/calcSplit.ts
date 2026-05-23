@@ -141,7 +141,8 @@ class CalculatorSplit {
             return { cheapestKippuData: cheapestKippuData, splitKippuDatasList: [] };
         }
 
-        let globalMinFare = Infinity;
+        const MAX_FARE_INFINITY = 2147483647;
+        let globalMinFare = MAX_FARE_INFINITY;
         for (let i = 0; i < uniqueSplitPatterns.length; i++) {
             if (uniqueSplitPatterns[i].totalFare < globalMinFare) {
                 globalMinFare = uniqueSplitPatterns[i].totalFare;
@@ -286,7 +287,8 @@ class CalculatorSplit {
         }
 
         const dp = new Int32Array(n);
-        dp.fill(Infinity);
+        const MAX_GISEIKILO_INFINITY = 2147483647;
+        dp.fill(MAX_GISEIKILO_INFINITY);
         const from: number[][] = Array.from({ length: n }, () => []);
 
         dp[0] = 0;
@@ -326,7 +328,8 @@ class CalculatorSplit {
         const resultPatterns: SplitKippuDatas[] = [];
         const totalFare = dp[n - 1];
 
-        if (totalFare === Infinity) {
+        const MAX_FARE_INFINITY = 2147483647;
+        if (totalFare === MAX_FARE_INFINITY) {
             this.splitMemo.set(key, null);
             return null;
         }
