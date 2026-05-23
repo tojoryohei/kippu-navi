@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.18.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.18.1...kippu-navi-v1.18.2) (2026-05-23)
+
+
+### Bug Fixes
+
+* Int32ArrayのInfinityキャストによる運賃計算破綻の緊急修正 ([#149](https://github.com/tojoryohei/kippu-navi/issues/149)) ([1c47f9d](https://github.com/tojoryohei/kippu-navi/commit/1c47f9d594cc1fca7f8d7c925cdd56555f6b4cab))
+* 検索ボタン押下時のURL即時反映 ([#147](https://github.com/tojoryohei/kippu-navi/issues/147)) ([10fcb2e](https://github.com/tojoryohei/kippu-navi/commit/10fcb2ea06a966447e27f4863b255abea8e13bc9))
+
 ## [1.18.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.18.0...kippu-navi-v1.18.1) (2026-05-23)
 
 
