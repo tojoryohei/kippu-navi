@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.18.0...kippu-navi-v1.18.1) (2026-05-23)
+
+
+### Performance Improvements
+
+* 運賃計算キロ20km閾値による枝刈り強化 ([#144](https://github.com/tojoryohei/kippu-navi/issues/144)) ([76bd4fb](https://github.com/tojoryohei/kippu-navi/commit/76bd4fbbb6dbbb74071290e391e0d6667c5f8919)), closes [#143](https://github.com/tojoryohei/kippu-navi/issues/143)
+
 ## [1.18.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.17.0...kippu-navi-v1.18.0) (2026-05-22)
 
 
