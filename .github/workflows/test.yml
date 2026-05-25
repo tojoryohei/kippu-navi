@@ -98,21 +98,21 @@ jobs:
             src/app/split/data/*.json
           key: kippu-navi-data-v20260516-${{ hashFiles('.github/workflows/test.yml') }}
 
-      # キャッシュが無い場合のみGCP認証
+      # キャッシュが無い、かつDependabotではない場合のみGCP認証
       - name: Authenticate to Google Cloud
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      # キャッシュが無い場合のみSDKセットアップ
+      # キャッシュが無い、かつDependabotではない場合のみSDKセットアップ
       - name: Set up Cloud SDK
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
         uses: google-github-actions/setup-gcloud@v2
 
-      # キャッシュが無い場合のみGCSからダウンロード
+      # キャッシュが無い、かつDependabotではない場合のみGCSからダウンロード
       - name: Download data from private GCS
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
         run: |
           gsutil -m cp gs://kippu-navi-build-secrets/data/*.db ./src/data/
           gsutil -m cp gs://kippu-navi-build-secrets/data/*.json ./src/data/
@@ -122,5 +122,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # データが存在する（キャッシュヒットした、またはDependabot以外でDLされた）場合のみテストを実行
       - name: Run Vitest
+        if: steps.cache.outputs.cache-hit == 'true' || github.actor != 'dependabot[bot]'
         run: npm run test
