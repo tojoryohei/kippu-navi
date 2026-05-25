@@ -4,9 +4,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 5
     groups:
-      react-ecosystem:
+      frontend-framework:
         patterns:
+          - "next"
+          - "@next/*"
+          - "eslint-config-next"
           - "react"
           - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
