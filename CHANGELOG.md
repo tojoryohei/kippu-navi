@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.19.0...kippu-navi-v1.20.0) (2026-05-26)
+
+
+### Features
+
+* **split-pass/fare:** 各社定期運賃計算機とRegistryの実装 ([#175](https://github.com/tojoryohei/kippu-navi/issues/175)) ([ff4d6a8](https://github.com/tojoryohei/kippu-navi/commit/ff4d6a8da804887527deb218e34513c616811666))
+
 ## [1.19.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.18.2...kippu-navi-v1.19.0) (2026-05-26)
 
 
