@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.18.2...kippu-navi-v1.19.0) (2026-05-26)
+
+
+### Features
+
+* 定期運賃計算の基盤となる型定義と共通計算ロジックを実装 ([#171](https://github.com/tojoryohei/kippu-navi/issues/171)) ([36f9d48](https://github.com/tojoryohei/kippu-navi/commit/36f9d4895b7e48a5d95e6667ff8263961bae1834))
+
 ## [1.18.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.18.1...kippu-navi-v1.18.2) (2026-05-23)
 
 
