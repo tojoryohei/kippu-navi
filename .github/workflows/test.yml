@@ -10,9 +10,9 @@ permissions:
   id-token: write
 
 jobs:
-  # ---------------------------------------------------
-  # 1. Lintジョブ: コードの書き方や潜在的なバグをチェック
-  # ---------------------------------------------------
+  # ===================================================
+  # [Frontend] Node.js 環境のジョブ
+  # ===================================================
   lint:
     name: Run ESLint
     runs-on: ubuntu-latest
@@ -35,9 +35,6 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-  # ---------------------------------------------------
-  # 2. Knipジョブ: 未使用のコードや依存関係をチェック
-  # ---------------------------------------------------
   knip:
     name: Run Knip
     runs-on: ubuntu-latest
@@ -60,9 +57,6 @@ jobs:
       - name: Run Knip
         run: npx knip
 
-  # ---------------------------------------------------
-  # 3. Testジョブ: 運賃計算ロジックなどのユニットテストを実行
-  # ---------------------------------------------------
   test:
     name: Run Vitest
     runs-on: ubuntu-latest
@@ -79,14 +73,12 @@ jobs:
       - name: Setup Takumi Guard
         uses: flatt-security/setup-takumi-guard-npm@v1
 
-      # DB・JSONファイルを保存するディレクトリを作成
       - name: Create data directories
         run: |
           mkdir -p src/data
           mkdir -p src/app/mr/data
           mkdir -p src/app/split/data
 
-      # GitHub Actionsのキャッシュ機能でJSONデータを復元
       - name: Cache data
         id: cache
         uses: actions/cache@v4
@@ -96,21 +88,18 @@ jobs:
             src/data/*.json
             src/app/mr/data/*.json
             src/app/split/data/*.json
-          key: kippu-navi-data-v20260516-${{ hashFiles('.github/workflows/test.yml') }}
+          key: kippu-navi-data-v20260526-${{ hashFiles('.github/workflows/test.yml') }}
 
-      # キャッシュが無い、かつDependabotではない場合のみGCP認証
       - name: Authenticate to Google Cloud
         if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      # キャッシュが無い、かつDependabotではない場合のみSDKセットアップ
       - name: Set up Cloud SDK
         if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
         uses: google-github-actions/setup-gcloud@v2
 
-      # キャッシュが無い、かつDependabotではない場合のみGCSからダウンロード
       - name: Download data from private GCS
         if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
         run: |
@@ -122,7 +111,73 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # データが存在する（キャッシュヒットした、またはDependabot以外でDLされた）場合のみテストを実行
       - name: Run Vitest
         if: steps.cache.outputs.cache-hit == 'true' || github.actor != 'dependabot[bot]'
         run: npm run test
+
+  # ===================================================
+  # [Backend] Go 環境のジョブ
+  # ===================================================
+  go-lint:
+    name: Run golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+          working-directory: split-pass-api
+
+  go-test:
+    name: Run Go Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Create data directories
+        run: |
+          mkdir -p src/data
+
+      - name: Cache data
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            src/data/routes.json
+          key: kippu-navi-routes-data-v20260526-${{ hashFiles('.github/workflows/test.yml') }}
+
+      - name: Authenticate to Google Cloud
+        if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Set up Cloud SDK
+        if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Download data from private GCS
+        if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
+        run: |
+          gsutil -m cp gs://kippu-navi-build-secrets/data/routes.json ./src/data/
+
+      - name: Run Go Test
+        working-directory: split-pass-api
+        run: go test -v -race ./...
