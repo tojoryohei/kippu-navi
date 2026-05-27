@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.20.0...kippu-navi-v1.21.0) (2026-05-27)
+
+
+### Features
+
+* 駅グラフ構築とDijkstra法による最短経路探索の実装 ([#178](https://github.com/tojoryohei/kippu-navi/issues/178)) ([b32385b](https://github.com/tojoryohei/kippu-navi/commit/b32385b98f62dc49f6a91824f908e20d44bad245))
+
 ## [1.20.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.19.0...kippu-navi-v1.20.0) (2026-05-26)
 
 
