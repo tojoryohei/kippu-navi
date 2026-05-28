@@ -25,33 +25,3 @@ func (d DeciKilo) ToCeiledKm() (int, error) {
 
 	return (int(d) + 9) / 10, nil
 }
-
-// CompanyID は鉄道会社ID
-type CompanyID int
-
-// 会社IDの定数
-const (
-	Other CompanyID = iota
-	JRHokkaido
-	JREast
-	JRCentral
-	JRWest
-	JRShikoku
-	JRKyushu
-)
-
-// Station は駅データです
-type Station struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-// Edge は駅間データです
-type Edge struct {
-	FromID    int
-	ToID      int
-	EigyoKilo DeciKilo
-	GiseiKilo DeciKilo
-	IsLocal   bool
-	Company   CompanyID
-}
