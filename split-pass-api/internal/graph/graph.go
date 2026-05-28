@@ -1,8 +1,6 @@
 package graph
 
 import (
-	"encoding/gob"
-	"os"
 	"split-pass-api/internal/domain"
 )
 
@@ -29,34 +27,6 @@ func NewGraph(numStations int) *Graph {
 		FastGraph:           NewFastGraph(numStations),
 		StationNameIDMapper: NewStationNameIDMapper(),
 	}
-}
-
-// SaveBinary はグラフ全体をバイナリ形式で保存します。
-func (g *Graph) SaveBinary(path string) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := gob.NewEncoder(file)
-	return encoder.Encode(g)
-}
-
-// LoadGraphBinary はバイナリ形式からグラフを読み込みます。
-func LoadGraphBinary(path string) (*Graph, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var g Graph
-	decoder := gob.NewDecoder(file)
-	if err := decoder.Decode(&g); err != nil {
-		return nil, err
-	}
-	return &g, nil
 }
 
 // NewFastGraph は指定された駅数の容量を持つ新しい FastGraph インスタンスを作成します。
