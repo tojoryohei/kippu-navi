@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"split-pass-api/internal/domain"
 )
 
 //go:embed data/hokkaidoTrunkFares.json
@@ -13,11 +14,11 @@ var hokkaidoTrunkFaresJSON []byte
 var hokkaidoLocalFaresJSON []byte
 
 func NewHokkaidoCalculator() (*HokkaidoCalculator, error) {
-	var hokkaidoTrunkFares [101]PassFare
+	var hokkaidoTrunkFares [101]domain.PassFare
 	if err := json.Unmarshal(hokkaidoTrunkFaresJSON, &hokkaidoTrunkFares); err != nil {
 		return nil, fmt.Errorf("hokkaidoTrunkFaresの読み込みに失敗しました: %w", err)
 	}
-	var hokkaidoLocalFares [101]PassFare
+	var hokkaidoLocalFares [101]domain.PassFare
 	if err := json.Unmarshal(hokkaidoLocalFaresJSON, &hokkaidoLocalFares); err != nil {
 		return nil, fmt.Errorf("hokkaidoLocalFaresの読み込みに失敗しました: %w", err)
 	}
@@ -25,10 +26,10 @@ func NewHokkaidoCalculator() (*HokkaidoCalculator, error) {
 }
 
 type HokkaidoCalculator struct {
-	trunkFares [101]PassFare
-	localFares [101]PassFare
+	trunkFares [101]domain.PassFare
+	localFares [101]domain.PassFare
 }
 
-func (c *HokkaidoCalculator) Calculate(params PassFareParams) (int, error) {
+func (c *HokkaidoCalculator) Calculate(params domain.PassFareParams) (int, error) {
 	return calculateBaseFare(params, &c.trunkFares, &c.localFares)
 }
