@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.21.1...kippu-navi-v1.22.0) (2026-05-28)
+
+
+### Features
+
+* 電車特定区間運賃およびバリアフリー料金の計算機能を追加 ([#196](https://github.com/tojoryohei/kippu-navi/issues/196)) ([09a782a](https://github.com/tojoryohei/kippu-navi/commit/09a782a51df44cf74e308ff450f807822da2690e))
+
 ## [1.21.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.21.0...kippu-navi-v1.21.1) (2026-05-28)
 
 
