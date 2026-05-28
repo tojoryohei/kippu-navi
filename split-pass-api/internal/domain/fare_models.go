@@ -5,6 +5,11 @@ import (
 	"fmt"
 )
 
+var (
+	// ErrInvalidMonths は不正な月数が指定された場合のエラーです。
+	ErrInvalidMonths = errors.New("不正な月数です（1, 3, 6のいずれかを指定してください）")
+)
+
 // RouteType は路線の種別（幹線、地方交通線など）を表します。
 type RouteType int
 
@@ -45,7 +50,7 @@ func (f PassFare) GetByMonths(months int) (int, error) {
 	case 6:
 		return f.SixMonth, nil
 	default:
-		return 0, fmt.Errorf("fare: 不正な月数です: %d", months)
+		return 0, fmt.Errorf("domain: %w: %d", ErrInvalidMonths, months)
 	}
 }
 

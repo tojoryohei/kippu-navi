@@ -146,7 +146,7 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 				Months:    4,
 			},
 			wantErr:   true,
-			wantErrIs: fare.ErrInvalidMonths,
+			wantErrIs: domain.ErrInvalidMonths,
 		},
 		{
 			name: "不正なRouteType",

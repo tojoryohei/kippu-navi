@@ -10,7 +10,6 @@ var (
 	ErrInvalidRouteType = errors.New("不正なRouteTypeです")
 	ErrInvalidTable     = errors.New("運賃表が不正です")
 	ErrInvalidKilo      = errors.New("営業キロまたは運賃計算キロが0以下です")
-	ErrInvalidMonths    = errors.New("不正な月数です（1, 3, 6のいずれかを指定してください）")
 )
 
 // calculateBaseFare は、幹線と地方交通線の運賃表を使い分ける本州・北海道向けの運賃計算ロジックです。
@@ -104,6 +103,6 @@ func calculateFromTable(targetKm int, months int, table *[101]domain.PassFare) (
 	case 6:
 		return (baseFare.SixMonth * hundredsKm) + remFare.SixMonth, nil
 	default:
-		return 0, fmt.Errorf("calculateFromTable: %w", ErrInvalidMonths)
+		return 0, fmt.Errorf("calculateFromTable: %w", domain.ErrInvalidMonths)
 	}
 }
