@@ -20,7 +20,7 @@ type DeciKilo int
 //	 1 -> 1
 func (d DeciKilo) ToCeiledKm() (int, error) {
 	if d < 0 {
-		return 0, fmt.Errorf("types: %w", ErrNegativeDistance)
+		return 0, fmt.Errorf("domain: %w", ErrNegativeDistance)
 	}
 
 	return (int(d) + 9) / 10, nil
