@@ -11,9 +11,9 @@ import (
 
 // PathResult は経路探索の結果を保持します。
 type PathResult struct {
-	Stations  []string
-	GiseiKilo domain.DeciKilo
-	EigyoKilo domain.DeciKilo
+	StationIDs []int
+	GiseiKilo  domain.DeciKilo
+	EigyoKilo  domain.DeciKilo
 }
 
 // node はダイクストラ法で用いる優先度付きキューの要素です。
@@ -50,14 +50,12 @@ func (pq *priorityQueue) Pop() interface{} {
 }
 
 // FindShortestPathGisei はダイクストラ法を用いて最短擬制キロ経路を検索します。
-func (g *Graph) FindShortestPathGisei(startName, endName string) (*PathResult, error) {
-	startID, ok := g.NameToID[startName]
-	if !ok {
-		return nil, fmt.Errorf("開始駅が見つかりません: %s", startName)
+func (g *Graph) FindShortestPathGisei(startID, endID int) (*PathResult, error) {
+	if startID < 0 || startID >= len(g.IDToName) {
+		return nil, fmt.Errorf("開始駅が見つかりません: ID %d", startID)
 	}
-	endID, ok := g.NameToID[endName]
-	if !ok {
-		return nil, fmt.Errorf("目的駅が見つかりません: %s", endName)
+	if endID < 0 || endID >= len(g.IDToName) {
+		return nil, fmt.Errorf("目的駅が見つかりません: ID %d", endID)
 	}
 
 	numStations := len(g.IDToName)
@@ -100,28 +98,26 @@ func (g *Graph) FindShortestPathGisei(startName, endName string) (*PathResult, e
 	}
 
 	// 経路の復元
-	path := []string{}
+	path := []int{}
 	for i := endID; i != -1; i = prev[i] {
-		path = append([]string{g.GetName(i)}, path...)
+		path = append([]int{i}, path...)
 	}
 
 	return &PathResult{
-		Stations:  path,
-		GiseiKilo: dist[endID],
-		EigyoKilo: eigyoDist[endID],
+		StationIDs: path,
+		GiseiKilo:  dist[endID],
+		EigyoKilo:  eigyoDist[endID],
 	}, nil
 }
 
 // FindAllCandidatePaths は指定された最短擬制キロ以内に収まる全ての合理的な経路を探索します。
 // これにより、分割購入で安くなる可能性がある経路を網羅します。
-func (g *Graph) FindAllCandidatePaths(startName, endName string, maxGisei domain.DeciKilo) ([]*PathResult, error) {
-	startID, ok := g.NameToID[startName]
-	if !ok {
-		return nil, fmt.Errorf("開始駅が見つかりません: %s", startName)
+func (g *Graph) FindAllCandidatePaths(startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
+	if startID < 0 || startID >= len(g.IDToName) {
+		return nil, fmt.Errorf("開始駅が見つかりません: ID %d", startID)
 	}
-	endID, ok := g.NameToID[endName]
-	if !ok {
-		return nil, fmt.Errorf("目的駅が見つかりません: %s", endName)
+	if endID < 0 || endID >= len(g.IDToName) {
+		return nil, fmt.Errorf("目的駅が見つかりません: ID %d", endID)
 	}
 
 	var results []*PathResult
@@ -135,14 +131,12 @@ func (g *Graph) FindAllCandidatePaths(startName, endName string, maxGisei domain
 	dfs = func(currID int, currGisei, currEigyo domain.DeciKilo) {
 		// 目的地に到達
 		if currID == endID {
-			pathNames := make([]string, len(currentPath))
-			for i, id := range currentPath {
-				pathNames[i] = g.GetName(id)
-			}
+			pathIDs := make([]int, len(currentPath))
+			copy(pathIDs, currentPath)
 			results = append(results, &PathResult{
-				Stations:  pathNames,
-				GiseiKilo: currGisei,
-				EigyoKilo: currEigyo,
+				StationIDs: pathIDs,
+				GiseiKilo:  currGisei,
+				EigyoKilo:  currEigyo,
 			})
 			return
 		}
@@ -177,6 +171,7 @@ func (g *Graph) FindAllCandidatePaths(startName, endName string, maxGisei domain
 
 	return results, nil
 }
+
 
 // LoadFromJSON は JSON ファイルからグラフを読み込みます。
 func (g *Graph) LoadFromJSON(path string) error {

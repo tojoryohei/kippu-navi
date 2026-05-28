@@ -11,15 +11,18 @@ import (
 func TestFindShortestPathGisei(t *testing.T) {
 	g := graph.NewGraph(10)
 
+	startID := g.GetOrAddID("A")
+	midID := g.GetOrAddID("B")
+	endID := g.GetOrAddID("C")
+
 	// テストデータの構築
 	// A --(10km)--> B --(20km)--> C
 	// A --(40km)----------------> C
-	g.AddEdge(domain.Edge{FromID: g.GetOrAddID("A"), ToID: g.GetOrAddID("B"), GiseiKilo: 100, EigyoKilo: 100})
-	g.AddEdge(domain.Edge{FromID: g.GetOrAddID("B"), ToID: g.GetOrAddID("C"), GiseiKilo: 200, EigyoKilo: 200})
-	g.AddEdge(domain.Edge{FromID: g.GetOrAddID("A"), ToID: g.GetOrAddID("C"), GiseiKilo: 400, EigyoKilo: 400})
+	g.AddEdge(domain.Edge{FromID: startID, ToID: midID, GiseiKilo: 100, EigyoKilo: 100})
+	g.AddEdge(domain.Edge{FromID: midID, ToID: endID, GiseiKilo: 200, EigyoKilo: 200})
+	g.AddEdge(domain.Edge{FromID: startID, ToID: endID, GiseiKilo: 400, EigyoKilo: 400})
 
-	// ダイクストラのテスト
-	res, err := g.FindShortestPathGisei("A", "C")
+	res, err := g.FindShortestPathGisei(startID, endID)
 	if err != nil {
 		t.Fatalf("経路探索に失敗しました: %v", err)
 	}
@@ -28,22 +31,30 @@ func TestFindShortestPathGisei(t *testing.T) {
 		t.Errorf("最短距離が不正です: got %v, want 300", res.GiseiKilo)
 	}
 
-	expectedPath := []string{"A", "B", "C"}
-	if len(res.Stations) != len(expectedPath) {
-		t.Fatalf("経路の長さが不正です: got %d, want %d", len(res.Stations), len(expectedPath))
+	expectedPath := []int{startID, midID, endID}
+	if len(res.StationIDs) != len(expectedPath) {
+		t.Fatalf("経路の長さが不正です: got %d, want %d", len(res.StationIDs), len(expectedPath))
 	}
-	for i, s := range res.Stations {
-		if s != expectedPath[i] {
-			t.Errorf("経路が不正です [%d]: got %s, want %s", i, s, expectedPath[i])
+	for i, id := range res.StationIDs {
+		if id != expectedPath[i] {
+			t.Errorf("経路が不正です [%d]: got %v, want %v", i, id, expectedPath[i])
 		}
 	}
 }
 
 func TestSaveAndLoadBinary(t *testing.T) {
 	g := graph.NewGraph(10)
-	g.AddEdge(domain.Edge{FromID: g.GetOrAddID("A"), ToID: g.GetOrAddID("B"), GiseiKilo: 100, EigyoKilo: 100})
-	g.AddEdge(domain.Edge{FromID: g.GetOrAddID("B"), ToID: g.GetOrAddID("C"), GiseiKilo: 200, EigyoKilo: 200})
-	g.AddEdge(domain.Edge{FromID: g.GetOrAddID("A"), ToID: g.GetOrAddID("C"), GiseiKilo: 400, EigyoKilo: 400})
+
+	startID := g.GetOrAddID("A")
+	midID := g.GetOrAddID("B")
+	endID := g.GetOrAddID("C")
+
+	// テストデータの構築
+	// A --(10km)--> B --(20km)--> C
+	// A --(40km)----------------> C
+	g.AddEdge(domain.Edge{FromID: startID, ToID: midID, GiseiKilo: 100, EigyoKilo: 100})
+	g.AddEdge(domain.Edge{FromID: midID, ToID: endID, GiseiKilo: 200, EigyoKilo: 200})
+	g.AddEdge(domain.Edge{FromID: startID, ToID: endID, GiseiKilo: 400, EigyoKilo: 400})
 
 	// シリアライズのテスト
 	tmpFile := "test_graph.gob"
@@ -59,7 +70,7 @@ func TestSaveAndLoadBinary(t *testing.T) {
 	}
 
 	// 読み込んだグラフで再度テスト
-	res2, err := g2.FindShortestPathGisei("A", "C")
+	res2, err := g2.FindShortestPathGisei(g2.GetOrAddID("A"), g2.GetOrAddID("C"))
 	if err != nil {
 		t.Fatalf("読み込み後の経路探索に失敗しました: %v", err)
 	}
@@ -68,20 +79,21 @@ func TestSaveAndLoadBinary(t *testing.T) {
 		t.Errorf("読み込み後の最短距離が不正です: got %v, want 300", res2.GiseiKilo)
 	}
 }
-
 func TestFindAllCandidatePaths(t *testing.T) {
 	g := graph.NewGraph(10)
+
+	startID := g.GetOrAddID("A")
+	midID := g.GetOrAddID("B")
+	endID := g.GetOrAddID("C")
 
 	// テストデータの構築
 	// A --(10km)--> B --(20km)--> C
 	// A --(40km)----------------> C
-	g.AddEdge(domain.Edge{FromID: g.GetOrAddID("A"), ToID: g.GetOrAddID("B"), GiseiKilo: 100, EigyoKilo: 100})
-	g.AddEdge(domain.Edge{FromID: g.GetOrAddID("B"), ToID: g.GetOrAddID("C"), GiseiKilo: 200, EigyoKilo: 200})
-	g.AddEdge(domain.Edge{FromID: g.GetOrAddID("A"), ToID: g.GetOrAddID("C"), GiseiKilo: 400, EigyoKilo: 400})
+	g.AddEdge(domain.Edge{FromID: startID, ToID: midID, GiseiKilo: 100, EigyoKilo: 100})
+	g.AddEdge(domain.Edge{FromID: midID, ToID: endID, GiseiKilo: 200, EigyoKilo: 200})
+	g.AddEdge(domain.Edge{FromID: startID, ToID: endID, GiseiKilo: 400, EigyoKilo: 400})
 
-	// 候補経路探索のテスト (maxGisei = 400)
-	// A-B-C (300) と A-C (400) が見つかるはず
-	allPaths, err := g.FindAllCandidatePaths("A", "C", 400)
+	allPaths, err := g.FindAllCandidatePaths(startID, endID, 400)
 	if err != nil {
 		t.Fatalf("候補経路探索に失敗しました: %v", err)
 	}
