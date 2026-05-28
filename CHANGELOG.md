@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.21.0...kippu-navi-v1.21.1) (2026-05-28)
+
+
+### Performance Improvements
+
+* 運賃計算の経路入力を駅名(string)から駅ID(int)に変更 ([#185](https://github.com/tojoryohei/kippu-navi/issues/185)) ([184ebb5](https://github.com/tojoryohei/kippu-navi/commit/184ebb504a5bc9b92f76f343cc4bd3b2deda1c38))
+
 ## [1.21.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.20.0...kippu-navi-v1.21.0) (2026-05-27)
 
 
