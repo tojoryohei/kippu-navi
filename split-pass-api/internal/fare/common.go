@@ -13,8 +13,6 @@ var (
 )
 
 // calculateBaseFare は、幹線と地方交通線の運賃表を使い分ける本州・北海道向けの運賃計算ロジックです。
-//
-//nolint:unused
 func calculateBaseFare(params PassFareParams, trunkTable, localTable *[101]PassFare) (int, error) {
 	var targetKm int
 	var useTrunkTable bool
@@ -72,8 +70,6 @@ func calculateBaseFare(params PassFareParams, trunkTable, localTable *[101]PassF
 }
 
 // calculateSingleTableFare は、常に擬制キロを使用し単一の運賃表を用いる九州・四国向けの運賃計算ロジックです。
-//
-//nolint:unused
 func calculateSingleTableFare(params PassFareParams, table *[101]PassFare) (int, error) {
 	targetKm, err := params.GiseiKilo.ToCeiledKm()
 	if err != nil {
@@ -83,8 +79,6 @@ func calculateSingleTableFare(params PassFareParams, table *[101]PassFare) (int,
 }
 
 // calculateFromTable は運賃表（100kmごとに折り返し）から月数に応じた運賃を抽出する純粋な計算処理です。
-//
-//nolint:unused
 func calculateFromTable(targetKm int, months int, table *[101]PassFare) (int, error) {
 	if table == nil {
 		return 0, fmt.Errorf("calculateFromTable: %w", ErrInvalidTable)
