@@ -24,12 +24,14 @@ func (l *JSONLoader) Load(path string) (*graph.Graph, error) {
 	defer file.Close()
 
 	type rawEdge struct {
-		Station0  string           `json:"station0"`
-		Station1  string           `json:"station1"`
-		EigyoKilo domain.DeciKilo  `json:"eigyoKilo"`
-		GiseiKilo domain.DeciKilo  `json:"giseiKilo"`
-		IsLocal   bool             `json:"isLocal"`
-		Company   domain.CompanyID `json:"company"`
+		Station0               string           `json:"station0"`
+		Station1               string           `json:"station1"`
+		EigyoKilo              domain.DeciKilo  `json:"eigyoKilo"`
+		GiseiKilo              domain.DeciKilo  `json:"giseiKilo"`
+		IsLocal                bool             `json:"isLocal"`
+		Company                domain.CompanyID `json:"company"`
+		IsTrainSpecificSection bool             `json:"isTrainSpecificSection"`
+		IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
 	}
 
 	var edges []rawEdge
@@ -50,20 +52,24 @@ func (l *JSONLoader) Load(path string) (*graph.Graph, error) {
 
 		// 双方向エッジとして追加（鉄道網は通常双方向）
 		g.AddEdge(domain.Edge{
-			FromID:    id0,
-			ToID:      id1,
-			EigyoKilo: re.EigyoKilo,
-			GiseiKilo: re.GiseiKilo,
-			IsLocal:   re.IsLocal,
-			Company:   re.Company,
+			FromID:                 id0,
+			ToID:                   id1,
+			EigyoKilo:              re.EigyoKilo,
+			GiseiKilo:              re.GiseiKilo,
+			IsLocal:                re.IsLocal,
+			Company:                re.Company,
+			IsTrainSpecificSection: re.IsTrainSpecificSection,
+			IsBarrierFreeSection:   re.IsBarrierFreeSection,
 		})
 		g.AddEdge(domain.Edge{
-			FromID:    id1,
-			ToID:      id0,
-			EigyoKilo: re.EigyoKilo,
-			GiseiKilo: re.GiseiKilo,
-			IsLocal:   re.IsLocal,
-			Company:   re.Company,
+			FromID:                 id1,
+			ToID:                   id0,
+			EigyoKilo:              re.EigyoKilo,
+			GiseiKilo:              re.GiseiKilo,
+			IsLocal:                re.IsLocal,
+			Company:                re.Company,
+			IsTrainSpecificSection: re.IsTrainSpecificSection,
+			IsBarrierFreeSection:   re.IsBarrierFreeSection,
 		})
 	}
 

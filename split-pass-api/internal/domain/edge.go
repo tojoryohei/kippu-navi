@@ -8,4 +8,6 @@ type Edge struct {
 	GiseiKilo DeciKilo
 	IsLocal   bool
 	Company   CompanyID
+	IsTrainSpecificSection bool
+	IsBarrierFreeSection   bool
 }
