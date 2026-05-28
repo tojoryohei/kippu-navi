@@ -15,11 +15,11 @@ var eastLocalFaresJSON []byte
 func NewEastCalculator() (*EastCalculator, error) {
 	var eastTrunkFares [101]PassFare
 	if err := json.Unmarshal(eastTrunkFaresJSON, &eastTrunkFares); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal eastTrunkFares: %w", err)
+		return nil, fmt.Errorf("eastTrunkFaresの読み込みに失敗しました: %w", err)
 	}
 	var eastLocalFares [101]PassFare
 	if err := json.Unmarshal(eastLocalFaresJSON, &eastLocalFares); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal eastLocalFares: %w", err)
+		return nil, fmt.Errorf("eastLocalFaresの読み込みに失敗しました: %w", err)
 	}
 	return &EastCalculator{trunkFares: eastTrunkFares, localFares: eastLocalFares}, nil
 }

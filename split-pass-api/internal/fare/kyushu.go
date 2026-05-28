@@ -17,7 +17,7 @@ var errNoSpecialFare = errors.New("九州の特定定期運賃の適用対象外
 func NewKyushuCalculator() (*KyushuCalculator, error) {
 	var kyushuFares [101]PassFare
 	if err := json.Unmarshal(kyushuFaresJSON, &kyushuFares); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal kyushuFares: %w", err)
+		return nil, fmt.Errorf("kyushuFaresの読み込みに失敗しました: %w", err)
 	}
 	return &KyushuCalculator{fares: kyushuFares}, nil
 }

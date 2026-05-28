@@ -10,11 +10,9 @@ import (
 var shikokuFaresJSON []byte
 
 func NewShikokuCalculator() (*ShikokuCalculator, error) {
-	var err error
 	var shikokuFares [101]PassFare
-	err = json.Unmarshal(shikokuFaresJSON, &shikokuFares)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal shikokuFares: %w", err)
+	if err := json.Unmarshal(shikokuFaresJSON, &shikokuFares); err != nil {
+		return nil, fmt.Errorf("shikokuFaresの読み込みに失敗しました: %w", err)
 	}
 	return &ShikokuCalculator{fares: shikokuFares}, nil
 }
