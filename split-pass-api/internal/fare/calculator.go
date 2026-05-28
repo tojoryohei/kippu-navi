@@ -10,7 +10,7 @@ var ErrCalculatorNotFound = errors.New("指定された会社のCalculatorが見
 
 // Calculator は各社の定期運賃を計算するインターフェースです
 type Calculator interface {
-	Calculate(params PassFareParams) (int, error)
+	Calculate(params domain.PassFareParams) (int, error)
 }
 
 // Registry は会社IDとCalculatorの対応を管理します。
