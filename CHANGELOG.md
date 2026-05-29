@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.1...kippu-navi-v1.22.2) (2026-05-29)
+
+
+### Bug Fixes
+
+* トップへ戻るボタンの描画パフォーマンス向上およびフッター干渉回避の構造改善 ([#202](https://github.com/tojoryohei/kippu-navi/issues/202)) ([2d2a7d6](https://github.com/tojoryohei/kippu-navi/commit/2d2a7d6bd710341317a38fded1871118df58a245))
+
 ## [1.22.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.0...kippu-navi-v1.22.1) (2026-05-29)
 
 
