@@ -3,13 +3,14 @@ package fare_test
 import (
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
+	"split-pass-api/internal/infra/fareio"
 	"testing"
 )
 
 func TestTrainSpecificSectionsCalculator_Calculate(t *testing.T) {
-	calc, err := fare.NewTrainSpecificSectionCalculator()
+	_, calc, err := fareio.InitRegistry()
 	if err != nil {
-		t.Fatalf("NewTrainSpecificSectionsCalculator() err = %v", err)
+		t.Fatalf("TrainSpecificSectionCalculatorの初期化に失敗しました: %v", err)
 	}
 
 	tests := []struct {

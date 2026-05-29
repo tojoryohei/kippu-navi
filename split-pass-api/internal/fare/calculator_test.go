@@ -6,6 +6,7 @@ import (
 
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
+	"split-pass-api/internal/infra/fareio"
 )
 
 // ────────────────────────────────────────────────────────────
@@ -13,7 +14,7 @@ import (
 // ────────────────────────────────────────────────────────────
 
 func TestInitRegistry(t *testing.T) {
-	reg, err := fare.InitRegistry()
+	reg, _, err := fareio.InitRegistry()
 	if err != nil {
 		t.Fatalf("InitRegistry()の初期化に失敗しました: %v", err)
 	}
@@ -41,9 +42,13 @@ func TestInitRegistry(t *testing.T) {
 // ────────────────────────────────────────────────────────────
 
 func TestStandardCalculator_Calculate(t *testing.T) {
-	calc, err := fare.NewStandardCalculator()
+	reg, _, err := fareio.InitRegistry()
 	if err != nil {
-		t.Fatalf("StandardCalculatorの初期化に失敗しました: %v", err)
+		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
+	}
+	calc, err := reg.Get(domain.JRCentral)
+	if err != nil {
+		t.Fatalf("StandardCalculatorの取得に失敗しました: %v", err)
 	}
 
 	tests := []calcTestCase{
@@ -169,7 +174,11 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 // ────────────────────────────────────────────────────────────
 
 func TestHokkaidoCalculator_Calculate(t *testing.T) {
-	calc, err := fare.NewHokkaidoCalculator()
+	reg, _, err := fareio.InitRegistry()
+	if err != nil {
+		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
+	}
+	calc, err := reg.Get(domain.JRHokkaido)
 	if err != nil {
 		t.Fatalf("HokkaidoCalculatorの初期化に失敗しました: %v", err)
 	}
@@ -205,9 +214,13 @@ func TestHokkaidoCalculator_Calculate(t *testing.T) {
 // ────────────────────────────────────────────────────────────
 
 func TestEastCalculator_Calculate(t *testing.T) {
-	calc, err := fare.NewEastCalculator()
+	reg, _, err := fareio.InitRegistry()
 	if err != nil {
-		t.Fatalf("EastCalculatorの初期化に失敗しました: %v", err)
+		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
+	}
+	calc, err := reg.Get(domain.JREast)
+	if err != nil {
+		t.Fatalf("EastCalculatorの取得に失敗しました: %v", err)
 	}
 
 	tests := []calcTestCase{
@@ -241,7 +254,11 @@ func TestEastCalculator_Calculate(t *testing.T) {
 // ────────────────────────────────────────────────────────────
 
 func TestShikokuCalculator_Calculate(t *testing.T) {
-	calc, err := fare.NewShikokuCalculator()
+	reg, _, err := fareio.InitRegistry()
+	if err != nil {
+		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
+	}
+	calc, err := reg.Get(domain.JRShikoku)
 	if err != nil {
 		t.Fatalf("ShikokuCalculatorの初期化に失敗しました: %v", err)
 	}
@@ -323,9 +340,13 @@ func TestShikokuCalculator_Calculate(t *testing.T) {
 // ────────────────────────────────────────────────────────────
 
 func TestKyushuCalculator_Calculate(t *testing.T) {
-	calc, err := fare.NewKyushuCalculator()
+	reg, _, err := fareio.InitRegistry()
 	if err != nil {
-		t.Fatalf("KyushuCalculatorの初期化に失敗しました: %v", err)
+		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
+	}
+	calc, err := reg.Get(domain.JRKyushu)
+	if err != nil {
+		t.Fatalf("KyushuCalculatorの取得に失敗しました: %v", err)
 	}
 
 	tests := []calcTestCase{

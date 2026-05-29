@@ -1,14 +1,9 @@
 package fare
 
 import (
-	_ "embed"
-	"encoding/json"
 	"fmt"
 	"split-pass-api/internal/domain"
 )
-
-//go:embed data/trainSpecificSectionFares.json
-var trainSpecificSectionFaresJSON []byte
 
 // IsTrainSpecificApplicable は指定された全区間が電車特定区間に収まっているかを判定します。
 func IsTrainSpecificApplicable(edges []*domain.Edge) bool {
@@ -16,7 +11,7 @@ func IsTrainSpecificApplicable(edges []*domain.Edge) bool {
 		return false
 	}
 	for _, e := range edges {
-		if !e.IsTrainSpecificSection {
+		if e == nil || !e.IsTrainSpecificSection {
 			return false
 		}
 	}
@@ -28,13 +23,9 @@ type TrainSpecificSectionCalculator struct {
 	fares [101]domain.PassFare
 }
 
-// NewTrainSpecificSectionCalculator はJSONからデータを読み込み計算機を初期化します。
-func NewTrainSpecificSectionCalculator() (*TrainSpecificSectionCalculator, error) {
-	c := &TrainSpecificSectionCalculator{}
-	if err := json.Unmarshal(trainSpecificSectionFaresJSON, &c.fares); err != nil {
-		return nil, fmt.Errorf("電車特定区間の運賃データの読み込みに失敗しました: %w", err)
-	}
-	return c, nil
+// NewTrainSpecificSectionCalculator は運賃データを受け取り、計算機を初期化します。
+func NewTrainSpecificSectionCalculator(fares [101]domain.PassFare) *TrainSpecificSectionCalculator {
+	return &TrainSpecificSectionCalculator{fares: fares}
 }
 
 // Calculate は電車特定区間の運賃を計算します。

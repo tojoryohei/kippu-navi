@@ -39,39 +39,3 @@ func (r *Registry) Get(id domain.CompanyID) (Calculator, error) {
 	}
 	return calc, nil
 }
-
-// calculatorEntry は会社IDとそのファクトリ関数のペアです
-type calculatorEntry struct {
-	id      domain.CompanyID
-	factory func() (Calculator, error)
-}
-
-// InitRegistry は全ての運賃計算機を初期化した Registry を返します。
-// いずれか1つでも初期化に失敗した場合は、登録を一切行わずエラーを返します。
-func InitRegistry() (*Registry, error) {
-	entries := []calculatorEntry{
-		{domain.JRHokkaido, func() (Calculator, error) { return NewHokkaidoCalculator() }},
-		{domain.JREast, func() (Calculator, error) { return NewEastCalculator() }},
-		{domain.JRCentral, func() (Calculator, error) { return NewStandardCalculator() }},
-		{domain.JRWest, func() (Calculator, error) { return NewStandardCalculator() }},
-		{domain.JRShikoku, func() (Calculator, error) { return NewShikokuCalculator() }},
-		{domain.JRKyushu, func() (Calculator, error) { return NewKyushuCalculator() }},
-	}
-
-	// 全社の初期化を先に試みる。1つでも失敗したら即座に中断し、
-	// 部分的な登録が残らないようにする。
-	built := make(map[domain.CompanyID]Calculator, len(entries))
-	for _, e := range entries {
-		calc, err := e.factory()
-		if err != nil {
-			return nil, fmt.Errorf("fare: calculatorの初期化に失敗しました。 companyID=%d: %w", e.id, err)
-		}
-		built[e.id] = calc
-	}
-
-	reg := NewRegistry()
-	for id, calc := range built {
-		reg.Register(id, calc)
-	}
-	return reg, nil
-}

@@ -1,26 +1,17 @@
 package fare
 
 import (
-	_ "embed"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"split-pass-api/internal/domain"
 )
 
-//go:embed data/kyushuFares.json
-var kyushuFaresJSON []byte
-
 // errNoSpecialFare は九州の特定定期運賃の適用対象外であることを示すセンチネルエラーです。
 // 外部には公開せず、getKyushuSpecificFare と Calculate の間でのみ使います。
 var errNoSpecialFare = errors.New("九州の特定定期運賃の適用対象外")
 
-func NewKyushuCalculator() (*KyushuCalculator, error) {
-	var kyushuFares [101]domain.PassFare
-	if err := json.Unmarshal(kyushuFaresJSON, &kyushuFares); err != nil {
-		return nil, fmt.Errorf("kyushuFaresの読み込みに失敗しました: %w", err)
-	}
-	return &KyushuCalculator{fares: kyushuFares}, nil
+func NewKyushuCalculator(fares [101]domain.PassFare) *KyushuCalculator {
+	return &KyushuCalculator{fares: fares}
 }
 
 // getKyushuSpecificFare は九州の特定定期運賃を返します。

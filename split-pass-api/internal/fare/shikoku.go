@@ -1,21 +1,11 @@
 package fare
 
 import (
-	_ "embed"
-	"encoding/json"
-	"fmt"
 	"split-pass-api/internal/domain"
 )
 
-//go:embed data/shikokuFares.json
-var shikokuFaresJSON []byte
-
-func NewShikokuCalculator() (*ShikokuCalculator, error) {
-	var shikokuFares [101]domain.PassFare
-	if err := json.Unmarshal(shikokuFaresJSON, &shikokuFares); err != nil {
-		return nil, fmt.Errorf("shikokuFaresの読み込みに失敗しました: %w", err)
-	}
-	return &ShikokuCalculator{fares: shikokuFares}, nil
+func NewShikokuCalculator(fares [101]domain.PassFare) *ShikokuCalculator {
+	return &ShikokuCalculator{fares: fares}
 }
 
 type ShikokuCalculator struct {
