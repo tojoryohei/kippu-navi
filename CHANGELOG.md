@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.0...kippu-navi-v1.22.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* トップへ戻るボタンのモバイル表示位置の修正およびコンポーネントの最適化 ([#199](https://github.com/tojoryohei/kippu-navi/issues/199)) ([8412a4e](https://github.com/tojoryohei/kippu-navi/commit/8412a4e5cb9702983ed0ecb733cb3fd6a74e534d))
+
 ## [1.22.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.21.1...kippu-navi-v1.22.0) (2026-05-28)
 
 
