@@ -20,13 +20,14 @@ export default function ScrollToTopButton() {
     }, []);
 
     const scrollToTop = () => {
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth",
-        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     return (
+        <div
+            ref={wrapperRef}
+            className="fixed right-4 sm:right-8 bottom-8 z-50 pointer-events-none"
+        >
         <button
             type="button"
             onClick={scrollToTop}
@@ -42,5 +43,6 @@ export default function ScrollToTopButton() {
         >
             <HiArrowUp className="text-xl" />
         </button>
+        </div>
     );
 }
