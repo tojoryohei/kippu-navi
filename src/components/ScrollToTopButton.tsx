@@ -33,7 +33,7 @@ export default function ScrollToTopButton() {
             onClick={scrollToTop}
             aria-label="ページの上部へ戻る"
             className={`
-                fixed right-4 bottom-20 sm:right-8 sm:bottom-8 z-50
+                fixed right-4 bottom-8 sm:right-8 sm:bottom-8 z-50
                 flex items-center justify-center w-12 h-12 
                 bg-blue-600 backdrop-blur-sm text-white rounded-full shadow-md 
                 hover:bg-blue-600 hover:scale-105 active:scale-95
