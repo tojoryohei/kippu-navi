@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { HiArrowUp } from "react-icons/hi";
-import { animateScroll as scroll } from "react-scroll";
 
 export default function ScrollToTopButton() {
     const [showScrollTop, setShowScrollTop] = useState(false);
@@ -21,9 +20,9 @@ export default function ScrollToTopButton() {
     }, []);
 
     const scrollToTop = () => {
-        scroll.scrollToTop({
-            duration: 500,
-            smooth: "easeInOutQuad",
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
         });
     };
 
