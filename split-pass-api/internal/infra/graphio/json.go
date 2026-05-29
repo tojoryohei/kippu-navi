@@ -14,6 +14,17 @@ var ErrEmptyEdges = errors.New("エッジデータが空です")
 // JSONLoader は JSON ファイルからグラフをロードします。
 type JSONLoader struct{}
 
+type rawEdge struct {
+	Station0               string           `json:"station0"`
+	Station1               string           `json:"station1"`
+	EigyoKilo              domain.DeciKilo  `json:"eigyoKilo"`
+	GiseiKilo              domain.DeciKilo  `json:"giseiKilo"`
+	IsLocal                bool             `json:"isLocal"`
+	Company                domain.CompanyID `json:"company"`
+	IsTrainSpecificSection bool             `json:"isTrainSpecificSection"`
+	IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
+}
+
 // Load は JSON ファイルを読み込み、新しい Graph を構築して返します。
 // ファイルが空またはエッジが0件の場合はエラーを返します。
 func (l *JSONLoader) Load(path string) (*graph.Graph, error) {
@@ -22,17 +33,6 @@ func (l *JSONLoader) Load(path string) (*graph.Graph, error) {
 		return nil, fmt.Errorf("graphio: JSONファイルのオープンに失敗しました: %w", err)
 	}
 	defer file.Close()
-
-	type rawEdge struct {
-		Station0               string           `json:"station0"`
-		Station1               string           `json:"station1"`
-		EigyoKilo              domain.DeciKilo  `json:"eigyoKilo"`
-		GiseiKilo              domain.DeciKilo  `json:"giseiKilo"`
-		IsLocal                bool             `json:"isLocal"`
-		Company                domain.CompanyID `json:"company"`
-		IsTrainSpecificSection bool             `json:"isTrainSpecificSection"`
-		IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
-	}
 
 	var edges []rawEdge
 	if err := json.NewDecoder(file).Decode(&edges); err != nil {
