@@ -35,7 +35,7 @@ export default function ScrollToTopButton() {
             className={`
                 fixed right-4 bottom-8 sm:right-8 sm:bottom-8 z-50
                 flex items-center justify-center w-12 h-12 
-                bg-blue-600 backdrop-blur-sm text-white rounded-full shadow-md 
+                bg-blue-600/80 backdrop-blur-sm text-white rounded-full shadow-md 
                 hover:bg-blue-600 hover:scale-105 active:scale-95
                 transition-all duration-300
                 ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}
