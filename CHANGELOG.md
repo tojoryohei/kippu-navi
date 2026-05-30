@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.2...kippu-navi-v1.22.3) (2026-05-30)
+
+
+### Bug Fixes
+
+* JSONデコード処理の厳密化（未定義キー検知と配列上限オーバーの防止） ([#211](https://github.com/tojoryohei/kippu-navi/issues/211)) ([f471c2f](https://github.com/tojoryohei/kippu-navi/commit/f471c2fd834f576d3c5aef68aea450db4d921a0d))
+
 ## [1.22.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.1...kippu-navi-v1.22.2) (2026-05-29)
 
 
