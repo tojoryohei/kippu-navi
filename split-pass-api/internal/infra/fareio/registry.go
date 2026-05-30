@@ -1,9 +1,11 @@
 package fareio
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
@@ -38,9 +40,24 @@ var trainSpecificSectionFaresJSON []byte
 
 func loadFareTable(data []byte) ([101]domain.PassFare, error) {
 	var table [101]domain.PassFare
-	if err := json.Unmarshal(data, &table); err != nil {
+	var slice []domain.PassFare
+
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&slice); err != nil {
 		return table, err
 	}
+
+	if _, err := decoder.Token(); err != io.EOF {
+		return table, fmt.Errorf("JSONデータの末尾に予期せぬデータが含まれています")
+	}
+
+	if len(slice) != 101 {
+		return table, fmt.Errorf("運賃テーブルの要素数が不正です（期待値: 101, 実際: %d）", len(slice))
+	}
+
+	copy(table[:], slice)
 	return table, nil
 }
 
