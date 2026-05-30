@@ -60,6 +60,7 @@ func NewStationNameIDMapper() *StationNameIDMapper {
 }
 
 // GetOrAddID は指定された駅名の数値IDを返します。
+// 駅名が登録されていない場合は新しくIDを割り当てて登録します。
 func (m *StationNameIDMapper) GetOrAddID(name string) int {
 	if id, exists := m.NameToID[name]; exists {
 		return id
@@ -68,6 +69,13 @@ func (m *StationNameIDMapper) GetOrAddID(name string) int {
 	m.NameToID[name] = newID
 	m.IDToName = append(m.IDToName, name)
 	return newID
+}
+
+// GetID は指定された駅名の数値IDを返します。
+// 駅名が登録されていない場合は ok = false を返します（新しく追加はしません）。
+func (m *StationNameIDMapper) GetID(name string) (id int, ok bool) {
+	id, ok = m.NameToID[name]
+	return
 }
 
 // GetName は指定された数値IDに対応する駅名(文字列)を返します。
