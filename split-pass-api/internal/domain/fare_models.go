@@ -22,7 +22,7 @@ const (
 // DetermineRouteType は幹線・地方交通線の有無から RouteType を判定します。
 func DetermineRouteType(hasTrunk, hasLocal bool) (RouteType, error) {
 	if !hasTrunk && !hasLocal {
-		return 0, errors.New("DetermineRouteType: 幹線も地方交通線も含まれていません（距離0または不正な経路）")
+		return 0, errors.New("DetermineRouteType: 幹線も地方交通線も含まれていません")
 	}
 	if hasTrunk && hasLocal {
 		return RouteTypeMixed, nil
@@ -52,6 +52,12 @@ func (f PassFare) GetByMonths(months int) (int, error) {
 	default:
 		return 0, fmt.Errorf("domain: %w: %d", ErrInvalidMonths, months)
 	}
+}
+
+// SpecificRouteFare は経路完全一致で適用される特定区間運賃を保持します。
+type SpecificRouteFare struct {
+	Route []string
+	Fare  PassFare
 }
 
 // PassFareParams は定期運賃計算の入力パラメータです。
