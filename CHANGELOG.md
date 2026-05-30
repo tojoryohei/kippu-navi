@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.3...kippu-navi-v1.23.0) (2026-05-30)
+
+
+### Features
+
+* 路線固有の加算運賃判定ロジック基盤の追加 ([#214](https://github.com/tojoryohei/kippu-navi/issues/214)) ([c6759d8](https://github.com/tojoryohei/kippu-navi/commit/c6759d8dd21f4b8d57b1c676dc668d3179052c70))
+
 ## [1.22.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.2...kippu-navi-v1.22.3) (2026-05-30)
 
 
