@@ -54,8 +54,8 @@ func (f PassFare) GetByMonths(months int) (int, error) {
 	}
 }
 
-// SpecificRouteFare は経路完全一致で適用される特定区間運賃を保持します。
-type SpecificRouteFare struct {
+// RouteAndFare は経路完全一致で適用される特定区間運賃を保持します。
+type RouteAndFare struct {
 	Route []string
 	Fare  PassFare
 }

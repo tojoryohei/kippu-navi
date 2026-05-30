@@ -9,7 +9,7 @@ import (
 )
 
 func TestSpecificRouteMatcher(t *testing.T) {
-	matcher := fare.NewSpecificRouteMatcher()
+	matcher := fare.NewRouteMatcher()
 	g := graph.NewGraph(10)
 
 	// モックデータの準備
@@ -17,7 +17,7 @@ func TestSpecificRouteMatcher(t *testing.T) {
 	idB := g.GetOrAddID("B")
 	idC := g.GetOrAddID("C")
 
-	fares := []domain.SpecificRouteFare{
+	fares := []domain.RouteAndFare{
 		{
 			Route: []string{"A", "B", "C"},
 			Fare:  domain.PassFare{OneMonth: 100, ThreeMonth: 285, SixMonth: 540},
@@ -30,13 +30,13 @@ func TestSpecificRouteMatcher(t *testing.T) {
 
 	// 存在しない駅が含まれる場合のテスト
 	t.Run("存在しない駅が含まれる場合はエラー", func(t *testing.T) {
-		invalidFares := []domain.SpecificRouteFare{
+		invalidFares := []domain.RouteAndFare{
 			{
 				Route: []string{"A", "Unknown"},
 				Fare:  domain.PassFare{OneMonth: 100},
 			},
 		}
-		matcher2 := fare.NewSpecificRouteMatcher()
+		matcher2 := fare.NewRouteMatcher()
 		err := matcher2.LoadFromDomain(invalidFares, g)
 		if err == nil {
 			t.Error("存在しない駅に対してエラーが返されませんでした")
@@ -89,7 +89,7 @@ func TestSpecificRouteMatcher(t *testing.T) {
 }
 
 func TestSpecificRouteMatcher_DuplicateRegistration(t *testing.T) {
-	matcher := fare.NewSpecificRouteMatcher()
+	matcher := fare.NewRouteMatcher()
 	route := []int{1, 2, 3}
 	rev := []int{3, 2, 1}
 	f := domain.PassFare{OneMonth: 100}
@@ -120,7 +120,7 @@ func TestSpecificRouteMatcher_DuplicateRegistration(t *testing.T) {
 }
 
 func TestSpecificRouteMatcher_DefensiveCopy(t *testing.T) {
-	matcher := fare.NewSpecificRouteMatcher()
+	matcher := fare.NewRouteMatcher()
 	route := []int{1, 2, 3}
 	f := domain.PassFare{OneMonth: 100}
 
@@ -144,7 +144,7 @@ func TestSpecificRouteMatcher_DefensiveCopy(t *testing.T) {
 
 // ハッシュ値の衝突が起きた場合でも正しく動作するか検証するテスト
 func TestSpecificRouteMatcher_HashCollision(t *testing.T) {
-	matcher := fare.NewSpecificRouteMatcher()
+	matcher := fare.NewRouteMatcher()
 
 	// A-B-C と B-A-C は同じ要素だが順序が異なるため、FNV-1aではハッシュが異なる可能性が高いが、
 	// 念のため類似配列を登録して干渉しないかテストする

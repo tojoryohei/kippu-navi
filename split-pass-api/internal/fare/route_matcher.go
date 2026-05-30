@@ -13,23 +13,23 @@ var (
 	ErrDuplicateRoute = errors.New("指定された経路は既に登録されています")
 )
 
-// specificFareEntry は特定の経路とそれに紐づく運賃を保持します。
-type specificFareEntry struct {
+// RouteEntry は特定の経路とそれに紐づく運賃を保持します。
+type RouteEntry struct {
 	Route []int
 	Fare  domain.PassFare
 }
 
-// SpecificRouteMatcher は経路の完全一致による特定運賃を検索・適用します。
+// RouteMatcher は経路の完全一致による特定運賃を検索・適用します。
 // HashMap (FNV-1a) と slices.Equal を用いた Two-Phase Lookup により、
 // 高速かつ安全（衝突耐性あり）な検索を実現します。
-type SpecificRouteMatcher struct {
-	table map[uint64][]specificFareEntry
+type RouteMatcher struct {
+	table map[uint64][]RouteEntry
 }
 
-// NewSpecificRouteMatcher は新しい SpecificRouteMatcher を初期化します。
-func NewSpecificRouteMatcher() *SpecificRouteMatcher {
-	return &SpecificRouteMatcher{
-		table: make(map[uint64][]specificFareEntry),
+// NewRouteMatcher は新しい RouteMatcher を初期化します。
+func NewRouteMatcher() *RouteMatcher {
+	return &RouteMatcher{
+		table: make(map[uint64][]RouteEntry),
 	}
 }
 
@@ -46,9 +46,9 @@ func routeToPseudoFNV(route []int) uint64 {
 }
 
 // LoadFromDomain は JSON からロードしたドメインモデルの配列と Graph (名前解決用) を用いてデータを構築します。
-func (m *SpecificRouteMatcher) LoadFromDomain(fares []domain.SpecificRouteFare, g *graph.Graph) error {
-	m.table = make(map[uint64][]specificFareEntry, len(fares)*2)
-	for _, sf := range fares {
+func (m *RouteMatcher) LoadFromDomain(route_and_fares []domain.RouteAndFare, g *graph.Graph) error {
+	m.table = make(map[uint64][]RouteEntry, len(route_and_fares)*2)
+	for _, sf := range route_and_fares {
 		route := make([]int, len(sf.Route))
 		for i, name := range sf.Route {
 			id, ok := g.GetID(name)
@@ -67,7 +67,7 @@ func (m *SpecificRouteMatcher) LoadFromDomain(fares []domain.SpecificRouteFare, 
 // Insert は経路と運賃をマップに登録します。
 // 既に同じ経路が登録されている場合は ErrDuplicateRoute を返します。
 // 逆方向からの検索にも対応するため、逆順の経路も同時に登録します。
-func (m *SpecificRouteMatcher) Insert(route []int, fare domain.PassFare) error {
+func (m *RouteMatcher) Insert(route []int, fare domain.PassFare) error {
 	// 重複チェック
 	if _, ok := m.Search(route); ok {
 		return ErrDuplicateRoute
@@ -78,7 +78,7 @@ func (m *SpecificRouteMatcher) Insert(route []int, fare domain.PassFare) error {
 	copy(routeCopy, route)
 
 	hash := routeToPseudoFNV(routeCopy)
-	m.table[hash] = append(m.table[hash], specificFareEntry{
+	m.table[hash] = append(m.table[hash], RouteEntry{
 		Route: routeCopy,
 		Fare:  fare,
 	})
@@ -100,7 +100,7 @@ func (m *SpecificRouteMatcher) Insert(route []int, fare domain.PassFare) error {
 		return ErrDuplicateRoute
 	}
 
-	m.table[revHash] = append(m.table[revHash], specificFareEntry{
+	m.table[revHash] = append(m.table[revHash], RouteEntry{
 		Route: rev,
 		Fare:  fare,
 	})
@@ -108,7 +108,7 @@ func (m *SpecificRouteMatcher) Insert(route []int, fare domain.PassFare) error {
 }
 
 // Search は指定された経路に完全に一致する特定区間運賃があるか検索します。
-func (m *SpecificRouteMatcher) Search(route []int) (domain.PassFare, bool) {
+func (m *RouteMatcher) Search(route []int) (domain.PassFare, bool) {
 	if m.table == nil {
 		return domain.PassFare{}, false
 	}
