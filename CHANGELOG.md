@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.23.0...kippu-navi-v1.24.0) (2026-05-30)
+
+
+### Features
+
+* 会社間を跨ぐ連絡運賃計算ロジック（差額加算方式）の追加 ([#217](https://github.com/tojoryohei/kippu-navi/issues/217)) ([1975856](https://github.com/tojoryohei/kippu-navi/commit/19758569f932a9889d9772d14993288ad39bec3b))
+
 ## [1.23.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.3...kippu-navi-v1.23.0) (2026-05-30)
 
 
