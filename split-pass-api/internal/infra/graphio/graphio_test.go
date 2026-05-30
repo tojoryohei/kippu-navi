@@ -3,6 +3,7 @@ package graphio_test
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 	"split-pass-api/internal/infra/graphio"
@@ -84,5 +85,87 @@ func TestSaveBinary_InvalidGraph(t *testing.T) {
 	}
 	if !errors.Is(err, graph.ErrInvalidGraph) {
 		t.Errorf("期待するエラーと異なります: got %v, want %v", err, graph.ErrInvalidGraph)
+	}
+}
+
+func TestJSONLoader_Load(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	tests := []struct {
+		name     string
+		filename string
+		setup    func(path string)
+		wantErr  bool
+	}{
+		{
+			name:     "正常系",
+			filename: "valid.json",
+			setup: func(path string) {
+				jsonData := `[
+					{
+						"station0": "東京",
+						"station1": "神田",
+						"eigyoKilo": 13,
+						"giseiKilo": 13,
+						"isLocal": false,
+						"company": 1,
+						"isTrainSpecificSection": true,
+						"isBarrierFreeSection": true
+					}
+				]`
+				_ = os.WriteFile(path, []byte(jsonData), 0644)
+			},
+			wantErr: false,
+		},
+		{
+			name:     "エッジデータが空",
+			filename: "empty.json",
+			setup: func(path string) {
+				_ = os.WriteFile(path, []byte(`[]`), 0644)
+			},
+			wantErr: true,
+		},
+		{
+			name:     "JSONデータの末尾に予期せぬデータが含まれる",
+			filename: "trailing_data.json",
+			setup: func(path string) {
+				_ = os.WriteFile(path, []byte(`[] { "extra": 1 }`), 0644)
+			},
+			wantErr: true,
+		},
+		{
+			name:     "未知のフィールドが含まれる",
+			filename: "unknown_field.json",
+			setup: func(path string) {
+				jsonData := `[
+					{
+						"station0": "東京",
+						"station1": "神田",
+						"unknown": "field"
+					}
+				]`
+				_ = os.WriteFile(path, []byte(jsonData), 0644)
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			jsonPath := filepath.Join(tmpDir, tt.filename)
+			tt.setup(jsonPath)
+
+			loader := &graphio.JSONLoader{}
+			got, err := loader.Load(jsonPath)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Load() エラー = %v, 期待されるエラー発生 = %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && got == nil {
+				t.Error("Load() 成功したはずですが、結果が nil です")
+			}
+		})
 	}
 }

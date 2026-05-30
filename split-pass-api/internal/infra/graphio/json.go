@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
@@ -35,8 +36,14 @@ func (l *JSONLoader) Load(path string) (*graph.Graph, error) {
 	defer file.Close()
 
 	var edges []rawEdge
-	if err := json.NewDecoder(file).Decode(&edges); err != nil {
+	decoder := json.NewDecoder(file)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&edges); err != nil {
 		return nil, fmt.Errorf("graphio: JSONのデコードに失敗しました: %w", err)
+	}
+
+	if _, err := decoder.Token(); err != io.EOF {
+		return nil, fmt.Errorf("graphio: JSONデータの末尾に予期せぬデータが含まれています")
 	}
 
 	if len(edges) == 0 {
