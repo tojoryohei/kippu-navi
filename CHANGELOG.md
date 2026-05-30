@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.24.0...kippu-navi-v1.25.0) (2026-05-30)
+
+
+### Features
+
+* 特定運賃マスターデータの安全なロード基盤の追加（インフラ層） ([#222](https://github.com/tojoryohei/kippu-navi/issues/222)) ([bfd5f58](https://github.com/tojoryohei/kippu-navi/commit/bfd5f58feb680cb2c1b38ec64f6274494741df20))
+
 ## [1.24.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.23.0...kippu-navi-v1.24.0) (2026-05-30)
 
 
