@@ -5,8 +5,8 @@ import (
 	"split-pass-api/internal/domain"
 )
 
-// IsBarrierFreeFeeApplicable は指定された全区間がバリアフリー対象エリアに収まっているかを判定します。
-func IsBarrierFreeFeeApplicable(edges []*domain.Edge) bool {
+// IsAllBarrierFreeFeeApplicable は指定された全区間がバリアフリー対象エリアに収まっているかを判定します。
+func IsAllBarrierFreeFeeApplicable(edges []*domain.Edge) bool {
 	if len(edges) == 0 {
 		return false
 	}
