@@ -33,7 +33,7 @@ func TestCalculateBarrierFreeFee(t *testing.T) {
 	}
 }
 
-func TestIsBarrierFreeFeeApplicable(t *testing.T) {
+func TestIsAllBarrierFreeFeeApplicable(t *testing.T) {
 	tests := []struct {
 		name  string
 		edges []*domain.Edge
@@ -64,8 +64,8 @@ func TestIsBarrierFreeFeeApplicable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := fare.IsBarrierFreeFeeApplicable(tt.edges); got != tt.want {
-				t.Errorf("IsBarrierFreeFeeApplicable() = %v, want %v", got, tt.want)
+			if got := fare.IsAllBarrierFreeFeeApplicable(tt.edges); got != tt.want {
+				t.Errorf("IsAllBarrierFreeFeeApplicable() = %v, want %v", got, tt.want)
 			}
 		})
 	}

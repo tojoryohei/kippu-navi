@@ -5,8 +5,8 @@ import (
 	"split-pass-api/internal/domain"
 )
 
-// IsTrainSpecificApplicable は指定された全区間が電車特定区間に収まっているかを判定します。
-func IsTrainSpecificApplicable(edges []*domain.Edge) bool {
+// IsAllTrainSpecificApplicable は指定された全区間が電車特定区間に収まっているかを判定します。
+func IsAllTrainSpecificApplicable(edges []*domain.Edge) bool {
 	if len(edges) == 0 {
 		return false
 	}
