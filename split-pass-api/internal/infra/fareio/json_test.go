@@ -16,7 +16,7 @@ func TestSpecificFareJSONLoader_Load(t *testing.T) {
 		name      string
 		filename  string
 		setup     func(path string)
-		wantFares []domain.SpecificRouteFare
+		wantFares []domain.RouteAndFare
 		wantErr   bool
 	}{
 		{
@@ -35,7 +35,7 @@ func TestSpecificFareJSONLoader_Load(t *testing.T) {
 				]`
 				_ = os.WriteFile(path, []byte(jsonData), 0644)
 			},
-			wantFares: []domain.SpecificRouteFare{
+			wantFares: []domain.RouteAndFare{
 				{
 					Route: []string{"東京", "神田"},
 					Fare: domain.PassFare{
@@ -71,7 +71,7 @@ func TestSpecificFareJSONLoader_Load(t *testing.T) {
 			setup: func(path string) {
 				_ = os.WriteFile(path, []byte(`[]`), 0644)
 			},
-			wantFares: []domain.SpecificRouteFare{},
+			wantFares: []domain.RouteAndFare{},
 			wantErr:   false,
 		},
 		{
