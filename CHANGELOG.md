@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.26.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.25.0...kippu-navi-v1.26.0) (2026-05-30)
+
+
+### Features
+
+* 特定運賃の高速・安全な経路判定エンジン（Two-Phase Lookup）の追加 ([#225](https://github.com/tojoryohei/kippu-navi/issues/225)) ([7f2bac7](https://github.com/tojoryohei/kippu-navi/commit/7f2bac7731066ba6c850170655f9fa85fb8747ee))
+
 ## [1.25.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.24.0...kippu-navi-v1.25.0) (2026-05-30)
 
 
