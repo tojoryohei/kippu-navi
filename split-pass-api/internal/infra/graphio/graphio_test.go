@@ -37,8 +37,14 @@ func TestSaveAndLoadBinary(t *testing.T) {
 		t.Fatalf("バイナリ保存に失敗しました: %v", err)
 	}
 
+	f, err := os.Open(tmpFile)
+	if err != nil {
+		t.Fatalf("ファイルのオープンに失敗しました: %v", err)
+	}
+	defer f.Close()
+
 	loader := &graphio.GobLoader{}
-	g2, err := loader.Load(tmpFile)
+	g2, err := loader.Load(f)
 	if err != nil {
 		t.Fatalf("バイナリ読み込みに失敗しました: %v", err)
 	}
@@ -54,7 +60,8 @@ func TestSaveAndLoadBinary(t *testing.T) {
 
 func TestGobLoader_Load_FileNotFound(t *testing.T) {
 	loader := &graphio.GobLoader{}
-	_, err := loader.Load("nonexistent.gob")
+	f, _ := os.Open("nonexistent.gob")
+	_, err := loader.Load(f)
 	if err == nil {
 		t.Error("存在しないファイルに対してエラーが返されませんでした")
 	}
@@ -69,8 +76,11 @@ func TestGobLoader_Load_EmptyFile(t *testing.T) {
 	f.Close()
 	defer os.Remove(tmpFile)
 
+	f2, _ := os.Open(tmpFile)
+	defer f2.Close()
+
 	loader := &graphio.GobLoader{}
-	_, err = loader.Load(tmpFile)
+	_, err = loader.Load(f2)
 	if err == nil {
 		t.Error("空ファイルに対してエラーが返されませんでした")
 	}
@@ -155,8 +165,13 @@ func TestJSONLoader_Load(t *testing.T) {
 			jsonPath := filepath.Join(tmpDir, tt.filename)
 			tt.setup(jsonPath)
 
+			f, _ := os.Open(jsonPath)
+			if f != nil {
+				defer f.Close()
+			}
+
 			loader := &graphio.JSONLoader{}
-			got, err := loader.Load(jsonPath)
+			got, err := loader.Load(f)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Load() エラー = %v, 期待されるエラー発生 = %v", err, tt.wantErr)

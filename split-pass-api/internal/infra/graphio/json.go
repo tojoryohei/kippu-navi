@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 )
@@ -26,17 +25,11 @@ type rawEdge struct {
 	IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
 }
 
-// Load は JSON ファイルを読み込み、新しい Graph を構築して返します。
-// ファイルが空またはエッジが0件の場合はエラーを返します。
-func (l *JSONLoader) Load(path string) (*graph.Graph, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("graphio: JSONファイルのオープンに失敗しました: %w", err)
-	}
-	defer file.Close()
-
+// Load は JSON データを読み込み、新しい Graph を構築して返します。
+// データが空またはエッジが0件の場合はエラーを返します。
+func (l *JSONLoader) Load(r io.Reader) (*graph.Graph, error) {
 	var edges []rawEdge
-	decoder := json.NewDecoder(file)
+	decoder := json.NewDecoder(r)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&edges); err != nil {
 		return nil, fmt.Errorf("graphio: JSONのデコードに失敗しました: %w", err)
