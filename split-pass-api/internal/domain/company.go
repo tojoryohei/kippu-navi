@@ -12,4 +12,7 @@ const (
 	JRWest
 	JRShikoku
 	JRKyushu
+
+	// CompanyCount は管理対象の鉄道会社数です。
+	CompanyCount
 )
