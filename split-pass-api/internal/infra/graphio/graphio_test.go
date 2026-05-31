@@ -1,12 +1,14 @@
 package graphio_test
 
 import (
+	"bytes"
+	"encoding/gob"
 	"errors"
 	"os"
-	"path/filepath"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 	"split-pass-api/internal/infra/graphio"
+	"strings"
 	"testing"
 )
 
@@ -30,21 +32,13 @@ func newTestGraph() (*graph.Graph, int, int, int) {
 func TestSaveAndLoadBinary(t *testing.T) {
 	g, startID, _, endID := newTestGraph()
 
-	tmpFile := "test_graph.gob"
-	defer os.Remove(tmpFile)
-
-	if err := graphio.SaveBinary(g, tmpFile); err != nil {
-		t.Fatalf("バイナリ保存に失敗しました: %v", err)
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(g); err != nil {
+		t.Fatalf("バイナリのエンコードに失敗しました: %v", err)
 	}
-
-	f, err := os.Open(tmpFile)
-	if err != nil {
-		t.Fatalf("ファイルのオープンに失敗しました: %v", err)
-	}
-	defer f.Close()
 
 	loader := &graphio.GobLoader{}
-	g2, err := loader.Load(f)
+	g2, err := loader.Load(&buf)
 	if err != nil {
 		t.Fatalf("バイナリ読み込みに失敗しました: %v", err)
 	}
@@ -58,31 +52,21 @@ func TestSaveAndLoadBinary(t *testing.T) {
 	}
 }
 
-func TestGobLoader_Load_FileNotFound(t *testing.T) {
+func TestGobLoader_Load_InvalidData(t *testing.T) {
 	loader := &graphio.GobLoader{}
-	f, _ := os.Open("nonexistent.gob")
-	_, err := loader.Load(f)
+	reader := strings.NewReader("not a gob data")
+	_, err := loader.Load(reader)
 	if err == nil {
-		t.Error("存在しないファイルに対してエラーが返されませんでした")
+		t.Error("不正なデータに対してエラーが返されませんでした")
 	}
 }
 
-func TestGobLoader_Load_EmptyFile(t *testing.T) {
-	tmpFile := "test_empty.gob"
-	f, err := os.Create(tmpFile)
-	if err != nil {
-		t.Fatalf("一時ファイルの作成に失敗しました: %v", err)
-	}
-	f.Close()
-	defer os.Remove(tmpFile)
-
-	f2, _ := os.Open(tmpFile)
-	defer f2.Close()
-
+func TestGobLoader_Load_EmptyReader(t *testing.T) {
+	reader := bytes.NewReader([]byte{})
 	loader := &graphio.GobLoader{}
-	_, err = loader.Load(f2)
+	_, err := loader.Load(reader)
 	if err == nil {
-		t.Error("空ファイルに対してエラーが返されませんでした")
+		t.Error("空のデータに対してエラーが返されませんでした")
 	}
 }
 
@@ -99,79 +83,56 @@ func TestSaveBinary_InvalidGraph(t *testing.T) {
 }
 
 func TestJSONLoader_Load(t *testing.T) {
-	tmpDir := t.TempDir()
-
 	tests := []struct {
-		name     string
-		filename string
-		setup    func(path string)
-		wantErr  bool
+		name    string
+		input   string
+		wantErr bool
 	}{
 		{
-			name:     "正常系",
-			filename: "valid.json",
-			setup: func(path string) {
-				jsonData := `[
-					{
-						"station0": "東京",
-						"station1": "神田",
-						"eigyoKilo": 13,
-						"giseiKilo": 13,
-						"isLocal": false,
-						"company": 1,
-						"isTrainSpecificSection": true,
-						"isBarrierFreeSection": true
-					}
-				]`
-				_ = os.WriteFile(path, []byte(jsonData), 0644)
-			},
+			name: "正常系",
+			input: `[
+				{
+					"station0": "東京",
+					"station1": "神田",
+					"eigyoKilo": 13,
+					"giseiKilo": 13,
+					"isLocal": false,
+					"company": 1,
+					"isTrainSpecificSection": true,
+					"isBarrierFreeSection": true
+				}
+			]`,
 			wantErr: false,
 		},
 		{
-			name:     "エッジデータが空",
-			filename: "empty.json",
-			setup: func(path string) {
-				_ = os.WriteFile(path, []byte(`[]`), 0644)
-			},
+			name:    "エッジデータが空",
+			input:   `[]`,
 			wantErr: true,
 		},
 		{
-			name:     "JSONデータの末尾に予期せぬデータが含まれる",
-			filename: "trailing_data.json",
-			setup: func(path string) {
-				_ = os.WriteFile(path, []byte(`[] { "extra": 1 }`), 0644)
-			},
+			name:    "JSONデータの末尾に予期せぬデータが含まれる",
+			input:   `[] { "extra": 1 }`,
 			wantErr: true,
 		},
 		{
-			name:     "未知のフィールドが含まれる",
-			filename: "unknown_field.json",
-			setup: func(path string) {
-				jsonData := `[
-					{
-						"station0": "東京",
-						"station1": "神田",
-						"unknown": "field"
-					}
-				]`
-				_ = os.WriteFile(path, []byte(jsonData), 0644)
-			},
+			name: "未知のフィールドが含まれる",
+			input: `[
+				{
+					"station0": "東京",
+					"station1": "神田",
+					"unknown": "field"
+				}
+			]`,
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			jsonPath := filepath.Join(tmpDir, tt.filename)
-			tt.setup(jsonPath)
-
-			f, _ := os.Open(jsonPath)
-			if f != nil {
-				defer f.Close()
-			}
+			reader := strings.NewReader(tt.input)
 
 			loader := &graphio.JSONLoader{}
-			got, err := loader.Load(f)
+			got, err := loader.Load(reader)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Load() エラー = %v, 期待されるエラー発生 = %v", err, tt.wantErr)
