@@ -6,6 +6,7 @@ import (
 
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
+	"split-pass-api/internal/graph/data"
 	"split-pass-api/internal/infra/fareio"
 	"split-pass-api/internal/infra/graphio"
 )
@@ -16,7 +17,10 @@ import (
 
 func TestInitRegistry(t *testing.T) {
 	loader := &graphio.JSONLoader{}
-	g, _ := loader.Load("../graph/data/edges.json")
+	g, err := loader.Load(data.GetEdgesReader())
+	if err != nil {
+		t.Fatalf("グラフデータの読み込みに失敗しました: %v", err)
+	}
 	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistry()の初期化に失敗しました: %v", err)
@@ -47,7 +51,10 @@ func TestInitRegistry(t *testing.T) {
 
 func TestStandardCalculator_Calculate(t *testing.T) {
 	loader := &graphio.JSONLoader{}
-	g, _ := loader.Load("../graph/data/edges.json")
+	g, err := loader.Load(data.GetEdgesReader())
+	if err != nil {
+		t.Fatalf("グラフデータの読み込みに失敗しました: %v", err)
+	}
 	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
@@ -182,7 +189,10 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 
 func TestHokkaidoCalculator_Calculate(t *testing.T) {
 	loader := &graphio.JSONLoader{}
-	g, _ := loader.Load("../graph/data/edges.json")
+	g, err := loader.Load(data.GetEdgesReader())
+	if err != nil {
+		t.Fatalf("グラフデータの読み込みに失敗しました: %v", err)
+	}
 	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
@@ -225,7 +235,10 @@ func TestHokkaidoCalculator_Calculate(t *testing.T) {
 
 func TestEastCalculator_Calculate(t *testing.T) {
 	loader := &graphio.JSONLoader{}
-	g, _ := loader.Load("../graph/data/edges.json")
+	g, err := loader.Load(data.GetEdgesReader())
+	if err != nil {
+		t.Fatalf("グラフデータの読み込みに失敗しました: %v", err)
+	}
 	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
@@ -268,7 +281,10 @@ func TestEastCalculator_Calculate(t *testing.T) {
 
 func TestShikokuCalculator_Calculate(t *testing.T) {
 	loader := &graphio.JSONLoader{}
-	g, _ := loader.Load("../graph/data/edges.json")
+	g, err := loader.Load(data.GetEdgesReader())
+	if err != nil {
+		t.Fatalf("グラフデータの読み込みに失敗しました: %v", err)
+	}
 	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
@@ -345,11 +361,10 @@ func TestShikokuCalculator_Calculate(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		}
+	}
 
-		runCalculatorTests(t, calc, tests)
-		}
-
+	runCalculatorTests(t, calc, tests)
+}
 
 // ────────────────────────────────────────────────────────────
 // KyushuCalculator
@@ -357,7 +372,10 @@ func TestShikokuCalculator_Calculate(t *testing.T) {
 
 func TestKyushuCalculator_Calculate(t *testing.T) {
 	loader := &graphio.JSONLoader{}
-	g, _ := loader.Load("../graph/data/edges.json")
+	g, err := loader.Load(data.GetEdgesReader())
+	if err != nil {
+		t.Fatalf("グラフデータの読み込みに失敗しました: %v", err)
+	}
 	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
@@ -499,11 +517,10 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		}
+	}
 
-		runCalculatorTests(t, calc, tests)
-		}
-
+	runCalculatorTests(t, calc, tests)
+}
 
 // ────────────────────────────────────────────────────────────
 // ヘルパー

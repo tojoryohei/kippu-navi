@@ -3,17 +3,17 @@ package fare_test
 import (
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
+	"split-pass-api/internal/graph/data"
 	"split-pass-api/internal/infra/fareio"
 	"split-pass-api/internal/infra/graphio"
 	"testing"
 )
 
 func TestCalculateJointFare(t *testing.T) {
-	// 実データのレジストリを使用
 	loader := &graphio.JSONLoader{}
-	g, err := loader.Load("../graph/data/edges.json")
+	g, err := loader.Load(data.GetEdgesReader())
 	if err != nil {
-		t.Fatalf("グラフのロードに失敗しました: %v", err)
+		t.Fatalf("グラフデータのロードに失敗: %v", err)
 	}
 	calcs, err := fareio.InitRegistry(g)
 	if err != nil {

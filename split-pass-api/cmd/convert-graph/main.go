@@ -23,8 +23,14 @@ func run(args []string) error {
 	outputGOB := args[2]
 
 	log.Printf("JSONファイルを読み込んでいます: %s", inputJSON)
+	inFile, err := os.Open(inputJSON)
+	if err != nil {
+		return fmt.Errorf("JSONファイルのオープンに失敗しました: %w", err)
+	}
+	defer inFile.Close()
+
 	jsonLoader := &graphio.JSONLoader{}
-	g, err := jsonLoader.Load(inputJSON)
+	g, err := jsonLoader.Load(inFile)
 	if err != nil {
 		return fmt.Errorf("JSONの読み込みに失敗しました: %w", err)
 	}
@@ -35,8 +41,14 @@ func run(args []string) error {
 	}
 
 	log.Printf("検証のためにバイナリを再読み込みします...")
+	outFile, err := os.Open(outputGOB)
+	if err != nil {
+		return fmt.Errorf("バイナリファイルのオープンに失敗しました: %w", err)
+	}
+	defer outFile.Close()
+
 	gobLoader := &graphio.GobLoader{}
-	g2, err := gobLoader.Load(outputGOB)
+	g2, err := gobLoader.Load(outFile)
 	if err != nil {
 		return fmt.Errorf("バイナリの再読み込みに失敗しました: %w", err)
 	}

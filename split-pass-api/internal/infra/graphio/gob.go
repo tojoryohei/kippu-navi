@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"split-pass-api/internal/graph"
 )
@@ -13,17 +14,11 @@ var ErrEmptyGraph = errors.New("グラフデータが空です")
 // GobLoader はバイナリ（gob）形式からグラフをロードします。
 type GobLoader struct{}
 
-// Load はバイナリファイルを読み込み、Graph を返します。
+// Load はバイナリ形式のデータを読み込み、Graph を返します。
 // デシリアライズ後に内部データが nil の場合はエラーを返します。
-func (l *GobLoader) Load(path string) (*graph.Graph, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("graphio: gobファイルのオープンに失敗しました: %w", err)
-	}
-	defer file.Close()
-
+func (l *GobLoader) Load(r io.Reader) (*graph.Graph, error) {
 	var g graph.Graph
-	if err := gob.NewDecoder(file).Decode(&g); err != nil {
+	if err := gob.NewDecoder(r).Decode(&g); err != nil {
 		return nil, fmt.Errorf("graphio: gobのデコードに失敗しました: %w", err)
 	}
 
