@@ -19,11 +19,11 @@ type rawRouteAndFare struct {
 	Fare  rawFareData `json:"fare"`
 }
 
-// SpecificFareJSONLoader は JSON ファイルから特定区間運賃をロードします。
-type SpecificFareJSONLoader struct{}
+// RouteAndFareJSONLoader は JSON ファイルから特定運賃区間をロードします。
+type RouteAndFareJSONLoader struct{}
 
 // Load は JSON ファイルを読み込み、特定運賃区間や調整運賃区間の配列を返します。
-func (l *SpecificFareJSONLoader) Load(path string) ([]domain.RouteAndFare, error) {
+func (l *RouteAndFareJSONLoader) Load(path string) ([]domain.RouteAndFare, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("fareio: JSONファイルのオープンに失敗しました: %w", err)

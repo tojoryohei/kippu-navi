@@ -13,7 +13,7 @@ var (
 type DeciKilo int
 
 // ToCeiledKm はDeciKiloをinteger kilometerに変換します。
-// Examples:
+// 例:
 //
 //	15 -> 2
 //	10 -> 1

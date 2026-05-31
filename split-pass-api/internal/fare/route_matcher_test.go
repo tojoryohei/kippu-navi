@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestSpecificRouteMatcher(t *testing.T) {
+func TestRouteMatcher(t *testing.T) {
 	matcher := fare.NewRouteMatcher()
 	g := graph.NewGraph(10)
 
@@ -88,7 +88,7 @@ func TestSpecificRouteMatcher(t *testing.T) {
 	}
 }
 
-func TestSpecificRouteMatcher_DuplicateRegistration(t *testing.T) {
+func TestRouteMatcher_DuplicateRegistration(t *testing.T) {
 	matcher := fare.NewRouteMatcher()
 	route := []int{1, 2, 3}
 	rev := []int{3, 2, 1}
@@ -119,7 +119,7 @@ func TestSpecificRouteMatcher_DuplicateRegistration(t *testing.T) {
 	}
 }
 
-func TestSpecificRouteMatcher_DefensiveCopy(t *testing.T) {
+func TestRouteMatcher_DefensiveCopy(t *testing.T) {
 	matcher := fare.NewRouteMatcher()
 	route := []int{1, 2, 3}
 	f := domain.PassFare{OneMonth: 100}
@@ -143,7 +143,7 @@ func TestSpecificRouteMatcher_DefensiveCopy(t *testing.T) {
 }
 
 // ハッシュ値の衝突が起きた場合でも正しく動作するか検証するテスト
-func TestSpecificRouteMatcher_HashCollision(t *testing.T) {
+func TestRouteMatcher_HashCollision(t *testing.T) {
 	matcher := fare.NewRouteMatcher()
 
 	// A-B-C と B-A-C は同じ要素だが順序が異なるため、FNV-1aではハッシュが異なる可能性が高いが、
