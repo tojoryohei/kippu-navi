@@ -4,14 +4,21 @@ import (
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
 	"split-pass-api/internal/infra/fareio"
+	"split-pass-api/internal/infra/graphio"
 	"testing"
 )
 
 func TestTrainSpecificSectionsCalculator_Calculate(t *testing.T) {
-	_, calc, err := fareio.InitRegistry()
+	loader := &graphio.JSONLoader{}
+	g, err := loader.Load("../graph/data/edges.json")
+	if err != nil {
+		t.Fatalf("グラフのロードに失敗しました: %v", err)
+	}
+	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("TrainSpecificSectionCalculatorの初期化に失敗しました: %v", err)
 	}
+	calc := calcs.TrainSpecific
 
 	tests := []struct {
 		name    string

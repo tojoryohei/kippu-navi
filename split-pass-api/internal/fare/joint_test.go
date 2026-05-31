@@ -4,16 +4,22 @@ import (
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
 	"split-pass-api/internal/infra/fareio"
+	"split-pass-api/internal/infra/graphio"
 	"testing"
 )
 
 func TestCalculateJointFare(t *testing.T) {
 	// 実データのレジストリを使用
-	// reg: 会社別計算機レジストリ, trainSpecificCalc: 電車特定区間計算機 (ここでは不使用)
-	reg, _, err := fareio.InitRegistry()
+	loader := &graphio.JSONLoader{}
+	g, err := loader.Load("../graph/data/edges.json")
+	if err != nil {
+		t.Fatalf("グラフのロードに失敗しました: %v", err)
+	}
+	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("レジストリの初期化に失敗しました: %v", err)
 	}
+	reg := calcs.Registry
 
 	// 期待値計算用の各社単体計算機
 	standardCalc, _ := reg.Get(domain.JRCentral)
@@ -58,7 +64,7 @@ func TestCalculateJointFare(t *testing.T) {
 				// 37kmの基準額(6ヶ月) 98220 + 東日本21kmの加算額(6ヶ月) 6790
 				standard37_6, _ := standardCalc.Calculate(domain.PassFareParams{RouteType: domain.RouteTypeTrunkOnly, EigyoKilo: 368, GiseiKilo: 368, Months: 6})
 				east21_6, _ := eastCalc.Calculate(domain.PassFareParams{RouteType: domain.RouteTypeTrunkOnly, EigyoKilo: 207, GiseiKilo: 207, Months: 6})
-				standard21_6, _ := standardCalc.Calculate(domain.PassFareParams{RouteType: domain.RouteTypeTrunkOnly, EigyoKilo: 207, GiseiKilo: 161, Months: 6})
+				standard21_6, _ := standardCalc.Calculate(domain.PassFareParams{RouteType: domain.RouteTypeTrunkOnly, EigyoKilo: 207, GiseiKilo: 207, Months: 6})
 				return standard37_6 + (east21_6 - standard21_6)
 			}(),
 		},

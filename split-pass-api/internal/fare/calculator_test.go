@@ -7,6 +7,7 @@ import (
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
 	"split-pass-api/internal/infra/fareio"
+	"split-pass-api/internal/infra/graphio"
 )
 
 // ────────────────────────────────────────────────────────────
@@ -14,10 +15,13 @@ import (
 // ────────────────────────────────────────────────────────────
 
 func TestInitRegistry(t *testing.T) {
-	reg, _, err := fareio.InitRegistry()
+	loader := &graphio.JSONLoader{}
+	g, _ := loader.Load("../graph/data/edges.json")
+	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistry()の初期化に失敗しました: %v", err)
 	}
+	reg := calcs.Registry
 
 	// 全社分が取得できること
 	companies := []domain.CompanyID{
@@ -42,10 +46,13 @@ func TestInitRegistry(t *testing.T) {
 // ────────────────────────────────────────────────────────────
 
 func TestStandardCalculator_Calculate(t *testing.T) {
-	reg, _, err := fareio.InitRegistry()
+	loader := &graphio.JSONLoader{}
+	g, _ := loader.Load("../graph/data/edges.json")
+	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
 	}
+	reg := calcs.Registry
 	calc, err := reg.Get(domain.JRCentral)
 	if err != nil {
 		t.Fatalf("StandardCalculatorの取得に失敗しました: %v", err)
@@ -174,10 +181,13 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 // ────────────────────────────────────────────────────────────
 
 func TestHokkaidoCalculator_Calculate(t *testing.T) {
-	reg, _, err := fareio.InitRegistry()
+	loader := &graphio.JSONLoader{}
+	g, _ := loader.Load("../graph/data/edges.json")
+	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
 	}
+	reg := calcs.Registry
 	calc, err := reg.Get(domain.JRHokkaido)
 	if err != nil {
 		t.Fatalf("HokkaidoCalculatorの初期化に失敗しました: %v", err)
@@ -214,10 +224,13 @@ func TestHokkaidoCalculator_Calculate(t *testing.T) {
 // ────────────────────────────────────────────────────────────
 
 func TestEastCalculator_Calculate(t *testing.T) {
-	reg, _, err := fareio.InitRegistry()
+	loader := &graphio.JSONLoader{}
+	g, _ := loader.Load("../graph/data/edges.json")
+	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
 	}
+	reg := calcs.Registry
 	calc, err := reg.Get(domain.JREast)
 	if err != nil {
 		t.Fatalf("EastCalculatorの取得に失敗しました: %v", err)
@@ -254,10 +267,13 @@ func TestEastCalculator_Calculate(t *testing.T) {
 // ────────────────────────────────────────────────────────────
 
 func TestShikokuCalculator_Calculate(t *testing.T) {
-	reg, _, err := fareio.InitRegistry()
+	loader := &graphio.JSONLoader{}
+	g, _ := loader.Load("../graph/data/edges.json")
+	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
 	}
+	reg := calcs.Registry
 	calc, err := reg.Get(domain.JRShikoku)
 	if err != nil {
 		t.Fatalf("ShikokuCalculatorの初期化に失敗しました: %v", err)
@@ -340,10 +356,13 @@ func TestShikokuCalculator_Calculate(t *testing.T) {
 // ────────────────────────────────────────────────────────────
 
 func TestKyushuCalculator_Calculate(t *testing.T) {
-	reg, _, err := fareio.InitRegistry()
+	loader := &graphio.JSONLoader{}
+	g, _ := loader.Load("../graph/data/edges.json")
+	calcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		t.Fatalf("InitRegistryの初期化に失敗しました: %v", err)
 	}
+	reg := calcs.Registry
 	calc, err := reg.Get(domain.JRKyushu)
 	if err != nil {
 		t.Fatalf("KyushuCalculatorの取得に失敗しました: %v", err)
@@ -462,7 +481,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "マイナスの距離",
 			params: domain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				RouteType: domain.RouteTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(-10),
 				GiseiKilo: domain.DeciKilo(-10),
 				Months:    1,
