@@ -40,4 +40,3 @@ src/data/*.db
 src/data/*.json
 src/app/mr/data/*.json
 src/app/split/data/*.json
-split-pass-api/internal/graph/data/*.json
