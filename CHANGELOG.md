@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.26.0...kippu-navi-v1.27.0) (2026-05-31)
+
+
+### Features
+
+* 初期化処理の構造体化および特例・調整運賃データのロード機能追加 ([#234](https://github.com/tojoryohei/kippu-navi/issues/234)) ([4167bcc](https://github.com/tojoryohei/kippu-navi/commit/4167bcc354e218d6fb097602d1da60ec1c246ab4))
+
 ## [1.26.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.25.0...kippu-navi-v1.26.0) (2026-05-30)
 
 
