@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-	// os.Argsを明示的に渡すことで、run関数のテストを容易にする
 	if err := run(os.Args); err != nil {
 		log.Fatalf("エラーが発生しました: %v", err)
 	}
@@ -17,7 +16,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) < 3 {
-		return fmt.Errorf("Usage: convert-graph <input_json> <output_gob>")
+		return fmt.Errorf("使用法: convert-graph <入力JSON> <出力GOB>")
 	}
 
 	inputJSON := args[1]
@@ -27,7 +26,6 @@ func run(args []string) error {
 	jsonLoader := &graphio.JSONLoader{}
 	g, err := jsonLoader.Load(inputJSON)
 	if err != nil {
-		// 根本原因を失わないよう %w でエラーをラップする
 		return fmt.Errorf("JSONの読み込みに失敗しました: %w", err)
 	}
 

@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestSpecificFareJSONLoader_Load(t *testing.T) {
+func TestRouteAndFareJSONLoader_Load(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	tests := []struct {
@@ -130,7 +130,7 @@ func TestSpecificFareJSONLoader_Load(t *testing.T) {
 			jsonPath := filepath.Join(tmpDir, tt.filename)
 			tt.setup(jsonPath)
 
-			loader := &fareio.SpecificFareJSONLoader{}
+			loader := &fareio.RouteAndFareJSONLoader{}
 			gotFares, err := loader.Load(jsonPath)
 
 			if (err != nil) != tt.wantErr {
