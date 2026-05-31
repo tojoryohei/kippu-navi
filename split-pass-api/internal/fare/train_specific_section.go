@@ -20,11 +20,11 @@ func IsAllTrainSpecificApplicable(edges []*domain.Edge) bool {
 
 // TrainSpecificSectionCalculator は電車特定区間の運賃計算を行います。
 type TrainSpecificSectionCalculator struct {
-	fares [101]domain.PassFare
+	fares [101]domain.PassPrice
 }
 
 // NewTrainSpecificSectionCalculator は運賃データを受け取り、計算機を初期化します。
-func NewTrainSpecificSectionCalculator(fares [101]domain.PassFare) *TrainSpecificSectionCalculator {
+func NewTrainSpecificSectionCalculator(fares [101]domain.PassPrice) *TrainSpecificSectionCalculator {
 	return &TrainSpecificSectionCalculator{fares: fares}
 }
 

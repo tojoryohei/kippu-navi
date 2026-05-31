@@ -45,9 +45,9 @@ var specificFaresJSON []byte
 //go:embed data/adjustedFares.json
 var adjustedFaresJSON []byte
 
-func loadFareTable(data []byte) ([101]domain.PassFare, error) {
-	var table [101]domain.PassFare
-	var slice []domain.PassFare
+func loadFareTable(data []byte) ([101]domain.PassPrice, error) {
+	var table [101]domain.PassPrice
+	var slice []domain.PassPrice
 
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
@@ -87,7 +87,7 @@ func loadRouteAndFares(data []byte, name string) ([]domain.RouteAndFare, error) 
 		}
 		dataResult = append(dataResult, domain.RouteAndFare{
 			Route: raw.Route,
-			Fare: domain.PassFare{
+			Fare: domain.PassPrice{
 				OneMonth:   raw.Fare.OneMonth,
 				ThreeMonth: raw.Fare.ThreeMonth,
 				SixMonth:   raw.Fare.SixMonth,

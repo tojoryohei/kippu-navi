@@ -20,7 +20,7 @@ func TestRouteMatcher(t *testing.T) {
 	fares := []domain.RouteAndFare{
 		{
 			Route: []string{"A", "B", "C"},
-			Fare:  domain.PassFare{OneMonth: 100, ThreeMonth: 285, SixMonth: 540},
+			Fare:  domain.PassPrice{OneMonth: 100, ThreeMonth: 285, SixMonth: 540},
 		},
 	}
 
@@ -33,7 +33,7 @@ func TestRouteMatcher(t *testing.T) {
 		invalidFares := []domain.RouteAndFare{
 			{
 				Route: []string{"A", "Unknown"},
-				Fare:  domain.PassFare{OneMonth: 100},
+				Fare:  domain.PassPrice{OneMonth: 100},
 			},
 		}
 		matcher2 := fare.NewRouteMatcher()
@@ -92,7 +92,7 @@ func TestRouteMatcher_DuplicateRegistration(t *testing.T) {
 	matcher := fare.NewRouteMatcher()
 	route := []int{1, 2, 3}
 	rev := []int{3, 2, 1}
-	f := domain.PassFare{OneMonth: 100}
+	f := domain.PassPrice{OneMonth: 100}
 
 	// 1. 初回登録（成功）
 	if err := matcher.Insert(route, f); err != nil {
@@ -122,7 +122,7 @@ func TestRouteMatcher_DuplicateRegistration(t *testing.T) {
 func TestRouteMatcher_DefensiveCopy(t *testing.T) {
 	matcher := fare.NewRouteMatcher()
 	route := []int{1, 2, 3}
-	f := domain.PassFare{OneMonth: 100}
+	f := domain.PassPrice{OneMonth: 100}
 
 	if err := matcher.Insert(route, f); err != nil {
 		t.Fatalf("Insert 失敗: %v", err)
@@ -151,8 +151,8 @@ func TestRouteMatcher_HashCollision(t *testing.T) {
 	route1 := []int{1, 2, 3}
 	route2 := []int{1, 3, 2}
 
-	fare1 := domain.PassFare{OneMonth: 100}
-	fare2 := domain.PassFare{OneMonth: 200}
+	fare1 := domain.PassPrice{OneMonth: 100}
+	fare2 := domain.PassPrice{OneMonth: 200}
 
 	_ = matcher.Insert(route1, fare1) // route1 と その逆順 が 100 で登録される
 	_ = matcher.Insert(route2, fare2) // route2 と その逆順 が 200 で登録される

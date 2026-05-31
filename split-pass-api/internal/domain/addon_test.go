@@ -25,7 +25,7 @@ func TestAddonRegistry_ResolveIDs(t *testing.T) {
 		name      string
 		registers []struct {
 			s1, s2 string
-			fare   domain.PassFare
+			fare   domain.PassPrice
 		}
 		wantLookup []struct {
 			id1, id2 int
@@ -38,9 +38,9 @@ func TestAddonRegistry_ResolveIDs(t *testing.T) {
 			name: "正常系: 全ての駅名が解決可能（逆引き含む）",
 			registers: []struct {
 				s1, s2 string
-				fare   domain.PassFare
+				fare   domain.PassPrice
 			}{
-				{"StationA", "StationB", domain.PassFare{OneMonth: 100}},
+				{"StationA", "StationB", domain.PassPrice{OneMonth: 100}},
 			},
 			wantLookup: []struct {
 				id1, id2 int
@@ -56,9 +56,9 @@ func TestAddonRegistry_ResolveIDs(t *testing.T) {
 			name: "異常系: 同一駅の登録",
 			registers: []struct {
 				s1, s2 string
-				fare   domain.PassFare
+				fare   domain.PassPrice
 			}{
-				{"StationA", "StationA", domain.PassFare{OneMonth: 100}},
+				{"StationA", "StationA", domain.PassPrice{OneMonth: 100}},
 			},
 			wantErr: domain.ErrSameStation,
 		},
@@ -66,9 +66,9 @@ func TestAddonRegistry_ResolveIDs(t *testing.T) {
 			name: "異常系: 存在しない駅名が含まれる",
 			registers: []struct {
 				s1, s2 string
-				fare   domain.PassFare
+				fare   domain.PassPrice
 			}{
-				{"StationA", "UnknownStation", domain.PassFare{OneMonth: 200}},
+				{"StationA", "UnknownStation", domain.PassPrice{OneMonth: 200}},
 			},
 			wantErr: domain.ErrStationNotFound,
 		},
@@ -76,10 +76,10 @@ func TestAddonRegistry_ResolveIDs(t *testing.T) {
 			name: "正常系: 複数の区間を登録",
 			registers: []struct {
 				s1, s2 string
-				fare   domain.PassFare
+				fare   domain.PassPrice
 			}{
-				{"StationA", "StationB", domain.PassFare{OneMonth: 100}},
-				{"StationB", "StationC", domain.PassFare{OneMonth: 200}},
+				{"StationA", "StationB", domain.PassPrice{OneMonth: 100}},
+				{"StationB", "StationC", domain.PassPrice{OneMonth: 200}},
 			},
 			wantLookup: []struct {
 				id1, id2 int
@@ -122,7 +122,7 @@ func TestAddonRegistry_ResolveIDs(t *testing.T) {
 
 func TestAddonRegistry_ResolveIDs_Recalculation(t *testing.T) {
 	r := domain.NewAddonRegistry()
-	r.Register("A", "B", domain.PassFare{OneMonth: 100})
+	r.Register("A", "B", domain.PassPrice{OneMonth: 100})
 
 	// 1回目の解決 (A=1, B=2)
 	_ = r.ResolveIDs(func(name string) (int, bool) {

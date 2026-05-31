@@ -38,7 +38,7 @@ func TestRouteAndFareJSONLoader_Load(t *testing.T) {
 			wantFares: []domain.RouteAndFare{
 				{
 					Route: []string{"東京", "神田"},
-					Fare: domain.PassFare{
+					Fare: domain.PassPrice{
 						OneMonth:   1000,
 						ThreeMonth: 2850,
 						SixMonth:   5400,

@@ -4,13 +4,13 @@ import (
 	"split-pass-api/internal/domain"
 )
 
-func NewStandardCalculator(trunkFares, localFares [101]domain.PassFare) *StandardCalculator {
+func NewStandardCalculator(trunkFares, localFares [101]domain.PassPrice) *StandardCalculator {
 	return &StandardCalculator{trunkFares: trunkFares, localFares: localFares}
 }
 
 type StandardCalculator struct {
-	trunkFares [101]domain.PassFare
-	localFares [101]domain.PassFare
+	trunkFares [101]domain.PassPrice
+	localFares [101]domain.PassPrice
 }
 
 func (c *StandardCalculator) Calculate(params domain.PassFareParams) (int, error) {
