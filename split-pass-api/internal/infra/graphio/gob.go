@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"split-pass-api/internal/graph"
 )
 
@@ -29,19 +28,13 @@ func (l *GobLoader) Load(r io.Reader) (*graph.Graph, error) {
 	return &g, nil
 }
 
-// SaveBinary はグラフ全体をバイナリ形式で保存します。
-func SaveBinary(g *graph.Graph, path string) error {
+// SaveBinary はグラフ全体をバイナリ形式で書き込みます。
+func SaveBinary(g *graph.Graph, w io.Writer) error {
 	if err := g.Validate(); err != nil {
 		return fmt.Errorf("graphio: 保存前の検証に失敗しました: %w", err)
 	}
 
-	file, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("graphio: gobファイルの作成に失敗しました: %w", err)
-	}
-	defer file.Close()
-
-	if err := gob.NewEncoder(file).Encode(g); err != nil {
+	if err := gob.NewEncoder(w).Encode(g); err != nil {
 		return fmt.Errorf("graphio: gobのエンコードに失敗しました: %w", err)
 	}
 

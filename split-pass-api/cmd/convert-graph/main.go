@@ -36,7 +36,13 @@ func run(args []string) error {
 	}
 
 	log.Printf("バイナリファイルを保存しています: %s", outputGOB)
-	if err := graphio.SaveBinary(g, outputGOB); err != nil {
+	outGobFile, err := os.Create(outputGOB)
+	if err != nil {
+		return fmt.Errorf("バイナリファイルの作成に失敗しました: %w", err)
+	}
+	defer outGobFile.Close()
+
+	if err := graphio.SaveBinary(g, outGobFile); err != nil {
 		return fmt.Errorf("バイナリの保存に失敗しました: %w", err)
 	}
 

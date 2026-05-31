@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
-	"os"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 	"split-pass-api/internal/infra/graphio"
@@ -71,8 +70,8 @@ func TestGobLoader_Load_EmptyReader(t *testing.T) {
 }
 
 func TestSaveBinary_InvalidGraph(t *testing.T) {
-	err := graphio.SaveBinary(&graph.Graph{}, "should_not_be_created.gob")
-	defer os.Remove("should_not_be_created.gob")
+	var buf bytes.Buffer
+	err := graphio.SaveBinary(&graph.Graph{}, &buf)
 
 	if err == nil {
 		t.Error("不正なグラフに対してエラーが返されませんでした")
