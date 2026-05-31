@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.27.0...kippu-navi-v1.28.0) (2026-05-31)
+
+
+### Features
+
+* CalculateAmountUseCaseの実装と特急料金ロジックの統合 ([#245](https://github.com/tojoryohei/kippu-navi/issues/245)) ([8b11035](https://github.com/tojoryohei/kippu-navi/commit/8b110354fa5da0a218d2b549a9ae337449a95e72))
+
 ## [1.27.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.26.0...kippu-navi-v1.27.0) (2026-05-31)
 
 
