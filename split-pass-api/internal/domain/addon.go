@@ -13,7 +13,7 @@ var (
 type addonDefinition struct {
 	StationA string
 	StationB string
-	Fare     PassFare
+	Fare     PassPrice
 }
 
 type stationPairKey struct {
@@ -30,7 +30,7 @@ func makePairKey(id1, id2 int) stationPairKey {
 // AddonRegistry は特定区間の加算運賃を管理します。
 type AddonRegistry struct {
 	definitions []addonDefinition
-	resolved    map[stationPairKey]PassFare
+	resolved    map[stationPairKey]PassPrice
 	// 関西空港線の重複判定用（旅客営業規則に基づく特殊対応）
 	hinenoID int
 	rinkuuID int
@@ -41,7 +41,7 @@ type AddonRegistry struct {
 func NewAddonRegistry() *AddonRegistry {
 	return &AddonRegistry{
 		definitions: make([]addonDefinition, 0),
-		resolved:    make(map[stationPairKey]PassFare),
+		resolved:    make(map[stationPairKey]PassPrice),
 		hinenoID:    -1,
 		rinkuuID:    -1,
 		kansaiID:    -1,
@@ -49,7 +49,7 @@ func NewAddonRegistry() *AddonRegistry {
 }
 
 // Register は特定の駅名ペアに対する加算運賃を登録します。
-func (r *AddonRegistry) Register(stationA, stationB string, fare PassFare) {
+func (r *AddonRegistry) Register(stationA, stationB string, fare PassPrice) {
 	r.definitions = append(r.definitions, addonDefinition{
 		StationA: stationA,
 		StationB: stationB,
@@ -59,7 +59,7 @@ func (r *AddonRegistry) Register(stationA, stationB string, fare PassFare) {
 
 // ResolveIDs は現在のグラフの駅IDを用いて、高速検索用のマップを構築します。
 func (r *AddonRegistry) ResolveIDs(resolver func(string) (int, bool)) error {
-	r.resolved = make(map[stationPairKey]PassFare, len(r.definitions))
+	r.resolved = make(map[stationPairKey]PassPrice, len(r.definitions))
 
 	// 特殊判定用の駅IDを解決
 	r.hinenoID, _ = resolver("日根野")
@@ -85,7 +85,7 @@ func (r *AddonRegistry) ResolveIDs(resolver func(string) (int, bool)) error {
 }
 
 // Lookup は指定された駅ID間に加算運賃が設定されているか確認し、あればその運賃を返します。
-func (r *AddonRegistry) Lookup(id1, id2 int) (PassFare, bool) {
+func (r *AddonRegistry) Lookup(id1, id2 int) (PassPrice, bool) {
 	key := makePairKey(id1, id2)
 	fare, ok := r.resolved[key]
 	return fare, ok
@@ -93,7 +93,7 @@ func (r *AddonRegistry) Lookup(id1, id2 int) (PassFare, bool) {
 
 // GetApplicableAddons は経路全体から適用すべき加算運賃を抽出します。
 // 関西空港線などの特殊な重複ルールは、旅客営業規則に基づき明示的に判定します。
-func (r *AddonRegistry) GetApplicableAddons(path []int) []PassFare {
+func (r *AddonRegistry) GetApplicableAddons(path []int) []PassPrice {
 	if len(path) < 2 {
 		return nil
 	}
@@ -104,7 +104,7 @@ func (r *AddonRegistry) GetApplicableAddons(path []int) []PassFare {
 		stationSet[id] = struct{}{}
 	}
 
-	var result []PassFare
+	var result []PassPrice
 
 	// 1. 関西空港線の判定 (旅客営業規則に基づく重複適用防止)
 	_, hasHineno := stationSet[r.hinenoID]

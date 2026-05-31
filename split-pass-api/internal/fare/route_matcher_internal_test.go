@@ -17,8 +17,8 @@ func TestRouteMatcher_ActualCollision(t *testing.T) {
 	// 人工的に衝突状態をシミュレートするため、同じハッシュ値のバケットに2つ登録する
 	h := uint64(42)
 	matcher.table[h] = []RouteEntry{
-		{Route: route1, Fare: domain.PassFare{OneMonth: 100}},
-		{Route: route2, Fare: domain.PassFare{OneMonth: 200}},
+		{Route: route1, Fare: domain.PassPrice{OneMonth: 100}},
+		{Route: route2, Fare: domain.PassPrice{OneMonth: 200}},
 	}
 
 	// Search メソッドのテスト（ハッシュ値を強制的に指定できないため、
@@ -29,8 +29,8 @@ func TestRouteMatcher_ActualCollision(t *testing.T) {
 
 	h1 := routeToPseudoFNV(route1)
 	matcher.table[h1] = []RouteEntry{
-		{Route: route1, Fare: domain.PassFare{OneMonth: 100}},
-		{Route: route2, Fare: domain.PassFare{OneMonth: 200}}, // route1のハッシュにroute2を混ぜる
+		{Route: route1, Fare: domain.PassPrice{OneMonth: 100}},
+		{Route: route2, Fare: domain.PassPrice{OneMonth: 200}}, // route1のハッシュにroute2を混ぜる
 	}
 
 	// 1. route1 を探す -> 見つかるはず
@@ -43,8 +43,8 @@ func TestRouteMatcher_ActualCollision(t *testing.T) {
 	// そこで、route2のハッシュバケットにも route1 を混ぜて「衝突」を再現する。
 	h2 := routeToPseudoFNV(route2)
 	matcher.table[h2] = []RouteEntry{
-		{Route: route1, Fare: domain.PassFare{OneMonth: 100}}, // route2のハッシュにroute1が混ざっている
-		{Route: route2, Fare: domain.PassFare{OneMonth: 200}},
+		{Route: route1, Fare: domain.PassPrice{OneMonth: 100}}, // route2のハッシュにroute1が混ざっている
+		{Route: route2, Fare: domain.PassPrice{OneMonth: 200}},
 	}
 
 	if f, ok := matcher.Search(route2); !ok || f.OneMonth != 200 {
@@ -52,7 +52,7 @@ func TestRouteMatcher_ActualCollision(t *testing.T) {
 	}
 
 	// 3. 存在しない経路 (route1と同じハッシュだが中身が違う)
-	matcher.table[h1] = append(matcher.table[h1], RouteEntry{Route: []int{9, 9, 9}, Fare: domain.PassFare{OneMonth: 999}})
+	matcher.table[h1] = append(matcher.table[h1], RouteEntry{Route: []int{9, 9, 9}, Fare: domain.PassPrice{OneMonth: 999}})
 	if _, ok := matcher.Search([]int{1, 2, 4}); ok {
 		t.Error("ハッシュが一致しても経路が異なる場合に ok=true が返されました")
 	}

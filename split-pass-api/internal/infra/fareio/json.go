@@ -49,7 +49,7 @@ func (l *RouteAndFareJSONLoader) Load(path string) ([]domain.RouteAndFare, error
 
 		data = append(data, domain.RouteAndFare{
 			Route: raw.Route,
-			Fare: domain.PassFare{
+			Fare: domain.PassPrice{
 				OneMonth:   raw.Fare.OneMonth,
 				ThreeMonth: raw.Fare.ThreeMonth,
 				SixMonth:   raw.Fare.SixMonth,

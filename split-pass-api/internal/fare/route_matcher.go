@@ -16,7 +16,7 @@ var (
 // RouteEntry は特定の経路とそれに紐づく運賃を保持します。
 type RouteEntry struct {
 	Route []int
-	Fare  domain.PassFare
+	Fare  domain.PassPrice
 }
 
 // RouteMatcher は経路の完全一致による特定運賃を検索・適用します。
@@ -71,7 +71,7 @@ func (m *RouteMatcher) LoadFromDomain(route_and_fares []domain.RouteAndFare, g *
 // Insert は経路と運賃をマップに登録します。
 // 既に同じ経路が登録されている場合は ErrDuplicateRoute を返します。
 // 逆方向からの検索にも対応するため、逆順の経路も同時に登録します。
-func (m *RouteMatcher) Insert(route []int, fare domain.PassFare) error {
+func (m *RouteMatcher) Insert(route []int, fare domain.PassPrice) error {
 	// 重複チェック
 	if _, ok := m.Search(route); ok {
 		return ErrDuplicateRoute
@@ -112,14 +112,14 @@ func (m *RouteMatcher) Insert(route []int, fare domain.PassFare) error {
 }
 
 // Search は指定された経路に完全に一致する特定区間運賃があるか検索します。
-func (m *RouteMatcher) Search(route []int) (domain.PassFare, bool) {
+func (m *RouteMatcher) Search(route []int) (domain.PassPrice, bool) {
 	if m.table == nil {
-		return domain.PassFare{}, false
+		return domain.PassPrice{}, false
 	}
 	hash := routeToPseudoFNV(route)
 	entries, ok := m.table[hash]
 	if !ok {
-		return domain.PassFare{}, false
+		return domain.PassPrice{}, false
 	}
 
 	// ハッシュが一致したエントリの中から、スライスが完全に一致するものを探す（衝突対策）
@@ -129,5 +129,5 @@ func (m *RouteMatcher) Search(route []int) (domain.PassFare, bool) {
 		}
 	}
 
-	return domain.PassFare{}, false
+	return domain.PassPrice{}, false
 }
