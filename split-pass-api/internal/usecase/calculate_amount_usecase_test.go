@@ -83,56 +83,53 @@ func TestCalculateAmountUseCase_Execute(t *testing.T) {
 		name    string
 		path    []int
 		months  int
-		want    int
+		want    usecase.CalculationResult
 		wantErr bool
 	}{
 		{
 			name:   "複数会社跨ぎの計算（JR東日本+JR東海）＋加算運賃 + 加算料金",
 			path:   []int{id("A"), id("B"), id("C")},
 			months: 1,
-			want: func() int {
-				// JR合算運賃ルール: 全体(30km)の基準運賃 + (特定会社運賃 - 基準運賃) + 加算運賃 + 加算料金
-				// base30 = 30*100 = 3000
-				// east10 = 10*100 = 1000
-				// base10 = 10*100 = 1000
-				// total = 3000 + (1000 - 1000) + 100 + 100 = 3200
-				return 3200
-			}(),
+			want: usecase.CalculationResult{
+				Fare:           3100,
+				BarrierFreeFee: 0,
+				Charge:         100,
+			},
 			wantErr: false,
 		},
 		{
 			name:   "電車特定区間の適用",
 			path:   []int{id("X"), id("Y")},
 			months: 1,
-			want: func() int {
-				// 電車特定区間テーブル 5km -> 500
-				return 500
-			}(),
+			want: usecase.CalculationResult{
+				Fare:           500,
+				BarrierFreeFee: 0,
+				Charge:         0,
+			},
 			wantErr: false,
 		},
 		{
 			name:   "電車特定区間と一般区間の混在（通常テーブルが適用されることの確認）",
 			path:   []int{id("X"), id("Y"), id("A")},
 			months: 1,
-			want: func() int {
-				// X-Y: 5.0km, Y-A: 5.0km -> 合計 10.0km (東日本)
-				// 10km -> 1000
-				return 1000
-			}(),
+			want: usecase.CalculationResult{
+				Fare:           1000,
+				BarrierFreeFee: 0,
+				Charge:         0,
+			},
 			wantErr: false,
 		},
 		{
-			name:    "異常系: 駅が1つしかない",
-			path:    []int{id("A")},
-			months:  1,
-			want:    0,
+			name:   "異常系: 駅が1つしかない",
+			path:   []int{id("A")},
+			months: 1,
+			// 異常系は実行結果が nil になるため、want はゼロ値のままでOK
 			wantErr: true,
 		},
 		{
 			name:    "異常系: 存在しないエッジ",
 			path:    []int{id("A"), id("X")},
 			months:  1,
-			want:    0,
 			wantErr: true,
 		},
 	}
@@ -140,17 +137,25 @@ func TestCalculateAmountUseCase_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := u.Execute(tt.path, tt.months)
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Execute() エラー = %v, 期待されるエラー発生 = %v", err, tt.wantErr)
 				return
 			}
+
 			if !tt.wantErr {
 				if got == nil {
-					t.Errorf("Execute() = nil, 期待値 %v", tt.want)
+					t.Errorf("Execute() = nil, 期待値 %+v", tt.want)
 					return
 				}
-				if got.TotalAmount() != tt.want {
-					t.Errorf("Execute() = %v, 期待値 %v", got.TotalAmount(), tt.want)
+
+				if *got != tt.want {
+					t.Errorf("Execute() の内訳が一致しません。\ngot:  %+v\nwant: %+v", *got, tt.want)
+				}
+
+				// TotalAmountメソッド自体の計算ロジックも壊れていないか検証する
+				if got.TotalAmount() != tt.want.TotalAmount() {
+					t.Errorf("TotalAmount() = %v, 期待値 %v", got.TotalAmount(), tt.want.TotalAmount())
 				}
 			}
 		})
