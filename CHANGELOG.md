@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.29.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.28.0...kippu-navi-v1.29.0) (2026-06-01)
+
+
+### Features
+
+* FindOptimalSplitUseCase の実装とDPによる探索最適化 ([#256](https://github.com/tojoryohei/kippu-navi/issues/256)) ([3296378](https://github.com/tojoryohei/kippu-navi/commit/32963781f6ecb3a8098df302ff7711cdd76f563f))
+
 ## [1.28.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.27.0...kippu-navi-v1.28.0) (2026-05-31)
 
 
