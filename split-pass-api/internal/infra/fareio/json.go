@@ -44,7 +44,7 @@ func (l *RouteAndFareJSONLoader) Load(path string) ([]domain.RouteAndFare, error
 	data := make([]domain.RouteAndFare, 0, len(rawData))
 	for _, raw := range rawData {
 		if len(raw.Route) < 2 {
-			return nil, fmt.Errorf("fareio: 経路には少なくとも2つの駅が必要です（不正なデータ: %v）", raw.Route)
+			return nil, fmt.Errorf("fareio: %w (不正なデータ: %v)", domain.ErrInvalidPath, raw.Route)
 		}
 
 		data = append(data, domain.RouteAndFare{

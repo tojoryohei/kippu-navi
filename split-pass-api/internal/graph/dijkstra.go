@@ -2,7 +2,6 @@ package graph
 
 import (
 	"container/heap"
-	"errors"
 	"fmt"
 	"split-pass-api/internal/domain"
 )
@@ -50,10 +49,10 @@ func (pq *priorityQueue) Pop() interface{} {
 // FindShortestPathGisei はダイクストラ法を用いて最短擬制キロ経路を検索します。
 func (g *Graph) FindShortestPathGisei(startID, endID int) (*PathResult, error) {
 	if startID < 0 || startID >= len(g.IDToName) {
-		return nil, fmt.Errorf("開始駅が見つかりません: ID %d", startID)
+		return nil, fmt.Errorf("FindShortestPathGisei: %w: ID %d", domain.ErrStationNotFound, startID)
 	}
 	if endID < 0 || endID >= len(g.IDToName) {
-		return nil, fmt.Errorf("目的駅が見つかりません: ID %d", endID)
+		return nil, fmt.Errorf("FindShortestPathGisei: %w: ID %d", domain.ErrStationNotFound, endID)
 	}
 
 	numStations := len(g.IDToName)
@@ -92,7 +91,7 @@ func (g *Graph) FindShortestPathGisei(startID, endID int) (*PathResult, error) {
 	}
 
 	if prev[endID] == -1 && startID != endID {
-		return nil, errors.New("経路が見つかりませんでした")
+		return nil, ErrPathNotFound
 	}
 
 	// 経路の復元
@@ -112,10 +111,10 @@ func (g *Graph) FindShortestPathGisei(startID, endID int) (*PathResult, error) {
 // これにより、分割購入で安くなる可能性がある経路を網羅します。
 func (g *Graph) FindAllCandidatePaths(startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
 	if startID < 0 || startID >= len(g.IDToName) {
-		return nil, fmt.Errorf("開始駅が見つかりません: ID %d", startID)
+		return nil, fmt.Errorf("FindAllCandidatePaths: %w: ID %d", domain.ErrStationNotFound, startID)
 	}
 	if endID < 0 || endID >= len(g.IDToName) {
-		return nil, fmt.Errorf("目的駅が見つかりません: ID %d", endID)
+		return nil, fmt.Errorf("FindAllCandidatePaths: %w: ID %d", domain.ErrStationNotFound, endID)
 	}
 
 	var results []*PathResult
@@ -164,7 +163,7 @@ func (g *Graph) FindAllCandidatePaths(startID, endID int, maxGisei domain.DeciKi
 	dfs(startID, 0, 0)
 
 	if len(results) == 0 {
-		return nil, errors.New("候補経路が見つかりませんでした")
+		return nil, ErrNoCandidatePaths
 	}
 
 	return results, nil

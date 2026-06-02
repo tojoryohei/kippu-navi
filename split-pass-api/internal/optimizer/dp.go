@@ -1,17 +1,10 @@
 package optimizer
 
 import (
-	"errors"
 	"fmt"
 	"math"
+	"split-pass-api/internal/domain"
 	"split-pass-api/internal/usecase"
-)
-
-var (
-	// ErrInvalidPathLength は、経路として指定された駅数が足りない場合のエラーです。
-	ErrInvalidPathLength = errors.New("経路には少なくとも2つの駅が必要です")
-	// ErrNoValidPattern は、有効な分割パターンが見つからなかった場合のエラーです。
-	ErrNoValidPattern = errors.New("有効な分割パターンが見つかりませんでした")
 )
 
 // DPOptimizer は、1次元動的計画法 (DP) を使用して最適な経路分割を探索するアルゴリズムクラスです。
@@ -30,7 +23,7 @@ func NewDPOptimizer[T usecase.EvaluationResult](evaluator usecase.RouteEvaluator
 func (o *DPOptimizer[T]) Optimize(path []int, months int) ([]usecase.OptimizedPath[T], error) {
 	n := len(path)
 	if n < 2 {
-		return nil, ErrInvalidPathLength
+		return nil, fmt.Errorf("DPOptimizer.Optimize: %w", domain.ErrInvalidPath)
 	}
 
 	cache := make([]T, n*n)
