@@ -7,25 +7,57 @@ import (
 	"split-pass-api/internal/domain"
 )
 
-// SplitSegment は分割された個々の区間とその運賃計算結果を保持します。
-type SplitSegment struct {
+// EvaluationResult は、運賃計算結果を抽象化するインターフェースです。
+type EvaluationResult interface {
+	TotalAmount() int
+}
+
+// RouteEvaluator は、指定された経路と期間に対する運賃計算を行うインターフェースです。
+type RouteEvaluator[T EvaluationResult] interface {
+	Execute(path []int, months int) (T, error)
+}
+
+// EvaluatedSegment は、評価済みの区間の経路と結果を保持します。
+type EvaluatedSegment[T EvaluationResult] struct {
 	Path   []int
-	Result *CalculationResult
+	Result T
 }
 
-// SplitResult は最適な分割結果とその内訳を保持します。
-type SplitResult struct {
+// NewEvaluatedSegment は、経路と結果を指定して EvaluatedSegment を生成します。
+func NewEvaluatedSegment[T EvaluationResult](path []int, res T) EvaluatedSegment[T] {
+	return EvaluatedSegment[T]{
+		Path:   path,
+		Result: res,
+	}
+}
+
+// OptimizedPath は、オプティマイザが算出した1つの経路分割パターンを保持します。
+type OptimizedPath[T EvaluationResult] struct {
 	TotalAmount int
-	Segments    []SplitSegment
+	Segments    []EvaluatedSegment[T]
 }
 
+// SplitSegment は分割された個々の区間とその運賃計算結果の型エイリアスです。
+type SplitSegment = EvaluatedSegment[*CalculationResult]
+
+// SplitResult は最適な分割結果とその内訳の型エイリアスです。
+type SplitResult = OptimizedPath[*CalculationResult]
+
+// SplitOptimizer は経路の最適分割を行うアルゴリズムのインターフェースです。
+type SplitOptimizer[T EvaluationResult] interface {
+	Optimize(path []int, months int) ([]OptimizedPath[T], error)
+}
+
+// FindOptimalSplitUseCase は経路から分割定期券の最安パターンを見つけるユースケースです。
+// DPなどの具体的なアルゴリズムは SplitOptimizer に委譲されます。
 type FindOptimalSplitUseCase struct {
-	calcUseCase *CalculateAmountUseCase
+	optimizer SplitOptimizer[*CalculationResult]
 }
 
-func NewFindOptimalSplitUseCase(calcUseCase *CalculateAmountUseCase) *FindOptimalSplitUseCase {
+// NewFindOptimalSplitUseCase は新しい FindOptimalSplitUseCase を作成します。
+func NewFindOptimalSplitUseCase(opt SplitOptimizer[*CalculationResult]) *FindOptimalSplitUseCase {
 	return &FindOptimalSplitUseCase{
-		calcUseCase: calcUseCase,
+		optimizer: opt,
 	}
 }
 
