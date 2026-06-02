@@ -5,6 +5,7 @@ import (
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
 	"split-pass-api/internal/graph"
+	"split-pass-api/internal/optimizer"
 	"split-pass-api/internal/usecase"
 	"testing"
 )
@@ -22,29 +23,41 @@ func TestFindOptimalSplitUseCase_Execute(t *testing.T) {
 		FromID: id("B"), ToID: id("C"),
 		EigyoKilo: 100, GiseiKilo: 100, IsLocal: false, Company: domain.JREast,
 	})
-	// もう1つ追加
+	// C - D
 	g.AddEdge(domain.Edge{
 		FromID: id("C"), ToID: id("D"),
 		EigyoKilo: 100, GiseiKilo: 100, IsLocal: false, Company: domain.JREast,
+	})
+	// X - Y - Z (各4km、計8km)
+	g.AddEdge(domain.Edge{
+		FromID: id("X"), ToID: id("Y"),
+		EigyoKilo: 40, GiseiKilo: 40, IsLocal: false, Company: domain.JREast,
+	})
+	g.AddEdge(domain.Edge{
+		FromID: id("Y"), ToID: id("Z"),
+		EigyoKilo: 40, GiseiKilo: 40, IsLocal: false, Company: domain.JREast,
 	})
 
 	reg := fare.NewRegistry()
 
 	// ダミーの運賃テーブル
-	// A-B (10km): 1000円
-	// B-C (10km): 1000円
-	// C-D (10km): 1000円
-	// A-C (20km): 2500円（分割した方が安い設定：1000+1000 = 2000円）
-	// B-D (20km): 2500円（同上）
-	// A-D (30km): 4000円
+	// 4km: 1000円
+	// 8km: 1500円 (1500 < 1000 + 1000 なので X-Z は分割しない方が安い)
+	// 10km: 1000円 (A-B, B-C用)
+	// 20km: 2500円 (2500 > 1000 + 1000 なので A-C は分割した方が安い)
+	// ...
 	var dummyTable [101]domain.PassPrice
 	for i := range dummyTable {
-		if i <= 10 {
-			dummyTable[i] = domain.PassPrice{OneMonth: 1000} // 10kmまで
+		if i <= 4 {
+			dummyTable[i] = domain.PassPrice{OneMonth: 1000}
+		} else if i <= 8 {
+			dummyTable[i] = domain.PassPrice{OneMonth: 1500}
+		} else if i <= 10 {
+			dummyTable[i] = domain.PassPrice{OneMonth: 1000}
 		} else if i <= 20 {
-			dummyTable[i] = domain.PassPrice{OneMonth: 2500} // 20kmまで
+			dummyTable[i] = domain.PassPrice{OneMonth: 2500}
 		} else {
-			dummyTable[i] = domain.PassPrice{OneMonth: 4000} // それ以上
+			dummyTable[i] = domain.PassPrice{OneMonth: 4000}
 		}
 	}
 
@@ -66,7 +79,8 @@ func TestFindOptimalSplitUseCase_Execute(t *testing.T) {
 		fare.NewRouteMatcher(),
 	)
 
-	findOptimalUseCase := usecase.NewFindOptimalSplitUseCase(calcUseCase)
+	opt := optimizer.NewDPOptimizer(calcUseCase)
+	findOptimalUseCase := usecase.NewFindOptimalSplitUseCase(opt)
 
 	tests := []struct {
 		name    string
@@ -115,6 +129,23 @@ func TestFindOptimalSplitUseCase_Execute(t *testing.T) {
 						{
 							Path:   []int{id("C"), id("D")},
 							Result: &usecase.CalculationResult{Fare: 1000},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "分割しない方が安いパターン (X-Y-Z)",
+			path:   []int{id("X"), id("Y"), id("Z")},
+			months: 1,
+			want: []usecase.SplitResult{
+				{
+					TotalAmount: 1500, // 分割すると 1000 + 1000 = 2000円になるため通しが最安
+					Segments: []usecase.SplitSegment{
+						{
+							Path:   []int{id("X"), id("Y"), id("Z")},
+							Result: &usecase.CalculationResult{Fare: 1500},
 						},
 					},
 				},
@@ -221,7 +252,8 @@ func TestFindOptimalSplitUseCase_Execute_MultipleOptimalPaths(t *testing.T) {
 		fare.NewRouteMatcher(), fare.NewRouteMatcher(),
 	)
 
-	findOptimalUseCase := usecase.NewFindOptimalSplitUseCase(calcUseCase)
+	opt := optimizer.NewDPOptimizer(calcUseCase)
+	findOptimalUseCase := usecase.NewFindOptimalSplitUseCase(opt)
 
 	got, err := findOptimalUseCase.Execute([]int{id("A"), id("B"), id("C"), id("D")}, 1)
 	if err != nil {
