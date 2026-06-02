@@ -1,13 +1,7 @@
 package domain
 
 import (
-	"errors"
 	"fmt"
-)
-
-var (
-	ErrStationNotFound = errors.New("駅が見つかりません")
-	ErrSameStation     = errors.New("同一駅間の加算運賃は設定できません")
 )
 
 type addonDefinition struct {

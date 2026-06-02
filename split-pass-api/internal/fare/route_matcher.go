@@ -48,7 +48,7 @@ func routeToPseudoFNV(route []int) uint64 {
 // LoadFromDomain は JSON からロードしたドメインモデルの配列と Graph (名前解決用) を用いてデータを構築します。
 func (m *RouteMatcher) LoadFromDomain(route_and_fares []domain.RouteAndFare, g *graph.Graph) error {
 	if g == nil {
-		return errors.New("LoadFromDomain: グラフの読み込みに失敗しました")
+		return fmt.Errorf("LoadFromDomain: %w", graph.ErrInvalidGraph)
 	}
 
 	m.table = make(map[uint64][]RouteEntry, len(route_and_fares)*2)
@@ -57,7 +57,7 @@ func (m *RouteMatcher) LoadFromDomain(route_and_fares []domain.RouteAndFare, g *
 		for i, name := range sf.Route {
 			id, ok := g.GetID(name)
 			if !ok {
-				return fmt.Errorf("LoadFromDomain: 指定された経路に含まれる駅 '%s' がグラフに見つかりません", name)
+				return fmt.Errorf("LoadFromDomain: %w: %s", domain.ErrStationNotFound, name)
 			}
 			route[i] = id
 		}

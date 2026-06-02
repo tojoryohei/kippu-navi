@@ -1,11 +1,13 @@
 package usecase
 
 import (
-	"errors"
 	"fmt"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
 	"split-pass-api/internal/graph"
+)
+
+var (
 )
 
 // CalculateAmountUseCase は経路から定期運賃を計算するユースケースです。
@@ -88,7 +90,7 @@ func (u *CalculateAmountUseCase) analyzeRoute(path []int) (*routeSummary, error)
 			}
 		}
 		if edge == nil {
-			return nil, fmt.Errorf("駅間に直接のエッジがありません: ID %d -> ID %d", fromID, toID)
+			return nil, fmt.Errorf("analyzeRoute: %w: ID %d -> ID %d", graph.ErrEdgeNotFound, fromID, toID)
 		}
 		summary.edges = append(summary.edges, edge)
 
@@ -104,7 +106,7 @@ func (u *CalculateAmountUseCase) analyzeRoute(path []int) (*routeSummary, error)
 		// 会社別集計
 		cID := edge.Company
 		if int(cID) < 0 || int(cID) >= len(summary.statsByCompany) {
-			return nil, fmt.Errorf("未知の会社ID: %d", cID)
+			return nil, fmt.Errorf("analyzeRoute: %w: %d", domain.ErrUnknownCompany, cID)
 		}
 		summary.statsByCompany[cID].used = true
 		summary.statsByCompany[cID].eigyo += edge.EigyoKilo
@@ -122,7 +124,7 @@ func (u *CalculateAmountUseCase) analyzeRoute(path []int) (*routeSummary, error)
 // Execute は経路（駅IDの配列）を入力として受け取り、正しい定期運賃を返します。
 func (u *CalculateAmountUseCase) Execute(path []int, months int) (*CalculationResult, error) {
 	if len(path) < 2 {
-		return nil, errors.New("経路には少なくとも2つの駅が必要です")
+		return nil, fmt.Errorf("CalculateAmountUseCase.Execute: %w", domain.ErrInvalidPath)
 	}
 
 	// 経路情報の集計

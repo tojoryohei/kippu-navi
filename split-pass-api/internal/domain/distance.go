@@ -1,12 +1,7 @@
 package domain
 
 import (
-	"errors"
 	"fmt"
-)
-
-var (
-	ErrNegativeDistance = errors.New("距離は0以上でなければなりません")
 )
 
 // DeciKilo は距離を10倍した整数（0.1km単位での誤差を防ぐため）
