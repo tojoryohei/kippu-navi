@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestCalculateAmountUseCase_Execute(t *testing.T) {
+func TestCalculateAmount_Execute(t *testing.T) {
 	g := graph.NewGraph(20)
 
 	// 駅IDの取得を容易にするためのヘルパー
@@ -69,7 +69,7 @@ func TestCalculateAmountUseCase_Execute(t *testing.T) {
 		return id, ok
 	})
 
-	u := usecase.NewCalculateAmountUseCase(
+	u := usecase.NewCalculateAmount(
 		g,
 		reg,
 		addonFareReg,

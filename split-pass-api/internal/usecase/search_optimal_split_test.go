@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestSearchOptimalSplitUseCase_Execute(t *testing.T) {
+func TestSearchOptimalSplit_Execute(t *testing.T) {
 	g := graph.NewGraph(20)
 	id := func(name string) int { return g.GetOrAddID(name) }
 
@@ -36,20 +36,20 @@ func TestSearchOptimalSplitUseCase_Execute(t *testing.T) {
 	reg.Register(domain.JREast, fare.NewEastCalculator(dummyTable, dummyTable))
 	reg.Register(domain.JRCentral, fare.NewStandardCalculator(dummyTable, dummyTable))
 
-	calcAmountUseCase := usecase.NewCalculateAmountUseCase(
+	calcAmount := usecase.NewCalculateAmount(
 		g, reg, domain.NewAddonRegistry(), domain.NewAddonRegistry(),
 		fare.NewTrainSpecificSectionCalculator(dummyTable),
 		fare.NewRouteMatcher(), fare.NewRouteMatcher(),
 	)
 
-	splitUseCase := usecase.NewFindOptimalSplitUseCase(optimizer.NewDPOptimizer(calcAmountUseCase), calcAmountUseCase)
+	split := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount), calcAmount)
 
 	t.Run("特例ルールなし: 最短経路(A-B-C)内の分割が最安になるケース", func(t *testing.T) {
-		searchUseCase := usecase.NewSearchOptimalSplitUseCase(g, splitUseCase, nil)
+		search := usecase.NewSearchOptimalSplit(g, split, nil)
 		// A-B-C (20km): 通し=2500, 分割(A-B, B-C)=1000+1000=2000
 		// A-C (21km): 通し=3000
 		// 特例なしの場合、最安は 2000
-		got, err := searchUseCase.Execute(id("A"), id("C"), 1)
+		got, err := search.Execute(id("A"), id("C"), 1)
 		if err != nil {
 			t.Fatalf("Execute が失敗しました: %v", err)
 		}
@@ -74,14 +74,14 @@ func TestSearchOptimalSplitUseCase_Execute(t *testing.T) {
 				DetourPath:   []int{id("A"), id("C")},
 			},
 		}
-		searchUseCase := usecase.NewSearchOptimalSplitUseCase(g, splitUseCase, rules)
+		search := usecase.NewSearchOptimalSplit(g, split, rules)
 
 		// DからC(遠回り端点)を検索する。
 		// DFSは [D, A, C] を出力するはず。
 		// オーケストレーターは C が遠回りの端点だと検知し、近道の分岐駅(Cの本来の到着点)まで
 		// ルートを [D, A, B, C] に置換・補正（オーバーシュート）する。
 		// さらに、近道中間駅 B には locked が掛かり分割禁止となる。
-		got, err := searchUseCase.Execute(id("D"), id("C"), 1)
+		got, err := search.Execute(id("D"), id("C"), 1)
 		if err != nil {
 			t.Fatalf("Execute が失敗しました: %v", err)
 		}
@@ -98,8 +98,8 @@ func TestSearchOptimalSplitUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("異常系：存在しない駅", func(t *testing.T) {
-		searchUseCase := usecase.NewSearchOptimalSplitUseCase(g, splitUseCase, nil)
-		_, err := searchUseCase.Execute(-1, 99, 1)
+		search := usecase.NewSearchOptimalSplit(g, split, nil)
+		_, err := search.Execute(-1, 99, 1)
 		if err == nil {
 			t.Error("無効な駅IDに対するエラーが期待されますが、nilを取得しました")
 		}

@@ -10,8 +10,8 @@ import (
 	"testing"
 )
 
-// setupUseCase はテスト用に本番データを含むユースケースを初期化します。
-func setupUseCase(t *testing.T) (*usecase.CalculateAmountUseCase, *graph.Graph) {
+// setup はテスト用に本番データを含むユースケースを初期化します。
+func setup(t *testing.T) (*usecase.CalculateAmount, *graph.Graph) {
 	t.Helper()
 
 	// 1. グラフのロード
@@ -55,7 +55,7 @@ func setupUseCase(t *testing.T) (*usecase.CalculateAmountUseCase, *graph.Graph) 
 		t.Fatalf("加算料金のID解決に失敗しました: %v", err)
 	}
 
-	u := usecase.NewCalculateAmountUseCase(
+	u := usecase.NewCalculateAmount(
 		g,
 		calcs.Registry,
 		addonFareReg,
@@ -72,7 +72,7 @@ func TestAmountCalculation_Integration(t *testing.T) {
 		t.Skip("統合テストをスキップします")
 	}
 
-	u, g := setupUseCase(t)
+	u, g := setup(t)
 
 	// 駅名からIDを取得するヘルパー
 	getIDs := func(names ...string) []int {

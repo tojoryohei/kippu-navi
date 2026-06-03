@@ -7,12 +7,11 @@ import (
 	"split-pass-api/internal/graph"
 )
 
-var (
-)
+var ()
 
-// CalculateAmountUseCase は経路から定期運賃を計算するユースケースです。
+// CalculateAmount は経路から定期運賃を計算するユースケースです。
 // グラフ、運賃レジストリ、特定区間加算運賃レジストリを協調させます。
-type CalculateAmountUseCase struct {
+type CalculateAmount struct {
 	graph                    *graph.Graph
 	reg                      *fare.Registry
 	addonFareReg             *domain.AddonRegistry
@@ -22,8 +21,8 @@ type CalculateAmountUseCase struct {
 	adjustedFareRouteMatcher *fare.RouteMatcher
 }
 
-// NewCalculateAmountUseCase は新しい CalculateAmountUseCase を作成します。
-func NewCalculateAmountUseCase(
+// NewCalculateAmount は新しい CalculateAmount を作成します。
+func NewCalculateAmount(
 	g *graph.Graph,
 	reg *fare.Registry,
 	addonFareReg *domain.AddonRegistry,
@@ -31,8 +30,8 @@ func NewCalculateAmountUseCase(
 	trainSpecificCalc *fare.TrainSpecificSectionCalculator,
 	specificFareRouteMatcher *fare.RouteMatcher,
 	adjustedFareRouteMatcher *fare.RouteMatcher,
-) *CalculateAmountUseCase {
-	return &CalculateAmountUseCase{
+) *CalculateAmount {
+	return &CalculateAmount{
 		graph:                    g,
 		reg:                      reg,
 		addonFareReg:             addonFareReg,
@@ -72,7 +71,7 @@ func (r *CalculationResult) TotalAmount() int {
 	return r.Fare + r.BarrierFreeFee + r.Charge
 }
 
-func (u *CalculateAmountUseCase) analyzeRoute(path []int) (*routeSummary, error) {
+func (u *CalculateAmount) analyzeRoute(path []int) (*routeSummary, error) {
 	summary := &routeSummary{
 		edges: make([]*domain.Edge, 0, len(path)-1),
 	}
@@ -122,9 +121,9 @@ func (u *CalculateAmountUseCase) analyzeRoute(path []int) (*routeSummary, error)
 }
 
 // Execute は経路（駅IDの配列）を入力として受け取り、正しい定期運賃を返します。
-func (u *CalculateAmountUseCase) Execute(path []int, months int) (*CalculationResult, error) {
+func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, error) {
 	if len(path) < 2 {
-		return nil, fmt.Errorf("CalculateAmountUseCase.Execute: %w", domain.ErrInvalidPath)
+		return nil, fmt.Errorf("CalculateAmount.Execute: %w", domain.ErrInvalidPath)
 	}
 
 	// 経路情報の集計
@@ -217,7 +216,7 @@ func (u *CalculateAmountUseCase) Execute(path []int, months int) (*CalculationRe
 	// 運賃計算パッケージ用のデータに変換
 	totalRouteType, err := domain.DetermineRouteType(summary.hasTrunk, summary.hasLocal)
 	if err != nil {
-		return nil, fmt.Errorf("CalculateAmountUseCase: 全区間のルート種別判定に失敗しました: %w", err)
+		return nil, fmt.Errorf("CalculateAmount: 全区間のルート種別判定に失敗しました: %w", err)
 	}
 
 	components := make([]fare.JointFareComponent, 0, domain.CompanyCount)
@@ -227,7 +226,7 @@ func (u *CalculateAmountUseCase) Execute(path []int, months int) (*CalculationRe
 		}
 		compRouteType, err := domain.DetermineRouteType(summary.statsByCompany[i].hasTrunk, summary.statsByCompany[i].hasLocal)
 		if err != nil {
-			return nil, fmt.Errorf("CalculateAmountUseCase: 会社 %d のルート種別判定に失敗しました: %w", i, err)
+			return nil, fmt.Errorf("CalculateAmount: 会社 %d のルート種別判定に失敗しました: %w", i, err)
 		}
 		components = append(components, fare.JointFareComponent{
 			CompanyID: domain.CompanyID(i),

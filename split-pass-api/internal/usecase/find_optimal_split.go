@@ -50,24 +50,24 @@ type SplitOptimizer[T EvaluationResult] interface {
 	Optimize(path []int, months int, locked []bool) ([]OptimizedPath[T], error)
 }
 
-// FindOptimalSplitUseCase は経路から分割定期券の最安パターンを見つけるユースケースです。
+// FindOptimalSplit は経路から分割定期券の最安パターンを見つけるユースケースです。
 // DPなどの具体的なアルゴリズムは SplitOptimizer に委譲されます。
-type FindOptimalSplitUseCase struct {
-	optimizer   SplitOptimizer[*CalculationResult]
-	calcUseCase *CalculateAmountUseCase
+type FindOptimalSplit struct {
+	optimizer SplitOptimizer[*CalculationResult]
+	calc      *CalculateAmount
 }
 
-// NewFindOptimalSplitUseCase は新しい FindOptimalSplitUseCase を作成します。
-func NewFindOptimalSplitUseCase(opt SplitOptimizer[*CalculationResult], calc *CalculateAmountUseCase) *FindOptimalSplitUseCase {
-	return &FindOptimalSplitUseCase{
-		optimizer:   opt,
-		calcUseCase: calc,
+// NewFindOptimalSplit は新しい FindOptimalSplit を作成します。
+func NewFindOptimalSplit(opt SplitOptimizer[*CalculationResult], calc *CalculateAmount) *FindOptimalSplit {
+	return &FindOptimalSplit{
+		optimizer: opt,
+		calc:      calc,
 	}
 }
 
 // Execute は指定された経路の全分割パターンを評価し、最安となる分割結果をすべて返します。
 // locked[i] が true の駅インデックスでは分割が禁止されます。
-func (u *FindOptimalSplitUseCase) Execute(path []int, months int, locked []bool) ([]SplitResult, error) {
+func (u *FindOptimalSplit) Execute(path []int, months int, locked []bool) ([]SplitResult, error) {
 	if len(path) < 2 {
 		return nil, fmt.Errorf("findOptimalSplit: 経路には少なくとも2つの駅が必要です")
 	}
