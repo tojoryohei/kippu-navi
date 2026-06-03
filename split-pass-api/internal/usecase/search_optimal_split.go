@@ -21,24 +21,24 @@ type EvaluationTask struct {
 	Segments []RouteSegment
 }
 
-// SearchOptimalSplitUseCase は候補経路の探索・補正・分割最適化を統括するユースケースです。
-type SearchOptimalSplitUseCase struct {
-	graph        *graph.Graph
-	splitUseCase *FindOptimalSplitUseCase
-	rules        []domain.ResolvedBypassRule
+// SearchOptimalSplit は候補経路の探索・補正・分割最適化を統括するユースケースです。
+type SearchOptimalSplit struct {
+	graph *graph.Graph
+	split *FindOptimalSplit
+	rules []domain.ResolvedBypassRule
 }
 
-// NewSearchOptimalSplitUseCase は新しい SearchOptimalSplitUseCase を作成します。
-func NewSearchOptimalSplitUseCase(g *graph.Graph, u *FindOptimalSplitUseCase, rules []domain.ResolvedBypassRule) *SearchOptimalSplitUseCase {
+// NewSearchOptimalSplit は新しい SearchOptimalSplit を作成します。
+func NewSearchOptimalSplit(g *graph.Graph, u *FindOptimalSplit, rules []domain.ResolvedBypassRule) *SearchOptimalSplit {
 	// サーバー起動時に1回だけ、衝突のない安全な双方向ルールを生成・保持する
-	return &SearchOptimalSplitUseCase{
-		graph:        g,
-		splitUseCase: u,
-		rules:        makeUniqueBidirectionalRules(rules),
+	return &SearchOptimalSplit{
+		graph: g,
+		split: u,
+		rules: makeUniqueBidirectionalRules(rules),
 	}
 }
 
-func (u *SearchOptimalSplitUseCase) Execute(startID, endID, months int) ([]SplitResult, error) {
+func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([]SplitResult, error) {
 	candidatePathResults, err := u.getCandidatePaths(startID, endID)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (u *SearchOptimalSplitUseCase) Execute(startID, endID, months int) ([]Split
 	return u.filterGlobalOptimal(allPatterns), nil
 }
 
-func (u *SearchOptimalSplitUseCase) getCandidatePaths(startID, endID int) ([]*graph.PathResult, error) {
+func (u *SearchOptimalSplit) getCandidatePaths(startID, endID int) ([]*graph.PathResult, error) {
 	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
 	if err != nil {
 		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の検索に失敗: %w", err)
@@ -73,7 +73,7 @@ func (u *SearchOptimalSplitUseCase) getCandidatePaths(startID, endID int) ([]*gr
 	return candidates, nil
 }
 
-func (u *SearchOptimalSplitUseCase) generateTasks(paths [][]int, rules []domain.ResolvedBypassRule) []EvaluationTask {
+func (u *SearchOptimalSplit) generateTasks(paths [][]int, rules []domain.ResolvedBypassRule) []EvaluationTask {
 	var tasks []EvaluationTask
 
 	for _, path := range paths {
@@ -141,7 +141,7 @@ func (u *SearchOptimalSplitUseCase) generateTasks(paths [][]int, rules []domain.
 }
 
 // buildOvershootPath は発着駅が遠回り上にある場合、分岐駅まで延長した経路と locked を生成します（分岐2用）。
-func (u *SearchOptimalSplitUseCase) buildOvershootPath(path []int, locked []bool, rule domain.ResolvedBypassRule) ([]int, []bool) {
+func (u *SearchOptimalSplit) buildOvershootPath(path []int, locked []bool, rule domain.ResolvedBypassRule) ([]int, []bool) {
 	// 始点のオーバーシュート判定
 	for i := 1; i < len(rule.DetourPath)-1; i++ {
 		suffix := rule.DetourPath[i:]
@@ -183,7 +183,7 @@ func (u *SearchOptimalSplitUseCase) buildOvershootPath(path []int, locked []bool
 }
 
 // expandPath は経路内の遠回り区間を再帰的に展開し、強制分割の全組み合わせを返します（分岐2用）。
-func (u *SearchOptimalSplitUseCase) expandPath(path []int, locked []bool, rules []domain.ResolvedBypassRule) [][]RouteSegment {
+func (u *SearchOptimalSplit) expandPath(path []int, locked []bool, rules []domain.ResolvedBypassRule) [][]RouteSegment {
 	for _, rule := range rules {
 		startIdx, _ := u.findSubPath(path, rule.DetourPath)
 		if startIdx == -1 {
@@ -233,7 +233,7 @@ func (u *SearchOptimalSplitUseCase) expandPath(path []int, locked []bool, rules 
 	return [][]RouteSegment{{{Path: path, Locked: locked}}}
 }
 
-func (u *SearchOptimalSplitUseCase) evaluateTasks(tasks []EvaluationTask, months int) ([]SplitResult, error) {
+func (u *SearchOptimalSplit) evaluateTasks(tasks []EvaluationTask, months int) ([]SplitResult, error) {
 	var allPatterns []SplitResult
 
 	for _, task := range tasks {
@@ -242,7 +242,7 @@ func (u *SearchOptimalSplitUseCase) evaluateTasks(tasks []EvaluationTask, months
 		isValidTask := true
 
 		for _, seg := range task.Segments {
-			results, err := u.splitUseCase.Execute(seg.Path, months, seg.Locked)
+			results, err := u.split.Execute(seg.Path, months, seg.Locked)
 			if err != nil || len(results) == 0 {
 				isValidTask = false
 				break
@@ -266,7 +266,7 @@ func (u *SearchOptimalSplitUseCase) evaluateTasks(tasks []EvaluationTask, months
 	return allPatterns, nil
 }
 
-func (u *SearchOptimalSplitUseCase) filterGlobalOptimal(patterns []SplitResult) []SplitResult {
+func (u *SearchOptimalSplit) filterGlobalOptimal(patterns []SplitResult) []SplitResult {
 	if len(patterns) == 0 {
 		return nil
 	}
@@ -286,7 +286,7 @@ func (u *SearchOptimalSplitUseCase) filterGlobalOptimal(patterns []SplitResult) 
 }
 
 // isEntirelyOnRule は経路の全駅が特例の近道・遠回りのいずれかに含まれているかを判定します（分岐1用）。
-func (u *SearchOptimalSplitUseCase) isEntirelyOnRule(path []int, rule domain.ResolvedBypassRule) bool {
+func (u *SearchOptimalSplit) isEntirelyOnRule(path []int, rule domain.ResolvedBypassRule) bool {
 	for _, stationID := range path {
 		if !u.containsStation(rule.ShortcutPath, stationID) && !u.containsStation(rule.DetourPath, stationID) {
 			return false
@@ -296,7 +296,7 @@ func (u *SearchOptimalSplitUseCase) isEntirelyOnRule(path []int, rule domain.Res
 }
 
 // isOnDetourMiddle は駅IDが遠回りルールの中間駅（分岐駅を除く）に含まれるかを返します。
-func (u *SearchOptimalSplitUseCase) isOnDetourMiddle(stationID int, rule domain.ResolvedBypassRule) bool {
+func (u *SearchOptimalSplit) isOnDetourMiddle(stationID int, rule domain.ResolvedBypassRule) bool {
 	for i := 1; i < len(rule.DetourPath)-1; i++ {
 		if rule.DetourPath[i] == stationID {
 			return true
@@ -306,7 +306,7 @@ func (u *SearchOptimalSplitUseCase) isOnDetourMiddle(stationID int, rule domain.
 }
 
 // containsStation は経路内に指定の駅IDが含まれるかを返します。
-func (u *SearchOptimalSplitUseCase) containsStation(path []int, stationID int) bool {
+func (u *SearchOptimalSplit) containsStation(path []int, stationID int) bool {
 	for _, id := range path {
 		if id == stationID {
 			return true
@@ -316,7 +316,7 @@ func (u *SearchOptimalSplitUseCase) containsStation(path []int, stationID int) b
 }
 
 // indexOf はスライス内の要素のインデックスを返します。見つからない場合は -1 を返します。
-func (u *SearchOptimalSplitUseCase) indexOf(path []int, stationID int) int {
+func (u *SearchOptimalSplit) indexOf(path []int, stationID int) int {
 	for i, id := range path {
 		if id == stationID {
 			return i
@@ -335,7 +335,7 @@ func makeShortcutLocked(shortcutPath []int) []bool {
 }
 
 // findSubPath は2つのスライス間の部分一致を検索し、開始インデックスと終了インデックスを返します。見つからない場合は (-1, -1) を返します。
-func (u *SearchOptimalSplitUseCase) findSubPath(a, b []int) (int, int) {
+func (u *SearchOptimalSplit) findSubPath(a, b []int) (int, int) {
 	if len(b) == 0 || len(a) < len(b) {
 		return -1, -1
 	}
@@ -347,7 +347,7 @@ func (u *SearchOptimalSplitUseCase) findSubPath(a, b []int) (int, int) {
 	return -1, -1
 }
 
-func (u *SearchOptimalSplitUseCase) isMatch(a, b []int) bool {
+func (u *SearchOptimalSplit) isMatch(a, b []int) bool {
 	if len(a) != len(b) {
 		return false
 	}

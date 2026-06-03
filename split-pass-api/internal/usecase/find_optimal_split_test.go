@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestFindOptimalSplitUseCase_Execute(t *testing.T) {
+func TestFindOptimalSplit_Execute(t *testing.T) {
 	g := graph.NewGraph(20)
 	id := func(name string) int { return g.GetOrAddID(name) }
 
@@ -69,7 +69,7 @@ func TestFindOptimalSplitUseCase_Execute(t *testing.T) {
 	addonFareReg := domain.NewAddonRegistry()
 	addonChargeReg := domain.NewAddonRegistry()
 
-	calcUseCase := usecase.NewCalculateAmountUseCase(
+	calc := usecase.NewCalculateAmount(
 		g,
 		reg,
 		addonFareReg,
@@ -79,8 +79,8 @@ func TestFindOptimalSplitUseCase_Execute(t *testing.T) {
 		fare.NewRouteMatcher(),
 	)
 
-	opt := optimizer.NewDPOptimizer(calcUseCase)
-	findOptimalUseCase := usecase.NewFindOptimalSplitUseCase(opt, calcUseCase)
+	opt := optimizer.NewDPOptimizer(calc)
+	findOptimal := usecase.NewFindOptimalSplit(opt, calc)
 
 	tests := []struct {
 		name    string
@@ -171,7 +171,7 @@ func TestFindOptimalSplitUseCase_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			locked := make([]bool, len(tt.path))
-			got, err := findOptimalUseCase.Execute(tt.path, tt.months, locked)
+			got, err := findOptimal.Execute(tt.path, tt.months, locked)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -202,7 +202,7 @@ func TestFindOptimalSplitUseCase_Execute(t *testing.T) {
 }
 
 // 複数パターンの最安値が返ることを確認するテスト
-func TestFindOptimalSplitUseCase_Execute_MultipleOptimalPaths(t *testing.T) {
+func TestFindOptimalSplit_Execute_MultipleOptimalPaths(t *testing.T) {
 	g := graph.NewGraph(20)
 	id := func(name string) int { return g.GetOrAddID(name) }
 
@@ -247,18 +247,18 @@ func TestFindOptimalSplitUseCase_Execute_MultipleOptimalPaths(t *testing.T) {
 	addonFareReg := domain.NewAddonRegistry()
 	addonChargeReg := domain.NewAddonRegistry()
 
-	calcUseCase := usecase.NewCalculateAmountUseCase(
+	calc := usecase.NewCalculateAmount(
 		g, reg, addonFareReg, addonChargeReg,
 		fare.NewTrainSpecificSectionCalculator(dummyTable),
 		fare.NewRouteMatcher(), fare.NewRouteMatcher(),
 	)
 
-	opt := optimizer.NewDPOptimizer(calcUseCase)
-	findOptimalUseCase := usecase.NewFindOptimalSplitUseCase(opt, calcUseCase)
+	opt := optimizer.NewDPOptimizer(calc)
+	findOptimal := usecase.NewFindOptimalSplit(opt, calc)
 
 	path := []int{id("A"), id("B"), id("C"), id("D")}
 	locked := make([]bool, len(path))
-	got, err := findOptimalUseCase.Execute(path, 1, locked)
+	got, err := findOptimal.Execute(path, 1, locked)
 	if err != nil {
 		t.Fatalf("Execute() unexpected error: %v", err)
 	}

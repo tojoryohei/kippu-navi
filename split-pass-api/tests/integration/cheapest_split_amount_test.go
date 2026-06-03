@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestSearchOptimalSplitUseCase_Integration(t *testing.T) {
+func TestSearchOptimalSplit_Integration(t *testing.T) {
 	// 1. 環境構築 (main.go と同様のセットアップ)
 	loader := &graphio.JSONLoader{}
 	g, err := loader.Load(data.GetEdgesReader())
@@ -51,13 +51,13 @@ func TestSearchOptimalSplitUseCase_Integration(t *testing.T) {
 	}
 
 	// ユースケースの初期化
-	amountUseCase := usecase.NewCalculateAmountUseCase(
+	amount := usecase.NewCalculateAmount(
 		g, calcs.Registry, domain.NewAddonRegistry(), domain.NewAddonRegistry(),
 		calcs.TrainSpecific, calcs.SpecificRoute, calcs.AdjustedRoute,
 	)
-	opt := optimizer.NewDPOptimizer(amountUseCase)
-	splitUseCase := usecase.NewFindOptimalSplitUseCase(opt, amountUseCase)
-	searchUseCase := usecase.NewSearchOptimalSplitUseCase(g, splitUseCase, bypassRules)
+	opt := optimizer.NewDPOptimizer(amount)
+	split := usecase.NewFindOptimalSplit(opt, amount)
+	search := usecase.NewSearchOptimalSplit(g, split, bypassRules)
 
 	// 2. テストケースの実行
 	tests := []struct {
@@ -120,7 +120,7 @@ func TestSearchOptimalSplitUseCase_Integration(t *testing.T) {
 				t.Fatalf("駅が見つかりません: %s, %s", tt.from, tt.to)
 			}
 
-			results, err := searchUseCase.Execute(fromID, toID, tt.months)
+			results, err := search.Execute(fromID, toID, tt.months)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
