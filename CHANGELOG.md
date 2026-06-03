@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.30.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.29.0...kippu-navi-v1.30.0) (2026-06-03)
+
+
+### Features
+
+* 特例区間（旅客営業規則 第69条）を考慮した経路分割オーケストレータの実装 ([#263](https://github.com/tojoryohei/kippu-navi/issues/263)) ([1803aa4](https://github.com/tojoryohei/kippu-navi/commit/1803aa4410f35b033e47d8fcd6ccf06ffce043ed))
+
 ## [1.29.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.28.0...kippu-navi-v1.29.0) (2026-06-01)
 
 
