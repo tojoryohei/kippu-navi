@@ -1,10 +1,17 @@
 package optimizer
 
 import (
+	"errors"
 	"fmt"
 	"math"
-	"split-pass-api/internal/domain"
 	"split-pass-api/internal/usecase"
+)
+
+var (
+	// ErrInvalidPathLength は、経路として指定された駅数が足りない場合のエラーです。
+	ErrInvalidPathLength = errors.New("経路には少なくとも2つの駅が必要です")
+	// ErrNoValidPattern は、有効な分割パターンが見つからなかった場合のエラーです。
+	ErrNoValidPattern = errors.New("有効な分割パターンが見つかりませんでした")
 )
 
 // DPOptimizer は、1次元動的計画法 (DP) を使用して最適な経路分割を探索するアルゴリズムクラスです。
@@ -20,10 +27,12 @@ func NewDPOptimizer[T usecase.EvaluationResult](evaluator usecase.RouteEvaluator
 }
 
 // Optimize は O(N^3) で最適な分割経路を探索します。
-func (o *DPOptimizer[T]) Optimize(path []int, months int) ([]usecase.OptimizedPath[T], error) {
+// locked[i] が true の駅インデックスでは分割が禁止されます。
+// locked が nil または空の場合、すべての駅で分割可能として扱います。
+func (o *DPOptimizer[T]) Optimize(path []int, months int, locked []bool) ([]usecase.OptimizedPath[T], error) {
 	n := len(path)
 	if n < 2 {
-		return nil, fmt.Errorf("DPOptimizer.Optimize: %w", domain.ErrInvalidPath)
+		return nil, ErrInvalidPathLength
 	}
 
 	cache := make([]T, n*n)
@@ -41,6 +50,18 @@ func (o *DPOptimizer[T]) Optimize(path []int, months int) ([]usecase.OptimizedPa
 	for j := 1; j < n; j++ {
 		for i := 0; i < j; i++ {
 			if dp[i] == INF {
+				continue
+			}
+
+			// locked[i] が true の駅は分割点として使えない。
+			// ただし i==0（始点）は分割点ではなく区間の開始なので除外しない。
+			if i > 0 && len(locked) > i && locked[i] {
+				continue
+			}
+
+			// locked[j] が true の駅は分割点として使えない。
+			// ただし j==n-1（終点）は必ず到達すべき終端なので除外しない。
+			if j < n-1 && len(locked) > j && locked[j] {
 				continue
 			}
 
@@ -65,12 +86,12 @@ func (o *DPOptimizer[T]) Optimize(path []int, months int) ([]usecase.OptimizedPa
 
 	if dp[n-1] == INF {
 		if lastErr != nil {
-			return nil, fmt.Errorf("%w: %w", ErrNoValidPattern, lastErr)
+			return nil, fmt.Errorf("%w: %v", ErrNoValidPattern, lastErr)
 		}
 		return nil, ErrNoValidPattern
 	}
 
-	// バックトラックして全ての分割パターンを抽出し、EvaluatedSegmentのリストに変換する
+	// バックトラックして全ての分割パターンを抽出し、EvaluatedSegment のリストに変換する
 	var paths []usecase.OptimizedPath[T]
 	cutPoints := make([]int, 0, n)
 	cutPoints = append(cutPoints, n-1)
@@ -80,7 +101,7 @@ func (o *DPOptimizer[T]) Optimize(path []int, months int) ([]usecase.OptimizedPa
 		if current == 0 {
 			segs := make([]usecase.EvaluatedSegment[T], len(cutPoints)-1)
 
-			// cutPointsには [終点, ..., 始点(0)] と逆順に入っているため、逆から読んで正順のSegmentsを作る
+			// cutPoints には [終点, ..., 始点(0)] と逆順に入っているため、逆から読んで正順の Segments を作る
 			for k := 0; k < len(cutPoints)-1; k++ {
 				endIdx := cutPoints[len(cutPoints)-2-k]
 				startIdx := cutPoints[len(cutPoints)-1-k]
@@ -89,7 +110,6 @@ func (o *DPOptimizer[T]) Optimize(path []int, months int) ([]usecase.OptimizedPa
 				segPath := make([]int, endIdx-startIdx+1)
 				copy(segPath, path[startIdx:endIdx+1])
 
-				// ここで cache を参照する。
 				// p が prev[current] に含まれているということは、DPの計算フェーズにおいて
 				// path[p:current+1] の運賃計算が正常に完了し cache に格納されていることが
 				// 保証されているため、ゼロ値（未計算）を引くことはない。

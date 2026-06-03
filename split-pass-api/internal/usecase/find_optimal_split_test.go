@@ -80,7 +80,7 @@ func TestFindOptimalSplitUseCase_Execute(t *testing.T) {
 	)
 
 	opt := optimizer.NewDPOptimizer(calcUseCase)
-	findOptimalUseCase := usecase.NewFindOptimalSplitUseCase(opt)
+	findOptimalUseCase := usecase.NewFindOptimalSplitUseCase(opt, calcUseCase)
 
 	tests := []struct {
 		name    string
@@ -170,7 +170,8 @@ func TestFindOptimalSplitUseCase_Execute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := findOptimalUseCase.Execute(tt.path, tt.months)
+			locked := make([]bool, len(tt.path))
+			got, err := findOptimalUseCase.Execute(tt.path, tt.months, locked)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -253,9 +254,11 @@ func TestFindOptimalSplitUseCase_Execute_MultipleOptimalPaths(t *testing.T) {
 	)
 
 	opt := optimizer.NewDPOptimizer(calcUseCase)
-	findOptimalUseCase := usecase.NewFindOptimalSplitUseCase(opt)
+	findOptimalUseCase := usecase.NewFindOptimalSplitUseCase(opt, calcUseCase)
 
-	got, err := findOptimalUseCase.Execute([]int{id("A"), id("B"), id("C"), id("D")}, 1)
+	path := []int{id("A"), id("B"), id("C"), id("D")}
+	locked := make([]bool, len(path))
+	got, err := findOptimalUseCase.Execute(path, 1, locked)
 	if err != nil {
 		t.Fatalf("Execute() unexpected error: %v", err)
 	}

@@ -1,9 +1,6 @@
 package usecase
 
-import (
-	"fmt"
-	"split-pass-api/internal/domain"
-)
+import "fmt"
 
 // EvaluationResult は、運賃計算結果を抽象化するインターフェースです。
 type EvaluationResult interface {
@@ -17,15 +14,15 @@ type RouteEvaluator[T EvaluationResult] interface {
 
 // EvaluatedSegment は、評価済みの区間の経路と結果を保持します。
 type EvaluatedSegment[T EvaluationResult] struct {
-	Path   []int
-	Result T
+	StationIDs []int
+	Result     T
 }
 
 // NewEvaluatedSegment は、経路と結果を指定して EvaluatedSegment を生成します。
 func NewEvaluatedSegment[T EvaluationResult](path []int, res T) EvaluatedSegment[T] {
 	return EvaluatedSegment[T]{
-		Path:   path,
-		Result: res,
+		StationIDs: path,
+		Result:     res,
 	}
 }
 
@@ -35,34 +32,68 @@ type OptimizedPath[T EvaluationResult] struct {
 	Segments    []EvaluatedSegment[T]
 }
 
-// SplitSegment は分割された個々の区間とその運賃計算結果の型エイリアスです。
-type SplitSegment = EvaluatedSegment[*CalculationResult]
+// SplitSegment は分割された個々の区間とその運賃計算結果を保持します。
+type SplitSegment struct {
+	Path   []int
+	Result *CalculationResult
+}
 
-// SplitResult は最適な分割結果とその内訳の型エイリアスです。
-type SplitResult = OptimizedPath[*CalculationResult]
+// SplitResult は最適な分割結果とその内訳を保持します。
+type SplitResult struct {
+	TotalAmount int
+	Segments    []SplitSegment
+}
 
 // SplitOptimizer は経路の最適分割を行うアルゴリズムのインターフェースです。
+// locked[i] が true の駅インデックスでは分割が禁止されます。
 type SplitOptimizer[T EvaluationResult] interface {
-	Optimize(path []int, months int) ([]OptimizedPath[T], error)
+	Optimize(path []int, months int, locked []bool) ([]OptimizedPath[T], error)
 }
 
 // FindOptimalSplitUseCase は経路から分割定期券の最安パターンを見つけるユースケースです。
 // DPなどの具体的なアルゴリズムは SplitOptimizer に委譲されます。
 type FindOptimalSplitUseCase struct {
-	optimizer SplitOptimizer[*CalculationResult]
+	optimizer   SplitOptimizer[*CalculationResult]
+	calcUseCase *CalculateAmountUseCase
 }
 
 // NewFindOptimalSplitUseCase は新しい FindOptimalSplitUseCase を作成します。
-func NewFindOptimalSplitUseCase(opt SplitOptimizer[*CalculationResult]) *FindOptimalSplitUseCase {
+func NewFindOptimalSplitUseCase(opt SplitOptimizer[*CalculationResult], calc *CalculateAmountUseCase) *FindOptimalSplitUseCase {
 	return &FindOptimalSplitUseCase{
-		optimizer: opt,
+		optimizer:   opt,
+		calcUseCase: calc,
 	}
 }
 
 // Execute は指定された経路の全分割パターンを評価し、最安となる分割結果をすべて返します。
-func (u *FindOptimalSplitUseCase) Execute(path []int, months int) ([]SplitResult, error) {
-	if months != 1 && months != 3 && months != 6 {
-		return nil, fmt.Errorf("findOptimalSplit: %w", domain.ErrInvalidMonths)
+// locked[i] が true の駅インデックスでは分割が禁止されます。
+func (u *FindOptimalSplitUseCase) Execute(path []int, months int, locked []bool) ([]SplitResult, error) {
+	if len(path) < 2 {
+		return nil, fmt.Errorf("findOptimalSplit: 経路には少なくとも2つの駅が必要です")
 	}
-	return u.optimizer.Optimize(path, months)
+	if len(locked) != len(path) {
+		return nil, fmt.Errorf("findOptimalSplit: locked の長さが経路の長さと一致しません")
+	}
+
+	optPaths, err := u.optimizer.Optimize(path, months, locked)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []SplitResult
+	for _, optPath := range optPaths {
+		segs := make([]SplitSegment, len(optPath.Segments))
+		for i, evalSeg := range optPath.Segments {
+			segs[i] = SplitSegment{
+				Path:   evalSeg.StationIDs,
+				Result: evalSeg.Result,
+			}
+		}
+		results = append(results, SplitResult{
+			TotalAmount: optPath.TotalAmount,
+			Segments:    segs,
+		})
+	}
+
+	return results, nil
 }
