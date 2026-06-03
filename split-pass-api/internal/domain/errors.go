@@ -23,4 +23,7 @@ var (
 
 	// ErrUnknownCompany は、指定された会社IDが未知の場合のエラーです。
 	ErrUnknownCompany = errors.New("未知の会社ID")
+
+	// ErrNoValidPattern は、有効な分割パターンが見つからなかった場合のエラーです。
+	ErrNoValidPattern = errors.New("有効な分割パターンが見つかりませんでした")
 )
