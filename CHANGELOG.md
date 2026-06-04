@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.30.0...kippu-navi-v1.31.0) (2026-06-04)
+
+
+### Features
+
+* 定期券印字用アルゴリズムの追加と宣言的ルールエンジンの導入 ([#271](https://github.com/tojoryohei/kippu-navi/issues/271)) ([520badc](https://github.com/tojoryohei/kippu-navi/commit/520badc656e98ca9cb71c1719dd7b3f53f6ccebb))
+
 ## [1.30.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.29.0...kippu-navi-v1.30.0) (2026-06-03)
 
 
@@ -103,7 +110,7 @@
 
 ### Features
 
-* **split-pass/fare:** 各社定期運賃計算機とRegistryの実装 ([#175](https://github.com/tojoryohei/kippu-navi/issues/175)) ([ff4d6a8](https://github.com/tojoryohei/kippu-navi/commit/ff4d6a8da804887527deb218e34513c616811666))
+* 各社定期運賃計算機とRegistryの実装 ([#175](https://github.com/tojoryohei/kippu-navi/issues/175)) ([ff4d6a8](https://github.com/tojoryohei/kippu-navi/commit/ff4d6a8da804887527deb218e34513c616811666))
 
 ## [1.19.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.18.2...kippu-navi-v1.19.0) (2026-05-26)
 
