@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'split-pass-api/**'
+      - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
 
 env:
@@ -14,8 +17,6 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
-    # Workload Identity連携に必要な権限設定
     permissions:
       contents: read
       id-token: write
@@ -24,22 +25,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. GCPへの認証
       - name: Authenticate to Google Cloud
-        id: auth
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: '${{ secrets.WIF_PROVIDER }}'
           service_account: '${{ secrets.SA_EMAIL }}'
 
-      # 2. Cloud Run へのビルド＆デプロイ
+      - name: Build Container with Cloud Build
+        run: |
+          gcloud builds submit ./split-pass-api \
+            --region=global \
+            --tag=asia-northeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }}
+
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          source: ./split-pass-api
+          image: asia-northeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          flags: '--allow-unauthenticated'
           
       - name: Show Output URL
         run: echo "Deployed URL - ${{ steps.deploy.outputs.url }}"
