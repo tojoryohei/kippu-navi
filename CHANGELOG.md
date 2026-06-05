@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.32.0...kippu-navi-v1.32.1) (2026-06-05)
+
+
+### Bug Fixes
+
+* Dockerfileのビルドエラー修正 (go.sumのコピー対応) ([#281](https://github.com/tojoryohei/kippu-navi/issues/281)) ([ac8b3a4](https://github.com/tojoryohei/kippu-navi/commit/ac8b3a44d72c7cc98fd98b18b057c7e0658539f8))
+
 ## [1.32.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.31.0...kippu-navi-v1.32.0) (2026-06-05)
 
 
