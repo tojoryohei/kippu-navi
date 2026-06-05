@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.32.1...kippu-navi-v1.32.2) (2026-06-05)
+
+
+### Bug Fixes
+
+* Cloud Run デプロイワークフローの認証方式変更とリファクタリング ([#286](https://github.com/tojoryohei/kippu-navi/issues/286)) ([8e3824f](https://github.com/tojoryohei/kippu-navi/commit/8e3824fd29e82eb1982b0a7645113c57723e97f7))
+
 ## [1.32.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.32.0...kippu-navi-v1.32.1) (2026-06-05)
 
 
