@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.31.0...kippu-navi-v1.32.0) (2026-06-05)
+
+
+### Features
+
+* REST APIハンドラ層の追加およびCloud Run向けサーバーエントリポイントの実装 ([#274](https://github.com/tojoryohei/kippu-navi/issues/274)) ([98c8162](https://github.com/tojoryohei/kippu-navi/commit/98c81624e140de6282b6e8b5ccb48eee78df1ec6))
+
 ## [1.31.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.30.0...kippu-navi-v1.31.0) (2026-06-04)
 
 
