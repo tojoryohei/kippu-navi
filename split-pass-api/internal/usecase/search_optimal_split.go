@@ -87,9 +87,9 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 		cheapestAmountPerDecikilo = 236070.0 / 100.0
 	}
 
-	normalFare := calcResult.TotalAmount()
+	normalAmount := calcResult.TotalAmount()
 
-	maxGisei := domain.DeciKilo(float64(normalFare) / cheapestAmountPerDecikilo)
+	maxGisei := domain.DeciKilo(float64(normalAmount) / cheapestAmountPerDecikilo)
 	if maxGisei < shortest.GiseiKilo {
 		maxGisei = shortest.GiseiKilo
 	}
@@ -112,7 +112,7 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 	}
 
 	normalResult := SplitResult{
-		TotalAmount: normalFare,
+		TotalAmount: normalAmount,
 		Segments: []SplitSegment{
 			{
 				Path:   shortest.StationIDs,
