@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -38,10 +39,64 @@ func NewSearchOptimalSplit(g *graph.Graph, u *FindOptimalSplit, rules []domain.R
 	}
 }
 
-func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([]SplitResult, error) {
-	candidatePathResults, err := u.getCandidatePaths(startID, endID)
+// OptimalSearchResult は探索結果全体（通常運賃と最適分割運賃）を保持します。
+type OptimalSearchResult struct {
+	Normal   SplitResult   // 分割なしの最安結果
+	Optimals []SplitResult // 分割時の最安結果
+}
+
+func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearchResult, error) {
+	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の検索に失敗: %w", err)
+	}
+
+	// maxStationsInPath は探索の上限駅数です。
+	// DFSの再帰深度と計算量の制約から設定しています。
+	const maxStationsInPath = 100
+
+	if len(shortest.StationIDs) > maxStationsInPath {
+		return nil, fmt.Errorf("searchOptimalSplit: 発着駅間の駅数(%d)が上限の%dを超えています。", len(shortest.StationIDs), maxStationsInPath)
+	}
+
+	calcResult, err := u.split.calc.Execute(shortest.StationIDs, months)
+	if err != nil {
+		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の運賃計算に失敗: %w", err)
+	}
+
+	var cheapestAmountPerDecikilo float64
+	kyotoID, kyotoExists := u.graph.NameToID["京都"]
+	osakaID, osakaExists := u.graph.NameToID["大阪"]
+
+	if kyotoExists && osakaExists {
+		kyotoToOsakaPath, err := u.graph.FindShortestPathGisei(kyotoID, osakaID)
+		if err != nil {
+			return nil, fmt.Errorf("searchOptimalSplit: 京都 -> 大阪の探索に失敗: %w", err)
+		}
+
+		kyotoToOsakaAmount, err := u.split.calc.Execute(kyotoToOsakaPath.StationIDs, months)
+		if err != nil {
+			return nil, fmt.Errorf("searchOptimalSplit: 京都 -> 大阪の運賃計算に失敗: %w", err)
+		}
+		cheapestAmountPerDecikilo = float64(kyotoToOsakaAmount.TotalAmount()) / float64(kyotoToOsakaPath.EigyoKilo)
+	} else if months == 1 {
+		cheapestAmountPerDecikilo = 45780.0 / 100.0
+	} else if months == 3 {
+		cheapestAmountPerDecikilo = 130540.0 / 100.0
+	} else {
+		cheapestAmountPerDecikilo = 236070.0 / 100.0
+	}
+
+	normalAmount := calcResult.TotalAmount()
+
+	maxGisei := domain.DeciKilo(float64(normalAmount) / cheapestAmountPerDecikilo)
+	if maxGisei < shortest.GiseiKilo {
+		maxGisei = shortest.GiseiKilo
+	}
+
+	candidatePathResults, err := u.graph.FindAllCandidatePaths(startID, endID, maxGisei)
+	if err != nil {
+		return nil, fmt.Errorf("searchOptimalSplit: %w", err)
 	}
 
 	paths := make([][]int, len(candidatePathResults))
@@ -56,62 +111,91 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([]SplitResult,
 		return nil, err
 	}
 
-	return u.filterGlobalOptimal(allPatterns), nil
-}
-
-func (u *SearchOptimalSplit) getCandidatePaths(startID, endID int) ([]*graph.PathResult, error) {
-	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
-	if err != nil {
-		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の検索に失敗: %w", err)
+	normalResult := SplitResult{
+		TotalAmount: normalAmount,
+		Segments: []SplitSegment{
+			{
+				Path:   shortest.StationIDs,
+				Result: calcResult,
+			},
+		},
 	}
 
-	maxGisei := shortest.GiseiKilo * 15 / 10
-	candidates, err := u.graph.FindAllCandidatePaths(startID, endID, maxGisei)
-	if err != nil {
-		return nil, fmt.Errorf("searchOptimalSplit: 候補経路の検索に失敗: %w", err)
-	}
-	return candidates, nil
+	return &OptimalSearchResult{
+		Normal:   normalResult,
+		Optimals: u.filterGlobalOptimal(allPatterns),
+	}, nil
 }
 
 func (u *SearchOptimalSplit) generateTasks(paths [][]int, rules []domain.ResolvedBypassRule) []EvaluationTask {
 	var tasks []EvaluationTask
 
+	if len(paths) == 0 {
+		return tasks
+	}
+
+	// 全ての候補経路は同じ発着駅を持つため、最初の経路から startID と endID を取得
+	startID := paths[0][0]
+	endID := paths[0][len(paths[0])-1]
+
+	// -----------------------------------------------------------
+	// 1. 初めの一回だけ行う処理（特例ルートの重複評価を防止）
+	// -----------------------------------------------------------
+	for _, rule := range rules {
+		startOnDetour := u.isOnDetourMiddle(startID, rule)
+		endOnDetour := u.isOnDetourMiddle(endID, rule)
+
+		// 発着駅がルールの対象区間内（近道または遠回り）にあるかを判定
+		startOnRule := u.containsStation(rule.ShortcutPath, startID) || u.containsStation(rule.DetourPath, startID)
+		endOnRule := u.containsStation(rule.ShortcutPath, endID) || u.containsStation(rule.DetourPath, endID)
+
+		// 入力された少なくとも一方が特例の遠回りで、もう一方がその特例の遠回りあるいは近道だった時
+		if (startOnDetour && endOnRule) || (endOnDetour && startOnRule) {
+			shortcutPath := make([]int, len(rule.ShortcutPath))
+			copy(shortcutPath, rule.ShortcutPath)
+
+			// 分割禁止（Locked）にして、候補経路群に「1つだけ」追加する
+			tasks = append(tasks, EvaluationTask{
+				Segments: []RouteSegment{
+					{Path: shortcutPath, Locked: makeShortcutLocked(shortcutPath)},
+				},
+			})
+			break // 逆方向も重複して評価されないように、最初のマッチで追加したらループを抜ける
+		}
+	}
+
+	// -----------------------------------------------------------
+	// 2. 各候補経路ごとの展開処理
+	// -----------------------------------------------------------
 	for _, path := range paths {
 		locked := make([]bool, len(path))
-		isBranch1 := false
+		isFullyEnclosedInRule := false
 
 		for _, rule := range rules {
 			startIdx, _ := u.findSubPath(path, rule.DetourPath)
 			startOnDetour := u.isOnDetourMiddle(path[0], rule)
 			endOnDetour := u.isOnDetourMiddle(path[len(path)-1], rule)
 
-			// 削除されていた分岐駅の存在チェックを復元
 			jStart := rule.ShortcutPath[0]
 			jEnd := rule.ShortcutPath[len(rule.ShortcutPath)-1]
 			idxStart := u.indexOf(path, jStart)
 			idxEnd := u.indexOf(path, jEnd)
 			containsBothJunctions := (idxStart != -1 && idxEnd != -1)
 
-			// 進行方向の検証。経路の進行方向とルールの方向が一致していない場合は、逆方向ルールに任せる
 			if containsBothJunctions && idxStart > idxEnd {
 				continue
 			}
 
-			// 分岐1: 経路全体が近道と遠回りのみで構成され、かつ両分岐駅を通る場合
+			// ループ内の分岐1: 経路全体が特例に含まれる場合
+			// すでに近道ルート（特例運賃）自体の追加はステップ1で済んでいるため、
+			// ここでは「元の経路（遠回り等）をそのままの状態で評価する」ためのフラグのみを立て、
+			// 無駄な expandPath（分岐2などへの波及）を打ち切る。
 			if (startOnDetour || endOnDetour) && u.isEntirelyOnRule(path, rule) {
-				shortcutPath := make([]int, len(rule.ShortcutPath))
-				copy(shortcutPath, rule.ShortcutPath)
-
-				tasks = append(tasks, EvaluationTask{
-					Segments: []RouteSegment{
-						{Path: shortcutPath, Locked: makeShortcutLocked(shortcutPath)},
-					},
-				})
-				isBranch1 = true
+				isFullyEnclosedInRule = true
 				break
 			}
 
-			// 分岐2: 発着駅が遠回り上にあるが、完全に内包(startIdx!=-1)されていない場合
+			// 分岐2: 発着駅が遠回り上にあるが、完全に内包されていない場合（オーバーシュート）
 			if (startOnDetour || endOnDetour) && startIdx == -1 {
 				extPath, extLocked := u.buildOvershootPath(path, locked, rule)
 				if extPath != nil {
@@ -123,14 +207,15 @@ func (u *SearchOptimalSplit) generateTasks(paths [][]int, rules []domain.Resolve
 			}
 		}
 
-		if isBranch1 {
+		// 経路全体が特例ルールの内部に収まっていた経路は、そのまま追加（分割許可）
+		if isFullyEnclosedInRule {
 			tasks = append(tasks, EvaluationTask{
 				Segments: []RouteSegment{{Path: path, Locked: locked}},
 			})
 			continue
 		}
 
-		// 全候補共通:
+		// 上記以外（通常の経路やオーバーシュートを含む経路）の展開
 		segmentsCombos := u.expandPath(path, locked, rules)
 		for _, segments := range segmentsCombos {
 			tasks = append(tasks, EvaluationTask{Segments: segments})
@@ -182,7 +267,7 @@ func (u *SearchOptimalSplit) buildOvershootPath(path []int, locked []bool, rule 
 	return nil, nil
 }
 
-// expandPath は経路内の遠回り区間を再帰的に展開し、強制分割の全組み合わせを返します（分岐2用）。
+// expandPath は経路内の遠回り区間を再帰的に展開し、強制分割の全組み合わせを返します。
 func (u *SearchOptimalSplit) expandPath(path []int, locked []bool, rules []domain.ResolvedBypassRule) [][]RouteSegment {
 	for _, rule := range rules {
 		startIdx, _ := u.findSubPath(path, rule.DetourPath)
@@ -243,9 +328,12 @@ func (u *SearchOptimalSplit) evaluateTasks(tasks []EvaluationTask, months int) (
 
 		for _, seg := range task.Segments {
 			results, err := u.split.Execute(seg.Path, months, seg.Locked)
-			if err != nil || len(results) == 0 {
-				isValidTask = false
-				break
+			if err != nil {
+				if errors.Is(err, domain.ErrInvalidPath) {
+					isValidTask = false
+					break
+				}
+				return nil, fmt.Errorf("evaluateTasks: %w", err)
 			}
 			bestForSeg := results[0]
 			taskTotalAmount += bestForSeg.TotalAmount
@@ -392,19 +480,30 @@ func makeUniqueBidirectionalRules(rules []domain.ResolvedBypassRule) []domain.Re
 func generateRuleKey(shortcut, detour []int) string {
 	var sb strings.Builder
 	sb.Grow((len(shortcut) + len(detour)) * 5)
+
+	// スタック上に一時バッファを確保（64bit整数の最大桁数20バイトで十分）
+	// ※ヒープではなくスタックに置かれるためアロケーションコストはゼロです
+	var buf [20]byte
+
 	for i, id := range shortcut {
 		if i > 0 {
 			sb.WriteByte(',')
 		}
-		sb.WriteString(strconv.Itoa(id))
+		// buf[:0]（容量20の空スライス）に数値を文字データとして追記
+		b := strconv.AppendInt(buf[:0], int64(id), 10)
+		sb.Write(b) // Builderの内部バッファへ直接コピー（文字列化を経由しない）
 	}
+
 	sb.WriteByte('|')
+
 	for i, id := range detour {
 		if i > 0 {
 			sb.WriteByte(',')
 		}
-		sb.WriteString(strconv.Itoa(id))
+		b := strconv.AppendInt(buf[:0], int64(id), 10)
+		sb.Write(b)
 	}
+
 	return sb.String()
 }
 

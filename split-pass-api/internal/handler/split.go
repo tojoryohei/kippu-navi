@@ -2,11 +2,12 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
+	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 	"split-pass-api/internal/usecase"
+	"strings"
 )
 
 // Split は分割定期券の最適解を計算するHTTPリクエストを処理します。
@@ -32,9 +33,10 @@ type CalculateRequest struct {
 
 // SegmentResponse は駅名を含む評価済みの区間を表現します。
 type SegmentResponse struct {
-	Path   []string                   `json:"path"`
-	Via    []string                   `json:"via"`
-	Result *usecase.CalculationResult `json:"result"`
+	Path           []string                   `json:"path"`
+	Via            []string                   `json:"via"`
+	Result         *usecase.CalculationResult `json:"result"`
+	TotalEigyoKilo domain.DeciKilo            `json:"totalEigyoKilo"`
 }
 
 // ResultResponse は1つの最適な分割パターンを表現します。
@@ -45,6 +47,7 @@ type ResultResponse struct {
 
 // CalculateResponse はレスポンスのペイロードを表現します。
 type CalculateResponse struct {
+	Normal  *ResultResponse  `json:"normal,omitempty"`
 	Results []ResultResponse `json:"results"`
 	Error   string           `json:"error,omitempty"`
 }
@@ -89,40 +92,64 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := h.search.Execute(startID, endID, req.Months)
+	optResult, err := h.search.Execute(startID, endID, req.Months)
 	if err != nil {
 		log.Printf("分割定期券の計算エラー: %v", err)
-		writeErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("計算処理に失敗しました: %v", err))
+
+		errMsg := err.Error()
+		if lastIdx := strings.LastIndex(errMsg, ":"); lastIdx != -1 {
+			errMsg = strings.TrimSpace(errMsg[lastIdx+1:])
+		}
+
+		writeErrorResponse(w, http.StatusInternalServerError, errMsg)
 		return
 	}
 
-	apiResults := make([]ResultResponse, len(results))
-	for i, res := range results {
+	mapToResultResponse := func(res usecase.SplitResult) ResultResponse {
 		apiSegments := make([]SegmentResponse, len(res.Segments))
 		for j, seg := range res.Segments {
 			pathNames := make([]string, len(seg.Path))
 			for k, id := range seg.Path {
 				pathNames[k] = h.graph.IDToName[id]
 			}
-
 			viaNames := usecase.GetVia(h.graph, seg.Path)
 
+			var eigyo domain.DeciKilo
+			if seg.Result != nil {
+				eigyo = seg.Result.TotalEigyoKilo
+			}
+
 			apiSegments[j] = SegmentResponse{
-				Path:   pathNames,
-				Via:    viaNames,
-				Result: seg.Result,
+				Path:           pathNames,
+				Via:            viaNames,
+				Result:         seg.Result,
+				TotalEigyoKilo: eigyo,
 			}
 		}
-		apiResults[i] = ResultResponse{
+		return ResultResponse{
 			TotalAmount: res.TotalAmount,
 			Segments:    apiSegments,
 		}
 	}
 
+	var normalResp *ResultResponse
+	if optResult.Normal.TotalAmount > 0 {
+		nr := mapToResultResponse(optResult.Normal)
+		normalResp = &nr
+	}
+
+	apiResults := make([]ResultResponse, len(optResult.Optimals))
+	for i, res := range optResult.Optimals {
+		apiResults[i] = mapToResultResponse(res)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	if err := json.NewEncoder(w).Encode(CalculateResponse{Results: apiResults}); err != nil {
+	if err := json.NewEncoder(w).Encode(CalculateResponse{
+		Normal:  normalResp,
+		Results: apiResults,
+	}); err != nil {
 		log.Printf("レスポンスのエンコードエラー: %v", err)
 	}
 }

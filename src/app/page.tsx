@@ -33,11 +33,11 @@ export default async function Home() {
                 <RiScissorsFill className="w-7 h-7 text-blue-600 group-hover:text-white transition-colors duration-300" />
               </div>
               <h2 className="text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors duration-300">
-                分割運賃プログラム
+                JR分割乗車券プログラム
               </h2>
             </div>
             <p className="text-slate-600 mb-6 grow">
-              一番お得な分割ルートを検索します。実際の旅行や交通費の節約に活用したい方はこちらをご利用ください。
+              一番安くなる分割乗車券の組み合わせを検索します。実際の旅行や交通費の節約に活用したい方はこちらをご利用ください。いわゆる分割定期券にも対応しました。
             </p>
             <div className="text-blue-600 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300">
               分割計算をする
@@ -52,11 +52,11 @@ export default async function Home() {
                 <RiGuideLine className="w-7 h-7 text-slate-600 group-hover:text-white transition-colors duration-300" />
               </div>
               <h2 className="text-2xl font-bold text-slate-800">
-                運賃計算プログラム
+                JR運賃計算プログラム
               </h2>
             </div>
             <p className="text-slate-600 mb-6 grow">
-              分割計算の基礎となる、乗車券の普通運賃を計算します。
+              分割計算の基礎となる、JR乗車券の運賃を計算します。
             </p>
             <div className="text-slate-700 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300">
               運賃を計算する
@@ -72,7 +72,7 @@ export default async function Home() {
           </h2>
           <div className="space-y-4 text-slate-600 leading-relaxed">
             <p>
-              JRの運賃は乗車経路に応じて計算されますが、途中の駅で乗車券を区切って購入する「分割乗車券」を利用することで、通しで購入するよりも全体の交通費を安く抑えられるケースが数多く存在します。
+              JRの運賃は乗車経路に応じて計算されますが、途中の駅で乗車券を区切って購入する「分割乗車券」を利用することで、通しで購入するよりも安くなるケースが存在します。
             </p>
             <p>
               しかし、数ある駅の中から最も安くなる分割パターンを見つけ出すのは非常に困難です。当サイトでは、情報工学に基づいた独自の経路探索アルゴリズムを活用し、出発駅から到着駅までの多くの組み合わせから「最安となる分割乗車券の組み合わせ」を自動算出します。
@@ -94,7 +94,7 @@ export default async function Home() {
               <li><strong>最大割引額：</strong> 長距離や複雑な境界線を跨ぐルートにおいて、1回の乗車で1,000円以上の差額が発生した事例も存在します。</li>
             </ul>
             <p className="text-sm mt-4">
-              ※実際の割引額や分割枚数は、利用する区間やJRの最新の運賃改定状況によって変動します。
+              ※実際の割引額や分割枚数は、利用する区間やJRの最新の運賃改定状況によって変動します。また、分割乗車券が最安の移動方法とは限らないため、他の交通手段と比較検討することもおすすめします。
             </p>
           </div>
         </div>
@@ -174,7 +174,7 @@ export default async function Home() {
               <div className="mt-3 flex items-start">
                 <span className="shrink-0 bg-slate-200 text-slate-600 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">A</span>
                 <div className="mt-0.5 text-slate-600 leading-relaxed">
-                  はい、全く問題ありません。JRの旅客営業規則に則った正当な乗車券の購入方法です。
+                  いいえ、全く問題ありません。JRの旅客営業規則に則った正当な乗車券の購入方法です。
                   <Link href="https://www.jreast.co.jp/ryokaku/02_hen/04_syo/02_setsu/03.html" className="text-blue-600 underline decoration-blue-600 underline-offset-2 mx-1">
                     旅客営業規則 第157条
                   </Link>
@@ -199,7 +199,7 @@ export default async function Home() {
                   <Link href="https://e5489.jr-odekake.net/e5489/cspc/CBTopMenuPC" className="text-blue-600 underline decoration-blue-600 underline-offset-2 mx-1">
                     e5489
                   </Link>
-                  などのインターネット予約サービスを使うと便利です。駅では発売を断られる可能性があります。
+                  などのインターネット予約サービスを使うと便利です。駅の自動券売機やみどりの窓口では、他駅発の乗車券を発売しないことがあります。
                 </div>
               </div>
             </div>
@@ -262,12 +262,12 @@ export default async function Home() {
             <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
               <h3 className="font-bold text-slate-800 flex items-start">
                 <span className="shrink-0 bg-blue-100 text-blue-600 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">Q</span>
-                <span className="mt-0.5">定期券や割引乗車券を使った計算できますか？</span>
+                <span className="mt-0.5">割引乗車券やIC定期券を使った計算できますか？</span>
               </h3>
               <div className="mt-3 flex items-start">
                 <span className="shrink-0 bg-slate-200 text-slate-600 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">A</span>
                 <div className="mt-0.5 text-slate-600 leading-relaxed">
-                  現在のプログラムは大人の普通乗車券の計算にのみ対応しています。割引乗車券との併用計算や定期乗車券の対応は今しばらくお待ちください。
+                  現在のプログラムは大人の普通乗車券と通勤定期乗車券の計算に対応しています。割引乗車券との併用計算やIC定期券の対応は今しばらくお待ちください。
                 </div>
               </div>
             </div>

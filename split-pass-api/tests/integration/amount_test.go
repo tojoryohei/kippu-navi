@@ -103,6 +103,7 @@ func TestAmountCalculation_Integration(t *testing.T) {
 				Fare:           7840, // 運賃
 				BarrierFreeFee: 0,
 				Charge:         0,
+				TotalEigyoKilo: 103,
 			},
 		},
 		{
@@ -114,6 +115,7 @@ func TestAmountCalculation_Integration(t *testing.T) {
 				Fare:           5020,
 				BarrierFreeFee: 300, // 電車特定区間はバリアフリー料金対象
 				Charge:         0,
+				TotalEigyoKilo: 38,
 			},
 		},
 		{
@@ -125,6 +127,7 @@ func TestAmountCalculation_Integration(t *testing.T) {
 				Fare:           8350,
 				BarrierFreeFee: 0,
 				Charge:         0,
+				TotalEigyoKilo: 26,
 			},
 		},
 		{
@@ -136,6 +139,7 @@ func TestAmountCalculation_Integration(t *testing.T) {
 				Fare:           6240,
 				BarrierFreeFee: 0,
 				Charge:         0,
+				TotalEigyoKilo: 68,
 			},
 		},
 		{
@@ -147,6 +151,7 @@ func TestAmountCalculation_Integration(t *testing.T) {
 				Fare:           13330,
 				BarrierFreeFee: 300,
 				Charge:         0,
+				TotalEigyoKilo: 111,
 			},
 		},
 		{
@@ -158,6 +163,7 @@ func TestAmountCalculation_Integration(t *testing.T) {
 				Fare:           64650,
 				BarrierFreeFee: 0,
 				Charge:         25270,
+				TotalEigyoKilo: 152,
 			},
 		},
 	}
