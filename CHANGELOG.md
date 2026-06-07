@@ -1,95 +1,11 @@
 # Changelog
 
-## [1.32.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.32.1...kippu-navi-v1.32.2) (2026-06-05)
-
-
-### Bug Fixes
-
-* Cloud Run デプロイワークフローの認証方式変更とリファクタリング ([#286](https://github.com/tojoryohei/kippu-navi/issues/286)) ([8e3824f](https://github.com/tojoryohei/kippu-navi/commit/8e3824fd29e82eb1982b0a7645113c57723e97f7))
-
-## [1.32.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.32.0...kippu-navi-v1.32.1) (2026-06-05)
-
-
-### Bug Fixes
-
-* Dockerfileのビルドエラー修正 (go.sumのコピー対応) ([#281](https://github.com/tojoryohei/kippu-navi/issues/281)) ([ac8b3a4](https://github.com/tojoryohei/kippu-navi/commit/ac8b3a44d72c7cc98fd98b18b057c7e0658539f8))
-
-## [1.32.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.31.0...kippu-navi-v1.32.0) (2026-06-05)
+## [2.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.32.2...kippu-navi-v1.33.0) (2026-06-07)
 
 
 ### Features
 
-* REST APIハンドラ層の追加およびCloud Run向けサーバーエントリポイントの実装 ([#274](https://github.com/tojoryohei/kippu-navi/issues/274)) ([98c8162](https://github.com/tojoryohei/kippu-navi/commit/98c81624e140de6282b6e8b5ccb48eee78df1ec6))
-
-## [1.31.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.30.0...kippu-navi-v1.31.0) (2026-06-04)
-
-
-### Features
-
-* 定期券印字用アルゴリズムの追加と宣言的ルールエンジンの導入 ([#271](https://github.com/tojoryohei/kippu-navi/issues/271)) ([520badc](https://github.com/tojoryohei/kippu-navi/commit/520badc656e98ca9cb71c1719dd7b3f53f6ccebb))
-
-## [1.30.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.29.0...kippu-navi-v1.30.0) (2026-06-03)
-
-
-### Features
-
-* 特例区間（旅客営業規則 第69条）を考慮した経路分割オーケストレータの実装 ([#263](https://github.com/tojoryohei/kippu-navi/issues/263)) ([1803aa4](https://github.com/tojoryohei/kippu-navi/commit/1803aa4410f35b033e47d8fcd6ccf06ffce043ed))
-
-## [1.29.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.28.0...kippu-navi-v1.29.0) (2026-06-01)
-
-
-### Features
-
-* FindOptimalSplitUseCase の実装とDPによる探索最適化 ([#256](https://github.com/tojoryohei/kippu-navi/issues/256)) ([3296378](https://github.com/tojoryohei/kippu-navi/commit/32963781f6ecb3a8098df302ff7711cdd76f563f))
-
-## [1.28.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.27.0...kippu-navi-v1.28.0) (2026-05-31)
-
-
-### Features
-
-* CalculateAmountUseCaseの実装と特急料金ロジックの統合 ([#245](https://github.com/tojoryohei/kippu-navi/issues/245)) ([8b11035](https://github.com/tojoryohei/kippu-navi/commit/8b110354fa5da0a218d2b549a9ae337449a95e72))
-
-## [1.27.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.26.0...kippu-navi-v1.27.0) (2026-05-31)
-
-
-### Features
-
-* 初期化処理の構造体化および特例・調整運賃データのロード機能追加 ([#234](https://github.com/tojoryohei/kippu-navi/issues/234)) ([4167bcc](https://github.com/tojoryohei/kippu-navi/commit/4167bcc354e218d6fb097602d1da60ec1c246ab4))
-
-## [1.26.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.25.0...kippu-navi-v1.26.0) (2026-05-30)
-
-
-### Features
-
-* 特定運賃の高速・安全な経路判定エンジン（Two-Phase Lookup）の追加 ([#225](https://github.com/tojoryohei/kippu-navi/issues/225)) ([7f2bac7](https://github.com/tojoryohei/kippu-navi/commit/7f2bac7731066ba6c850170655f9fa85fb8747ee))
-
-## [1.25.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.24.0...kippu-navi-v1.25.0) (2026-05-30)
-
-
-### Features
-
-* 特定運賃マスターデータの安全なロード基盤の追加（インフラ層） ([#222](https://github.com/tojoryohei/kippu-navi/issues/222)) ([bfd5f58](https://github.com/tojoryohei/kippu-navi/commit/bfd5f58feb680cb2c1b38ec64f6274494741df20))
-
-## [1.24.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.23.0...kippu-navi-v1.24.0) (2026-05-30)
-
-
-### Features
-
-* 会社間を跨ぐ連絡運賃計算ロジック（差額加算方式）の追加 ([#217](https://github.com/tojoryohei/kippu-navi/issues/217)) ([1975856](https://github.com/tojoryohei/kippu-navi/commit/19758569f932a9889d9772d14993288ad39bec3b))
-
-## [1.23.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.3...kippu-navi-v1.23.0) (2026-05-30)
-
-
-### Features
-
-* 路線固有の加算運賃判定ロジック基盤の追加 ([#214](https://github.com/tojoryohei/kippu-navi/issues/214)) ([c6759d8](https://github.com/tojoryohei/kippu-navi/commit/c6759d8dd21f4b8d57b1c676dc668d3179052c70))
-
-## [1.22.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.2...kippu-navi-v1.22.3) (2026-05-30)
-
-
-### Bug Fixes
-
-* JSONデコード処理の厳密化（未定義キー検知と配列上限オーバーの防止） ([#211](https://github.com/tojoryohei/kippu-navi/issues/211)) ([f471c2f](https://github.com/tojoryohei/kippu-navi/commit/f471c2fd834f576d3c5aef68aea450db4d921a0d))
+* 定期券分割計算機能の追加（フロントエンド統合） ([#293](https://github.com/tojoryohei/kippu-navi/issues/293)) ([81bae9c](https://github.com/tojoryohei/kippu-navi/commit/81bae9cf101e1faf168bcea661f4d848e49c2de1))
 
 ## [1.22.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.1...kippu-navi-v1.22.2) (2026-05-29)
 
@@ -104,41 +20,6 @@
 ### Bug Fixes
 
 * トップへ戻るボタンのモバイル表示位置の修正およびコンポーネントの最適化 ([#199](https://github.com/tojoryohei/kippu-navi/issues/199)) ([8412a4e](https://github.com/tojoryohei/kippu-navi/commit/8412a4e5cb9702983ed0ecb733cb3fd6a74e534d))
-
-## [1.22.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.21.1...kippu-navi-v1.22.0) (2026-05-28)
-
-
-### Features
-
-* 電車特定区間運賃およびバリアフリー料金の計算機能を追加 ([#196](https://github.com/tojoryohei/kippu-navi/issues/196)) ([09a782a](https://github.com/tojoryohei/kippu-navi/commit/09a782a51df44cf74e308ff450f807822da2690e))
-
-## [1.21.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.21.0...kippu-navi-v1.21.1) (2026-05-28)
-
-
-### Performance Improvements
-
-* 運賃計算の経路入力を駅名(string)から駅ID(int)に変更 ([#185](https://github.com/tojoryohei/kippu-navi/issues/185)) ([184ebb5](https://github.com/tojoryohei/kippu-navi/commit/184ebb504a5bc9b92f76f343cc4bd3b2deda1c38))
-
-## [1.21.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.20.0...kippu-navi-v1.21.0) (2026-05-27)
-
-
-### Features
-
-* 駅グラフ構築とDijkstra法による最短経路探索の実装 ([#178](https://github.com/tojoryohei/kippu-navi/issues/178)) ([b32385b](https://github.com/tojoryohei/kippu-navi/commit/b32385b98f62dc49f6a91824f908e20d44bad245))
-
-## [1.20.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.19.0...kippu-navi-v1.20.0) (2026-05-26)
-
-
-### Features
-
-* 各社定期運賃計算機とRegistryの実装 ([#175](https://github.com/tojoryohei/kippu-navi/issues/175)) ([ff4d6a8](https://github.com/tojoryohei/kippu-navi/commit/ff4d6a8da804887527deb218e34513c616811666))
-
-## [1.19.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.18.2...kippu-navi-v1.19.0) (2026-05-26)
-
-
-### Features
-
-* 定期運賃計算の基盤となる型定義と共通計算ロジックを実装 ([#171](https://github.com/tojoryohei/kippu-navi/issues/171)) ([36f9d48](https://github.com/tojoryohei/kippu-navi/commit/36f9d4895b7e48a5d95e6667ff8263961bae1834))
 
 ## [1.18.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.18.1...kippu-navi-v1.18.2) (2026-05-23)
 
