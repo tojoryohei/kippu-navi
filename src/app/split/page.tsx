@@ -4,7 +4,7 @@ import { RiScissorsFill, RiErrorWarningLine } from "react-icons/ri";
 import { getOptimalSplitWithCache } from "@/app/split/lib/getOptimalSplitWithCache";
 import { StationCountLimitExceededError, RouteNotFoundError } from "@/app/utils/errors";
 import stationDatas from "@/app/split/data/stationDatas.json";
-import { ApiCalculateResponse } from "../types";
+import { ApiCalculateResponse } from "@/app/types";
 
 export const metadata: Metadata = {
   title: "JR分割乗車券プログラム",
