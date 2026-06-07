@@ -96,7 +96,7 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 
 	candidatePathResults, err := u.graph.FindAllCandidatePaths(startID, endID, maxGisei)
 	if err != nil {
-		return nil, fmt.Errorf("searchOptimalSplit: 候補経路の検索に失敗: %w", err)
+		return nil, fmt.Errorf("searchOptimalSplit: %w", err)
 	}
 
 	paths := make([][]int, len(candidatePathResults))
@@ -130,42 +130,72 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 func (u *SearchOptimalSplit) generateTasks(paths [][]int, rules []domain.ResolvedBypassRule) []EvaluationTask {
 	var tasks []EvaluationTask
 
+	if len(paths) == 0 {
+		return tasks
+	}
+
+	// 全ての候補経路は同じ発着駅を持つため、最初の経路から startID と endID を取得
+	startID := paths[0][0]
+	endID := paths[0][len(paths[0])-1]
+
+	// -----------------------------------------------------------
+	// 1. 初めの一回だけ行う処理（特例ルートの重複評価を防止）
+	// -----------------------------------------------------------
+	for _, rule := range rules {
+		startOnDetour := u.isOnDetourMiddle(startID, rule)
+		endOnDetour := u.isOnDetourMiddle(endID, rule)
+
+		// 発着駅がルールの対象区間内（近道または遠回り）にあるかを判定
+		startOnRule := u.containsStation(rule.ShortcutPath, startID) || u.containsStation(rule.DetourPath, startID)
+		endOnRule := u.containsStation(rule.ShortcutPath, endID) || u.containsStation(rule.DetourPath, endID)
+
+		// 入力された少なくとも一方が特例の遠回りで、もう一方がその特例の遠回りあるいは近道だった時
+		if (startOnDetour && endOnRule) || (endOnDetour && startOnRule) {
+			shortcutPath := make([]int, len(rule.ShortcutPath))
+			copy(shortcutPath, rule.ShortcutPath)
+
+			// 分割禁止（Locked）にして、候補経路群に「1つだけ」追加する
+			tasks = append(tasks, EvaluationTask{
+				Segments: []RouteSegment{
+					{Path: shortcutPath, Locked: makeShortcutLocked(shortcutPath)},
+				},
+			})
+			break // 逆方向も重複して評価されないように、最初のマッチで追加したらループを抜ける
+		}
+	}
+
+	// -----------------------------------------------------------
+	// 2. 各候補経路ごとの展開処理
+	// -----------------------------------------------------------
 	for _, path := range paths {
 		locked := make([]bool, len(path))
-		isBranch1 := false
+		isFullyEnclosedInRule := false
 
 		for _, rule := range rules {
 			startIdx, _ := u.findSubPath(path, rule.DetourPath)
 			startOnDetour := u.isOnDetourMiddle(path[0], rule)
 			endOnDetour := u.isOnDetourMiddle(path[len(path)-1], rule)
 
-			// 削除されていた分岐駅の存在チェックを復元
 			jStart := rule.ShortcutPath[0]
 			jEnd := rule.ShortcutPath[len(rule.ShortcutPath)-1]
 			idxStart := u.indexOf(path, jStart)
 			idxEnd := u.indexOf(path, jEnd)
 			containsBothJunctions := (idxStart != -1 && idxEnd != -1)
 
-			// 進行方向の検証。経路の進行方向とルールの方向が一致していない場合は、逆方向ルールに任せる
 			if containsBothJunctions && idxStart > idxEnd {
 				continue
 			}
 
-			// 分岐1: 経路全体が近道と遠回りのみで構成され、かつ両分岐駅を通る場合
+			// ループ内の分岐1: 経路全体が特例に含まれる場合
+			// すでに近道ルート（特例運賃）自体の追加はステップ1で済んでいるため、
+			// ここでは「元の経路（遠回り等）をそのままの状態で評価する」ためのフラグのみを立て、
+			// 無駄な expandPath（分岐2などへの波及）を打ち切る。
 			if (startOnDetour || endOnDetour) && u.isEntirelyOnRule(path, rule) {
-				shortcutPath := make([]int, len(rule.ShortcutPath))
-				copy(shortcutPath, rule.ShortcutPath)
-
-				tasks = append(tasks, EvaluationTask{
-					Segments: []RouteSegment{
-						{Path: shortcutPath, Locked: makeShortcutLocked(shortcutPath)},
-					},
-				})
-				isBranch1 = true
+				isFullyEnclosedInRule = true
 				break
 			}
 
-			// 分岐2: 発着駅が遠回り上にあるが、完全に内包(startIdx!=-1)されていない場合
+			// 分岐2: 発着駅が遠回り上にあるが、完全に内包されていない場合（オーバーシュート）
 			if (startOnDetour || endOnDetour) && startIdx == -1 {
 				extPath, extLocked := u.buildOvershootPath(path, locked, rule)
 				if extPath != nil {
@@ -177,14 +207,15 @@ func (u *SearchOptimalSplit) generateTasks(paths [][]int, rules []domain.Resolve
 			}
 		}
 
-		if isBranch1 {
+		// 経路全体が特例ルールの内部に収まっていた経路は、そのまま追加（分割許可）
+		if isFullyEnclosedInRule {
 			tasks = append(tasks, EvaluationTask{
 				Segments: []RouteSegment{{Path: path, Locked: locked}},
 			})
 			continue
 		}
 
-		// 全候補共通:
+		// 上記以外（通常の経路やオーバーシュートを含む経路）の展開
 		segmentsCombos := u.expandPath(path, locked, rules)
 		for _, segments := range segmentsCombos {
 			tasks = append(tasks, EvaluationTask{Segments: segments})
@@ -236,7 +267,7 @@ func (u *SearchOptimalSplit) buildOvershootPath(path []int, locked []bool, rule 
 	return nil, nil
 }
 
-// expandPath は経路内の遠回り区間を再帰的に展開し、強制分割の全組み合わせを返します（分岐2用）。
+// expandPath は経路内の遠回り区間を再帰的に展開し、強制分割の全組み合わせを返します。
 func (u *SearchOptimalSplit) expandPath(path []int, locked []bool, rules []domain.ResolvedBypassRule) [][]RouteSegment {
 	for _, rule := range rules {
 		startIdx, _ := u.findSubPath(path, rule.DetourPath)
@@ -299,8 +330,8 @@ func (u *SearchOptimalSplit) evaluateTasks(tasks []EvaluationTask, months int) (
 			results, err := u.split.Execute(seg.Path, months, seg.Locked)
 			if err != nil {
 				if errors.Is(err, domain.ErrInvalidPath) {
-				isValidTask = false
-				break
+					isValidTask = false
+					break
 				}
 				return nil, fmt.Errorf("evaluateTasks: %w", err)
 			}
