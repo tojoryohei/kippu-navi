@@ -75,11 +75,11 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 		}
 		cheapestAmountPerDecikilo = float64(kyotoToOsakaAmount.TotalAmount()) / float64(kyotoToOsakaPath.EigyoKilo)
 	} else if months == 1 {
-		cheapestAmountPerDecikilo = 45780 / 100
+		cheapestAmountPerDecikilo = 45780.0 / 100.0
 	} else if months == 3 {
-		cheapestAmountPerDecikilo = 130540 / 100
+		cheapestAmountPerDecikilo = 130540.0 / 100.0
 	} else {
-		cheapestAmountPerDecikilo = 236070 / 100
+		cheapestAmountPerDecikilo = 236070.0 / 100.0
 	}
 
 	normalFare := calcResult.TotalAmount()
