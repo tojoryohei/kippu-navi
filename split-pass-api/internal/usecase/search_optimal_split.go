@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -292,9 +293,12 @@ func (u *SearchOptimalSplit) evaluateTasks(tasks []EvaluationTask, months int) (
 
 		for _, seg := range task.Segments {
 			results, err := u.split.Execute(seg.Path, months, seg.Locked)
-			if err != nil || len(results) == 0 {
+			if err != nil {
+				if errors.Is(err, domain.ErrInvalidPath) {
 				isValidTask = false
 				break
+				}
+				return nil, fmt.Errorf("evaluateTasks: %w", err)
 			}
 			bestForSeg := results[0]
 			taskTotalAmount += bestForSeg.TotalAmount
