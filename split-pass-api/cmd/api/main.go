@@ -74,6 +74,14 @@ func run() error {
 	addonChargeReg := domain.NewAddonRegistry()
 	addonChargeReg.Register("博多", "博多南", domain.PassPrice{OneMonth: 4680, ThreeMonth: 13340, SixMonth: 25270})
 
+	// IDを解決
+	if err := addonChargeReg.ResolveIDs(func(name string) (int, bool) {
+		id, ok := g.NameToID[name]
+		return id, ok
+	}); err != nil {
+		return fmt.Errorf("特急料金のID解決に失敗しました: %w", err)
+	}
+
 	// 旅客営業規則 第69条 特例区間の設定
 	bypassReg := domain.NewBypassRegistry()
 	// (1) 大沼以遠の各駅と、森以遠の各駅との相互間
