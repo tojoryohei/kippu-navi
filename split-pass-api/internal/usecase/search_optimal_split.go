@@ -51,7 +51,7 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 	}
 
 	if len(shortest.StationIDs) > 100 {
-		return nil, fmt.Errorf("経由駅が多すぎます: %w", err)
+		return nil, fmt.Errorf("searchOptimalSplit: 発着駅間の駅数(%d)が上限の100を超えています。", len(shortest.StationIDs))
 	}
 
 	calcResult, err := u.split.calc.Execute(shortest.StationIDs, months)

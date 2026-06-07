@@ -2,12 +2,12 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 	"split-pass-api/internal/usecase"
+	"strings"
 )
 
 // Split は分割定期券の最適解を計算するHTTPリクエストを処理します。
@@ -95,7 +95,13 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	optResult, err := h.search.Execute(startID, endID, req.Months)
 	if err != nil {
 		log.Printf("分割定期券の計算エラー: %v", err)
-		writeErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("計算処理に失敗しました: %v", err))
+
+		errMsg := err.Error()
+		if lastIdx := strings.LastIndex(errMsg, ":"); lastIdx != -1 {
+			errMsg = strings.TrimSpace(errMsg[lastIdx+1:])
+		}
+
+		writeErrorResponse(w, http.StatusInternalServerError, errMsg)
 		return
 	}
 
