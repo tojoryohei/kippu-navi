@@ -33,7 +33,7 @@ export default async function Home() {
                 <RiScissorsFill className="w-7 h-7 text-blue-600 group-hover:text-white transition-colors duration-300" />
               </div>
               <h2 className="text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors duration-300">
-                分割運賃プログラム
+                JR分割乗車券プログラム
               </h2>
             </div>
             <p className="text-slate-600 mb-6 grow">
@@ -52,11 +52,11 @@ export default async function Home() {
                 <RiGuideLine className="w-7 h-7 text-slate-600 group-hover:text-white transition-colors duration-300" />
               </div>
               <h2 className="text-2xl font-bold text-slate-800">
-                運賃計算プログラム
+                JR運賃計算プログラム
               </h2>
             </div>
             <p className="text-slate-600 mb-6 grow">
-              分割計算の基礎となる、乗車券の普通運賃を計算します。
+              分割計算の基礎となる、JR乗車券の普通運賃を計算します。
             </p>
             <div className="text-slate-700 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300">
               運賃を計算する

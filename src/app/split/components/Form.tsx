@@ -407,11 +407,12 @@ export default function SplitForm({
             <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
                 <h3 className="font-bold text-gray-600 mb-2">💡 当システムについて</h3>
                 <p className="mb-4 leading-relaxed">
-                    出発駅と到着駅を入力するだけで、分割乗車券の最安解を自動計算するツールです。経路は自動探索します。
+                    出発駅と到着駅を入力するだけで、分割乗車券の最安解を自動計算するツールです。経路は自動探索します。普通乗車券と定期乗車券の両方に対応しています。
                 </p>
 
                 <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
                 <ol className="list-decimal list-inside space-y-1 ml-1">
+                    <li><strong>種類の選択:</strong> 「普通乗車券」と「定期乗車券(1/3/6箇月)」のいずれかを選択してください。</li>
                     <li><strong>駅の入力:</strong> 「発駅」と「着駅」に駅名を入力し、候補から選択します。</li>
                     <li><strong>駅の入れ替え:</strong> 検索フォームの入力を逆にしたい場合は ⇅ ボタンを押すことで切り替わります。</li>
                     <li><strong>最安分割運賃の計算:</strong> 「最安分割運賃を計算」ボタンを押すと、自動で最安分割運賃と切符の情報が出力されます。</li>
