@@ -59,20 +59,35 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の運賃計算に失敗: %w", err)
 	}
 
-	kyotoToOsakaPath, err := u.graph.FindShortestPathGisei(u.graph.NameToID["京都"], u.graph.NameToID["大阪"])
-	if err != nil {
-		return nil, fmt.Errorf("searchOptimalSplit: 京都 -> 大阪の探索に失敗: %w", err)
+	var cheapestAmountPerDecikilo float64
+	kyotoID, kyotoExists := u.graph.NameToID["京都"]
+	osakaID, osakaExists := u.graph.NameToID["大阪"]
+
+	if kyotoExists && osakaExists {
+		kyotoToOsakaPath, err := u.graph.FindShortestPathGisei(kyotoID, osakaID)
+		if err != nil {
+			return nil, fmt.Errorf("searchOptimalSplit: 京都 -> 大阪の探索に失敗: %w", err)
+		}
+
+		kyotoToOsakaAmount, err := u.split.calc.Execute(kyotoToOsakaPath.StationIDs, months)
+		if err != nil {
+			return nil, fmt.Errorf("searchOptimalSplit: 京都 -> 大阪の運賃計算に失敗: %w", err)
+		}
+		cheapestAmountPerDecikilo = float64(kyotoToOsakaAmount.TotalAmount()) / float64(kyotoToOsakaPath.EigyoKilo)
+	} else if months == 1 {
+		cheapestAmountPerDecikilo = 45780 / 100
+	} else if months == 3 {
+		cheapestAmountPerDecikilo = 130540 / 100
+	} else {
+		cheapestAmountPerDecikilo = 236070 / 100
 	}
 
-	kyotoToOsakaAmount, err := u.split.calc.Execute(kyotoToOsakaPath.StationIDs, months)
-	if err != nil {
-		return nil, fmt.Errorf("searchOptimalSplit: 京都 -> 大阪の運賃計算に失敗: %w", err)
-	}
-
-	cheapestAmountPerDecikilo := float64(kyotoToOsakaAmount.TotalAmount()) / float64(kyotoToOsakaPath.EigyoKilo)
 	normalFare := calcResult.TotalAmount()
 
 	maxGisei := domain.DeciKilo(float64(normalFare) / cheapestAmountPerDecikilo)
+	if maxGisei < shortest.GiseiKilo {
+		maxGisei = shortest.GiseiKilo
+	}
 
 	candidatePathResults, err := u.graph.FindAllCandidatePaths(startID, endID, maxGisei)
 	if err != nil {
