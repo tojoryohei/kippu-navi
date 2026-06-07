@@ -160,3 +160,28 @@ export interface SearchOption {
     value: SearchType;
     label: string;
 }
+
+
+interface ApiResult {
+    Fare: number;
+    BarrierFreeFee: number;
+    Charge: number;
+}
+
+interface ApiSegment {
+    path: string[];
+    via: string[];
+    result: ApiResult;
+    totalEigyoKilo?: number;
+}
+
+interface ApiResultResponse {
+    totalAmount: number;
+    segments: ApiSegment[];
+}
+
+export interface ApiCalculateResponse {
+    normal?: ApiResultResponse;
+    results: ApiResultResponse[];
+    error?: string;
+}

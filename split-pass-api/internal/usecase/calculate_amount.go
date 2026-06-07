@@ -7,8 +7,6 @@ import (
 	"split-pass-api/internal/graph"
 )
 
-var ()
-
 // CalculateAmount は経路から定期運賃を計算するユースケースです。
 // グラフ、運賃レジストリ、特定区間加算運賃レジストリを協調させます。
 type CalculateAmount struct {
@@ -61,9 +59,10 @@ type routeSummary struct {
 
 // CalculationResult は、運賃と料金の計算結果の内訳を保持します。
 type CalculationResult struct {
-	Fare           int // 運賃（基本運賃＋加算運賃）
-	BarrierFreeFee int // 鉄道バリアフリー料金
-	Charge         int // 料金（博多南線などの特急料金等）
+	Fare           int             // 運賃（基本運賃＋加算運賃）
+	BarrierFreeFee int             // 鉄道バリアフリー料金
+	Charge         int             // 料金（博多南線などの特急料金等）
+	TotalEigyoKilo domain.DeciKilo // 総営業キロ
 }
 
 // TotalAmount は発売額（運賃と料金の総計）を動的に算出して返します。
@@ -156,6 +155,7 @@ func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, e
 				Fare:           val,
 				BarrierFreeFee: barrierFreeFee,
 				Charge:         0,
+				TotalEigyoKilo: summary.totalEigyo,
 			}, nil
 		}
 	}
@@ -177,6 +177,7 @@ func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, e
 			Fare:           val,
 			BarrierFreeFee: barrierFreeFee,
 			Charge:         0,
+			TotalEigyoKilo: summary.totalEigyo,
 		}, nil
 	}
 
@@ -209,6 +210,7 @@ func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, e
 			Fare:           totalFare,
 			BarrierFreeFee: barrierFreeFee,
 			Charge:         0,
+			TotalEigyoKilo: summary.totalEigyo,
 		}, nil
 	}
 
@@ -255,5 +257,6 @@ func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, e
 		Fare:           totalFare,
 		BarrierFreeFee: barrierFreeFee,
 		Charge:         limitedExpressCharge,
+		TotalEigyoKilo: summary.totalEigyo,
 	}, nil
 }

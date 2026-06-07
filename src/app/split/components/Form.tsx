@@ -5,7 +5,7 @@ import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 import { useRouter } from "next/navigation";
-import { sendGAEvent } from '@next/third-parties/google';
+import { sendGAEvent } from "@next/third-parties/google";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
@@ -60,12 +60,12 @@ export default function SplitForm({
     const initialStartStation = initialFrom ? stationDatas.find(s => s.name === initialFrom) || { name: initialFrom, kana: "" } : null;
     const initialEndStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
 
-    const defaultSearchType = (initialSearchType === 'pass1' || initialSearchType === 'pass3' || initialSearchType === 'pass6')
+    const defaultSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
         ? initialSearchType
-        : 'ticket';
+        : "ticket";
 
     const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, reset, trigger } = useForm<ExtendedSplitFormInput>({
-        mode: 'onChange',
+        mode: "onChange",
         defaultValues: {
             startStation: initialStartStation,
             endStation: initialEndStation,
@@ -76,9 +76,9 @@ export default function SplitForm({
     useEffect(() => {
         const startStation = initialFrom ? stationDatas.find(s => s.name === initialFrom) || { name: initialFrom, kana: "" } : null;
         const endStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
-        const currentSearchType = (initialSearchType === 'pass1' || initialSearchType === 'pass3' || initialSearchType === 'pass6')
+        const currentSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
             ? initialSearchType
-            : 'ticket';
+            : "ticket";
 
         reset({
             startStation,
@@ -86,6 +86,10 @@ export default function SplitForm({
             searchType: currentSearchType,
         });
     }, [initialFrom, initialTo, initialSearchType, reset]);
+
+    const searchedTypeLabel = SEARCH_TYPE_OPTIONS.find(
+        o => o.value === ((initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6") ? initialSearchType : "ticket")
+    )?.label || "運賃";
 
     const [showAllPatterns, setShowAllPatterns] = useState(false);
 
@@ -109,7 +113,7 @@ export default function SplitForm({
         const exists = stations.has(value.name);
         if (!exists) return "正しい駅名を選択または入力してください";
         const currentSearchType = getValues("searchType");
-        if (currentSearchType !== 'ticket' && TEMPORARY_STATIONS.includes(value.name)) {
+        if (currentSearchType !== "ticket" && TEMPORARY_STATIONS.includes(value.name)) {
             return "臨時駅発着の定期券は計算できません";
         }
 
@@ -121,8 +125,8 @@ export default function SplitForm({
 
         if (data.startStation?.name && data.endStation?.name) {
             sendGAEvent({
-                event: 'search_split',
-                search_type: data.searchType || 'ticket',
+                event: "search_split",
+                search_type: data.searchType || "ticket",
                 from_station: data.startStation.name,
                 to_station: data.endStation.name
             });
@@ -132,7 +136,7 @@ export default function SplitForm({
         if (data.startStation?.name) searchParams.set("from", data.startStation.name);
         if (data.endStation?.name) searchParams.set("to", data.endStation.name);
 
-        if (data.searchType && data.searchType !== 'ticket') {
+        if (data.searchType && data.searchType !== "ticket") {
             searchParams.set("searchType", data.searchType);
         } else {
             searchParams.delete("searchType");
@@ -247,32 +251,29 @@ export default function SplitForm({
 
             <div className="my-8">
                 {isPending && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
-                {!isPending && currentType !== 'ticket' && !initialError && !initialResult && (
-                    <p className="py-8 border-t text-center text-slate-400 text-sm">
-                        ※ {SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label}の最安分割ルート計算ロジックは次のステップで結合されます。
-                    </p>
-                )}
-                {!isPending && initialServerTime != null && currentType === 'ticket' && <p className="text-right text-xs text-gray-400">計算時間: {initialServerTime}ms</p>}
+                {!isPending && initialServerTime != null && <p className="text-right text-xs text-gray-400">計算時間: {initialServerTime}ms</p>}
                 {!isPending && initialError && <p className="py-5 border-t text-red-500 text-center">{initialError}</p>}
 
-                {!isPending && initialResult && currentType === 'ticket' && (
+                {!isPending && initialResult && (
                     <div className="border-t pt-8 space-y-8">
                         <h2 className="text-2xl font-bold text-center mb-6">計算結果</h2>
 
                         <section className="bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h3 className="font-bold text-lg mb-4 text-gray-700 border-b pb-2">通常の運賃（分割なし）</h3>
+                            <h3 className="font-bold text-lg mb-4 text-gray-700 border-b pb-2">通常の{searchedTypeLabel}（分割なし）</h3>
                             <div className="flex justify-between items-center">
                                 <div>
                                     <div className="text-lg font-bold">
                                         <span>{initialResult.cheapestKippuData.departureStation}</span>
                                         <span className="text-gray-400 mx-2">→</span>
                                         <span>{initialResult.cheapestKippuData.arrivalStation}</span>
-                                        <span className="text-sm font-normal text-gray-600 ml-1">
-                                            （{(initialResult.cheapestKippuData.totalEigyoKilo / 10).toFixed(1)}km）
-                                        </span>
+                                        {initialResult.cheapestKippuData.totalEigyoKilo > 0 && (
+                                            <span className="text-sm font-normal text-gray-600 ml-1">
+                                                （{(initialResult.cheapestKippuData.totalEigyoKilo / 10).toFixed(1)}km）
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="text-sm text-gray-600 mt-1">
-                                        経由：{initialResult.cheapestKippuData.printedViaLines.join('・') || '---'}
+                                        経由：{initialResult.cheapestKippuData.printedViaLines.join("・") || "---"}
                                     </div>
                                 </div>
                                 <div className="text-3xl font-bold text-gray-800">
@@ -289,7 +290,7 @@ export default function SplitForm({
                                     const isCheaper = diff > 0;
 
                                     return (
-                                        <section className={`p-6 rounded-lg shadow-md border-2 ${isCheaper ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+                                        <section className={`p-6 rounded-lg shadow-md border-2 ${isCheaper ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-white"}`}>
                                             <div className="flex justify-between items-center">
                                                 <div>
                                                     <h3 className="font-bold text-xl text-blue-800">
@@ -320,10 +321,10 @@ export default function SplitForm({
                                         return (
                                             <div
                                                 key={planIndex}
-                                                className={`bg-gray-50 rounded-lg border border-gray-200 relative transition-all duration-300 ${isFadedItem ? 'h-32 overflow-hidden' : 'p-4'
+                                                className={`bg-gray-50 rounded-lg border border-gray-200 relative transition-all duration-300 ${isFadedItem ? "h-32 overflow-hidden" : "p-4"
                                                     }`}
                                             >
-                                                <div className={isFadedItem ? 'p-4' : ''}>
+                                                <div className={isFadedItem ? "p-4" : ""}>
                                                     {initialResult.splitKippuDatasList.length > 1 && (
                                                         <h4 className="font-bold text-gray-700 mb-3 ml-1">
                                                             パターン {planIndex + 1}
@@ -345,9 +346,11 @@ export default function SplitForm({
                                                                             <span>{segment.kippuData.departureStation}</span>
                                                                             <span className="text-gray-400">→</span>
                                                                             <span>{segment.kippuData.arrivalStation}</span>
-                                                                            <span className="text-sm font-normal text-gray-600 ml-1">
-                                                                                （{(segment.kippuData.totalEigyoKilo / 10).toFixed(1)}km）
-                                                                            </span>
+                                                                            {segment.kippuData.totalEigyoKilo > 0 && (
+                                                                                <span className="text-sm font-normal text-gray-600 ml-1">
+                                                                                    （{(segment.kippuData.totalEigyoKilo / 10).toFixed(1)}km）
+                                                                                </span>
+                                                                            )}
                                                                         </div>
                                                                         <div className="text-xs text-gray-500 mt-1 ml-10">
                                                                             経由：{segment.kippuData.printedViaLines.length === 0 ? "---" : segment.kippuData.printedViaLines.join("・")}

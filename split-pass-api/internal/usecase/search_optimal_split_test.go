@@ -54,12 +54,12 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			t.Fatalf("Execute が失敗しました: %v", err)
 		}
 
-		if len(got) == 0 {
+		if len(got.Optimals) == 0 {
 			t.Fatal("結果が空です")
 		}
 
-		if got[0].TotalAmount != 2000 {
-			t.Errorf("TotalAmount = %d, 期待値は 2000", got[0].TotalAmount)
+		if got.Optimals[0].TotalAmount != 2000 {
+			t.Errorf("TotalAmount = %d, 期待値は 2000", got.Optimals[0].TotalAmount)
 		}
 	})
 
@@ -86,14 +86,14 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			t.Fatalf("Execute が失敗しました: %v", err)
 		}
 
-		if len(got) == 0 {
+		if len(got.Optimals) == 0 {
 			t.Fatal("結果が空です")
 		}
 
 		// D-A(5km:1000円) + A-B-C(通し計算で20km:2500円) = 3500円 など、
 		// 補正されたルート群の中でDPが計算した最安値が返ることを確認
-		if got[0].TotalAmount <= 0 {
-			t.Errorf("有効な TotalAmount が期待されますが、%d を取得しました", got[0].TotalAmount)
+		if got.Optimals[0].TotalAmount <= 0 {
+			t.Errorf("有効な TotalAmount が期待されますが、%d を取得しました", got.Optimals[0].TotalAmount)
 		}
 	})
 

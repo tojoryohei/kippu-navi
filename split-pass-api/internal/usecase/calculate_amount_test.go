@@ -91,9 +91,10 @@ func TestCalculateAmount_Execute(t *testing.T) {
 			path:   []int{id("A"), id("B"), id("C")},
 			months: 1,
 			want: usecase.CalculationResult{
-				Fare:           3100,
+				Fare:           3100, // 会社跨ぎの計算: ((10km JR東日本)+(20km JR東海)) = 30km = 3000円 + 加算 100 = 3100円
 				BarrierFreeFee: 0,
 				Charge:         100,
+				TotalEigyoKilo: 300,
 			},
 			wantErr: false,
 		},
@@ -102,9 +103,10 @@ func TestCalculateAmount_Execute(t *testing.T) {
 			path:   []int{id("X"), id("Y")},
 			months: 1,
 			want: usecase.CalculationResult{
-				Fare:           500,
+				Fare:           500, // 電車特定区間の専用運賃表の1ヶ月が適用される
 				BarrierFreeFee: 0,
 				Charge:         0,
+				TotalEigyoKilo: 50,
 			},
 			wantErr: false,
 		},
@@ -116,6 +118,7 @@ func TestCalculateAmount_Execute(t *testing.T) {
 				Fare:           1000,
 				BarrierFreeFee: 0,
 				Charge:         0,
+				TotalEigyoKilo: 100,
 			},
 			wantErr: false,
 		},

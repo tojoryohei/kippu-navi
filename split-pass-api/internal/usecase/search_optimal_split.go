@@ -38,10 +38,45 @@ func NewSearchOptimalSplit(g *graph.Graph, u *FindOptimalSplit, rules []domain.R
 	}
 }
 
-func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([]SplitResult, error) {
-	candidatePathResults, err := u.getCandidatePaths(startID, endID)
+// OptimalSearchResult は探索結果全体（通常運賃と最適分割運賃）を保持します。
+type OptimalSearchResult struct {
+	Normal   SplitResult   // 分割なしの最安結果
+	Optimals []SplitResult // 分割時の最安結果
+}
+
+func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearchResult, error) {
+	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の検索に失敗: %w", err)
+	}
+
+	if len(shortest.StationIDs) > 100 {
+		return nil, fmt.Errorf("経由駅が多すぎます: %w", err)
+	}
+
+	calcResult, err := u.split.calc.Execute(shortest.StationIDs, months)
+	if err != nil {
+		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の運賃計算に失敗: %w", err)
+	}
+
+	kyotoToOsakaPath, err := u.graph.FindShortestPathGisei(u.graph.NameToID["京都"], u.graph.NameToID["大阪"])
+	if err != nil {
+		return nil, fmt.Errorf("searchOptimalSplit: 京都 -> 大阪の探索に失敗: %w", err)
+	}
+
+	kyotoToOsakaAmount, err := u.split.calc.Execute(kyotoToOsakaPath.StationIDs, months)
+	if err != nil {
+		return nil, fmt.Errorf("searchOptimalSplit: 京都 -> 大阪の運賃計算に失敗: %w", err)
+	}
+
+	cheapestAmountPerDecikilo := float64(kyotoToOsakaAmount.TotalAmount()) / float64(kyotoToOsakaPath.EigyoKilo)
+	normalFare := calcResult.TotalAmount()
+
+	maxGisei := domain.DeciKilo(float64(normalFare) / cheapestAmountPerDecikilo)
+
+	candidatePathResults, err := u.graph.FindAllCandidatePaths(startID, endID, maxGisei)
+	if err != nil {
+		return nil, fmt.Errorf("searchOptimalSplit: 候補経路の検索に失敗: %w", err)
 	}
 
 	paths := make([][]int, len(candidatePathResults))
@@ -56,21 +91,20 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([]SplitResult,
 		return nil, err
 	}
 
-	return u.filterGlobalOptimal(allPatterns), nil
-}
-
-func (u *SearchOptimalSplit) getCandidatePaths(startID, endID int) ([]*graph.PathResult, error) {
-	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
-	if err != nil {
-		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の検索に失敗: %w", err)
+	normalResult := SplitResult{
+		TotalAmount: normalFare,
+		Segments: []SplitSegment{
+			{
+				Path:   shortest.StationIDs,
+				Result: calcResult,
+			},
+		},
 	}
 
-	maxGisei := shortest.GiseiKilo * 15 / 10
-	candidates, err := u.graph.FindAllCandidatePaths(startID, endID, maxGisei)
-	if err != nil {
-		return nil, fmt.Errorf("searchOptimalSplit: 候補経路の検索に失敗: %w", err)
-	}
-	return candidates, nil
+	return &OptimalSearchResult{
+		Normal:   normalResult,
+		Optimals: u.filterGlobalOptimal(allPatterns),
+	}, nil
 }
 
 func (u *SearchOptimalSplit) generateTasks(paths [][]int, rules []domain.ResolvedBypassRule) []EvaluationTask {
