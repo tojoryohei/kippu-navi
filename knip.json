@@ -4,7 +4,6 @@
     "scripts/**/*.ts"
   ],
   "ignoreDependencies": [
-    "prettier",
     "tsx"
   ]
 }

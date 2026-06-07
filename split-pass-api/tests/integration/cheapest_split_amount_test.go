@@ -127,13 +127,13 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 			}
 
 			if err == nil {
-				if len(results) == 0 {
+				if len(results.Optimals) == 0 {
 					t.Error("結果が空です")
 					return
 				}
 
-				if results[0].TotalAmount != tt.want {
-					t.Errorf("Execute() TotalAmount = %d, want %d", results[0].TotalAmount, tt.want)
+				if results.Optimals[0].TotalAmount != tt.want {
+					t.Errorf("Execute() TotalAmount = %d, want %d", results.Optimals[0].TotalAmount, tt.want)
 				}
 			}
 		})
