@@ -51,8 +51,12 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の検索に失敗: %w", err)
 	}
 
-	if len(shortest.StationIDs) > 100 {
-		return nil, fmt.Errorf("searchOptimalSplit: 発着駅間の駅数(%d)が上限の100を超えています。", len(shortest.StationIDs))
+	// maxStationsInPath は探索の上限駅数です。
+	// DFSの再帰深度と計算量の制約から設定しています。
+	const maxStationsInPath = 100
+
+	if len(shortest.StationIDs) > maxStationsInPath {
+		return nil, fmt.Errorf("searchOptimalSplit: 発着駅間の駅数(%d)が上限の%dを超えています。", len(shortest.StationIDs), maxStationsInPath)
 	}
 
 	calcResult, err := u.split.calc.Execute(shortest.StationIDs, months)
