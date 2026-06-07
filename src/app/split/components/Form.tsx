@@ -5,22 +5,51 @@ import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 import { useRouter } from "next/navigation";
+import { sendGAEvent } from '@next/third-parties/google';
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
-import { SplitApiResponse, SplitFormInput, Station } from "@/app/types";
+import { SearchOption, SearchType, SplitApiResponse, Station } from "@/app/types";
+
+interface ExtendedSplitFormInput {
+    startStation: Station | null;
+    endStation: Station | null;
+    searchType: SearchType;
+}
 
 interface SplitFormProps {
     initialFrom?: string;
     initialTo?: string;
+    initialSearchType?: string;
     result?: SplitApiResponse | null;
     error?: string | null;
     serverTime?: number | null;
 }
 
+const SEARCH_TYPE_OPTIONS: SearchOption[] = [
+    { value: "ticket", label: "普通乗車券" },
+    { value: "pass1", label: "通勤１箇月" },
+    { value: "pass3", label: "通勤３箇月" },
+    { value: "pass6", label: "通勤６箇月" },
+];
+
+export const TEMPORARY_STATIONS = [
+    "原生花園",
+    "ラベンダー畑",
+    "細岡",
+    "猪苗代湖畔",
+    "ガーラ湯沢",
+    "偕楽園",
+    "鹿島サッカースタジアム",
+    "津島ノ宮",
+    "田井ノ浜",
+    "バルーンさが",
+];
+
 export default function SplitForm({
     initialFrom,
     initialTo,
+    initialSearchType,
     result: initialResult,
     error: initialError,
     serverTime: initialServerTime,
@@ -31,27 +60,39 @@ export default function SplitForm({
     const initialStartStation = initialFrom ? stationDatas.find(s => s.name === initialFrom) || { name: initialFrom, kana: "" } : null;
     const initialEndStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
 
-    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, reset } = useForm<SplitFormInput>({
+    const defaultSearchType = (initialSearchType === 'pass1' || initialSearchType === 'pass3' || initialSearchType === 'pass6')
+        ? initialSearchType
+        : 'ticket';
+
+    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, reset, trigger } = useForm<ExtendedSplitFormInput>({
         mode: 'onChange',
         defaultValues: {
             startStation: initialStartStation,
             endStation: initialEndStation,
+            searchType: defaultSearchType,
         },
     });
 
     useEffect(() => {
         const startStation = initialFrom ? stationDatas.find(s => s.name === initialFrom) || { name: initialFrom, kana: "" } : null;
         const endStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
+        const currentSearchType = (initialSearchType === 'pass1' || initialSearchType === 'pass3' || initialSearchType === 'pass6')
+            ? initialSearchType
+            : 'ticket';
+
         reset({
             startStation,
             endStation,
+            searchType: currentSearchType,
         });
-    }, [initialFrom, initialTo, reset]);
+    }, [initialFrom, initialTo, initialSearchType, reset]);
 
     const [showAllPatterns, setShowAllPatterns] = useState(false);
 
     const startStationVal = useWatch({ control, name: "startStation" });
     const endStationVal = useWatch({ control, name: "endStation" });
+    const currentType = useWatch({ control, name: "searchType" });
+
     const canSwap = !!startStationVal || !!endStationVal;
 
     const handleSwapStations = () => {
@@ -66,14 +107,36 @@ export default function SplitForm({
     const validateStation = (value: Station | null) => {
         if (!value || !value.name) return "駅名を入力してください";
         const exists = stations.has(value.name);
-        return exists || "正しい駅名を選択または入力してください";
+        if (!exists) return "正しい駅名を選択または入力してください";
+        const currentSearchType = getValues("searchType");
+        if (currentSearchType !== 'ticket' && TEMPORARY_STATIONS.includes(value.name)) {
+            return "臨時駅発着の定期券は計算できません";
+        }
+
+        return true;
     };
 
-    const onSubmit: SubmitHandler<SplitFormInput> = (data) => {
+    const onSubmit: SubmitHandler<ExtendedSplitFormInput> = (data) => {
         setShowAllPatterns(false);
+
+        if (data.startStation?.name && data.endStation?.name) {
+            sendGAEvent({
+                event: 'search_split',
+                search_type: data.searchType || 'ticket',
+                from_station: data.startStation.name,
+                to_station: data.endStation.name
+            });
+        }
+
         const searchParams = new URLSearchParams();
         if (data.startStation?.name) searchParams.set("from", data.startStation.name);
         if (data.endStation?.name) searchParams.set("to", data.endStation.name);
+
+        if (data.searchType && data.searchType !== 'ticket') {
+            searchParams.set("searchType", data.searchType);
+        } else {
+            searchParams.delete("searchType");
+        }
 
         const newUrl = `?${searchParams.toString()}`;
         window.history.pushState(null, "", newUrl);
@@ -85,7 +148,26 @@ export default function SplitForm({
 
     return (
         <main className="max-w-2xl mx-auto w-full">
-            <form onSubmit={handleSubmit(onSubmit)} className="p-8 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-xl mb-6">
+                {SEARCH_TYPE_OPTIONS.map((option) => (
+                    <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                            setValue("searchType", option.value, { shouldValidate: true });
+                            trigger(["startStation", "endStation"]);
+                        }}
+                        className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${currentType === option.value
+                            ? "bg-white text-blue-600 shadow-xs font-bold"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                            }`}
+                    >
+                        {option.label}
+                    </button>
+                ))}
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="w-full">
                 <div className="flex flex-col gap-4 w-full">
 
                     <div className="flex flex-col w-full">
@@ -157,18 +239,23 @@ export default function SplitForm({
                             className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors"
                             disabled={!isValid || isPending}
                         >
-                            {isPending ? "計算中..." : "最安分割運賃を計算"}
+                            {isPending ? "計算中..." : `${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`}
                         </button>
                     </div>
                 </div>
             </form>
 
-            <div className="my-8 p-4">
+            <div className="my-8">
                 {isPending && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
-                {!isPending && initialServerTime != null && <p className="text-right text-xs text-gray-400">計算時間: {initialServerTime}ms</p>}
+                {!isPending && currentType !== 'ticket' && !initialError && !initialResult && (
+                    <p className="py-8 border-t text-center text-slate-400 text-sm">
+                        ※ {SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label}の最安分割ルート計算ロジックは次のステップで結合されます。
+                    </p>
+                )}
+                {!isPending && initialServerTime != null && currentType === 'ticket' && <p className="text-right text-xs text-gray-400">計算時間: {initialServerTime}ms</p>}
                 {!isPending && initialError && <p className="py-5 border-t text-red-500 text-center">{initialError}</p>}
 
-                {!isPending && initialResult && (
+                {!isPending && initialResult && currentType === 'ticket' && (
                     <div className="border-t pt-8 space-y-8">
                         <h2 className="text-2xl font-bold text-center mb-6">計算結果</h2>
 
@@ -327,6 +414,6 @@ export default function SplitForm({
                     <li><strong>最安分割運賃の計算:</strong> 「最安分割運賃を計算」ボタンを押すと、自動で最安分割運賃と切符の情報が出力されます。</li>
                 </ol>
             </div>
-        </main>
+        </main >
     );
 }

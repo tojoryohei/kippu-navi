@@ -48,11 +48,6 @@ export interface IFormInput {
     }[];
 }
 
-export interface SplitFormInput {
-    startStation: Station | null;
-    endStation: Station | null;
-}
-
 export interface PathStep {
     stationName: string;
     lineName: string | null;
@@ -158,3 +153,10 @@ export interface OuterSection {
 }
 
 export type CalculationMode = "normal" | "cheapest" | "uncorrect";
+
+export type SearchType = "ticket" | "pass1" | "pass3" | "pass6";
+
+export interface SearchOption {
+    value: SearchType;
+    label: string;
+}

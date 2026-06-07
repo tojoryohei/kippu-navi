@@ -1,4 +1,4 @@
-import Form from "@/app/split/components/Form";
+import Form, { TEMPORARY_STATIONS } from "@/app/split/components/Form";
 import type { Metadata } from "next";
 import { RiScissorsFill, RiErrorWarningLine } from "react-icons/ri";
 import { getOptimalSplitWithCache } from '@/app/split/lib/getOptimalSplitWithCache';
@@ -15,6 +15,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ [
   const from = typeof params.from === 'string' ? params.from : undefined;
   const to = typeof params.to === 'string' ? params.to : undefined;
 
+  const searchType = typeof params.searchType === 'string' ? params.searchType : 'normal';
+
   let result = null;
   let error = null;
   let serverTime = null;
@@ -27,22 +29,30 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ [
       if (!stations.has(from) || !stations.has(to)) {
         error = "駅名が正しくありません。正しい駅名を選択または入力してください。";
       } else {
-        try {
-
-          const cacheResult = await getOptimalSplitWithCache(from, to);
-          if (!cacheResult) {
-            error = "指定された区間の経路が見つかりませんでした。";
-          } else {
-            result = cacheResult.data;
-            serverTime = cacheResult.time;
+        if (searchType === 'normal') {
+          try {
+            const cacheResult = await getOptimalSplitWithCache(from, to);
+            if (!cacheResult) {
+              error = "指定された区間の経路が見つかりませんでした。";
+            } else {
+              result = cacheResult.data;
+              serverTime = cacheResult.time;
+            }
+          } catch (err: unknown) {
+            if (err instanceof StationCountLimitExceededError) {
+              error = err.message;
+            } else if (err instanceof RouteNotFoundError) {
+              error = err.message;
+            } else {
+              error = "サーバー内部でエラーが発生しました。";
+            }
           }
-        } catch (err: unknown) {
-          if (err instanceof StationCountLimitExceededError) {
-            error = err.message;
-          } else if (err instanceof RouteNotFoundError) {
-            error = err.message;
+        } else {
+          if (TEMPORARY_STATIONS.toString().includes(from) || TEMPORARY_STATIONS.toString().includes(to)) {
+            error = "臨時駅発着の定期券は計算できません。";
+            result = null;
           } else {
-            error = "サーバー内部でエラーが発生しました。";
+            error = "【ダミー表示】現在、定期券（通勤１・３・６箇月）の分割計算機能は開発中です。入力値は正常に取得できています。";
           }
         }
       }
@@ -60,7 +70,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ [
             分割乗車券プログラム
           </h1>
           <p className="text-sm sm:text-base text-slate-600">
-            乗車する区間の「発駅」と「着駅」を入力してください。<br className="hidden sm:block" />
+            乗車する区間の「発駅」と「着駅」、および「券種」を選択してください。<br className="hidden sm:block" />
             在来線において最もお得な分割ルートを計算します。
           </p>
         </div>
@@ -75,7 +85,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ [
         </div>
 
         <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200">
-          <Form initialFrom={from} initialTo={to} result={result} error={error} serverTime={serverTime} />
+          <Form
+            initialFrom={from}
+            initialTo={to}
+            initialSearchType={searchType}
+            result={result}
+            error={error}
+            serverTime={serverTime}
+          />
         </div>
       </main>
     </div>
