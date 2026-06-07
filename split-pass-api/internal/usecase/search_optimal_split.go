@@ -445,19 +445,30 @@ func makeUniqueBidirectionalRules(rules []domain.ResolvedBypassRule) []domain.Re
 func generateRuleKey(shortcut, detour []int) string {
 	var sb strings.Builder
 	sb.Grow((len(shortcut) + len(detour)) * 5)
+
+	// スタック上に一時バッファを確保（64bit整数の最大桁数20バイトで十分）
+	// ※ヒープではなくスタックに置かれるためアロケーションコストはゼロです
+	var buf [20]byte
+
 	for i, id := range shortcut {
 		if i > 0 {
 			sb.WriteByte(',')
 		}
-		sb.WriteString(strconv.Itoa(id))
+		// buf[:0]（容量20の空スライス）に数値を文字データとして追記
+		b := strconv.AppendInt(buf[:0], int64(id), 10)
+		sb.Write(b) // Builderの内部バッファへ直接コピー（文字列化を経由しない）
 	}
+
 	sb.WriteByte('|')
+
 	for i, id := range detour {
 		if i > 0 {
 			sb.WriteByte(',')
 		}
-		sb.WriteString(strconv.Itoa(id))
+		b := strconv.AppendInt(buf[:0], int64(id), 10)
+		sb.Write(b)
 	}
+
 	return sb.String()
 }
 
