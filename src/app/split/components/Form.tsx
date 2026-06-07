@@ -264,7 +264,7 @@ export default function SplitForm({
                                 <div>
                                     <div className="text-lg font-bold">
                                         <span>{initialResult.cheapestKippuData.departureStation}</span>
-                                        <span className="text-gray-400 mx-2">→</span>
+                                        <span className="text-gray-400 mx-2">{searchedTypeLabel === "普通乗車券" ? "→" : "↔"}</span>
                                         <span>{initialResult.cheapestKippuData.arrivalStation}</span>
                                         {initialResult.cheapestKippuData.totalEigyoKilo > 0 && (
                                             <span className="text-sm font-normal text-gray-600 ml-1">
@@ -344,7 +344,7 @@ export default function SplitForm({
                                                                         <div className="text-lg font-bold text-gray-800 flex items-center flex-wrap gap-2">
                                                                             <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">切符</span>
                                                                             <span>{segment.kippuData.departureStation}</span>
-                                                                            <span className="text-gray-400">→</span>
+                                                                            <span className="text-gray-400">{searchedTypeLabel === "普通乗車券" ? "→" : "↔"}</span>
                                                                             <span>{segment.kippuData.arrivalStation}</span>
                                                                             {segment.kippuData.totalEigyoKilo > 0 && (
                                                                                 <span className="text-sm font-normal text-gray-600 ml-1">
@@ -415,7 +415,7 @@ export default function SplitForm({
                     <li><strong>種類の選択:</strong> 「普通乗車券」と「定期乗車券(1/3/6箇月)」のいずれかを選択してください。</li>
                     <li><strong>駅の入力:</strong> 「発駅」と「着駅」に駅名を入力し、候補から選択します。</li>
                     <li><strong>駅の入れ替え:</strong> 検索フォームの入力を逆にしたい場合は ⇅ ボタンを押すことで切り替わります。</li>
-                    <li><strong>最安分割運賃の計算:</strong> 「最安分割運賃を計算」ボタンを押すと、自動で最安分割運賃と切符の情報が出力されます。</li>
+                    <li><strong>最安分割運賃の計算:</strong> 計算ボタンを押すと、自動で最安分割運賃と切符の情報が出力されます。</li>
                 </ol>
             </div>
         </main >
