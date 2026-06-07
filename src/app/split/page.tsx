@@ -54,13 +54,13 @@ async function fetchPassApi(from: string, to: string, months: number) {
 
     for (let i = 0; i < res.segments.length; i++) {
       const seg = res.segments[i];
-      const segDeparture = i == 0 ? normalDeparture : seg.path[0];
-      const segArrival = i === res.segments.length - 1 ? normalArrival : seg.path[seg.path.length - 1];
+      const segDeparture = seg.path[0];
+      const segArrival = seg.path[seg.path.length - 1];
       const segFare = seg.result.Fare + seg.result.BarrierFreeFee + seg.result.Charge;
 
       splitKippuDatas.push({
-        departureStation: segDeparture,
-        arrivalStation: segArrival,
+        departureStation: i == 0 ? normalDeparture : segDeparture,
+        arrivalStation: i === res.segments.length - 1 ? normalArrival : segArrival,
         kippuData: {
           totalEigyoKilo: seg.totalEigyoKilo || 0,
           departureStation: segDeparture,
