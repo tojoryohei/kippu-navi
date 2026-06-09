@@ -1,11 +1,11 @@
 # Changelog
 
-## [2.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.32.2...kippu-navi-v1.33.0) (2026-06-07)
+## [2.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.2...kippu-navi-v2.0.0) (2026-06-07)
 
 
 ### Features
 
-* 定期券分割計算機能の追加（フロントエンド統合） ([#293](https://github.com/tojoryohei/kippu-navi/issues/293)) ([81bae9c](https://github.com/tojoryohei/kippu-navi/commit/81bae9cf101e1faf168bcea661f4d848e49c2de1))
+* 定期券分割計算機能の追加 ([#293](https://github.com/tojoryohei/kippu-navi/issues/293)) ([81bae9c](https://github.com/tojoryohei/kippu-navi/commit/81bae9cf101e1faf168bcea661f4d848e49c2de1))
 
 ## [1.22.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.1...kippu-navi-v1.22.2) (2026-05-29)
 
@@ -14,7 +14,7 @@
 
 * トップへ戻るボタンの描画パフォーマンス向上およびフッター干渉回避の構造改善 ([#202](https://github.com/tojoryohei/kippu-navi/issues/202)) ([2d2a7d6](https://github.com/tojoryohei/kippu-navi/commit/2d2a7d6bd710341317a38fded1871118df58a245))
 
-## [1.22.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.0...kippu-navi-v1.22.1) (2026-05-29)
+## [1.22.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.18.2...kippu-navi-v1.22.1) (2026-05-29)
 
 
 ### Bug Fixes
