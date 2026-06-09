@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Script from 'next/script';
 
 export default function AdSense() {
     const [loadAd, setLoadAd] = useState(false);
@@ -28,11 +27,10 @@ export default function AdSense() {
     if (!loadAd) return null;
 
     return (
-        <Script
-      async
-      src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1214458177768834"
-    crossOrigin = "anonymous"
-    strategy = "afterInteractive"
-        />
-  );
+        <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1214458177768834"
+            crossOrigin="anonymous"
+        ></script>
+    );
 }
