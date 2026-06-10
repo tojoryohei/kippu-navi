@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { RiGuideLine } from "react-icons/ri";
 
 export const metadata: Metadata = {
-  title: "運賃計算プログラム",
+  title: "JR運賃計算プログラム",
   description: "経路を入力してJRの運賃を計算するためのページです。",
 };
 
