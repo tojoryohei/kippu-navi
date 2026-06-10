@@ -4,7 +4,7 @@ import { RiGuideLine } from "react-icons/ri";
 
 export const metadata: Metadata = {
   title: "JR運賃計算プログラム",
-  description: "経路を入力してJRの運賃を計算するためのページです。",
+  description: "経路を入力してJRの運賃と営業キロを計算するためのページです。有効期限も正しく計算されます。",
 };
 
 export default function Page() {
