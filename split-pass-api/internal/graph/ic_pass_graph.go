@@ -39,8 +39,42 @@ func NewIcPassGraph(base *RailwayGraph) (*RailwayGraph, error) {
 		}
 	}
 
+	// BFSにより連結成分を特定し、GroupIDsを割り当てる
+	groupIDs := make([]int, numStations)
+	currentGroupID := 1
+
+	// 最大でも全駅数を超えないBFS用キューを1回だけ事前確保する
+	queue := make([]int, 0, numStations)
+
+	for i := 0; i < numStations; i++ {
+		// すでにグループが割り当てられているか、エッジを持たない場合はスキップ
+		if groupIDs[i] != 0 || len(newFastGraph.Edges[i]) == 0 {
+			continue
+		}
+
+		// キューの中身をリセットして始点を追加
+		queue = append(queue[:0], i)
+		groupIDs[i] = currentGroupID
+
+		// head インデックスを使ってキューを読み進める
+		head := 0
+		for head < len(queue) {
+			curr := queue[head]
+			head++
+
+			for _, edge := range newFastGraph.Edges[curr] {
+				if groupIDs[edge.ToID] == 0 {
+					groupIDs[edge.ToID] = currentGroupID
+					queue = append(queue, edge.ToID)
+				}
+			}
+		}
+		currentGroupID++
+	}
+
 	return &RailwayGraph{
 		FastGraph:           newFastGraph,
 		StationNameIDMapper: base.StationNameIDMapper,
+		GroupIDs:            groupIDs,
 	}, nil
 }

@@ -56,6 +56,51 @@ func TestNewIcPassGraph(t *testing.T) {
 		}
 	})
 
+	t.Run("正常系: BFSによる連結成分の特定が正しく行われること", func(t *testing.T) {
+		// A-B, C-D は繋がっており、E は孤立している
+		g := NewGraph(5)
+		idA := g.GetOrAddID("A")
+		idB := g.GetOrAddID("B")
+		idC := g.GetOrAddID("C")
+		idD := g.GetOrAddID("D")
+		idE := g.GetOrAddID("E")
+
+		g.AddEdge(domain.Edge{FromID: idA, ToID: idB, IsIcPassArea: true})
+		g.AddEdge(domain.Edge{FromID: idB, ToID: idA, IsIcPassArea: true}) // 双方向
+
+		g.AddEdge(domain.Edge{FromID: idC, ToID: idD, IsIcPassArea: true})
+		g.AddEdge(domain.Edge{FromID: idD, ToID: idC, IsIcPassArea: true}) // 双方向
+
+		// E はエッジなし
+
+		icG, err := NewIcPassGraph(g)
+		if err != nil {
+			t.Fatalf("ICグラフの生成に失敗: %v", err)
+		}
+
+		groupA := icG.GetGroupID(idA)
+		groupB := icG.GetGroupID(idB)
+		groupC := icG.GetGroupID(idC)
+		groupD := icG.GetGroupID(idD)
+		groupE := icG.GetGroupID(idE)
+
+		if groupA == 0 || groupC == 0 {
+			t.Errorf("連結している駅のGroupIDが0になっています (A:%d, C:%d)", groupA, groupC)
+		}
+		if groupA != groupB {
+			t.Errorf("AとBのGroupIDが一致しません (A:%d, B:%d)", groupA, groupB)
+		}
+		if groupC != groupD {
+			t.Errorf("CとDのGroupIDが一致しません (C:%d, D:%d)", groupC, groupD)
+		}
+		if groupA == groupC {
+			t.Errorf("異なる連結成分のGroupIDが一致しています (A:%d, C:%d)", groupA, groupC)
+		}
+		if groupE != 0 {
+			t.Errorf("孤立駅(E)のGroupIDが0ではありません: %d", groupE)
+		}
+	})
+
 	t.Run("異常系: baseグラフがnilの場合はエラーとなること", func(t *testing.T) {
 		icG, err := NewIcPassGraph(nil)
 		if err == nil {
