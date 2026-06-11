@@ -47,7 +47,7 @@ type SplitResult struct {
 // SplitOptimizer は経路の最適分割を行うアルゴリズムのインターフェースです。
 // locked[i] が true の駅インデックスでは分割が禁止されます。
 type SplitOptimizer[T EvaluationResult] interface {
-	Optimize(path []int, months int, locked []bool) ([]OptimizedPath[T], error)
+	Optimize(path []int, months int, locked []bool, maxSections int) ([]OptimizedPath[T], error)
 }
 
 // FindOptimalSplit は経路から分割定期券の最安パターンを見つけるユースケースです。
@@ -67,7 +67,7 @@ func NewFindOptimalSplit(opt SplitOptimizer[*CalculationResult], calc *Calculate
 
 // Execute は指定された経路の全分割パターンを評価し、最安となる分割結果をすべて返します。
 // locked[i] が true の駅インデックスでは分割が禁止されます。
-func (u *FindOptimalSplit) Execute(path []int, months int, locked []bool) ([]SplitResult, error) {
+func (u *FindOptimalSplit) Execute(path []int, months int, locked []bool, maxSections int) ([]SplitResult, error) {
 	if len(path) < 2 {
 		return nil, fmt.Errorf("findOptimalSplit: 経路には少なくとも2つの駅が必要です")
 	}
@@ -75,7 +75,7 @@ func (u *FindOptimalSplit) Execute(path []int, months int, locked []bool) ([]Spl
 		return nil, fmt.Errorf("findOptimalSplit: locked の長さが経路の長さと一致しません")
 	}
 
-	optPaths, err := u.optimizer.Optimize(path, months, locked)
+	optPaths, err := u.optimizer.Optimize(path, months, locked, maxSections)
 	if err != nil {
 		return nil, err
 	}

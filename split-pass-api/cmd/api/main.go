@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"split-pass-api/internal/domain"
+	"split-pass-api/internal/graph"
 	"split-pass-api/internal/graph/data"
 	"split-pass-api/internal/handler"
 	"split-pass-api/internal/infra/fareio"
@@ -125,7 +126,8 @@ func run() error {
 
 	opt := optimizer.NewDPOptimizer(amountCalc)
 	splitUseCase := usecase.NewFindOptimalSplit(opt, amountCalc)
-	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules)
+	// 磁気定期券用: 区間数無制限 (0)
+	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules, 0)
 
 	// ルーティング
 	mux := http.NewServeMux()

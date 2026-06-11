@@ -28,8 +28,9 @@ type SearchOptimalSplit struct {
 		graph.PathFinder
 		graph.StationProvider
 	}
-	split *FindOptimalSplit
-	rules []domain.ResolvedBypassRule
+	split       *FindOptimalSplit
+	rules       []domain.ResolvedBypassRule
+	maxSections int
 }
 
 // NewSearchOptimalSplit は新しい SearchOptimalSplit を作成します。
@@ -40,12 +41,14 @@ func NewSearchOptimalSplit(
 	},
 	u *FindOptimalSplit,
 	rules []domain.ResolvedBypassRule,
+	maxSections int,
 ) *SearchOptimalSplit {
 	// サーバー起動時に1回だけ、衝突のない安全な双方向ルールを生成・保持する
 	return &SearchOptimalSplit{
-		graph: g,
-		split: u,
-		rules: makeUniqueBidirectionalRules(rules),
+		graph:       g,
+		split:       u,
+		rules:       makeUniqueBidirectionalRules(rules),
+		maxSections: maxSections,
 	}
 }
 
@@ -116,7 +119,7 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 
 	tasks := u.generateTasks(paths, u.rules)
 
-	allPatterns, err := u.evaluateTasks(tasks, months)
+	allPatterns, err := u.evaluateTasks(tasks, months, u.maxSections)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +331,7 @@ func (u *SearchOptimalSplit) expandPath(path []int, locked []bool, rules []domai
 	return [][]RouteSegment{{{Path: path, Locked: locked}}}
 }
 
-func (u *SearchOptimalSplit) evaluateTasks(tasks []EvaluationTask, months int) ([]SplitResult, error) {
+func (u *SearchOptimalSplit) evaluateTasks(tasks []EvaluationTask, months int, maxSplits int) ([]SplitResult, error) {
 	var allPatterns []SplitResult
 
 	for _, task := range tasks {
@@ -337,7 +340,7 @@ func (u *SearchOptimalSplit) evaluateTasks(tasks []EvaluationTask, months int) (
 		isValidTask := true
 
 		for _, seg := range task.Segments {
-			results, err := u.split.Execute(seg.Path, months, seg.Locked)
+			results, err := u.split.Execute(seg.Path, months, seg.Locked, maxSplits)
 			if err != nil {
 				if errors.Is(err, domain.ErrInvalidPath) {
 					isValidTask = false
