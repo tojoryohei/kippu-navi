@@ -47,7 +47,7 @@ func (pq *priorityQueue) Pop() interface{} {
 }
 
 // FindShortestPathGisei はダイクストラ法を用いて最短擬制キロ経路を検索します。
-func (g *Graph) FindShortestPathGisei(startID, endID int) (*PathResult, error) {
+func (g *RailwayGraph) FindShortestPathGisei(startID, endID int) (*PathResult, error) {
 	if startID < 0 || startID >= len(g.IDToName) {
 		return nil, fmt.Errorf("FindShortestPathGisei: %w: ID %d", domain.ErrStationNotFound, startID)
 	}
@@ -109,7 +109,7 @@ func (g *Graph) FindShortestPathGisei(startID, endID int) (*PathResult, error) {
 
 // FindAllCandidatePaths は指定された最短擬制キロ以内に収まる全ての合理的な経路を探索します。
 // これにより、分割購入で安くなる可能性がある経路を網羅します。
-func (g *Graph) FindAllCandidatePaths(startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
+func (g *RailwayGraph) FindAllCandidatePaths(startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
 	if startID < 0 || startID >= len(g.IDToName) {
 		return nil, fmt.Errorf("FindAllCandidatePaths: %w: ID %d", domain.ErrStationNotFound, startID)
 	}

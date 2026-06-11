@@ -58,7 +58,7 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("バイナリの再読み込みに失敗しました: %w", err)
 	}
-	log.Printf("読み込み完了: 駅数 = %d", len(g2.IDToName))
+	log.Printf("読み込み完了: 駅数 = %d", g2.NumStations())
 
 	return nil
 }

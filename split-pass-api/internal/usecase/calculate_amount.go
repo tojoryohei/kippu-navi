@@ -10,7 +10,7 @@ import (
 // CalculateAmount は経路から定期運賃を計算するユースケースです。
 // グラフ、運賃レジストリ、特定区間加算運賃レジストリを協調させます。
 type CalculateAmount struct {
-	graph                    *graph.Graph
+	graph                    graph.TopologyProvider
 	reg                      *fare.Registry
 	addonFareReg             *domain.AddonRegistry
 	addonChargeReg           *domain.AddonRegistry
@@ -21,7 +21,7 @@ type CalculateAmount struct {
 
 // NewCalculateAmount は新しい CalculateAmount を作成します。
 func NewCalculateAmount(
-	g *graph.Graph,
+	g graph.TopologyProvider,
 	reg *fare.Registry,
 	addonFareReg *domain.AddonRegistry,
 	addonChargeReg *domain.AddonRegistry,
@@ -81,9 +81,10 @@ func (u *CalculateAmount) analyzeRoute(path []int) (*routeSummary, error) {
 
 		// エッジを検索
 		var edge *domain.Edge
-		for j := range u.graph.Edges[fromID] {
-			if u.graph.Edges[fromID][j].ToID == toID {
-				edge = &u.graph.Edges[fromID][j]
+		edges := u.graph.GetEdges(fromID)
+		for j := range edges {
+			if edges[j].ToID == toID {
+				edge = &edges[j]
 				break
 			}
 		}

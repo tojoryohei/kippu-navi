@@ -168,14 +168,20 @@ var viaRules = []viaBypassRule{
 }
 
 // GetVia は経路中の分岐駅の名前リストを返します。
-func GetVia(g *graph.Graph, path []int) []string {
+func GetVia(
+	g interface {
+		graph.StationProvider
+		graph.TopologyProvider
+	},
+	path []int,
+) []string {
 	if len(path) < 2 {
 		return []string{}
 	}
 
 	stationNameList := make([]string, len(path))
 	for i, stationID := range path {
-		stationNameList[i] = g.IDToName[stationID]
+		stationNameList[i] = g.GetName(stationID)
 	}
 
 	var via []string
@@ -193,11 +199,11 @@ func GetVia(g *graph.Graph, path []int) []string {
 		}
 
 		// 2. 通常の分岐駅判定（3駅以上の経路でのみ実行される）
-		if len(g.Edges[path[i]]) > 2 {
+		if len(g.GetEdges(path[i])) > 2 {
 			if i < len(path)-2 {
 				via = append(via, stationNameList[i+1])
 			} else {
-				if i > 0 && !(len(g.Edges[path[i-1]]) > 2) {
+				if i > 0 && !(len(g.GetEdges(path[i-1])) > 2) {
 					via = append(via, stationNameList[i])
 				} else if i == 0 {
 					via = append(via, stationNameList[i])

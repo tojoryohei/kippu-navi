@@ -15,15 +15,41 @@ type StationNameIDMapper struct {
 	IDToName []string
 }
 
-// Graph は駅データとネットワーク構造を統合して管理します。
-type Graph struct {
+// StationProvider は駅名と数値IDの相互変換を処理するためのインターフェースです。
+type StationProvider interface {
+	GetID(name string) (int, bool)
+	GetName(id int) string
+	NumStations() int
+}
+
+// TopologyProvider は駅間の接続情報を取得するためのインターフェースです。
+type TopologyProvider interface {
+	GetEdges(stationID int) []domain.Edge
+}
+
+// PathFinder はグラフ上の経路探索を行うためのインターフェースです。
+type PathFinder interface {
+	FindShortestPathGisei(startID, endID int) (*PathResult, error)
+	FindAllCandidatePaths(startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error)
+}
+
+// Graph は駅データとネットワーク構造を統合して管理するためのインターフェースです。
+type Graph interface {
+	StationProvider
+	TopologyProvider
+	PathFinder
+	Validate() error
+}
+
+// RailwayGraph は Graph インターフェースの具象実装です。
+type RailwayGraph struct {
 	*FastGraph
 	*StationNameIDMapper
 }
 
 // NewGraph は空のグラフインスタンスを作成します。
-func NewGraph(numStations int) *Graph {
-	return &Graph{
+func NewGraph(numStations int) *RailwayGraph {
+	return &RailwayGraph{
 		FastGraph:           NewFastGraph(numStations),
 		StationNameIDMapper: NewStationNameIDMapper(),
 	}
@@ -34,6 +60,14 @@ func NewFastGraph(numStations int) *FastGraph {
 	return &FastGraph{
 		Edges: make([][]domain.Edge, numStations),
 	}
+}
+
+// GetEdges は指定された駅IDに隣接するエッジのリストを返します。
+func (g *FastGraph) GetEdges(id int) []domain.Edge {
+	if id < 0 || id >= len(g.Edges) {
+		return nil
+	}
+	return g.Edges[id]
 }
 
 // AddEdge は駅間に有向エッジを追加します。
@@ -84,6 +118,11 @@ func (m *StationNameIDMapper) GetName(id int) string {
 		return ""
 	}
 	return m.IDToName[id]
+}
+
+// NumStations は登録されている駅の総数を返します。
+func (m *StationNameIDMapper) NumStations() int {
+	return len(m.IDToName)
 }
 
 // GetStation は指定されたIDの domain.Station オブジェクトを返します。

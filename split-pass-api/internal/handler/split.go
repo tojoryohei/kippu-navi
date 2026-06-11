@@ -12,12 +12,21 @@ import (
 
 // Split は分割定期券の最適解を計算するHTTPリクエストを処理します。
 type Split struct {
-	graph  *graph.Graph
+	graph interface {
+		graph.StationProvider
+		graph.TopologyProvider
+	}
 	search *usecase.SearchOptimalSplit
 }
 
 // NewSplit は新しい Split を作成します。
-func NewSplit(g *graph.Graph, search *usecase.SearchOptimalSplit) *Split {
+func NewSplit(
+	g interface {
+		graph.StationProvider
+		graph.TopologyProvider
+	},
+	search *usecase.SearchOptimalSplit,
+) *Split {
 	return &Split{
 		graph:  g,
 		search: search,
@@ -79,8 +88,8 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	startID, okStart := h.graph.NameToID[req.Start]
-	endID, okEnd := h.graph.NameToID[req.End]
+	startID, okStart := h.graph.GetID(req.Start)
+	endID, okEnd := h.graph.GetID(req.End)
 
 	if !okStart || !okEnd {
 		writeErrorResponse(w, http.StatusBadRequest, "存在しない駅名が含まれています")
@@ -110,7 +119,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		for j, seg := range res.Segments {
 			pathNames := make([]string, len(seg.Path))
 			for k, id := range seg.Path {
-				pathNames[k] = h.graph.IDToName[id]
+				pathNames[k] = h.graph.GetName(id)
 			}
 			viaNames := usecase.GetVia(h.graph, seg.Path)
 

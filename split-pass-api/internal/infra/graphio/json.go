@@ -27,7 +27,7 @@ type rawEdge struct {
 
 // Load は JSON データを読み込み、新しい Graph を構築して返します。
 // データが空またはエッジが0件の場合はエラーを返します。
-func (l *JSONLoader) Load(r io.Reader) (*graph.Graph, error) {
+func (l *JSONLoader) Load(r io.Reader) (graph.Graph, error) {
 	var edges []rawEdge
 	decoder := json.NewDecoder(r)
 	decoder.DisallowUnknownFields()
