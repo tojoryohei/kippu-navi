@@ -101,6 +101,15 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// O(1) 事前バリデーション: 連結成分（エリア）のチェック
+	// 孤立駅（GroupID=0）や、異なるエリア間（GroupIDが不一致）の場合は即座にエラーを返す
+	startGroupID := h.graph.GetGroupID(startID)
+	endGroupID := h.graph.GetGroupID(endID)
+	if startGroupID == 0 || endGroupID == 0 || startGroupID != endGroupID {
+		writeErrorResponse(w, http.StatusUnprocessableEntity, "指定された区間は対象外エリア、または異なるエリア間にまたがっています")
+		return
+	}
+
 	optResult, err := h.search.Execute(startID, endID, req.Months)
 	if err != nil {
 		log.Printf("分割定期券の計算エラー: %v", err)

@@ -23,11 +23,12 @@ type rawEdge struct {
 	Company                domain.CompanyID `json:"company"`
 	IsTrainSpecificSection bool             `json:"isTrainSpecificSection"`
 	IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
+	IsIcPassArea           bool             `json:"isIcPassArea"`
 }
 
 // Load は JSON データを読み込み、新しい Graph を構築して返します。
 // データが空またはエッジが0件の場合はエラーを返します。
-func (l *JSONLoader) Load(r io.Reader) (graph.Graph, error) {
+func (l *JSONLoader) Load(r io.Reader) (*graph.RailwayGraph, error) {
 	var edges []rawEdge
 	decoder := json.NewDecoder(r)
 	decoder.DisallowUnknownFields()
@@ -60,6 +61,7 @@ func (l *JSONLoader) Load(r io.Reader) (graph.Graph, error) {
 			Company:                re.Company,
 			IsTrainSpecificSection: re.IsTrainSpecificSection,
 			IsBarrierFreeSection:   re.IsBarrierFreeSection,
+			IsIcPassArea:           re.IsIcPassArea,
 		})
 		g.AddEdge(domain.Edge{
 			FromID:                 id1,
@@ -70,6 +72,7 @@ func (l *JSONLoader) Load(r io.Reader) (graph.Graph, error) {
 			Company:                re.Company,
 			IsTrainSpecificSection: re.IsTrainSpecificSection,
 			IsBarrierFreeSection:   re.IsBarrierFreeSection,
+			IsIcPassArea:           re.IsIcPassArea,
 		})
 	}
 

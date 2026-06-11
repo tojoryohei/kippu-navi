@@ -57,7 +57,7 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 	)
 	opt := optimizer.NewDPOptimizer(amount)
 	split := usecase.NewFindOptimalSplit(opt, amount)
-	search := usecase.NewSearchOptimalSplit(g, split, bypassRules)
+	search := usecase.NewSearchOptimalSplit(g, split, bypassRules, 0)
 
 	// 2. テストケースの実行
 	tests := []struct {

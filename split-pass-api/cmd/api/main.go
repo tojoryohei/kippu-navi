@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"split-pass-api/internal/domain"
+	"split-pass-api/internal/graph"
 	"split-pass-api/internal/graph/data"
 	"split-pass-api/internal/handler"
 	"split-pass-api/internal/infra/fareio"
@@ -40,7 +41,6 @@ func run() error {
 	listenAddr := ":" + port
 
 	// グラフの初期化
-	log.Printf("JSONからグラフを構築しています")
 	loader := &graphio.JSONLoader{}
 	g, loadErr := loader.Load(data.GetEdgesReader())
 	if loadErr != nil {
@@ -125,12 +125,22 @@ func run() error {
 
 	opt := optimizer.NewDPOptimizer(amountCalc)
 	splitUseCase := usecase.NewFindOptimalSplit(opt, amountCalc)
-	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules)
+	// 磁気定期券用: 区間数無制限 (0)
+	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules, 0)
+	// IC分割乗車券用 (型アサーションが不要に！)
+	icGraph, err := graph.NewIcPassGraph(g)
+	if err != nil {
+		return fmt.Errorf("ICグラフの生成に失敗しました: %w", err)
+	}
+	icSearchUseCase := usecase.NewSearchOptimalSplit(icGraph, splitUseCase, bypassRules, 2)
 
 	// ルーティング
 	mux := http.NewServeMux()
 	splitHandler := handler.NewSplit(g, searchUseCase)
 	mux.HandleFunc("/api/split-pass", splitHandler.HandleCalculate)
+
+	icSplitHandler := handler.NewSplit(icGraph, icSearchUseCase)
+	mux.HandleFunc("/api/split-ic-pass", icSplitHandler.HandleCalculate)
 
 	server := &http.Server{
 		Addr:         listenAddr,
