@@ -11,7 +11,7 @@ import (
 )
 
 // setup はテスト用に本番データを含むユースケースを初期化します。
-func setup(t *testing.T) (*usecase.CalculateAmount, *graph.Graph) {
+func setup(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 	t.Helper()
 
 	// 1. グラフのロード
@@ -42,15 +42,13 @@ func setup(t *testing.T) (*usecase.CalculateAmount, *graph.Graph) {
 
 	// 5. ID解決
 	if err := addonFareReg.ResolveIDs(func(name string) (int, bool) {
-		id, ok := g.NameToID[name]
-		return id, ok
+		return g.GetID(name)
 	}); err != nil {
 		t.Fatalf("加算運賃のID解決に失敗しました: %v", err)
 	}
 
 	if err := addonChargeReg.ResolveIDs(func(name string) (int, bool) {
-		id, ok := g.NameToID[name]
-		return id, ok
+		return g.GetID(name)
 	}); err != nil {
 		t.Fatalf("加算料金のID解決に失敗しました: %v", err)
 	}
@@ -78,7 +76,7 @@ func TestAmountCalculation_Integration(t *testing.T) {
 	getIDs := func(names ...string) []int {
 		ids := make([]int, len(names))
 		for i, name := range names {
-			id, ok := g.NameToID[name]
+			id, ok := g.GetID(name)
 			if !ok {
 				t.Fatalf("駅名が見つかりません: %s", name)
 			}

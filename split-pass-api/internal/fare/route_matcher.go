@@ -45,8 +45,8 @@ func routeToPseudoFNV(route []int) uint64 {
 	return h
 }
 
-// LoadFromDomain は JSON からロードしたドメインモデルの配列と Graph (名前解決用) を用いてデータを構築します。
-func (m *RouteMatcher) LoadFromDomain(route_and_fares []domain.RouteAndFare, g *graph.Graph) error {
+// LoadFromDomain は JSON からロードしたドメインモデル의 配列と Graph (名前解決用) を用いてデータを構築します。
+func (m *RouteMatcher) LoadFromDomain(route_and_fares []domain.RouteAndFare, g graph.Graph) error {
 	if g == nil {
 		return fmt.Errorf("LoadFromDomain: %w", graph.ErrInvalidGraph)
 	}

@@ -106,7 +106,7 @@ type Calculators struct {
 }
 
 // InitRegistry はJSONデータをデコードし、全ての運賃計算機を初期化して返します。
-func InitRegistry(g *graph.Graph) (*Calculators, error) {
+func InitRegistry(g graph.Graph) (*Calculators, error) {
 	eastTrunk, err := loadFareTable(eastTrunkFaresJSON)
 	if err != nil {
 		return nil, fmt.Errorf("eastTrunkFaresの読み込みに失敗: %w", err)

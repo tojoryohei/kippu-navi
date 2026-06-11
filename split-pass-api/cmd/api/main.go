@@ -64,8 +64,7 @@ func run() error {
 
 	// IDを解決
 	if err := addonFareReg.ResolveIDs(func(name string) (int, bool) {
-		id, ok := g.NameToID[name]
-		return id, ok
+		return g.GetID(name)
 	}); err != nil {
 		return fmt.Errorf("加算運賃のID解決に失敗しました: %w", err)
 	}
@@ -76,8 +75,7 @@ func run() error {
 
 	// IDを解決
 	if err := addonChargeReg.ResolveIDs(func(name string) (int, bool) {
-		id, ok := g.NameToID[name]
-		return id, ok
+		return g.GetID(name)
 	}); err != nil {
 		return fmt.Errorf("特急料金のID解決に失敗しました: %w", err)
 	}
@@ -109,8 +107,7 @@ func run() error {
 
 	// IDを解決
 	bypassRules, err := bypassReg.ResolveIDs(func(name string) (int, bool) {
-		id, ok := g.NameToID[name]
-		return id, ok
+		return g.GetID(name)
 	})
 	if err != nil {
 		return fmt.Errorf("特例ルールのID解決に失敗しました: %w", err)

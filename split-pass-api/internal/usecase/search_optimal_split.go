@@ -24,13 +24,23 @@ type EvaluationTask struct {
 
 // SearchOptimalSplit は候補経路の探索・補正・分割最適化を統括するユースケースです。
 type SearchOptimalSplit struct {
-	graph *graph.Graph
+	graph interface {
+		graph.PathFinder
+		graph.StationProvider
+	}
 	split *FindOptimalSplit
 	rules []domain.ResolvedBypassRule
 }
 
 // NewSearchOptimalSplit は新しい SearchOptimalSplit を作成します。
-func NewSearchOptimalSplit(g *graph.Graph, u *FindOptimalSplit, rules []domain.ResolvedBypassRule) *SearchOptimalSplit {
+func NewSearchOptimalSplit(
+	g interface {
+		graph.PathFinder
+		graph.StationProvider
+	},
+	u *FindOptimalSplit,
+	rules []domain.ResolvedBypassRule,
+) *SearchOptimalSplit {
 	// サーバー起動時に1回だけ、衝突のない安全な双方向ルールを生成・保持する
 	return &SearchOptimalSplit{
 		graph: g,
@@ -65,8 +75,8 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 	}
 
 	var cheapestAmountPerDecikilo float64
-	kyotoID, kyotoExists := u.graph.NameToID["京都"]
-	osakaID, osakaExists := u.graph.NameToID["大阪"]
+	kyotoID, kyotoExists := u.graph.GetID("京都")
+	osakaID, osakaExists := u.graph.GetID("大阪")
 
 	if kyotoExists && osakaExists {
 		kyotoToOsakaPath, err := u.graph.FindShortestPathGisei(kyotoID, osakaID)

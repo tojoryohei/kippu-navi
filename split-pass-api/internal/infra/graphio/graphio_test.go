@@ -15,8 +15,9 @@ import (
 //
 //	A --(100)--> B --(200)--> C
 //	A --(400)--------------> C
-func newTestGraph() (*graph.Graph, int, int, int) {
+func newTestGraph() (graph.Graph, int, int, int) {
 	g := graph.NewGraph(10)
+
 	startID := g.GetOrAddID("A")
 	midID := g.GetOrAddID("B")
 	endID := g.GetOrAddID("C")
@@ -71,7 +72,7 @@ func TestGobLoader_Load_EmptyReader(t *testing.T) {
 
 func TestSaveBinary_InvalidGraph(t *testing.T) {
 	var buf bytes.Buffer
-	err := graphio.SaveBinary(&graph.Graph{}, &buf)
+	err := graphio.SaveBinary(&graph.RailwayGraph{}, &buf)
 
 	if err == nil {
 		t.Error("不正なグラフに対してエラーが返されませんでした")
