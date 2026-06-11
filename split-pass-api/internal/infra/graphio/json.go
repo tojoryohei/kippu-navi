@@ -23,6 +23,7 @@ type rawEdge struct {
 	Company                domain.CompanyID `json:"company"`
 	IsTrainSpecificSection bool             `json:"isTrainSpecificSection"`
 	IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
+	IsIcPassArea           bool             `json:"isIcPassArea"`
 }
 
 // Load は JSON データを読み込み、新しい Graph を構築して返します。
@@ -60,6 +61,7 @@ func (l *JSONLoader) Load(r io.Reader) (graph.Graph, error) {
 			Company:                re.Company,
 			IsTrainSpecificSection: re.IsTrainSpecificSection,
 			IsBarrierFreeSection:   re.IsBarrierFreeSection,
+			IsIcPassArea:           re.IsIcPassArea,
 		})
 		g.AddEdge(domain.Edge{
 			FromID:                 id1,
@@ -70,6 +72,7 @@ func (l *JSONLoader) Load(r io.Reader) (graph.Graph, error) {
 			Company:                re.Company,
 			IsTrainSpecificSection: re.IsTrainSpecificSection,
 			IsBarrierFreeSection:   re.IsBarrierFreeSection,
+			IsIcPassArea:           re.IsIcPassArea,
 		})
 	}
 
