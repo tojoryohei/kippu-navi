@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: "JR在来線の「発駅」「着駅」から普通乗車券と定期乗車券の分割乗車券の最安解を計算します。",
 };
 
+const STATION_NAMES = new Set(stationDatas.map((s) => s.name));
+
 async function fetchPassApi(from: string, to: string, months: number) {
   const start = performance.now();
   const response = await fetch("https://split-pass-api-yvgda2swha-an.a.run.app/api/split-pass", {
@@ -32,7 +34,6 @@ async function fetchPassApi(from: string, to: string, months: number) {
   }
 
   const normalApiResult = data.normal || data.results[0];
-
   const normalDeparture = normalApiResult.segments[0].path[0];
   const normalArrival = normalApiResult.segments[normalApiResult.segments.length - 1].path[normalApiResult.segments[normalApiResult.segments.length - 1].path.length - 1];
   const normalVia = normalApiResult.segments.flatMap((s) => s.via);
@@ -59,7 +60,7 @@ async function fetchPassApi(from: string, to: string, months: number) {
       const segFare = seg.result.Fare + seg.result.BarrierFreeFee + seg.result.Charge;
 
       splitKippuDatas.push({
-        departureStation: i == 0 ? normalDeparture : segDeparture,
+        departureStation: i === 0 ? normalDeparture : segDeparture,
         arrivalStation: i === res.segments.length - 1 ? normalArrival : segArrival,
         kippuData: {
           totalEigyoKilo: seg.totalEigyoKilo || 0,
@@ -79,19 +80,57 @@ async function fetchPassApi(from: string, to: string, months: number) {
   }
 
   return {
-    result: {
-      cheapestKippuData,
-      splitKippuDatasList
-    },
+    result: { cheapestKippuData, splitKippuDatasList },
     serverTime: performance.now() - start
   };
+}
+
+async function fetchCalculationData(from: string, to: string, searchType: string) {
+  if (from === to) {
+    return { error: "出発駅と到着駅が同じです。" };
+  }
+
+  if (!STATION_NAMES.has(from) || !STATION_NAMES.has(to)) {
+    return { error: "駅名が正しくありません。正しい駅名を選択または入力してください。" };
+  }
+
+  // 普通乗車券の計算
+  if (searchType === "normal" || searchType === "ticket") {
+    try {
+      const cacheResult = await getOptimalSplitWithCache(from, to);
+      if (!cacheResult) return { error: "指定された区間の経路が見つかりませんでした。" };
+      return { result: cacheResult.data, serverTime: cacheResult.time };
+    } catch (err: unknown) {
+      if (err instanceof StationCountLimitExceededError || err instanceof RouteNotFoundError) {
+        return { error: err.message };
+      }
+      return { error: "サーバー内部でエラーが発生しました。" };
+    }
+  }
+
+  // 磁気定期券の計算
+  if (TEMPORARY_STATIONS.toString().includes(from) || TEMPORARY_STATIONS.toString().includes(to)) {
+    return { error: "臨時駅発着の定期券は計算できません。" };
+  }
+
+  const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
+  const months = monthsMap[searchType] || 1;
+
+  try {
+    const apiData = await fetchPassApi(from, to, months);
+    return { result: apiData.result, serverTime: apiData.serverTime };
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return { error: err.message };
+    }
+    return { error: "定期券の計算APIとの通信に失敗しました。" };
+  }
 }
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const params = await searchParams;
   const from = typeof params.from === "string" ? params.from : undefined;
   const to = typeof params.to === "string" ? params.to : undefined;
-
   const searchType = typeof params.searchType === "string" ? params.searchType : "ticket";
 
   let result = null;
@@ -99,52 +138,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ [
   let serverTime = null;
 
   if (from && to) {
-    if (from === to) {
-      error = "出発駅と到着駅が同じです。";
-    } else {
-      const stations = new Set(stationDatas.map((s) => s.name));
-      if (!stations.has(from) || !stations.has(to)) {
-        error = "駅名が正しくありません。正しい駅名を選択または入力してください。";
-      } else {
-        if (searchType === "normal" || searchType === "ticket") {
-          try {
-            const cacheResult = await getOptimalSplitWithCache(from, to);
-            if (!cacheResult) {
-              error = "指定された区間の経路が見つかりませんでした。";
-            } else {
-              result = cacheResult.data;
-              serverTime = cacheResult.time;
-            }
-          } catch (err: unknown) {
-            if (err instanceof StationCountLimitExceededError) {
-              error = err.message;
-            } else if (err instanceof RouteNotFoundError) {
-              error = err.message;
-            } else {
-              error = "サーバー内部でエラーが発生しました。";
-            }
-          }
-        } else {
-          if (TEMPORARY_STATIONS.toString().includes(from) || TEMPORARY_STATIONS.toString().includes(to)) {
-            error = "臨時駅発着の定期券は計算できません。";
-            result = null;
-          } else {
-            const months = searchType === "pass1" ? 1 : searchType === "pass3" ? 3 : searchType === "pass6" ? 6 : 1;
-            try {
-              const apiData = await fetchPassApi(from, to, months);
-              result = apiData.result;
-              serverTime = apiData.serverTime;
-            } catch (err: unknown) {
-              if (err instanceof Error) {
-                error = err.message;
-              } else {
-                error = "定期券の計算APIとの通信に失敗しました。";
-              }
-            }
-          }
-        }
-      }
-    }
+    const data = await fetchCalculationData(from, to, searchType);
+    result = data.result || null;
+    error = data.error || null;
+    serverTime = data.serverTime || null;
   }
 
   return (
