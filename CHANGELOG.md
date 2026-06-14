@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.0.0...kippu-navi-v2.1.0) (2026-06-14)
+
+
+### Features
+
+* GA4トラッキング強化（分割成果の可視化とエラー検知の実装） ([#311](https://github.com/tojoryohei/kippu-navi/issues/311)) ([895faf8](https://github.com/tojoryohei/kippu-navi/commit/895faf8beaed5d71b3f01ca08a7cbc5147d2a4b9))
+
 ## [2.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.2...kippu-navi-v2.0.0) (2026-06-07)
 
 
