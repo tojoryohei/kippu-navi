@@ -5,6 +5,7 @@ import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 import { useRouter } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
@@ -54,6 +55,7 @@ export default function SplitForm({
     serverTime: initialServerTime,
 }: SplitFormProps) {
     const router = useRouter();
+    const posthog = usePostHog();
     const [isPending, startTransition] = useTransition();
 
     const lastTrackedSearch = useRef<string>("");
@@ -88,9 +90,9 @@ export default function SplitForm({
         });
     }, [initialFrom, initialTo, initialSearchType, reset]);
 
-    // GA4 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
+    // GA4 & PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
-        if (typeof window === "undefined" || typeof window.gtag !== "function") return;
+        if (typeof window === "undefined") return;
 
         if (initialFrom && initialTo) {
             const currentSearchKey = `${initialFrom}_${initialTo}_${initialSearchType || "ticket"}`;
@@ -107,31 +109,45 @@ export default function SplitForm({
                     const savedAmount = Math.max(0, normalFare - bestFare);
                     const isSplitFound = savedAmount > 0;
 
-                    window.gtag("event", "search_split", {
+                    const eventParams = {
                         search_type: initialSearchType || "ticket",
                         from_station: initialFrom,
                         to_station: initialTo,
                         is_split_found: isSplitFound,
                         saved_amount: savedAmount
-                    });
+                    };
+
+                    if (typeof window.gtag === "function") {
+                        window.gtag("event", "search_split", eventParams);
+                    }
+                    if (posthog) {
+                        posthog.capture("search_split", eventParams);
+                    }
 
                     lastTrackedSearch.current = currentSearchKey;
                 }
                 // 2. エラーが返ってきた場合
                 else if (initialError) {
-                    window.gtag("event", "search_error", {
+                    const errorParams = {
                         search_type: initialSearchType || "ticket",
                         from_station: initialFrom,
                         to_station: initialTo,
                         error_type: "calculation_error",
                         error_message: initialError
-                    });
+                    };
+
+                    if (typeof window.gtag === "function") {
+                        window.gtag("event", "search_error", errorParams);
+                    }
+                    if (posthog) {
+                        posthog.capture("search_error", errorParams);
+                    }
 
                     lastTrackedSearch.current = currentSearchKey;
                 }
             }
         }
-    }, [initialFrom, initialTo, initialSearchType, initialResult, initialError]);
+    }, [initialFrom, initialTo, initialSearchType, initialResult, initialError, posthog]);
 
     const searchedTypeLabel = SEARCH_TYPE_OPTIONS.find(
         o => o.value === ((initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6") ? initialSearchType : "ticket")
