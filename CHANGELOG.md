@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.1.0...kippu-navi-v2.2.0) (2026-06-18)
+
+
+### Features
+
+* PostHog導入とリバースプロキシ経由のトラッキング実装 ([#319](https://github.com/tojoryohei/kippu-navi/issues/319)) ([71ef726](https://github.com/tojoryohei/kippu-navi/commit/71ef7267ce1b6f0a42544000541ea59217532c23))
+
 ## [2.1.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.0.0...kippu-navi-v2.1.0) (2026-06-14)
 
 
