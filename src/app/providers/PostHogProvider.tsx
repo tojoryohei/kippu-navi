@@ -11,9 +11,10 @@ if (typeof window !== 'undefined') {
   if (posthogKey && posthogHost) {
     posthog.init(posthogKey, {
       api_host: posthogHost,
-      person_profiles: 'never', // 匿名計測にしてリクエストを削減
-      capture_pageview: false,  // ページビューは手動で計測する
-      disable_session_recording: true, // 録画を無効化
+      person_profiles: 'never',
+      capture_pageview: false,
+      disable_session_recording: true,
+      autocapture: false,
     });
   }
 }
