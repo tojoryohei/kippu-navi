@@ -426,22 +426,46 @@ func (u *SearchOptimalSplit) getNoSplitCandidates(start, end int) ([][]int, erro
 		}
 	}
 
-	// ④ 発着駅が遠回り上にあるが、完全に内包されていない場合、経由していない方の分岐駅まで特例の近道経路
-	for _, path := range [][]int{pathEigyo, pathGisei} {
-		if len(path) < 2 {
-			continue
+	// ④ 発着駅が遠回り上にあるが、完全に内包されていない場合、経由していない方の分岐駅まで特例の近道経路（オーバーシュート）
+	for _, rule := range u.rules {
+		startOnDetour := u.isOnDetourMiddle(start, rule)
+		endOnDetour := u.isOnDetourMiddle(end, rule)
+
+		if startOnDetour {
+			// Option A: J1 から進入
+			pathJ2ToEnd, err := rg.FindShortestPathGisei(rule.ShortcutPath[len(rule.ShortcutPath)-1], end)
+			if err == nil && len(pathJ2ToEnd.StationIDs) >= 2 {
+				cand := append([]int(nil), rule.ShortcutPath...)
+				cand = append(cand, pathJ2ToEnd.StationIDs[1:]...)
+				cands = append(cands, cand)
+			}
+
+			// Option B: J2 から進入
+			pathJ1ToEnd, err := rg.FindShortestPathGisei(rule.ShortcutPath[0], end)
+			if err == nil && len(pathJ1ToEnd.StationIDs) >= 2 {
+				revShortcut := reverseSlice(rule.ShortcutPath)
+				cand := append([]int(nil), revShortcut...)
+				cand = append(cand, pathJ1ToEnd.StationIDs[1:]...)
+				cands = append(cands, cand)
+			}
 		}
-		for _, rule := range u.rules {
-			startOnDetour := u.isOnDetourMiddle(path[0], rule)
-			endOnDetour := u.isOnDetourMiddle(path[len(path)-1], rule)
-			if startOnDetour || endOnDetour {
-				if _, ok := u.findSubPath(path, rule.DetourPath); ok == -1 {
-					locked := make([]bool, len(path))
-					extPath, _ := u.buildOvershootPath(path, locked, rule)
-					if extPath != nil {
-						cands = append(cands, extPath)
-					}
-				}
+
+		if endOnDetour {
+			// Option A: J1 から退出
+			pathStartToJ1, err := rg.FindShortestPathGisei(start, rule.ShortcutPath[0])
+			if err == nil && len(pathStartToJ1.StationIDs) >= 2 {
+				cand := append([]int(nil), pathStartToJ1.StationIDs...)
+				cand = append(cand, rule.ShortcutPath[1:]...)
+				cands = append(cands, cand)
+			}
+
+			// Option B: J2 から退出
+			pathStartToJ2, err := rg.FindShortestPathGisei(start, rule.ShortcutPath[len(rule.ShortcutPath)-1])
+			if err == nil && len(pathStartToJ2.StationIDs) >= 2 {
+				revShortcut := reverseSlice(rule.ShortcutPath)
+				cand := append([]int(nil), pathStartToJ2.StationIDs...)
+				cand = append(cand, revShortcut[1:]...)
+				cands = append(cands, cand)
 			}
 		}
 	}

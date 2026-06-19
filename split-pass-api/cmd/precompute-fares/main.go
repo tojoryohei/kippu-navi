@@ -271,20 +271,17 @@ func computeCheapestNoSplit(
 	start, end, months int,
 ) int {
 	var cands [][]int
-	var lockedList [][]bool
 
-	// ① 最短営業キロ
+	// ① 最短営業キロ経路
 	pathEigyo := reconstructPath(prevEigyo, start, end)
 	if len(pathEigyo) >= 2 {
 		cands = append(cands, pathEigyo)
-		lockedList = append(lockedList, make([]bool, len(pathEigyo)))
 	}
 
-	// ② 最短擬制キロ
+	// ② 最短擬制キロ経路
 	pathGisei := reconstructPath(prevGisei, start, end)
 	if len(pathGisei) >= 2 {
 		cands = append(cands, pathGisei)
-		lockedList = append(lockedList, make([]bool, len(pathGisei)))
 	}
 
 	// ③ 経路全体が1つの特例に含まれる場合のみ、近道の経路
@@ -298,47 +295,61 @@ func computeCheapestNoSplit(
 				shortcutPath := make([]int, len(rule.ShortcutPath))
 				copy(shortcutPath, rule.ShortcutPath)
 				cands = append(cands, shortcutPath)
-				lockedList = append(lockedList, makeShortcutLocked(shortcutPath))
 			}
 		}
 	}
 
-	// ④ 発着駅が遠回り上にあるが、完全に内包されていない場合、経由していない方の分岐駅まで特例の近道経路
-	for _, path := range [][]int{pathEigyo, pathGisei} {
-		if len(path) < 2 {
-			continue
+	// ④ 発着駅が遠回り上にあるが、完全に内包されていない場合、経由していない方の分岐駅まで特例の近道経路（オーバーシュート）
+	for _, rule := range rules {
+		startOnDetour := isOnDetourMiddle(start, rule)
+		endOnDetour := isOnDetourMiddle(end, rule)
+
+		if startOnDetour {
+			// Option A: J1 から進入
+			pathJ2ToEnd, err := g.FindShortestPathGisei(rule.ShortcutPath[len(rule.ShortcutPath)-1], end)
+			if err == nil && len(pathJ2ToEnd.StationIDs) >= 2 {
+				cand := append([]int(nil), rule.ShortcutPath...)
+				cand = append(cand, pathJ2ToEnd.StationIDs[1:]...)
+				cands = append(cands, cand)
+			}
+
+			// Option B: J2 から進入
+			pathJ1ToEnd, err := g.FindShortestPathGisei(rule.ShortcutPath[0], end)
+			if err == nil && len(pathJ1ToEnd.StationIDs) >= 2 {
+				revShortcut := reverseSlice(rule.ShortcutPath)
+				cand := append([]int(nil), revShortcut...)
+				cand = append(cand, pathJ1ToEnd.StationIDs[1:]...)
+				cands = append(cands, cand)
+			}
 		}
-		for _, rule := range rules {
-			startOnDetour := isOnDetourMiddle(path[0], rule)
-			endOnDetour := isOnDetourMiddle(path[len(path)-1], rule)
-			if startOnDetour || endOnDetour {
-				if findSubPath(path, rule.DetourPath) == -1 {
-					locked := make([]bool, len(path))
-					extPath, extLocked := buildOvershootPath(path, locked, rule)
-					if extPath != nil {
-						cands = append(cands, extPath)
-						lockedList = append(lockedList, extLocked)
-					}
-				}
+
+		if endOnDetour {
+			// Option A: J1 から退出
+			pathStartToJ1, err := g.FindShortestPathGisei(start, rule.ShortcutPath[0])
+			if err == nil && len(pathStartToJ1.StationIDs) >= 2 {
+				cand := append([]int(nil), pathStartToJ1.StationIDs...)
+				cand = append(cand, rule.ShortcutPath[1:]...)
+				cands = append(cands, cand)
+			}
+
+			// Option B: J2 から退出
+			pathStartToJ2, err := g.FindShortestPathGisei(start, rule.ShortcutPath[len(rule.ShortcutPath)-1])
+			if err == nil && len(pathStartToJ2.StationIDs) >= 2 {
+				revShortcut := reverseSlice(rule.ShortcutPath)
+				cand := append([]int(nil), pathStartToJ2.StationIDs...)
+				cand = append(cand, revShortcut[1:]...)
+				cands = append(cands, cand)
 			}
 		}
 	}
 
 	minFare := math.MaxInt
-	for i, cand := range cands {
+	for _, cand := range cands {
 		res, err := calc.Execute(cand, months)
 		if err != nil {
 			continue
 		}
-		// locked がある場合は、分割計算FindOptimalSplitで計算すべき（つまりこの区間をそのまま通しで買うべきかどうか）
-		// ここでは「非分割」の通し運賃だけを比較するため、そのまま calc.Execute の結果の TotalAmount を利用してよい
 		amt := res.TotalAmount()
-		// ただし、もし locked を尊重した運賃がある場合（特急料金など）も calc.Execute は正しく計算してくれる
-		// 特例運賃などは locked スライス自体は calc.Execute では使わない（calc.Execute は単一の path から運賃を計算するだけだから）
-		// ですので、Locked の影響（分割禁止）は分割ロジックである Dijkstra 上で
-		// 「分割点をその中間に置くことを禁止する（エッジを引かない）」形で表現されます。
-		// そのため、非分割運賃の事前計算時は locked 配列は無視して単に path の通し運賃を計算してOKです。
-		_ = lockedList[i]
 		if amt < minFare {
 			minFare = amt
 		}
@@ -385,78 +396,7 @@ func isOnDetourMiddle(stationID int, rule domain.ResolvedBypassRule) bool {
 	return false
 }
 
-func makeShortcutLocked(shortcutPath []int) []bool {
-	locked := make([]bool, len(shortcutPath))
-	for k := 1; k < len(shortcutPath)-1; k++ {
-		locked[k] = true
-	}
-	return locked
-}
 
-func findSubPath(a, b []int) int {
-	if len(b) == 0 || len(a) < len(b) {
-		return -1
-	}
-	for i := 0; i <= len(a)-len(b); i++ {
-		if isMatch(a[i:i+len(b)], b) {
-			return i
-		}
-	}
-	return -1
-}
-
-func isMatch(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func buildOvershootPath(path []int, locked []bool, rule domain.ResolvedBypassRule) ([]int, []bool) {
-	// 始点のオーバーシュート判定
-	for i := 1; i < len(rule.DetourPath)-1; i++ {
-		suffix := rule.DetourPath[i:]
-		if len(path) >= len(suffix) && isMatch(path[:len(suffix)], suffix) {
-			newPath := make([]int, 0, len(rule.ShortcutPath)+len(path)-len(suffix))
-			newLocked := make([]bool, 0, cap(newPath))
-
-			newPath = append(newPath, rule.ShortcutPath...)
-			newLocked = append(newLocked, makeShortcutLocked(rule.ShortcutPath)...)
-
-			newPath = append(newPath, path[len(suffix):]...)
-			newLocked = append(newLocked, locked[len(suffix):]...)
-
-			return newPath, newLocked
-		}
-	}
-
-	// 終点のオーバーシュート判定
-	for i := 1; i < len(rule.DetourPath)-1; i++ {
-		prefix := rule.DetourPath[:i+1]
-		if len(path) >= len(prefix) {
-			startMatchIdx := len(path) - len(prefix)
-			if isMatch(path[startMatchIdx:], prefix) {
-				newPath := make([]int, 0, startMatchIdx+len(rule.ShortcutPath))
-				newLocked := make([]bool, 0, cap(newPath))
-
-				newPath = append(newPath, path[:startMatchIdx]...)
-				newLocked = append(newLocked, locked[:startMatchIdx]...)
-
-				newPath = append(newPath, rule.ShortcutPath...)
-				newLocked = append(newLocked, makeShortcutLocked(rule.ShortcutPath)...)
-
-				return newPath, newLocked
-			}
-		}
-	}
-
-	return nil, nil
-}
 
 func makeUniqueBidirectionalRules(rules []domain.ResolvedBypassRule) []domain.ResolvedBypassRule {
 	var biRules []domain.ResolvedBypassRule

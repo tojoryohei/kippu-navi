@@ -1,6 +1,7 @@
 package usecase_test
 
 import (
+	"fmt"
 	"math"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
