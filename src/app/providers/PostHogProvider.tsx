@@ -15,6 +15,7 @@ if (typeof window !== 'undefined') {
       capture_pageview: false,
       disable_session_recording: true,
       autocapture: false,
+      capture_performance: false,
     });
   }
 }
