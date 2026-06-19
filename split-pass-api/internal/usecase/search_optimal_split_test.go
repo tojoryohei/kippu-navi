@@ -1,6 +1,7 @@
 package usecase_test
 
 import (
+	"math"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/fare"
 	"split-pass-api/internal/graph"
@@ -45,7 +46,8 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 	split := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount), calcAmount)
 
 	t.Run("特例ルールなし: 最短経路(A-B-C)内の分割が最安になるケース", func(t *testing.T) {
-		search := usecase.NewSearchOptimalSplit(g, split, nil, 0)
+		fares := precomputeFaresForTest(g, calcAmount, nil)
+		search := usecase.NewSearchOptimalSplit(g, split, nil, 0, fares, int32(g.NumStations()))
 		// A-B-C (20km): 通し=2500, 分割(A-B, B-C)=1000+1000=2000
 		// A-C (21km): 通し=3000
 		// 特例なしの場合、最安は 2000
@@ -74,7 +76,8 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 				DetourPath:   []int{id("A"), id("C")},
 			},
 		}
-		search := usecase.NewSearchOptimalSplit(g, split, rules, 0)
+		fares := precomputeFaresForTest(g, calcAmount, rules)
+		search := usecase.NewSearchOptimalSplit(g, split, rules, 0, fares, int32(g.NumStations()))
 
 		// DからC(遠回り端点)を検索する。
 		// DFSは [D, A, C] を出力するはず。
@@ -98,7 +101,8 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 	})
 
 	t.Run("異常系：存在しない駅", func(t *testing.T) {
-		search := usecase.NewSearchOptimalSplit(g, split, nil, 0)
+		fares := precomputeFaresForTest(g, calcAmount, nil)
+		search := usecase.NewSearchOptimalSplit(g, split, nil, 0, fares, int32(g.NumStations()))
 		_, err := search.Execute(-1, 99, 1)
 		if err == nil {
 			t.Error("無効な駅IDに対するエラーが期待されますが、nilを取得しました")
@@ -134,6 +138,8 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			fare.NewRouteMatcher(), fare.NewRouteMatcher(),
 		)
 		split2 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount2), calcAmount2)
+		fares2 := precomputeFaresForTest(g2, calcAmount2, nil)
+		numStations2 := int32(g2.NumStations())
 
 		// 運賃仕様:
 		// 10km: 1000円 (A-B, B-C, C-D)
@@ -150,21 +156,21 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		// maxSections=1(分割なし) の場合: 全ての分割が禁止されるため、通しの(5000円)が選ばれる。
 
 		// maxSections=0
-		search0 := usecase.NewSearchOptimalSplit(g2, split2, nil, 0)
+		search0 := usecase.NewSearchOptimalSplit(g2, split2, nil, 0, fares2, numStations2)
 		got0, err0 := search0.Execute(id2("A"), id2("D"), 1)
 		if err0 != nil {
 			t.Fatalf("Execute(0) が失敗しました: %v", err0)
 		}
 
 		// maxSections=2
-		search2 := usecase.NewSearchOptimalSplit(g2, split2, nil, 2)
+		search2 := usecase.NewSearchOptimalSplit(g2, split2, nil, 2, fares2, numStations2)
 		got2, err2 := search2.Execute(id2("A"), id2("D"), 1)
 		if err2 != nil {
 			t.Fatalf("Execute(2) が失敗しました: %v", err2)
 		}
 
 		// maxSections=1
-		search1 := usecase.NewSearchOptimalSplit(g2, split2, nil, 1)
+		search1 := usecase.NewSearchOptimalSplit(g2, split2, nil, 1, fares2, numStations2)
 		got1, err1 := search1.Execute(id2("A"), id2("D"), 1)
 		if err1 != nil {
 			t.Fatalf("Execute(1) が失敗しました: %v", err1)
@@ -206,4 +212,242 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			}
 		}
 	})
+}
+
+// テスト用運賃事前計算ヘルパー
+func precomputeFaresForTest(g *graph.RailwayGraph, calc *usecase.CalculateAmount, rules []domain.ResolvedBypassRule) []int32 {
+	numStations := g.NumStations()
+	baseFares := make([]int32, 3*numStations*numStations)
+	months := []int{1, 3, 6}
+
+	// 双方向ルールの重複排除
+	var biRules []domain.ResolvedBypassRule
+	seen := make(map[string]bool)
+	for _, r := range rules {
+		fwdKey := fmt.Sprintf("%v|%v", r.ShortcutPath, r.DetourPath)
+		if !seen[fwdKey] {
+			seen[fwdKey] = true
+			biRules = append(biRules, r)
+		}
+		revShortcut := reverseSlice(r.ShortcutPath)
+		revDetour := reverseSlice(r.DetourPath)
+		revKey := fmt.Sprintf("%v|%v", revShortcut, revDetour)
+		if !seen[revKey] {
+			seen[revKey] = true
+			biRules = append(biRules, domain.ResolvedBypassRule{
+				ShortcutPath: revShortcut,
+				DetourPath:   revDetour,
+			})
+		}
+	}
+
+	for startID := 0; startID < numStations; startID++ {
+		_, prevGisei := g.FindAllShortestPathsGisei(startID)
+		_, prevEigyo := g.FindAllShortestPathsEigyo(startID)
+
+		for mIdx, month := range months {
+			for endID := 0; endID < numStations; endID++ {
+				if startID == endID {
+					continue
+				}
+				if g.GetGroupID(startID) != g.GetGroupID(endID) {
+					continue
+				}
+				if prevGisei[endID] == -1 {
+					continue
+				}
+
+				fareVal := computeCheapestNoSplit(g, calc, biRules, prevGisei, prevEigyo, startID, endID, month)
+				if fareVal > 0 {
+					idx := mIdx*numStations*numStations + startID*numStations + endID
+					baseFares[idx] = int32(fareVal)
+				}
+			}
+		}
+	}
+	return baseFares
+}
+
+func computeCheapestNoSplit(
+	g *graph.RailwayGraph,
+	calc *usecase.CalculateAmount,
+	rules []domain.ResolvedBypassRule,
+	prevGisei, prevEigyo []int,
+	start, end, months int,
+) int {
+	var cands [][]int
+
+	pathEigyo := reconstructPath(prevEigyo, start, end)
+	if len(pathEigyo) >= 2 {
+		cands = append(cands, pathEigyo)
+	}
+
+	pathGisei := reconstructPath(prevGisei, start, end)
+	if len(pathGisei) >= 2 {
+		cands = append(cands, pathGisei)
+	}
+
+	for _, rule := range rules {
+		aOnRule := containsStation(rule.ShortcutPath, start) || containsStation(rule.DetourPath, start)
+		bOnRule := containsStation(rule.ShortcutPath, end) || containsStation(rule.DetourPath, end)
+		if aOnRule && bOnRule {
+			aOnDetourMiddle := isOnDetourMiddle(start, rule)
+			bOnDetourMiddle := isOnDetourMiddle(end, rule)
+			if aOnDetourMiddle || bOnDetourMiddle {
+				shortcutPath := make([]int, len(rule.ShortcutPath))
+				copy(shortcutPath, rule.ShortcutPath)
+				cands = append(cands, shortcutPath)
+			}
+		}
+	}
+
+	for _, path := range [][]int{pathEigyo, pathGisei} {
+		if len(path) < 2 {
+			continue
+		}
+		for _, rule := range rules {
+			startOnDetour := isOnDetourMiddle(path[0], rule)
+			endOnDetour := isOnDetourMiddle(path[len(path)-1], rule)
+			if startOnDetour || endOnDetour {
+				if findSubPath(path, rule.DetourPath) == -1 {
+					locked := make([]bool, len(path))
+					extPath, _ := buildOvershootPath(path, locked, rule)
+					if extPath != nil {
+						cands = append(cands, extPath)
+					}
+				}
+			}
+		}
+	}
+
+	minFare := math.MaxInt
+	for _, cand := range cands {
+		res, err := calc.Execute(cand, months)
+		if err != nil {
+			continue
+		}
+		amt := res.TotalAmount()
+		if amt < minFare {
+			minFare = amt
+		}
+	}
+
+	if minFare == math.MaxInt {
+		return 0
+	}
+	return minFare
+}
+
+func reconstructPath(prev []int, start, end int) []int {
+	if prev == nil || end < 0 || end >= len(prev) || prev[end] == -1 {
+		if start == end {
+			return []int{start}
+		}
+		return nil
+	}
+	path := []int{}
+	for i := end; i != -1; i = prev[i] {
+		path = append(path, i)
+	}
+	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
+		path[i], path[j] = path[j], path[i]
+	}
+	return path
+}
+
+func containsStation(path []int, stationID int) bool {
+	for _, id := range path {
+		if id == stationID {
+			return true
+		}
+	}
+	return false
+}
+
+func isOnDetourMiddle(stationID int, rule domain.ResolvedBypassRule) bool {
+	for i := 1; i < len(rule.DetourPath)-1; i++ {
+		if rule.DetourPath[i] == stationID {
+			return true
+		}
+	}
+	return false
+}
+
+func makeShortcutLocked(shortcutPath []int) []bool {
+	locked := make([]bool, len(shortcutPath))
+	for k := 1; k < len(shortcutPath)-1; k++ {
+		locked[k] = true
+	}
+	return locked
+}
+
+func findSubPath(a, b []int) int {
+	if len(b) == 0 || len(a) < len(b) {
+		return -1
+	}
+	for i := 0; i <= len(a)-len(b); i++ {
+		if isMatch(a[i:i+len(b)], b) {
+			return i
+		}
+	}
+	return -1
+}
+
+func isMatch(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func buildOvershootPath(path []int, locked []bool, rule domain.ResolvedBypassRule) ([]int, []bool) {
+	for i := 1; i < len(rule.DetourPath)-1; i++ {
+		suffix := rule.DetourPath[i:]
+		if len(path) >= len(suffix) && isMatch(path[:len(suffix)], suffix) {
+			newPath := make([]int, 0, len(rule.ShortcutPath)+len(path)-len(suffix))
+			newLocked := make([]bool, 0, cap(newPath))
+
+			newPath = append(newPath, rule.ShortcutPath...)
+			newLocked = append(newLocked, makeShortcutLocked(rule.ShortcutPath)...)
+
+			newPath = append(newPath, path[len(suffix):]...)
+			newLocked = append(newLocked, locked[len(suffix):]...)
+
+			return newPath, newLocked
+		}
+	}
+
+	for i := 1; i < len(rule.DetourPath)-1; i++ {
+		prefix := rule.DetourPath[:i+1]
+		if len(path) >= len(prefix) {
+			startMatchIdx := len(path) - len(prefix)
+			if isMatch(path[startMatchIdx:], prefix) {
+				newPath := make([]int, 0, startMatchIdx+len(rule.ShortcutPath))
+				newLocked := make([]bool, 0, cap(newPath))
+
+				newPath = append(newPath, path[:startMatchIdx]...)
+				newLocked = append(newLocked, locked[:startMatchIdx]...)
+
+				newPath = append(newPath, rule.ShortcutPath...)
+				newLocked = append(newLocked, makeShortcutLocked(rule.ShortcutPath)...)
+
+				return newPath, newLocked
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+func reverseSlice(s []int) []int {
+	res := make([]int, len(s))
+	for i, v := range s {
+		res[len(s)-1-i] = v
+	}
+	return res
 }

@@ -57,7 +57,11 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 	)
 	opt := optimizer.NewDPOptimizer(amount)
 	split := usecase.NewFindOptimalSplit(opt, amount)
-	search := usecase.NewSearchOptimalSplit(g, split, bypassRules, 0)
+	baseFares, _, numStations, err := data.LoadPrecomputedFares()
+	if err != nil {
+		t.Fatalf("事前計算された運賃データのロードに失敗しました: %v", err)
+	}
+	search := usecase.NewSearchOptimalSplit(g, split, bypassRules, 0, baseFares, numStations)
 
 	// 2. テストケースの実行
 	tests := []struct {
