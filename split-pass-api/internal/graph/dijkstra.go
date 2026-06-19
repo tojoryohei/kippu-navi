@@ -107,6 +107,106 @@ func (g *RailwayGraph) FindShortestPathGisei(startID, endID int) (*PathResult, e
 	}, nil
 }
 
+// FindAllShortestPathsGisei はダイクストラ法を用いて、開始駅から他のすべての駅への最短擬制キロ経路の距離と前移行配列を求めます。
+func (g *RailwayGraph) FindAllShortestPathsGisei(startID int) ([]domain.DeciKilo, []int) {
+	numStations := len(g.IDToName)
+	dist := make([]domain.DeciKilo, numStations)
+	prev := make([]int, numStations)
+	for i := range dist {
+		dist[i] = domain.DeciKilo(1<<31 - 1) // math.MaxInt32
+		prev[i] = -1
+	}
+
+	dist[startID] = 0
+	pq := &priorityQueue{}
+	heap.Init(pq)
+	heap.Push(pq, &node{stationID: startID, giseiKilo: 0})
+
+	for pq.Len() > 0 {
+		curr := heap.Pop(pq).(*node)
+
+		if curr.giseiKilo > dist[curr.stationID] {
+			continue
+		}
+
+		for _, edge := range g.Edges[curr.stationID] {
+			newDist := dist[curr.stationID] + edge.GiseiKilo
+			if newDist < dist[edge.ToID] {
+				dist[edge.ToID] = newDist
+				prev[edge.ToID] = curr.stationID
+				heap.Push(pq, &node{stationID: edge.ToID, giseiKilo: newDist})
+			}
+		}
+	}
+	return dist, prev
+}
+
+type nodeEigyo struct {
+	stationID int
+	eigyoKilo domain.DeciKilo
+	index     int
+}
+
+type priorityQueueEigyo []*nodeEigyo
+
+func (pq priorityQueueEigyo) Len() int           { return len(pq) }
+func (pq priorityQueueEigyo) Less(i, j int) bool { return pq[i].eigyoKilo < pq[j].eigyoKilo }
+func (pq priorityQueueEigyo) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+	pq[i].index = i
+	pq[j].index = j
+}
+func (pq *priorityQueueEigyo) Push(x interface{}) {
+	n := len(*pq)
+	item := x.(*nodeEigyo)
+	item.index = n
+	*pq = append(*pq, item)
+}
+func (pq *priorityQueueEigyo) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	old[n-1] = nil
+	item.index = -1
+	*pq = old[0 : n-1]
+	return item
+}
+
+// FindAllShortestPathsEigyo はダイクストラ法を用いて、開始駅から他のすべての駅への最短営業キロ経路の距離と前移行配列を求めます。
+func (g *RailwayGraph) FindAllShortestPathsEigyo(startID int) ([]domain.DeciKilo, []int) {
+	numStations := len(g.IDToName)
+	dist := make([]domain.DeciKilo, numStations)
+	prev := make([]int, numStations)
+	for i := range dist {
+		dist[i] = domain.DeciKilo(1<<31 - 1) // math.MaxInt32
+		prev[i] = -1
+	}
+
+	dist[startID] = 0
+	pq := &priorityQueueEigyo{}
+	heap.Init(pq)
+	heap.Push(pq, &nodeEigyo{stationID: startID, eigyoKilo: 0})
+
+	for pq.Len() > 0 {
+		curr := heap.Pop(pq).(*nodeEigyo)
+
+		if curr.eigyoKilo > dist[curr.stationID] {
+			continue
+		}
+
+		for _, edge := range g.Edges[curr.stationID] {
+			newDist := dist[curr.stationID] + edge.EigyoKilo
+			if newDist < dist[edge.ToID] {
+				dist[edge.ToID] = newDist
+				prev[edge.ToID] = curr.stationID
+				heap.Push(pq, &nodeEigyo{stationID: edge.ToID, eigyoKilo: newDist})
+			}
+		}
+	}
+	return dist, prev
+}
+
+
 // FindAllCandidatePaths は指定された最短擬制キロ以内に収まる全ての合理的な経路を探索します。
 // これにより、分割購入で安くなる可能性がある経路を網羅します。
 func (g *RailwayGraph) FindAllCandidatePaths(startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
