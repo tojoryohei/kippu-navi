@@ -61,6 +61,9 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("事前計算された運賃データのロードに失敗しました: %v", err)
 	}
+	if int32(g.NumStations()) != numStations {
+		t.Fatalf("データ不整合: edges.jsonの駅数(%d)が事前計算データの駅数(%d)と一致しません。事前計算ファイルを再生成してください", g.NumStations(), numStations)
+	}
 	search := usecase.NewSearchOptimalSplit(g, split, bypassRules, 0, baseFares, numStations)
 
 	// 2. テストケースの実行

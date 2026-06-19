@@ -131,6 +131,9 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("事前計算された運賃データのロードに失敗しました: %w", err)
 	}
+	if int32(g.NumStations()) != numStations {
+		return fmt.Errorf("データ不整合: edges.jsonの駅数(%d)が事前計算データの駅数(%d)と一致しません。事前計算ファイルを再生成してください", g.NumStations(), numStations)
+	}
 
 	// 磁気定期券用: 区間数無制限 (0)
 	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules, 0, baseFares, numStations)
