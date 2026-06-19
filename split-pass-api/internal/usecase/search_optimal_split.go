@@ -13,10 +13,7 @@ import (
 
 // SearchOptimalSplit は候補経路の探索・補正・分割最適化を統括するユースケースです。
 type SearchOptimalSplit struct {
-	graph interface {
-		graph.PathFinder
-		graph.StationProvider
-	}
+	graph       *graph.RailwayGraph
 	split       *FindOptimalSplit
 	rules       []domain.ResolvedBypassRule
 	maxSections int
@@ -26,10 +23,7 @@ type SearchOptimalSplit struct {
 
 // NewSearchOptimalSplit は新しい SearchOptimalSplit を作成します。
 func NewSearchOptimalSplit(
-	g interface {
-		graph.PathFinder
-		graph.StationProvider
-	},
+	g *graph.RailwayGraph,
 	u *FindOptimalSplit,
 	rules []domain.ResolvedBypassRule,
 	maxSections int,
@@ -99,21 +93,20 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 		maxGisei = shortest.GiseiKilo
 	}
 
-	candidatePathResults, err := u.graph.FindAllCandidatePaths(startID, endID, maxGisei)
-	if err != nil {
-		return nil, fmt.Errorf("searchOptimalSplit: %w", err)
-	}
+	distFromStart, _ := u.graph.FindAllShortestPathsGisei(startID)
 
-	// 候補経路上の全駅を候補駅として抽出
 	candMap := make(map[int]bool)
-	for _, pr := range candidatePathResults {
-		for _, id := range pr.StationIDs {
+	candMap[startID] = true
+	candMap[endID] = true
+
+	for id := 0; id < int(u.numStations); id++ {
+		if distFromStart[id] == domain.DeciKilo(1<<31-1) {
+			continue
+		}
+		if distFromStart[id] <= maxGisei {
 			candMap[id] = true
 		}
 	}
-	// startID と endID は確実に含める
-	candMap[startID] = true
-	candMap[endID] = true
 
 	candStations := make([]int, 0, len(candMap))
 	for id := range candMap {
@@ -391,9 +384,8 @@ func (u *SearchOptimalSplit) getCheapestNoSplitSegment(start, end, months int) (
 		Result: bestResult,
 	}, nil
 }
-
 func (u *SearchOptimalSplit) getNoSplitCandidates(start, end int) ([][]int, error) {
-	rg := u.graph.(*graph.RailwayGraph)
+	rg := u.graph
 
 	var cands [][]int
 
