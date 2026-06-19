@@ -11,6 +11,13 @@ import (
 	"strings"
 )
 
+const (
+	// unreachableDistance は接続されておらず到達不可能なキロ数（無限大）を示します。
+	unreachableDistance = domain.DeciKilo(1<<31 - 1)
+	// defaultMaxSectionsLimit は無制限探索時のデフォルト最大分割セグメント数です。
+	defaultMaxSectionsLimit = 100
+)
+
 // SearchOptimalSplit は候補経路の探索・補正・分割最適化を統括するユースケースです。
 type SearchOptimalSplit struct {
 	graph       *graph.RailwayGraph
@@ -96,7 +103,7 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 	candMap[endID] = true
 
 	for id := 0; id < int(u.numStations); id++ {
-		if distFromStart[id] == domain.DeciKilo(1<<31-1) || distToEnd[id] == domain.DeciKilo(1<<31-1) {
+		if distFromStart[id] == unreachableDistance || distToEnd[id] == unreachableDistance {
 			continue
 		}
 		if distFromStart[id]+distToEnd[id] <= maxGisei {
@@ -211,8 +218,8 @@ func (u *SearchOptimalSplit) searchOptimalSplitDijkstra(startID, endID, months, 
 	maxK := maxSections
 	if maxSections <= 0 {
 		maxK = len(candStations) - 1
-		if maxK > 100 {
-			maxK = 100
+		if maxK > defaultMaxSectionsLimit {
+			maxK = defaultMaxSectionsLimit
 		}
 	}
 
@@ -294,30 +301,9 @@ func (u *SearchOptimalSplit) searchOptimalSplitDijkstra(startID, endID, months, 
 
 	// 最安コストを達成する状態からバックトラックして全経路を抽出
 	var optimalPaths [][]int
-	var currentPath []int
-
-	var backtrack func(currID, currS int)
-	backtrack = func(currID, currS int) {
-		currentPath = append(currentPath, currID)
-		if currID == startID && currS == 0 {
-			p := make([]int, len(currentPath))
-			for i, v := range currentPath {
-				p[len(currentPath)-1-i] = v
-			}
-			optimalPaths = append(optimalPaths, p)
-			currentPath = currentPath[:len(currentPath)-1]
-			return
-		}
-
-		for _, pred := range prevTable[currS][currID] {
-			backtrack(pred.stationID, pred.sections)
-		}
-		currentPath = currentPath[:len(currentPath)-1]
-	}
-
 	for s := 1; s <= maxK; s++ {
 		if distTable[s][endID] == minCostToEnd {
-			backtrack(endID, s)
+			u.backtrackOptimalPaths(endID, s, startID, prevTable, nil, &optimalPaths)
 		}
 	}
 
@@ -347,6 +333,30 @@ func (u *SearchOptimalSplit) searchOptimalSplitDijkstra(startID, endID, months, 
 	}
 
 	return results, nil
+}
+
+func (u *SearchOptimalSplit) backtrackOptimalPaths(
+	currID, currS, startID int,
+	prevTable [][][]searchState,
+	currentPath []int,
+	optimalPaths *[][]int,
+) {
+	newPath := make([]int, len(currentPath), len(currentPath)+1)
+	copy(newPath, currentPath)
+	newPath = append(newPath, currID)
+
+	if currID == startID && currS == 0 {
+		p := make([]int, len(newPath))
+		for i, v := range newPath {
+			p[len(newPath)-1-i] = v
+		}
+		*optimalPaths = append(*optimalPaths, p)
+		return
+	}
+
+	for _, pred := range prevTable[currS][currID] {
+		u.backtrackOptimalPaths(pred.stationID, pred.sections, startID, prevTable, newPath, optimalPaths)
+	}
 }
 
 func (u *SearchOptimalSplit) getCheapestNoSplitSegment(start, end, months int) (SplitSegment, error) {
