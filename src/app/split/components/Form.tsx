@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 import { useRouter } from "next/navigation";
-import { sendGAEvent } from "@next/third-parties/google";
+import { usePostHog } from "posthog-js/react";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
@@ -55,7 +55,10 @@ export default function SplitForm({
     serverTime: initialServerTime,
 }: SplitFormProps) {
     const router = useRouter();
+    const posthog = usePostHog();
     const [isPending, startTransition] = useTransition();
+
+    const lastTrackedSearch = useRef<string>("");
 
     const initialStartStation = initialFrom ? stationDatas.find(s => s.name === initialFrom) || { name: initialFrom, kana: "" } : null;
     const initialEndStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
@@ -86,6 +89,65 @@ export default function SplitForm({
             searchType: currentSearchType,
         });
     }, [initialFrom, initialTo, initialSearchType, reset]);
+
+    // GA4 & PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        if (initialFrom && initialTo) {
+            const currentSearchKey = `${initialFrom}_${initialTo}_${initialSearchType || "ticket"}`;
+
+            // 同じ検索条件での重複送信を防止
+            if (lastTrackedSearch.current !== currentSearchKey) {
+                // 1. 正常に計算結果が返ってきた場合
+                if (initialResult) {
+                    const normalFare = initialResult.cheapestKippuData?.fare || 0;
+                    const bestFare = initialResult.splitKippuDatasList?.length > 0
+                        ? initialResult.splitKippuDatasList[0].totalFare
+                        : normalFare;
+
+                    const savedAmount = Math.max(0, normalFare - bestFare);
+                    const isSplitFound = savedAmount > 0;
+
+                    const eventParams = {
+                        search_type: initialSearchType || "ticket",
+                        from_station: initialFrom,
+                        to_station: initialTo,
+                        is_split_found: isSplitFound,
+                        saved_amount: savedAmount
+                    };
+
+                    if (typeof window.gtag === "function") {
+                        window.gtag("event", "search_split", eventParams);
+                    }
+                    if (posthog) {
+                        posthog.capture("search_split", eventParams);
+                    }
+
+                    lastTrackedSearch.current = currentSearchKey;
+                }
+                // 2. エラーが返ってきた場合
+                else if (initialError) {
+                    const errorParams = {
+                        search_type: initialSearchType || "ticket",
+                        from_station: initialFrom,
+                        to_station: initialTo,
+                        error_type: "calculation_error",
+                        error_message: initialError
+                    };
+
+                    if (typeof window.gtag === "function") {
+                        window.gtag("event", "search_error", errorParams);
+                    }
+                    if (posthog) {
+                        posthog.capture("search_error", errorParams);
+                    }
+
+                    lastTrackedSearch.current = currentSearchKey;
+                }
+            }
+        }
+    }, [initialFrom, initialTo, initialSearchType, initialResult, initialError, posthog]);
 
     const searchedTypeLabel = SEARCH_TYPE_OPTIONS.find(
         o => o.value === ((initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6") ? initialSearchType : "ticket")
@@ -122,15 +184,6 @@ export default function SplitForm({
 
     const onSubmit: SubmitHandler<ExtendedSplitFormInput> = (data) => {
         setShowAllPatterns(false);
-
-        if (data.startStation?.name && data.endStation?.name) {
-            sendGAEvent({
-                event: "search_split",
-                search_type: data.searchType || "ticket",
-                from_station: data.startStation.name,
-                to_station: data.endStation.name
-            });
-        }
 
         const searchParams = new URLSearchParams();
         if (data.startStation?.name) searchParams.set("from", data.startStation.name);

@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.2.0...kippu-navi-v2.3.0) (2026-06-19)
+
+
+### Features
+
+* PostHogの直接通信への切り替え・負荷遮断およびプライバシーポリシーの改訂 ([#322](https://github.com/tojoryohei/kippu-navi/issues/322)) ([7908efd](https://github.com/tojoryohei/kippu-navi/commit/7908efd8f5a1b23f18d9053b54869a41973ef0a9))
+
+## [2.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.1.0...kippu-navi-v2.2.0) (2026-06-18)
+
+
+### Features
+
+* PostHog導入とリバースプロキシ経由のトラッキング実装 ([#319](https://github.com/tojoryohei/kippu-navi/issues/319)) ([71ef726](https://github.com/tojoryohei/kippu-navi/commit/71ef7267ce1b6f0a42544000541ea59217532c23))
+
+## [2.1.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.0.0...kippu-navi-v2.1.0) (2026-06-14)
+
+
+### Features
+
+* GA4トラッキング強化（分割成果の可視化とエラー検知の実装） ([#311](https://github.com/tojoryohei/kippu-navi/issues/311)) ([895faf8](https://github.com/tojoryohei/kippu-navi/commit/895faf8beaed5d71b3f01ca08a7cbc5147d2a4b9))
+
 ## [2.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.22.2...kippu-navi-v2.0.0) (2026-06-07)
 
 

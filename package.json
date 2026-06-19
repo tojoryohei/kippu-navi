@@ -1,6 +1,6 @@
 {
   "name": "kippu-navi",
-  "version": "2.0.0",
+  "version": "2.3.0",
   "private": true,
   "engines": {
     "node": ">=24.0.0"
@@ -15,10 +15,11 @@
     "knip": "knip"
   },
   "dependencies": {
-    "@next/third-parties": "^16.2.7",
-    "better-sqlite3": "^12.9.0",
+    "@next/third-parties": "^16.2.9",
+    "better-sqlite3": "^12.11.1",
     "firebase-admin": "^13.7.0",
-    "next": "^16.2.7",
+    "next": "^16.2.9",
+    "posthog-js": "^1.390.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.78.0",
@@ -26,14 +27,14 @@
     "react-select": "^5.10.2"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "^16.2.7",
-    "@tailwindcss/postcss": "^4.1.14",
+    "@next/eslint-plugin-next": "^16.2.9",
+    "@tailwindcss/postcss": "^4.3.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.9.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.2",
     "@typescript-eslint/eslint-plugin": "^8.60.0",
-    "@typescript-eslint/parser": "^8.59.3",
+    "@typescript-eslint/parser": "^8.61.1",
     "eslint": "^9.39.4",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
