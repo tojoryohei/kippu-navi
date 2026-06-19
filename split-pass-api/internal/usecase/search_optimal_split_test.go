@@ -19,8 +19,11 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 	// A --(10km)--> B --(10km)--> C (A-B-C: 計20km, 近道扱い)
 	// A --(21km)----------------> C (A-C: 計21km, 遠回り扱い)
 	g.AddEdge(domain.Edge{FromID: id("A"), ToID: id("B"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+	g.AddEdge(domain.Edge{FromID: id("B"), ToID: id("A"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
 	g.AddEdge(domain.Edge{FromID: id("B"), ToID: id("C"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+	g.AddEdge(domain.Edge{FromID: id("C"), ToID: id("B"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
 	g.AddEdge(domain.Edge{FromID: id("A"), ToID: id("C"), EigyoKilo: 210, GiseiKilo: 210, Company: domain.JREast})
+	g.AddEdge(domain.Edge{FromID: id("C"), ToID: id("A"), EigyoKilo: 210, GiseiKilo: 210, Company: domain.JREast})
 
 	reg := fare.NewRegistry()
 	var dummyTable [101]domain.PassPrice
@@ -69,6 +72,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 	t.Run("特例ルールあり: オーバーシュート補正の適用検証", func(t *testing.T) {
 		// D --(5km)--> A
 		g.AddEdge(domain.Edge{FromID: id("D"), ToID: id("A"), EigyoKilo: 50, GiseiKilo: 50, Company: domain.JREast})
+		g.AddEdge(domain.Edge{FromID: id("A"), ToID: id("D"), EigyoKilo: 50, GiseiKilo: 50, Company: domain.JREast})
 
 		// ルール定義: 近道 [A, B, C], 遠回り [A, C]
 		rules := []domain.ResolvedBypassRule{
@@ -116,8 +120,11 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 
 		// A - B - C - D (各10km)
 		g2.AddEdge(domain.Edge{FromID: id2("A"), ToID: id2("B"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g2.AddEdge(domain.Edge{FromID: id2("B"), ToID: id2("A"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
 		g2.AddEdge(domain.Edge{FromID: id2("B"), ToID: id2("C"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g2.AddEdge(domain.Edge{FromID: id2("C"), ToID: id2("B"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
 		g2.AddEdge(domain.Edge{FromID: id2("C"), ToID: id2("D"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g2.AddEdge(domain.Edge{FromID: id2("D"), ToID: id2("C"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
 
 		reg2 := fare.NewRegistry()
 		var dummyTable2 [101]domain.PassPrice

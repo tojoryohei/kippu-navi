@@ -89,16 +89,17 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 	}
 
 	distFromStart, _ := u.graph.FindAllShortestPathsGisei(startID)
+	distToEnd, _ := u.graph.FindAllShortestPathsGisei(endID)
 
 	candMap := make(map[int]bool)
 	candMap[startID] = true
 	candMap[endID] = true
 
 	for id := 0; id < int(u.numStations); id++ {
-		if distFromStart[id] == domain.DeciKilo(1<<31-1) {
+		if distFromStart[id] == domain.DeciKilo(1<<31-1) || distToEnd[id] == domain.DeciKilo(1<<31-1) {
 			continue
 		}
-		if distFromStart[id] <= maxGisei {
+		if distFromStart[id]+distToEnd[id] <= maxGisei {
 			candMap[id] = true
 		}
 	}
