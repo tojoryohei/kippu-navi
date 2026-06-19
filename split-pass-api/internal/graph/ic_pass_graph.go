@@ -13,16 +13,17 @@ func NewIcPassGraph(base *RailwayGraph) (*RailwayGraph, error) {
 
 	numStations := base.NumStations()
 
-	if len(base.Edges) != numStations {
-		return nil, fmt.Errorf("ベースグラフの不整合: 駅数(%d)とエッジスライスのサイズ(%d)が一致しません", numStations, len(base.Edges))
+	if len(base.Edges) < numStations {
+		return nil, fmt.Errorf("ベースグラフの不整合: 駅数(%d)がエッジスライスのサイズ(%d)を超えています", numStations, len(base.Edges))
 	}
 
 	newFastGraph := &FastGraph{
 		Edges: make([][]domain.Edge, numStations),
 	}
 
-	// 整合性が保証されているため、インデックス管理を排除し range で安全かつ最速に走査する
-	for fromID, baseEdges := range base.Edges {
+	// 整合性が保証されているため、numStations まで安全に走査する
+	for fromID := 0; fromID < numStations; fromID++ {
+		baseEdges := base.Edges[fromID]
 		if len(baseEdges) == 0 {
 			continue
 		}

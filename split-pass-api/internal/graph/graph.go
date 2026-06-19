@@ -31,7 +31,6 @@ type TopologyProvider interface {
 // PathFinder はグラフ上の経路探索を行うためのインターフェースです。
 type PathFinder interface {
 	FindShortestPathGisei(startID, endID int) (*PathResult, error)
-	FindAllCandidatePaths(startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error)
 }
 
 // Graph は駅データとネットワーク構造を統合して管理するためのインターフェースです。

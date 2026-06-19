@@ -125,14 +125,22 @@ func run() error {
 
 	opt := optimizer.NewDPOptimizer(amountCalc)
 	splitUseCase := usecase.NewFindOptimalSplit(opt, amountCalc)
+
+	// 事前計算された運賃データのロード
+	baseFares, icFares, numStations, err := data.LoadPrecomputedFares()
+	if err != nil {
+		return fmt.Errorf("事前計算された運賃データのロードに失敗しました: %w", err)
+	}
+
 	// 磁気定期券用: 区間数無制限 (0)
-	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules, 0)
-	// IC分割乗車券用 (型アサーションが不要に！)
+	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules, 0, baseFares, numStations)
+
+	// IC分割乗車券用
 	icGraph, err := graph.NewIcPassGraph(g)
 	if err != nil {
 		return fmt.Errorf("ICグラフの生成に失敗しました: %w", err)
 	}
-	icSearchUseCase := usecase.NewSearchOptimalSplit(icGraph, splitUseCase, bypassRules, 2)
+	icSearchUseCase := usecase.NewSearchOptimalSplit(icGraph, splitUseCase, bypassRules, 2, icFares, numStations)
 
 	// ルーティング
 	mux := http.NewServeMux()

@@ -113,6 +113,9 @@ func TestNewIcPassGraph(t *testing.T) {
 
 	t.Run("異常系: 駅数とエッジスライスのサイズが不一致（データ破損）の場合はエラーとなること", func(t *testing.T) {
 		g := NewGraph(3)
+		g.GetOrAddID("A")
+		g.GetOrAddID("B")
+		g.GetOrAddID("C")
 
 		// 意図的に内部データを破壊し、不整合な状態を作り出す
 		g.Edges = make([][]domain.Edge, 1) // 駅数は3だが、Edgesはサイズ1しかない状態

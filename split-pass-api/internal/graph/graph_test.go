@@ -41,26 +41,4 @@ func TestFindShortestPathGisei(t *testing.T) {
 	}
 }
 
-func TestFindAllCandidatePaths(t *testing.T) {
-	g := graph.NewGraph(10)
 
-	startID := g.GetOrAddID("A")
-	midID := g.GetOrAddID("B")
-	endID := g.GetOrAddID("C")
-
-	// テストデータの構築
-	// A --(10.0km)--> B --(20.0km)--> C
-	// A --(40.0km)----------------> C
-	g.AddEdge(domain.Edge{FromID: startID, ToID: midID, GiseiKilo: 100, EigyoKilo: 100})
-	g.AddEdge(domain.Edge{FromID: midID, ToID: endID, GiseiKilo: 200, EigyoKilo: 200})
-	g.AddEdge(domain.Edge{FromID: startID, ToID: endID, GiseiKilo: 400, EigyoKilo: 400})
-
-	allPaths, err := g.FindAllCandidatePaths(startID, endID, 400)
-	if err != nil {
-		t.Fatalf("候補経路探索に失敗しました: %v", err)
-	}
-
-	if len(allPaths) != 2 {
-		t.Errorf("候補経路の数が不正です: got %d, want 2", len(allPaths))
-	}
-}

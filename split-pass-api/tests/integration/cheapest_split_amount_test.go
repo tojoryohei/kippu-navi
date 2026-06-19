@@ -57,7 +57,11 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 	)
 	opt := optimizer.NewDPOptimizer(amount)
 	split := usecase.NewFindOptimalSplit(opt, amount)
-	search := usecase.NewSearchOptimalSplit(g, split, bypassRules, 0)
+	baseFares, _, numStations, err := data.LoadPrecomputedFares()
+	if err != nil {
+		t.Fatalf("事前計算された運賃データのロードに失敗しました: %v", err)
+	}
+	search := usecase.NewSearchOptimalSplit(g, split, bypassRules, 0, baseFares, numStations)
 
 	// 2. テストケースの実行
 	tests := []struct {
@@ -88,6 +92,13 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 			to:     "新宿",
 			months: 3,
 			want:   52200,
+		},
+		{
+			name:   "品川〜名古屋 (長距離の分割検討)",
+			from:   "品川",
+			to:     "名古屋",
+			months: 3,
+			want:   488790,
 		},
 		{
 			name:   "函館〜東森 (第69条の考慮　片側のみ)",
