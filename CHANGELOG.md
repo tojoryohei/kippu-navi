@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.2.0...kippu-navi-v2.3.0) (2026-06-19)
+
+
+### Features
+
+* PostHogの直接通信への切り替え・負荷遮断およびプライバシーポリシーの改訂 ([#322](https://github.com/tojoryohei/kippu-navi/issues/322)) ([7908efd](https://github.com/tojoryohei/kippu-navi/commit/7908efd8f5a1b23f18d9053b54869a41973ef0a9))
+
 ## [2.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.1.0...kippu-navi-v2.2.0) (2026-06-18)
 
 
