@@ -25,12 +25,13 @@ func main() {
 }
 
 func run(args []string) error {
-	if len(args) < 3 {
-		return fmt.Errorf("使用法: precompute-fares <入力JSON> <出力BIN.GZ>")
+	if len(args) < 4 {
+		return fmt.Errorf("使用法: precompute-fares <入力JSON> <出力FARES.BIN.GZ> <出力PATHS.BIN.GZ>")
 	}
 
 	inputJSON := args[1]
-	outputBinGz := args[2]
+	outputFaresBinGz := args[2]
+	outputPathsBinGz := args[3]
 
 	log.Printf("JSONファイルを読み込んでいます: %s", inputJSON)
 	inFile, err := os.Open(inputJSON)
@@ -125,11 +126,16 @@ func run(args []string) error {
 	}
 
 	log.Println("全点対最短経路を事前計算しています...")
-	// Base & IC の Gisei/Eigyo 最短経路前移行配列を計算
+	// Base & IC の Gisei/Eigyo 最短経路前移行配列および距離を計算
 	basePrevGisei := make([][]int, numStations)
 	basePrevEigyo := make([][]int, numStations)
+	baseDistGisei := make([][]domain.DeciKilo, numStations)
+	baseDistEigyo := make([][]domain.DeciKilo, numStations)
+
 	icPrevGisei := make([][]int, numStations)
 	icPrevEigyo := make([][]int, numStations)
+	icDistGisei := make([][]domain.DeciKilo, numStations)
+	icDistEigyo := make([][]domain.DeciKilo, numStations)
 
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, runtime.NumCPU())
@@ -142,17 +148,21 @@ func run(args []string) error {
 			defer func() { <-sem }()
 
 			if len(baseGraph.Edges[startID]) > 0 {
-				_, pG := baseGraph.FindAllShortestPathsGisei(startID)
-				_, pE := baseGraph.FindAllShortestPathsEigyo(startID)
+				dG, pG := baseGraph.FindAllShortestPathsGisei(startID)
+				dE, pE := baseGraph.FindAllShortestPathsEigyo(startID)
 				basePrevGisei[startID] = pG
 				basePrevEigyo[startID] = pE
+				baseDistGisei[startID] = dG
+				baseDistEigyo[startID] = dE
 			}
 
 			if len(icGraph.Edges[startID]) > 0 {
-				_, pG := icGraph.FindAllShortestPathsGisei(startID)
-				_, pE := icGraph.FindAllShortestPathsEigyo(startID)
+				dG, pG := icGraph.FindAllShortestPathsGisei(startID)
+				dE, pE := icGraph.FindAllShortestPathsEigyo(startID)
 				icPrevGisei[startID] = pG
 				icPrevEigyo[startID] = pE
+				icDistGisei[startID] = dG
+				icDistEigyo[startID] = dE
 			}
 		}(i)
 	}
@@ -230,34 +240,163 @@ func run(args []string) error {
 	}
 	wgFares.Wait()
 
-	log.Printf("バイナリファイルを書き出しています: %s", outputBinGz)
-	outFile, err := os.Create(outputBinGz)
+	log.Printf("運賃バイナリファイルを書き出しています: %s", outputFaresBinGz)
+	outFaresFile, err := os.Create(outputFaresBinGz)
 	if err != nil {
-		return fmt.Errorf("出力ファイルの作成に失敗しました: %w", err)
+		return fmt.Errorf("出力FARESファイルの作成に失敗しました: %w", err)
 	}
-	defer outFile.Close()
+	defer outFaresFile.Close()
 
-	gzWriter := gzip.NewWriter(outFile)
-	defer gzWriter.Close()
+	gzFaresWriter, err := gzip.NewWriterLevel(outFaresFile, gzip.BestCompression)
+	if err != nil {
+		return fmt.Errorf("fares gzipライターの作成に失敗しました: %w", err)
+	}
+	defer gzFaresWriter.Close()
 
-	// ヘッダー書き込み
 	// Magic
-	if _, err := gzWriter.Write([]byte("FARES")); err != nil {
+	if _, err := gzFaresWriter.Write([]byte("FARES")); err != nil {
 		return fmt.Errorf("Magicの書き込みに失敗しました: %w", err)
 	}
 	// NumStations
-	if err := binary.Write(gzWriter, binary.LittleEndian, int32(numStations)); err != nil {
+	if err := binary.Write(gzFaresWriter, binary.LittleEndian, int32(numStations)); err != nil {
 		return fmt.Errorf("駅数の書き込みに失敗しました: %w", err)
 	}
 
 	// BaseFares
-	if err := binary.Write(gzWriter, binary.LittleEndian, baseFares); err != nil {
+	if err := binary.Write(gzFaresWriter, binary.LittleEndian, baseFares); err != nil {
 		return fmt.Errorf("BaseFaresの書き込みに失敗しました: %w", err)
 	}
 
 	// IcFares
-	if err := binary.Write(gzWriter, binary.LittleEndian, icFares); err != nil {
+	if err := binary.Write(gzFaresWriter, binary.LittleEndian, icFares); err != nil {
 		return fmt.Errorf("IcFaresの書き込みに失敗しました: %w", err)
+	}
+
+	if err := gzFaresWriter.Close(); err != nil {
+		return fmt.Errorf("fares gzipライターのクローズに失敗しました: %w", err)
+	}
+
+	// 平坦化処理
+	flatSize := numStations * numStations
+
+	flatBasePrevGisei := make([]int16, flatSize)
+	flatBasePrevEigyo := make([]int16, flatSize)
+	flatBaseDistGisei := make([]uint16, flatSize)
+	flatBaseDistEigyo := make([]uint16, flatSize)
+
+	flatIcPrevGisei := make([]int16, flatSize)
+	flatIcPrevEigyo := make([]int16, flatSize)
+	flatIcDistGisei := make([]uint16, flatSize)
+	flatIcDistEigyo := make([]uint16, flatSize)
+
+	const INF = uint16(65535)
+
+	for i := 0; i < numStations; i++ {
+		for j := 0; j < numStations; j++ {
+			idx := i*numStations + j
+
+			// Base
+			if basePrevGisei[i] != nil && j < len(basePrevGisei[i]) {
+				flatBasePrevGisei[idx] = int16(basePrevGisei[i][j])
+			} else {
+				flatBasePrevGisei[idx] = -1
+			}
+			if basePrevEigyo[i] != nil && j < len(basePrevEigyo[i]) {
+				flatBasePrevEigyo[idx] = int16(basePrevEigyo[i][j])
+			} else {
+				flatBasePrevEigyo[idx] = -1
+			}
+			if baseDistGisei[i] != nil && j < len(baseDistGisei[i]) {
+				flatBaseDistGisei[idx] = uint16(baseDistGisei[i][j])
+			} else {
+				flatBaseDistGisei[idx] = INF
+			}
+			if baseDistEigyo[i] != nil && j < len(baseDistEigyo[i]) {
+				flatBaseDistEigyo[idx] = uint16(baseDistEigyo[i][j])
+			} else {
+				flatBaseDistEigyo[idx] = INF
+			}
+
+			// IC
+			if icPrevGisei[i] != nil && j < len(icPrevGisei[i]) {
+				flatIcPrevGisei[idx] = int16(icPrevGisei[i][j])
+			} else {
+				flatIcPrevGisei[idx] = -1
+			}
+			if icPrevEigyo[i] != nil && j < len(icPrevEigyo[i]) {
+				flatIcPrevEigyo[idx] = int16(icPrevEigyo[i][j])
+			} else {
+				flatIcPrevEigyo[idx] = -1
+			}
+			if icDistGisei[i] != nil && j < len(icDistGisei[i]) {
+				flatIcDistGisei[idx] = uint16(icDistGisei[i][j])
+			} else {
+				flatIcDistGisei[idx] = INF
+			}
+			if icDistEigyo[i] != nil && j < len(icDistEigyo[i]) {
+				flatIcDistEigyo[idx] = uint16(icDistEigyo[i][j])
+			} else {
+				flatIcDistEigyo[idx] = INF
+			}
+		}
+	}
+
+	log.Printf("経路/距離バイナリファイルを書き出しています: %s", outputPathsBinGz)
+	outPathsFile, err := os.Create(outputPathsBinGz)
+	if err != nil {
+		return fmt.Errorf("出力PATHSファイルの作成に失敗しました: %w", err)
+	}
+	defer outPathsFile.Close()
+
+	gzPathsWriter, err := gzip.NewWriterLevel(outPathsFile, gzip.BestCompression)
+	if err != nil {
+		return fmt.Errorf("paths gzipライターの作成に失敗しました: %w", err)
+	}
+	defer gzPathsWriter.Close()
+
+	// Magic
+	if _, err := gzPathsWriter.Write([]byte("PATHS")); err != nil {
+		return fmt.Errorf("Magicの書き込みに失敗しました: %w", err)
+	}
+	// NumStations
+	if err := binary.Write(gzPathsWriter, binary.LittleEndian, int32(numStations)); err != nil {
+		return fmt.Errorf("駅数の書き込みに失敗しました: %w", err)
+	}
+	// BasePrevGisei
+	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatBasePrevGisei); err != nil {
+		return fmt.Errorf("BasePrevGiseiの書き込みに失敗しました: %w", err)
+	}
+	// BasePrevEigyo
+	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatBasePrevEigyo); err != nil {
+		return fmt.Errorf("BasePrevEigyoの書き込みに失敗しました: %w", err)
+	}
+	// BaseDistGisei
+	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatBaseDistGisei); err != nil {
+		return fmt.Errorf("BaseDistGiseiの書き込みに失敗しました: %w", err)
+	}
+	// BaseDistEigyo
+	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatBaseDistEigyo); err != nil {
+		return fmt.Errorf("BaseDistEigyoの書き込みに失敗しました: %w", err)
+	}
+	// IcPrevGisei
+	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatIcPrevGisei); err != nil {
+		return fmt.Errorf("IcPrevGiseiの書き込みに失敗しました: %w", err)
+	}
+	// IcPrevEigyo
+	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatIcPrevEigyo); err != nil {
+		return fmt.Errorf("IcPrevEigyoの書き込みに失敗しました: %w", err)
+	}
+	// IcDistGisei
+	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatIcDistGisei); err != nil {
+		return fmt.Errorf("IcDistGiseiの書き込みに失敗しました: %w", err)
+	}
+	// IcDistEigyo
+	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatIcDistEigyo); err != nil {
+		return fmt.Errorf("IcDistEigyoの書き込みに失敗しました: %w", err)
+	}
+
+	if err := gzPathsWriter.Close(); err != nil {
+		return fmt.Errorf("paths gzipライターのクローズに失敗しました: %w", err)
 	}
 
 	return nil

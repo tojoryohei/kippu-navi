@@ -45,7 +45,11 @@ type Graph interface {
 type RailwayGraph struct {
 	*FastGraph
 	*StationNameIDMapper
-	GroupIDs []int // 連結成分ごとのグループID
+	GroupIDs  []int // 連結成分ごとのグループID
+	PrevGisei []int16
+	PrevEigyo []int16
+	DistGisei []uint16
+	DistEigyo []uint16
 }
 
 // NewGraph は空のグラフインスタンスを作成します。

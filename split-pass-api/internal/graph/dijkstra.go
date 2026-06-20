@@ -46,7 +46,7 @@ func (pq *priorityQueue) Pop() interface{} {
 	return item
 }
 
-// FindShortestPathGisei はダイクストラ法を用いて最短擬制キロ経路を検索します。
+// FindShortestPathGisei はダイクストラ法を用いて最短擬制キロ経路を検索します（事前計算データがあればダイクストラを回避します）。
 func (g *RailwayGraph) FindShortestPathGisei(startID, endID int) (*PathResult, error) {
 	if startID < 0 || startID >= len(g.IDToName) {
 		return nil, fmt.Errorf("FindShortestPathGisei: %w: ID %d", domain.ErrStationNotFound, startID)
@@ -56,11 +56,44 @@ func (g *RailwayGraph) FindShortestPathGisei(startID, endID int) (*PathResult, e
 	}
 
 	numStations := len(g.IDToName)
+
+	if len(g.PrevGisei) > 0 && len(g.DistGisei) > 0 && len(g.DistEigyo) > 0 {
+		idx := startID*numStations + endID
+		if g.PrevGisei[idx] == -1 && startID != endID {
+			return nil, ErrPathNotFound
+		}
+
+		// 経路復元 (逆順トラバース)
+		path := make([]int, 0, 64)
+		curr := endID
+		loopCount := 0
+		for curr != startID {
+			if curr == -1 || loopCount > numStations {
+				return nil, ErrPathNotFound
+			}
+			path = append(path, curr)
+			curr = int(g.PrevGisei[startID*numStations+curr])
+			loopCount++
+		}
+		path = append(path, startID)
+
+		// 逆順に並び替え
+		for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
+			path[i], path[j] = path[j], path[i]
+		}
+
+		return &PathResult{
+			StationIDs: path,
+			GiseiKilo:  domain.DeciKilo(g.DistGisei[idx]),
+			EigyoKilo:  domain.DeciKilo(g.DistEigyo[idx]),
+		}, nil
+	}
+
 	dist := make([]domain.DeciKilo, numStations)
 	eigyoDist := make([]domain.DeciKilo, numStations)
 	prev := make([]int, numStations)
 	for i := range dist {
-		dist[i] = domain.DeciKilo(1<<31 - 1) // math.MaxInt32
+		dist[i] = domain.DeciKilo(65535)
 		prev[i] = -1
 	}
 
@@ -107,13 +140,25 @@ func (g *RailwayGraph) FindShortestPathGisei(startID, endID int) (*PathResult, e
 	}, nil
 }
 
-// FindAllShortestPathsGisei はダイクストラ法を用いて、開始駅から他のすべての駅への最短擬制キロ経路の距離と前移行配列を求めます。
+// FindAllShortestPathsGisei はダイクストラ法を用いて、開始駅から他のすべての駅への最短擬制キロ経路の距離と前移行配列を求めます（事前計算データがあればダイクストラを回避します）。
 func (g *RailwayGraph) FindAllShortestPathsGisei(startID int) ([]domain.DeciKilo, []int) {
 	numStations := len(g.IDToName)
+
+	if len(g.PrevGisei) > 0 && len(g.DistGisei) > 0 {
+		dist := make([]domain.DeciKilo, numStations)
+		prev := make([]int, numStations)
+		startIdx := startID * numStations
+		for i := 0; i < numStations; i++ {
+			dist[i] = domain.DeciKilo(g.DistGisei[startIdx+i])
+			prev[i] = int(g.PrevGisei[startIdx+i])
+		}
+		return dist, prev
+	}
+
 	dist := make([]domain.DeciKilo, numStations)
 	prev := make([]int, numStations)
 	for i := range dist {
-		dist[i] = domain.DeciKilo(1<<31 - 1) // math.MaxInt32
+		dist[i] = domain.DeciKilo(65535)
 		prev[i] = -1
 	}
 
@@ -172,13 +217,25 @@ func (pq *priorityQueueEigyo) Pop() interface{} {
 	return item
 }
 
-// FindAllShortestPathsEigyo はダイクストラ法を用いて、開始駅から他のすべての駅への最短営業キロ経路の距離と前移行配列を求めます。
+// FindAllShortestPathsEigyo はダイクストラ法を用いて、開始駅から他のすべての駅への最短営業キロ経路の距離と前移行配列を求めます（事前計算データがあればダイクストラを回避します）。
 func (g *RailwayGraph) FindAllShortestPathsEigyo(startID int) ([]domain.DeciKilo, []int) {
 	numStations := len(g.IDToName)
+
+	if len(g.PrevEigyo) > 0 && len(g.DistEigyo) > 0 {
+		dist := make([]domain.DeciKilo, numStations)
+		prev := make([]int, numStations)
+		startIdx := startID * numStations
+		for i := 0; i < numStations; i++ {
+			dist[i] = domain.DeciKilo(g.DistEigyo[startIdx+i])
+			prev[i] = int(g.PrevEigyo[startIdx+i])
+		}
+		return dist, prev
+	}
+
 	dist := make([]domain.DeciKilo, numStations)
 	prev := make([]int, numStations)
 	for i := range dist {
-		dist[i] = domain.DeciKilo(1<<31 - 1) // math.MaxInt32
+		dist[i] = domain.DeciKilo(65535)
 		prev[i] = -1
 	}
 

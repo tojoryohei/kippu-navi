@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"split-pass-api/internal/domain"
+	"split-pass-api/internal/graph"
 	"split-pass-api/internal/graph/data"
 	"split-pass-api/internal/infra/fareio"
 	"split-pass-api/internal/infra/graphio"
@@ -10,7 +11,8 @@ import (
 	"testing"
 )
 
-func TestSearchOptimalSplit_Integration(t *testing.T) {
+func setupSearch(t testing.TB) (*graph.RailwayGraph, *usecase.SearchOptimalSplit, *usecase.CalculateAmount) {
+	t.Helper()
 	// 1. 環境構築 (main.go と同様のセットアップ)
 	loader := &graphio.JSONLoader{}
 	g, err := loader.Load(data.GetEdgesReader())
@@ -57,14 +59,27 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 	)
 	opt := optimizer.NewDPOptimizer(amount)
 	split := usecase.NewFindOptimalSplit(opt, amount)
-	baseFares, _, numStations, err := data.LoadPrecomputedFares()
+	baseFares, _,
+		basePrevGisei, basePrevEigyo, baseDistGisei, baseDistEigyo,
+		_, _, _, _,
+		numStations, err := data.LoadPrecomputedFares()
 	if err != nil {
 		t.Fatalf("事前計算された運賃データのロードに失敗しました: %v", err)
 	}
 	if int32(g.NumStations()) != numStations {
 		t.Fatalf("データ不整合: edges.jsonの駅数(%d)が事前計算データの駅数(%d)と一致しません。事前計算ファイルを再生成してください", g.NumStations(), numStations)
 	}
+	g.PrevGisei = basePrevGisei
+	g.PrevEigyo = basePrevEigyo
+	g.DistGisei = baseDistGisei
+	g.DistEigyo = baseDistEigyo
 	search := usecase.NewSearchOptimalSplit(g, split, bypassRules, 0, baseFares, numStations)
+
+	return g, search, amount
+}
+
+func TestSearchOptimalSplit_Integration(t *testing.T) {
+	g, search, _ := setupSearch(t)
 
 	// 2. テストケースの実行
 	tests := []struct {
@@ -152,4 +167,113 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 			}
 		})
 	}
+}
+
+func BenchmarkSearchOptimalSplit_Integration(b *testing.B) {
+	g, search, _ := setupSearch(b)
+
+	fromID, ok1 := g.GetID("品川")
+	toID, ok2 := g.GetID("名古屋")
+	if !ok1 || !ok2 {
+		b.Fatalf("駅が見つかりません: 品川, 名古屋")
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := search.Execute(fromID, toID, 3)
+		if err != nil {
+			b.Fatalf("Execute が失敗しました: %v", err)
+		}
+	}
+}
+
+func BenchmarkSearchOptimalSplit_PureDP(b *testing.B) {
+	g, search, calc := setupSearch(b)
+
+	fromID, ok1 := g.GetID("横浜")
+	toID, ok2 := g.GetID("新宿")
+	if !ok1 || !ok2 {
+		b.Fatalf("駅が見つかりません: 横浜, 新宿")
+	}
+
+	shortest, err := g.FindShortestPathGisei(fromID, toID)
+	if err != nil {
+		b.Fatalf("最短経路の検索に失敗: %v", err)
+	}
+
+	calcResult, err := calc.Execute(shortest.StationIDs, 3)
+	if err != nil {
+		b.Fatalf("運賃計算に失敗: %v", err)
+	}
+	normalAmount := calcResult.TotalAmount()
+
+	var cheapestAmountPerDecikilo float64
+	kyotoID, kyotoExists := g.GetID("京都")
+	osakaID, osakaExists := g.GetID("大阪")
+	if kyotoExists && osakaExists {
+		kyotoToOsakaPath, err := g.FindShortestPathGisei(kyotoID, osakaID)
+		if err != nil {
+			b.Fatalf("京都->大阪の最短経路検索に失敗: %v", err)
+		}
+		kyotoToOsakaAmount, err := calc.Execute(kyotoToOsakaPath.StationIDs, 3)
+		if err != nil {
+			b.Fatalf("京都->大阪の運賃計算に失敗: %v", err)
+		}
+		cheapestAmountPerDecikilo = float64(kyotoToOsakaAmount.TotalAmount()) / float64(kyotoToOsakaPath.EigyoKilo)
+	} else {
+		cheapestAmountPerDecikilo = 130540.0 / 100.0
+	}
+
+	maxGisei := int(float64(normalAmount) / cheapestAmountPerDecikilo)
+	if maxGisei < int(shortest.GiseiKilo) {
+		maxGisei = int(shortest.GiseiKilo)
+	}
+
+	numStations := g.NumStations()
+	scratch := usecase.GetDPScratchForTest()
+	usecase.EnsureSizeForTest(scratch, numStations, 0, numStations) // maxSections=0 (磁気定期)
+
+	candFlags := usecase.GetCandFlagsForTest(scratch)
+	for i := 0; i < numStations; i++ {
+		candFlags[i] = false
+	}
+	candFlags[fromID] = true
+	candFlags[toID] = true
+
+	const unreachable = 65535
+	startOffset := fromID * numStations
+	endOffset := toID * numStations
+
+	for id := 0; id < numStations; id++ {
+		dStart := int(g.DistGisei[startOffset+id])
+		dEnd := int(g.DistGisei[endOffset+id])
+		if dStart == unreachable || dEnd == unreachable {
+			continue
+		}
+		if dStart+dEnd <= maxGisei {
+			candFlags[id] = true
+		}
+	}
+
+	candStationsBuf := usecase.GetCandStationsBufForTest(scratch)
+	candLen := 0
+	for id := 0; id < numStations; id++ {
+		if candFlags[id] {
+			candStationsBuf[candLen] = id
+			candLen++
+		}
+	}
+	candStations := candStationsBuf[:candLen]
+
+	b.Logf("Candidate stations count: %d", len(candStations))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		err := search.RunBenchmarkDPForTest(fromID, toID, 3, 0, candStations, scratch)
+		if err != nil {
+			b.Fatalf("DP失敗: %v", err)
+		}
+	}
+	b.StopTimer()
+	usecase.PutDPScratchForTest(scratch)
 }
