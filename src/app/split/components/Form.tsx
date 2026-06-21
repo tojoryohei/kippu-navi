@@ -656,7 +656,7 @@ export default function SplitForm({
                                 </div>
                             </div>
                         ) : (
-                            !isCalculating && result && <p className="text-center text-gray-500">有効な分割候補が見つかりませんでした。</p>
+                            <p className="text-center text-gray-500">有効な分割候補が見つかりませんでした。</p>
                         )}
                     </div>
                 )}
