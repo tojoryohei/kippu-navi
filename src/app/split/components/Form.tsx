@@ -199,7 +199,7 @@ export default function SplitForm({
     const stations = new Set((stationDatas as Station[]).map((s) => s.name))
 
     const validateStation = (value: Station | null, fieldName: "startStation" | "endStation") => {
-        if (!value || !value.name) return "駅名を入力してください";
+        if (!value || !value.name) return false;
         const exists = stations.has(value.name);
         if (!exists) return "正しい駅名を選択または入力してください";
 
