@@ -103,7 +103,16 @@ export default function SplitForm({
             endStation,
             searchType: currentSearchType,
         });
-    }, [initialFrom, initialTo, initialSearchType, isIcPass, reset]);
+
+        // ページ遷移後にバリデーションを再実行する（例: 磁気定期券→IC定期券切替時のエリアチェック）
+        // reset() はバリデーションをトリガーしないため、明示的に trigger() を呼ぶ
+        if (startStation || endStation) {
+            // reset後にreact-hook-formの内部状態が更新されるのを待ってからtriggerする
+            setTimeout(() => {
+                trigger(["startStation", "endStation"]);
+            }, 0);
+        }
+    }, [initialFrom, initialTo, initialSearchType, isIcPass, reset, trigger]);
 
     // GA4 & PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
@@ -222,12 +231,12 @@ export default function SplitForm({
             if (fieldName === "startStation" && endVal?.name) {
                 const partnerStationData = stationDatas.find(s => s.name === endVal.name);
                 if (partnerStationData?.icPassAreaName && currentStationData.icPassAreaName !== partnerStationData.icPassAreaName) {
-                    return `ICエリアが異なります（${currentStationData.name}駅は${currentStationData.icPassAreaName}です）`;
+                    return `エリアを跨ぐ計算はできません（${currentStationData.name}駅は${currentStationData.icPassAreaName}です）`;
                 }
             } else if (fieldName === "endStation" && startVal?.name) {
                 const partnerStationData = stationDatas.find(s => s.name === startVal.name);
                 if (partnerStationData?.icPassAreaName && currentStationData.icPassAreaName !== partnerStationData.icPassAreaName) {
-                    return `ICエリアが異なります（${currentStationData.name}駅は${currentStationData.icPassAreaName}です）`;
+                    return `エリアを跨ぐ計算はできません（${currentStationData.name}駅は${currentStationData.icPassAreaName}です）`;
                 }
             }
         }
