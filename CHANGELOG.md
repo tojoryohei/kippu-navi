@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.4.0...kippu-navi-v2.5.0) (2026-06-21)
+
+
+### Features
+
+* 同額最安経路の直積展開および利用区間保持の対応 ([#329](https://github.com/tojoryohei/kippu-navi/issues/329)) ([5b228a3](https://github.com/tojoryohei/kippu-navi/commit/5b228a345b683bc174c8c1b406df9f1bcdb9348a))
+
 ## [2.4.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.3.0...kippu-navi-v2.4.0) (2026-06-21)
 
 
