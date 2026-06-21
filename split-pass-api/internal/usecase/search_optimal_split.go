@@ -162,8 +162,10 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 					TotalAmount: normalAmount,
 					Segments: []SplitSegment{
 						{
-							Path:   shortest.StationIDs,
-							Result: calcResult,
+							Path:           shortest.StationIDs,
+							Result:         calcResult,
+							StartStationID: startID,
+							EndStationID:   endID,
 						},
 					},
 				},
@@ -172,8 +174,10 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 						TotalAmount: normalAmount,
 						Segments: []SplitSegment{
 							{
-								Path:   shortest.StationIDs,
-								Result: calcResult,
+								Path:           shortest.StationIDs,
+								Result:         calcResult,
+								StartStationID: startID,
+								EndStationID:   endID,
 							},
 						},
 					},
@@ -187,8 +191,10 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 		TotalAmount: normalAmount,
 		Segments: []SplitSegment{
 			{
-				Path:   shortest.StationIDs,
-				Result: calcResult,
+				Path:           shortest.StationIDs,
+				Result:         calcResult,
+				StartStationID: startID,
+				EndStationID:   endID,
 			},
 		},
 	}
@@ -514,21 +520,24 @@ func (u *SearchOptimalSplit) searchOptimalSplitDP(startID, endID, months, maxSec
 	// 各パスについて、セグメントの実際の中間経路を動的に復元
 	var results []SplitResult
 	for _, path := range optimalPaths {
-		var segments []SplitSegment
+		var allSegCandidates [][]SplitSegment
 		isValid := true
 		for i := 0; i < len(path)-1; i++ {
-			seg, err := u.getCheapestNoSplitSegment(path[i], path[i+1], months)
+			segs, err := u.getCheapestNoSplitSegments(path[i], path[i+1], months)
 			if err != nil {
 				isValid = false
 				break
 			}
-			segments = append(segments, seg)
+			allSegCandidates = append(allSegCandidates, segs)
 		}
 		if isValid {
-			results = append(results, SplitResult{
-				TotalAmount: minCostToEnd,
-				Segments:    segments,
-			})
+			combinations := generateCombinations(allSegCandidates)
+			for _, combo := range combinations {
+				results = append(results, SplitResult{
+					TotalAmount: minCostToEnd,
+					Segments:    combo,
+				})
+			}
 		}
 	}
 
@@ -571,36 +580,92 @@ func (u *SearchOptimalSplit) backtrackZeroAlloc(
 	}
 }
 
-func (u *SearchOptimalSplit) getCheapestNoSplitSegment(start, end, months int) (SplitSegment, error) {
+func (u *SearchOptimalSplit) getCheapestNoSplitSegments(start, end, months int) ([]SplitSegment, error) {
 	cands, err := u.getNoSplitCandidates(start, end)
 	if err != nil || len(cands) == 0 {
-		return SplitSegment{}, domain.ErrInvalidPath
+		return nil, domain.ErrInvalidPath
 	}
 
 	minFare := math.MaxInt
-	var bestPath []int
-	var bestResult *CalculationResult
+	var bestPaths [][]int
+	var bestResults []*CalculationResult
 
 	for _, path := range cands {
 		res, err := u.split.calc.Execute(path, months)
 		if err != nil {
 			continue
 		}
-		if res.TotalAmount() < minFare {
-			minFare = res.TotalAmount()
-			bestPath = path
-			bestResult = res
+		fare := res.TotalAmount()
+		if fare < minFare {
+			minFare = fare
+			bestPaths = [][]int{path}
+			bestResults = []*CalculationResult{res}
+		} else if fare == minFare {
+			if !containsPath(bestPaths, path) {
+				bestPaths = append(bestPaths, path)
+				bestResults = append(bestResults, res)
+			}
 		}
 	}
 
 	if minFare == math.MaxInt {
-		return SplitSegment{}, domain.ErrInvalidPath
+		return nil, domain.ErrInvalidPath
 	}
 
-	return SplitSegment{
-		Path:   bestPath,
-		Result: bestResult,
-	}, nil
+	var segs []SplitSegment
+	for i, path := range bestPaths {
+		segs = append(segs, SplitSegment{
+			Path:           path,
+			Result:         bestResults[i],
+			StartStationID: start,
+			EndStationID:   end,
+		})
+	}
+
+	return segs, nil
+}
+
+func containsPath(paths [][]int, target []int) bool {
+	for _, p := range paths {
+		if len(p) != len(target) {
+			continue
+		}
+		match := true
+		for i := range p {
+			if p[i] != target[i] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+func generateCombinations(candidates [][]SplitSegment) [][]SplitSegment {
+	if len(candidates) == 0 {
+		return [][]SplitSegment{{}}
+	}
+
+	var result [][]SplitSegment
+	var helper func(index int, current []SplitSegment)
+	helper = func(index int, current []SplitSegment) {
+		if index == len(candidates) {
+			combo := make([]SplitSegment, len(current))
+			copy(combo, current)
+			result = append(result, combo)
+			return
+		}
+
+		for _, seg := range candidates[index] {
+			helper(index+1, append(current, seg))
+		}
+	}
+
+	helper(0, nil)
+	return result
 }
 
 func reconstructPathFromFlat(prev []int16, numStations, start, end int) []int {

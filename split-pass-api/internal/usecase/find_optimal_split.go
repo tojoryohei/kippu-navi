@@ -34,8 +34,10 @@ type OptimizedPath[T EvaluationResult] struct {
 
 // SplitSegment は分割された個々の区間とその運賃計算結果を保持します。
 type SplitSegment struct {
-	Path   []int
-	Result *CalculationResult
+	Path           []int
+	Result         *CalculationResult
+	StartStationID int // 本来の利用区間の発駅ID
+	EndStationID   int // 本来の利用区間の着駅ID
 }
 
 // SplitResult は最適な分割結果とその内訳を保持します。
@@ -85,8 +87,10 @@ func (u *FindOptimalSplit) Execute(path []int, months int, locked []bool, maxSec
 		segs := make([]SplitSegment, len(optPath.Segments))
 		for i, evalSeg := range optPath.Segments {
 			segs[i] = SplitSegment{
-				Path:   evalSeg.StationIDs,
-				Result: evalSeg.Result,
+				Path:           evalSeg.StationIDs,
+				Result:         evalSeg.Result,
+				StartStationID: evalSeg.StationIDs[0],
+				EndStationID:   evalSeg.StationIDs[len(evalSeg.StationIDs)-1],
 			}
 		}
 		results = append(results, SplitResult{

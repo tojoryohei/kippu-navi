@@ -46,6 +46,8 @@ type SegmentResponse struct {
 	Via            []string                   `json:"via"`
 	Result         *usecase.CalculationResult `json:"result"`
 	TotalEigyoKilo domain.DeciKilo            `json:"totalEigyoKilo"`
+	Start          string                     `json:"start"`
+	End            string                     `json:"end"`
 }
 
 // ResultResponse は1つの最適な分割パターンを表現します。
@@ -142,6 +144,8 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 				Via:            viaNames,
 				Result:         seg.Result,
 				TotalEigyoKilo: eigyo,
+				Start:          h.graph.GetName(seg.StartStationID),
+				End:            h.graph.GetName(seg.EndStationID),
 			}
 		}
 		return ResultResponse{
