@@ -1,12 +1,5 @@
 # Changelog
 
-## [2.4.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.3.0...kippu-navi-v2.4.0) (2026-06-21)
-
-
-### Features
-
-* ICエリア専用サブグラフの生成と分割IC定期券APIの実装 ([#324](https://github.com/tojoryohei/kippu-navi/issues/324)) ([339c2a9](https://github.com/tojoryohei/kippu-navi/commit/339c2a9672e9f5bd7018d799bf05f3d602ca9355))
-
 ## [2.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.2.0...kippu-navi-v2.3.0) (2026-06-19)
 
 

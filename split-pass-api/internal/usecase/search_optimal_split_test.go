@@ -220,6 +220,80 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("複数経路展開および利用区間出力の検証", func(t *testing.T) {
+		g3 := graph.NewGraph(10)
+		id3 := func(name string) int { return g3.GetOrAddID(name) }
+
+		// A --(10km)--> B --(10km)--> D (A-B-D: 計20km)
+		// A --(10km)--> C --(10km)--> D (A-C-D: 計20km)
+		g3.AddEdge(domain.Edge{FromID: id3("A"), ToID: id3("B"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g3.AddEdge(domain.Edge{FromID: id3("B"), ToID: id3("A"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g3.AddEdge(domain.Edge{FromID: id3("B"), ToID: id3("D"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g3.AddEdge(domain.Edge{FromID: id3("D"), ToID: id3("B"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g3.AddEdge(domain.Edge{FromID: id3("A"), ToID: id3("C"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g3.AddEdge(domain.Edge{FromID: id3("C"), ToID: id3("A"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g3.AddEdge(domain.Edge{FromID: id3("C"), ToID: id3("D"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g3.AddEdge(domain.Edge{FromID: id3("D"), ToID: id3("C"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+
+		reg3 := fare.NewRegistry()
+		var dummyTable3 [101]domain.PassPrice
+		for i := range dummyTable3 {
+			if i <= 10 {
+				dummyTable3[i] = domain.PassPrice{OneMonth: 1000}
+			} else {
+				dummyTable3[i] = domain.PassPrice{OneMonth: 2500}
+			}
+		}
+		reg3.Register(domain.JREast, fare.NewEastCalculator(dummyTable3, dummyTable3))
+		reg3.Register(domain.JRCentral, fare.NewStandardCalculator(dummyTable3, dummyTable3))
+
+		calcAmount3 := usecase.NewCalculateAmount(
+			g3, reg3, domain.NewAddonRegistry(), domain.NewAddonRegistry(),
+			fare.NewTrainSpecificSectionCalculator(dummyTable3),
+			fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+		)
+		split3 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount3), calcAmount3)
+		fares3 := precomputeFaresForTest(g3, calcAmount3, nil)
+
+		search := usecase.NewSearchOptimalSplit(g3, split3, nil, 0, fares3, int32(g3.NumStations()))
+
+		got, err := search.Execute(id3("A"), id3("D"), 1)
+		if err != nil {
+			t.Fatalf("Execute が失敗しました: %v", err)
+		}
+
+		if len(got.Optimals) != 2 {
+			t.Fatalf("最安結果の組み合わせ数 = %d, 期待値は 2", len(got.Optimals))
+		}
+
+		hasABD := false
+		hasACD := false
+		for _, opt := range got.Optimals {
+			if len(opt.Segments) == 2 {
+				seg1 := opt.Segments[0]
+				seg2 := opt.Segments[1]
+
+				if seg1.StartStationID != id3("A") || (seg1.EndStationID != id3("B") && seg1.EndStationID != id3("C")) {
+					t.Errorf("不正な StartStationID または EndStationID: %+v", seg1)
+				}
+
+				if seg1.EndStationID == id3("B") {
+					if seg2.StartStationID == id3("B") && seg2.EndStationID == id3("D") {
+						hasABD = true
+					}
+				} else if seg1.EndStationID == id3("C") {
+					if seg2.StartStationID == id3("C") && seg2.EndStationID == id3("D") {
+						hasACD = true
+					}
+				}
+			}
+		}
+
+		if !hasABD || !hasACD {
+			t.Errorf("A-B-D または A-C-D の経路組み合わせが不足しています: ABD=%v, ACD=%v", hasABD, hasACD)
+		}
+	})
 }
 
 // テスト用運賃事前計算ヘルパー

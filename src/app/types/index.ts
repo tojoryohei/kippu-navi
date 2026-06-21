@@ -173,6 +173,8 @@ interface ApiSegment {
     via: string[];
     result: ApiResult;
     totalEigyoKilo?: number;
+    start: string;
+    end: string;
 }
 
 interface ApiResultResponse {

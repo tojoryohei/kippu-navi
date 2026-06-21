@@ -343,9 +343,9 @@ export default function SplitForm({
             }
         } catch (err: unknown) {
             if (err instanceof Error) {
-                setError(`計算中にエラーが発生しました : ${err.message}`);
+                setError(err.message);
             } else {
-                setError(`計算中にエラーが発生しました : ${String(err)}`);
+                setError(String(err));
             }
         } finally {
             setIsCalculating(false);

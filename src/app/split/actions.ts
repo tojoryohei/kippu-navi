@@ -70,8 +70,8 @@ async function fetchPassApi(from: string, to: string, months: number, isIc: bool
       const segFare = seg.result.Fare + seg.result.BarrierFreeFee + seg.result.Charge;
 
       splitKippuDatas.push({
-        departureStation: i === 0 ? normalDeparture : segDeparture,
-        arrivalStation: i === res.segments.length - 1 ? normalArrival : segArrival,
+        departureStation: seg.start,
+        arrivalStation: seg.end,
         kippuData: {
           totalEigyoKilo: seg.totalEigyoKilo || 0,
           departureStation: segDeparture,
