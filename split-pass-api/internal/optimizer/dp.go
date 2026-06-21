@@ -26,110 +26,147 @@ func NewDPOptimizer[T usecase.EvaluationResult](evaluator usecase.RouteEvaluator
 	}
 }
 
-// Optimize は O(N^3) で最適な分割経路を探索します。
+// Optimize は指定された制約のもとで最適な分割経路を探索します。
 // locked[i] が true の駅インデックスでは分割が禁止されます。
 // locked が nil または空の場合、すべての駅で分割可能として扱います。
-func (o *DPOptimizer[T]) Optimize(path []int, months int, locked []bool) ([]usecase.OptimizedPath[T], error) {
+// maxSections が 0 より大きい場合、その区間数以下の分割のみを評価します。
+// maxSections が 1 の場合は、分割なし（通し運賃のみ）となります。
+func (o *DPOptimizer[T]) Optimize(path []int, months int, locked []bool, maxSections int) ([]usecase.OptimizedPath[T], error) {
 	n := len(path)
 	if n < 2 {
 		return nil, ErrInvalidPathLength
 	}
 
-	cache := make([]T, n*n)
-
-	const INF = math.MaxInt
-	dp := make([]int, n)
-	for i := range dp {
-		dp[i] = INF
+	// 実際の最大区間数（k）を決定。無制限(0)なら n-1 が上限。
+	maxK := n - 1
+	if maxSections > 0 && maxSections < maxK {
+		maxK = maxSections
 	}
-	dp[0] = 0
 
-	prev := make([][]int, n)
+	cache := make([]T, n*n)
+	const INF = math.MaxInt
+
+	// dp[k][i]: k個の区間で駅iに到達する最小コスト
+	dp := make([][]int, maxK+1)
+	for k := 0; k <= maxK; k++ {
+		dp[k] = make([]int, n)
+		for i := range dp[k] {
+			dp[k][i] = INF
+		}
+	}
+	dp[0][0] = 0 // 0区間で駅0に到達するコストは0
+
+	// prev[k][j]: k個の区間で駅jに到達する際、直前の駅(i)のリスト
+	prev := make([][][]int, maxK+1)
+	for k := 0; k <= maxK; k++ {
+		prev[k] = make([][]int, n)
+	}
+
 	var lastErr error
 
+	// DP更新
 	for j := 1; j < n; j++ {
-		for i := 0; i < j; i++ {
-			if dp[i] == INF {
-				continue
-			}
+		// jが終点以外の場合、locked[j] ならここで終わる区間は作れない
+		if j < n-1 && len(locked) > j && locked[j] {
+			continue
+		}
 
-			// locked[i] が true の駅は分割点として使えない。
-			// ただし i==0（始点）は分割点ではなく区間の開始なので除外しない。
+		for i := 0; i < j; i++ {
+			// iが始点以外の場合、locked[i] ならここから始まる区間は作れない
 			if i > 0 && len(locked) > i && locked[i] {
 				continue
 			}
 
-			// locked[j] が true の駅は分割点として使えない。
-			// ただし j==n-1（終点）は必ず到達すべき終端なので除外しない。
-			if j < n-1 && len(locked) > j && locked[j] {
-				continue
-			}
-
+			// i〜j間の運賃計算
 			subPath := path[i : j+1]
 			res, err := o.evaluator.Execute(subPath, months)
 			if err != nil {
 				lastErr = err
 				continue
 			}
-
 			cache[i*n+j] = res
-			cost := dp[i] + res.TotalAmount()
+			cost := res.TotalAmount()
 
-			if cost < dp[j] {
-				dp[j] = cost
-				prev[j] = []int{i}
-			} else if cost == dp[j] {
-				prev[j] = append(prev[j], i)
+			// k: 分割回数ではなく「区間数」。1区間〜maxK区間について更新。
+			for k := 1; k <= maxK; k++ {
+				if dp[k-1][i] == INF {
+					continue // (k-1)区間で駅iに到達できない場合はスキップ
+				}
+				
+				totalCost := dp[k-1][i] + cost
+				if totalCost < dp[k][j] {
+					dp[k][j] = totalCost
+					prev[k][j] = []int{i}
+				} else if totalCost == dp[k][j] {
+					prev[k][j] = append(prev[k][j], i)
+				}
 			}
 		}
 	}
 
-	if dp[n-1] == INF {
+	// 終点(n-1)への到達コストの中で、最も安いものを探す
+	minCost := INF
+	for k := 1; k <= maxK; k++ {
+		if dp[k][n-1] < minCost {
+			minCost = dp[k][n-1]
+		}
+	}
+
+	if minCost == INF {
 		if lastErr != nil {
 			return nil, fmt.Errorf("%w: %v", ErrNoValidPattern, lastErr)
 		}
 		return nil, ErrNoValidPattern
 	}
 
-	// バックトラックして全ての分割パターンを抽出し、EvaluatedSegment のリストに変換する
-	var paths []usecase.OptimizedPath[T]
-	cutPoints := make([]int, 0, n)
-	cutPoints = append(cutPoints, n-1)
-
-	var dfs func(current int)
-	dfs = func(current int) {
-		if current == 0 {
-			segs := make([]usecase.EvaluatedSegment[T], len(cutPoints)-1)
-
-			// cutPoints には [終点, ..., 始点(0)] と逆順に入っているため、逆から読んで正順の Segments を作る
-			for k := 0; k < len(cutPoints)-1; k++ {
-				endIdx := cutPoints[len(cutPoints)-2-k]
-				startIdx := cutPoints[len(cutPoints)-1-k]
-
-				// 経路の切り出し責務をオプティマイザが持つ
-				segPath := make([]int, endIdx-startIdx+1)
-				copy(segPath, path[startIdx:endIdx+1])
-
-				// p が prev[current] に含まれているということは、DPの計算フェーズにおいて
-				// path[p:current+1] の運賃計算が正常に完了し cache に格納されていることが
-				// 保証されているため、ゼロ値（未計算）を引くことはない。
-				segs[k] = usecase.NewEvaluatedSegment(segPath, cache[startIdx*n+endIdx])
-			}
-
-			paths = append(paths, usecase.OptimizedPath[T]{
-				TotalAmount: dp[n-1],
-				Segments:    segs,
-			})
-			return
-		}
-
-		for _, p := range prev[current] {
-			cutPoints = append(cutPoints, p)
-			dfs(p)
-			cutPoints = cutPoints[:len(cutPoints)-1]
+	// 最安コストを達成する「区間数(k)」をすべて集める
+	var optimalKs []int
+	for k := 1; k <= maxK; k++ {
+		if dp[k][n-1] == minCost {
+			optimalKs = append(optimalKs, k)
 		}
 	}
-	dfs(n - 1)
+
+	// バックトラックして経路を抽出
+	var paths []usecase.OptimizedPath[T]
+
+	for _, k := range optimalKs {
+		// cutPoints には [終点, ..., 始点(0)] と逆順に入る
+		cutPoints := make([]int, 0, k+1)
+		cutPoints = append(cutPoints, n-1)
+
+		var dfs func(current int, currentK int)
+		dfs = func(current int, currentK int) {
+			if current == 0 {
+				segs := make([]usecase.EvaluatedSegment[T], len(cutPoints)-1)
+
+				// cutPoints は逆順なので、正順の Segments を作る
+				for idx := 0; idx < len(cutPoints)-1; idx++ {
+					endIdx := cutPoints[len(cutPoints)-2-idx]
+					startIdx := cutPoints[len(cutPoints)-1-idx]
+
+					segPath := make([]int, endIdx-startIdx+1)
+					copy(segPath, path[startIdx:endIdx+1])
+
+					segs[idx] = usecase.NewEvaluatedSegment(segPath, cache[startIdx*n+endIdx])
+				}
+
+				paths = append(paths, usecase.OptimizedPath[T]{
+					TotalAmount: minCost,
+					Segments:    segs,
+				})
+				return
+			}
+
+			// 現在の駅 current に currentK 個の区間で到達する直前の駅候補を辿る
+			for _, p := range prev[currentK][current] {
+				cutPoints = append(cutPoints, p)
+				dfs(p, currentK-1)
+				cutPoints = cutPoints[:len(cutPoints)-1]
+			}
+		}
+		dfs(n-1, k)
+	}
 
 	return paths, nil
 }

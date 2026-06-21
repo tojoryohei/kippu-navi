@@ -171,7 +171,7 @@ func TestFindOptimalSplit_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			locked := make([]bool, len(tt.path))
-			got, err := findOptimal.Execute(tt.path, tt.months, locked)
+			got, err := findOptimal.Execute(tt.path, tt.months, locked, 0)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -258,7 +258,7 @@ func TestFindOptimalSplit_Execute_MultipleOptimalPaths(t *testing.T) {
 
 	path := []int{id("A"), id("B"), id("C"), id("D")}
 	locked := make([]bool, len(path))
-	got, err := findOptimal.Execute(path, 1, locked)
+	got, err := findOptimal.Execute(path, 1, locked, 0)
 	if err != nil {
 		t.Fatalf("Execute() unexpected error: %v", err)
 	}

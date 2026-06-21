@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"split-pass-api/internal/domain"
+	"split-pass-api/internal/graph"
 	"split-pass-api/internal/graph/data"
 	"split-pass-api/internal/handler"
 	"split-pass-api/internal/infra/fareio"
@@ -40,7 +41,6 @@ func run() error {
 	listenAddr := ":" + port
 
 	// グラフの初期化
-	log.Printf("JSONからグラフを構築しています")
 	loader := &graphio.JSONLoader{}
 	g, loadErr := loader.Load(data.GetEdgesReader())
 	if loadErr != nil {
@@ -125,12 +125,47 @@ func run() error {
 
 	opt := optimizer.NewDPOptimizer(amountCalc)
 	splitUseCase := usecase.NewFindOptimalSplit(opt, amountCalc)
-	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules)
+
+	// 事前計算された運賃および経路データのロード
+	baseFares, icFares,
+		basePrevGisei, basePrevEigyo, baseDistGisei, baseDistEigyo,
+		icPrevGisei, icPrevEigyo, icDistGisei, icDistEigyo,
+		numStations, err := data.LoadPrecomputedFares()
+	if err != nil {
+		return fmt.Errorf("事前計算された運賃データのロードに失敗しました: %w", err)
+	}
+	if int32(g.NumStations()) != numStations {
+		return fmt.Errorf("データ不整合: edges.jsonの駅数(%d)が事前計算データの駅数(%d)と一致しません。事前計算ファイルを再生成してください", g.NumStations(), numStations)
+	}
+
+	// グラフに事前計算されたマトリクスを格納
+	g.PrevGisei = basePrevGisei
+	g.PrevEigyo = basePrevEigyo
+	g.DistGisei = baseDistGisei
+	g.DistEigyo = baseDistEigyo
+
+	// 磁気定期券用: 区間数無制限 (0)
+	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules, 0, baseFares, numStations)
+
+	// IC分割乗車券用
+	icGraph, err := graph.NewIcPassGraph(g)
+	if err != nil {
+		return fmt.Errorf("ICグラフの生成に失敗しました: %w", err)
+	}
+	icGraph.PrevGisei = icPrevGisei
+	icGraph.PrevEigyo = icPrevEigyo
+	icGraph.DistGisei = icDistGisei
+	icGraph.DistEigyo = icDistEigyo
+
+	icSearchUseCase := usecase.NewSearchOptimalSplit(icGraph, splitUseCase, bypassRules, 2, icFares, numStations)
 
 	// ルーティング
 	mux := http.NewServeMux()
 	splitHandler := handler.NewSplit(g, searchUseCase)
 	mux.HandleFunc("/api/split-pass", splitHandler.HandleCalculate)
+
+	icSplitHandler := handler.NewSplit(icGraph, icSearchUseCase)
+	mux.HandleFunc("/api/split-ic-pass", icSplitHandler.HandleCalculate)
 
 	server := &http.Server{
 		Addr:         listenAddr,

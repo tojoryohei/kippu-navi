@@ -12,13 +12,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 1.0,
         },
         {
+            url: `${baseUrl}/mr`,
+            lastModified,
+            changeFrequency: 'monthly',
+            priority: 0.9,
+        },
+        {
             url: `${baseUrl}/split`,
             lastModified,
             changeFrequency: 'monthly',
             priority: 0.9,
         },
         {
-            url: `${baseUrl}/mr`,
+            url: `${baseUrl}/split-icpass`,
             lastModified,
             changeFrequency: 'monthly',
             priority: 0.9,

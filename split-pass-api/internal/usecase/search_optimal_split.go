@@ -4,48 +4,46 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"sort"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-// RouteSegment は分割計算に渡す1つの区間と分割禁止情報を保持します。
-type RouteSegment struct {
-	Path   []int
-	Locked []bool // true の駅インデックスでは分割を禁止する
-}
-
-// EvaluationTask は1つの候補経路から展開された評価単位です。
-type EvaluationTask struct {
-	Segments []RouteSegment
-}
+const (
+	// unreachableDistance は接続されておらず到達不可能なキロ数（無限大）を示します。
+	unreachableDistance = domain.DeciKilo(65535)
+	// defaultMaxSectionsLimit は無制限探索時のデフォルト最大分割セグメント数です。
+	defaultMaxSectionsLimit = 100
+)
 
 // SearchOptimalSplit は候補経路の探索・補正・分割最適化を統括するユースケースです。
 type SearchOptimalSplit struct {
-	graph interface {
-		graph.PathFinder
-		graph.StationProvider
-	}
-	split *FindOptimalSplit
-	rules []domain.ResolvedBypassRule
+	graph       *graph.RailwayGraph
+	split       *FindOptimalSplit
+	rules       []domain.ResolvedBypassRule
+	maxSections int
+	fares       []int32
+	numStations int32
 }
 
 // NewSearchOptimalSplit は新しい SearchOptimalSplit を作成します。
 func NewSearchOptimalSplit(
-	g interface {
-		graph.PathFinder
-		graph.StationProvider
-	},
+	g *graph.RailwayGraph,
 	u *FindOptimalSplit,
 	rules []domain.ResolvedBypassRule,
+	maxSections int,
+	fares []int32,
+	numStations int32,
 ) *SearchOptimalSplit {
-	// サーバー起動時に1回だけ、衝突のない安全な双方向ルールを生成・保持する
 	return &SearchOptimalSplit{
-		graph: g,
-		split: u,
-		rules: makeUniqueBidirectionalRules(rules),
+		graph:       g,
+		split:       u,
+		rules:       makeUniqueBidirectionalRules(rules),
+		maxSections: maxSections,
+		fares:       fares,
+		numStations: numStations,
 	}
 }
 
@@ -55,24 +53,19 @@ type OptimalSearchResult struct {
 	Optimals []SplitResult // 分割時の最安結果
 }
 
+// Execute は指定された発着駅間の最安分割結果を探索します。
 func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearchResult, error) {
 	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
 	if err != nil {
 		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の検索に失敗: %w", err)
 	}
 
-	// maxStationsInPath は探索の上限駅数です。
-	// DFSの再帰深度と計算量の制約から設定しています。
-	const maxStationsInPath = 100
-
-	if len(shortest.StationIDs) > maxStationsInPath {
-		return nil, fmt.Errorf("searchOptimalSplit: 発着駅間の駅数(%d)が上限の%dを超えています。", len(shortest.StationIDs), maxStationsInPath)
-	}
-
 	calcResult, err := u.split.calc.Execute(shortest.StationIDs, months)
 	if err != nil {
 		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の運賃計算に失敗: %w", err)
 	}
+
+	normalAmount := calcResult.TotalAmount()
 
 	var cheapestAmountPerDecikilo float64
 	kyotoID, kyotoExists := u.graph.GetID("京都")
@@ -97,27 +90,96 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 		cheapestAmountPerDecikilo = 236070.0 / 100.0
 	}
 
-	normalAmount := calcResult.TotalAmount()
-
 	maxGisei := domain.DeciKilo(float64(normalAmount) / cheapestAmountPerDecikilo)
 	if maxGisei < shortest.GiseiKilo {
 		maxGisei = shortest.GiseiKilo
 	}
 
-	candidatePathResults, err := u.graph.FindAllCandidatePaths(startID, endID, maxGisei)
-	if err != nil {
-		return nil, fmt.Errorf("searchOptimalSplit: %w", err)
+	// 候補駅決定および探索用のスクラッチバッファをプールから調達
+	numStations := int(u.numStations)
+	scratch := dpScratchPool.Get().(*dpScratch)
+	scratch.ensureSize(numStations, u.maxSections, numStations)
+
+	// candFlags の初期化 (Zero-allocation)
+	for i := 0; i < numStations; i++ {
+		scratch.candFlags[i] = false
+	}
+	scratch.candFlags[startID] = true
+	scratch.candFlags[endID] = true
+
+	// 直接 DistGisei 参照により、FindAllShortestPathsGisei で発生する make(アロケーション) を回避
+	rg := u.graph
+	startOffset := startID * numStations
+	endOffset := endID * numStations
+
+	var dStartSlice []domain.DeciKilo
+	var dEndSlice []domain.DeciKilo
+	var useFallback = len(rg.DistGisei) == 0
+
+	if useFallback {
+		dStartSlice, _ = rg.FindAllShortestPathsGisei(startID)
+		dEndSlice, _ = rg.FindAllShortestPathsGisei(endID)
 	}
 
-	paths := make([][]int, len(candidatePathResults))
-	for i, pr := range candidatePathResults {
-		paths[i] = pr.StationIDs
+	for id := 0; id < numStations; id++ {
+		var dStart, dEnd domain.DeciKilo
+		if useFallback {
+			dStart = dStartSlice[id]
+			dEnd = dEndSlice[id]
+		} else {
+			dStart = domain.DeciKilo(rg.DistGisei[startOffset+id])
+			dEnd = domain.DeciKilo(rg.DistGisei[endOffset+id])
+		}
+
+		if dStart == unreachableDistance || dEnd == unreachableDistance {
+			continue
+		}
+		if dStart+dEnd <= maxGisei {
+			scratch.candFlags[id] = true
+		}
 	}
 
-	tasks := u.generateTasks(paths, u.rules)
+	// 候補駅リストの平坦格納
+	candLen := 0
+	for id := 0; id < numStations; id++ {
+		if scratch.candFlags[id] {
+			scratch.candStationsBuf[candLen] = id
+			candLen++
+		}
+	}
+	candStations := scratch.candStationsBuf[:candLen]
 
-	allPatterns, err := u.evaluateTasks(tasks, months)
+	optimals, err := u.searchOptimalSplitDP(startID, endID, months, u.maxSections, candStations, scratch)
+
+	// プールへの返却
+	dpScratchPool.Put(scratch)
+
 	if err != nil {
+		// 分割パターンが見つからない場合は、分割なし（通常経路）の結果のみを返すか、エラーにする
+		if errors.Is(err, domain.ErrNoValidPattern) {
+			return &OptimalSearchResult{
+				Normal: SplitResult{
+					TotalAmount: normalAmount,
+					Segments: []SplitSegment{
+						{
+							Path:   shortest.StationIDs,
+							Result: calcResult,
+						},
+					},
+				},
+				Optimals: []SplitResult{
+					{
+						TotalAmount: normalAmount,
+						Segments: []SplitSegment{
+							{
+								Path:   shortest.StationIDs,
+								Result: calcResult,
+							},
+						},
+					},
+				},
+			}, nil
+		}
 		return nil, err
 	}
 
@@ -133,277 +195,554 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 
 	return &OptimalSearchResult{
 		Normal:   normalResult,
-		Optimals: u.filterGlobalOptimal(allPatterns),
+		Optimals: optimals,
 	}, nil
 }
 
-func (u *SearchOptimalSplit) generateTasks(paths [][]int, rules []domain.ResolvedBypassRule) []EvaluationTask {
-	var tasks []EvaluationTask
+type staticListNode struct {
+	parentIdx int
+	sections  int
+	next      int // 次のノードのインデックス。-1なら終端。
+}
 
-	if len(paths) == 0 {
-		return tasks
+type dpScratch struct {
+	stationToIndex  []int
+	distTable       []int
+	headTable       []int
+	nodes           []staticListNode
+	pathBuf         []int
+	nodeCount       int
+	candFlags       []bool
+	candStationsBuf []int
+	localFares      []int
+	adjEdges        []int32
+	adjHead         []int32
+}
+
+func (s *dpScratch) ensureSize(numStations int, maxK int, numCandidates int) {
+	if len(s.stationToIndex) < numStations {
+		s.stationToIndex = make([]int, numStations)
 	}
 
-	// 全ての候補経路は同じ発着駅を持つため、最初の経路から startID と endID を取得
-	startID := paths[0][0]
-	endID := paths[0][len(paths[0])-1]
+	requiredDPSize := (maxK + 1) * numCandidates
+	if len(s.distTable) < requiredDPSize {
+		s.distTable = make([]int, requiredDPSize)
+	}
+	if len(s.headTable) < requiredDPSize {
+		s.headTable = make([]int, requiredDPSize)
+	}
 
-	// -----------------------------------------------------------
-	// 1. 初めの一回だけ行う処理（特例ルートの重複評価を防止）
-	// -----------------------------------------------------------
-	for _, rule := range rules {
-		startOnDetour := u.isOnDetourMiddle(startID, rule)
-		endOnDetour := u.isOnDetourMiddle(endID, rule)
+	requiredNodesSize := requiredDPSize * 4
+	if len(s.nodes) < requiredNodesSize {
+		s.nodes = make([]staticListNode, requiredNodesSize)
+	}
 
-		// 発着駅がルールの対象区間内（近道または遠回り）にあるかを判定
-		startOnRule := u.containsStation(rule.ShortcutPath, startID) || u.containsStation(rule.DetourPath, startID)
-		endOnRule := u.containsStation(rule.ShortcutPath, endID) || u.containsStation(rule.DetourPath, endID)
+	requiredPathBufSize := maxK + 2
+	if len(s.pathBuf) < requiredPathBufSize {
+		s.pathBuf = make([]int, requiredPathBufSize)
+	}
 
-		// 入力された少なくとも一方が特例の遠回りで、もう一方がその特例の遠回りあるいは近道だった時
-		if (startOnDetour && endOnRule) || (endOnDetour && startOnRule) {
-			shortcutPath := make([]int, len(rule.ShortcutPath))
-			copy(shortcutPath, rule.ShortcutPath)
+	if len(s.candFlags) < numStations {
+		s.candFlags = make([]bool, numStations)
+	}
+	if len(s.candStationsBuf) < numStations {
+		s.candStationsBuf = make([]int, numStations)
+	}
 
-			// 分割禁止（Locked）にして、候補経路群に「1つだけ」追加する
-			tasks = append(tasks, EvaluationTask{
-				Segments: []RouteSegment{
-					{Path: shortcutPath, Locked: makeShortcutLocked(shortcutPath)},
-				},
-			})
-			break // 逆方向も重複して評価されないように、最初のマッチで追加したらループを抜ける
+	requiredLocalSize := numCandidates * numCandidates
+	if len(s.localFares) < requiredLocalSize {
+		s.localFares = make([]int, requiredLocalSize)
+	}
+	if len(s.adjEdges) < requiredLocalSize {
+		s.adjEdges = make([]int32, requiredLocalSize)
+	}
+	if len(s.adjHead) < numCandidates+1 {
+		s.adjHead = make([]int32, numCandidates+1)
+	}
+}
+
+var dpScratchPool = sync.Pool{
+	New: func() interface{} {
+		return &dpScratch{
+			stationToIndex:  make([]int, 5000),
+			distTable:       make([]int, 101*500),
+			headTable:       make([]int, 101*500),
+			nodes:           make([]staticListNode, 101*500*4),
+			pathBuf:         make([]int, 105),
+			candFlags:       make([]bool, 5000),
+			candStationsBuf: make([]int, 5000),
+			localFares:      make([]int, 500*500),
+			adjEdges:        make([]int32, 500*500),
+			adjHead:         make([]int32, 501),
+		}
+	},
+}
+
+func monthToIndex(months int) int {
+	switch months {
+	case 1:
+		return 0
+	case 3:
+		return 1
+	case 6:
+		return 2
+	default:
+		return 0
+	}
+}
+
+func (u *SearchOptimalSplit) searchOptimalSplitDP(startID, endID, months, maxSections int, candStations []int, scratch *dpScratch) ([]SplitResult, error) {
+	numStations := int(u.numStations)
+
+	maxK := maxSections
+	if maxSections <= 0 {
+		maxK = len(candStations) - 1
+		if maxK > defaultMaxSectionsLimit {
+			maxK = defaultMaxSectionsLimit
 		}
 	}
 
-	// -----------------------------------------------------------
-	// 2. 各候補経路ごとの展開処理
-	// -----------------------------------------------------------
-	for _, path := range paths {
-		locked := make([]bool, len(path))
-		isFullyEnclosedInRule := false
+	mIdx := monthToIndex(months)
+	N := len(candStations)
 
-		for _, rule := range rules {
-			startIdx, _ := u.findSubPath(path, rule.DetourPath)
-			startOnDetour := u.isOnDetourMiddle(path[0], rule)
-			endOnDetour := u.isOnDetourMiddle(path[len(path)-1], rule)
+	scratch.ensureSize(numStations, maxK, N)
+	scratch.nodeCount = 0
 
-			jStart := rule.ShortcutPath[0]
-			jEnd := rule.ShortcutPath[len(rule.ShortcutPath)-1]
-			idxStart := u.indexOf(path, jStart)
-			idxEnd := u.indexOf(path, jEnd)
-			containsBothJunctions := (idxStart != -1 && idxEnd != -1)
+	// 逆写像テーブルの初期化
+	for i := 0; i < numStations; i++ {
+		scratch.stationToIndex[i] = -1
+	}
+	for i, sid := range candStations {
+		scratch.stationToIndex[sid] = i
+	}
 
-			if containsBothJunctions && idxStart > idxEnd {
-				continue
+	startIdx := scratch.stationToIndex[startID]
+	endIdx := scratch.stationToIndex[endID]
+	if startIdx == -1 || endIdx == -1 {
+		return nil, domain.ErrNoValidPattern
+	}
+
+	// DPテーブルの初期化
+	const INF = math.MaxInt
+	dpSize := (maxK + 1) * N
+	for i := 0; i < dpSize; i++ {
+		scratch.distTable[i] = INF
+		scratch.headTable[i] = -1
+	}
+
+	// 初期状態の設定
+	scratch.distTable[0*N+startIdx] = 0
+
+	if N <= 500 {
+		// CSR と Local Matrix の構築 (アロケーションフリー)
+		edgeCount := 0
+		scratch.adjHead[0] = 0
+
+		for uIdx := 0; uIdx < N; uIdx++ {
+			currID := candStations[uIdx]
+			baseIdx := int32(mIdx)*u.numStations*u.numStations + int32(currID)*u.numStations
+			uOffset := uIdx * N
+
+			for vIdx := 0; vIdx < N; vIdx++ {
+				if uIdx == vIdx {
+					scratch.localFares[uOffset+vIdx] = 0
+					continue
+				}
+
+				nextID := candStations[vIdx]
+				fareVal := int(u.fares[baseIdx+int32(nextID)])
+				scratch.localFares[uOffset+vIdx] = fareVal
+
+				if fareVal > 0 {
+					scratch.adjEdges[edgeCount] = int32(vIdx)
+					edgeCount++
+				}
 			}
+			scratch.adjHead[uIdx+1] = int32(edgeCount)
+		}
 
-			// ループ内の分岐1: 経路全体が特例に含まれる場合
-			// すでに近道ルート（特例運賃）自体の追加はステップ1で済んでいるため、
-			// ここでは「元の経路（遠回り等）をそのままの状態で評価する」ためのフラグのみを立て、
-			// 無駄な expandPath（分岐2などへの波及）を打ち切る。
-			if (startOnDetour || endOnDetour) && u.isEntirelyOnRule(path, rule) {
-				isFullyEnclosedInRule = true
-				break
-			}
+		// BCE (Bounds Check Elimination) 用ダミーアクセス
+		_ = scratch.distTable[maxK*N+N-1]
+		_ = scratch.headTable[maxK*N+N-1]
+		_ = scratch.localFares[N*N-1]
+		_ = scratch.adjHead[N]
+		if edgeCount > 0 {
+			_ = scratch.adjEdges[edgeCount-1]
+		}
 
-			// 分岐2: 発着駅が遠回り上にあるが、完全に内包されていない場合（オーバーシュート）
-			if (startOnDetour || endOnDetour) && startIdx == -1 {
-				extPath, extLocked := u.buildOvershootPath(path, locked, rule)
-				if extPath != nil {
-					segmentsCombos := u.expandPath(extPath, extLocked, rules)
-					for _, segments := range segmentsCombos {
-						tasks = append(tasks, EvaluationTask{Segments: segments})
+		// 多ステージ DP 遷移 (CSR + Local Matrix 形式)
+		for s := 0; s < maxK; s++ {
+			for uIdx := 0; uIdx < N; uIdx++ {
+				currCost := scratch.distTable[s*N+uIdx]
+				if currCost == INF {
+					continue
+				}
+
+				startEdgeIdx := int(scratch.adjHead[uIdx])
+				endEdgeIdx := int(scratch.adjHead[uIdx+1])
+				uOffset := uIdx * N
+
+				for e := startEdgeIdx; e < endEdgeIdx; e++ {
+					vIdx := int(scratch.adjEdges[e])
+					fareVal := scratch.localFares[uOffset+vIdx]
+
+					newCost := currCost + fareVal
+					targetIdx := (s+1)*N + vIdx
+
+					if newCost < scratch.distTable[targetIdx] {
+						scratch.distTable[targetIdx] = newCost
+
+						if scratch.nodeCount >= len(scratch.nodes) {
+							newNodes := make([]staticListNode, len(scratch.nodes)*2)
+							copy(newNodes, scratch.nodes)
+							scratch.nodes = newNodes
+						}
+
+						scratch.nodes[scratch.nodeCount] = staticListNode{
+							parentIdx: uIdx,
+							sections:  s,
+							next:      -1,
+						}
+						scratch.headTable[targetIdx] = scratch.nodeCount
+						scratch.nodeCount++
+					} else if newCost == scratch.distTable[targetIdx] {
+						if scratch.nodeCount >= len(scratch.nodes) {
+							newNodes := make([]staticListNode, len(scratch.nodes)*2)
+							copy(newNodes, scratch.nodes)
+							scratch.nodes = newNodes
+						}
+
+						scratch.nodes[scratch.nodeCount] = staticListNode{
+							parentIdx: uIdx,
+							sections:  s,
+							next:      scratch.headTable[targetIdx],
+						}
+						scratch.headTable[targetIdx] = scratch.nodeCount
+						scratch.nodeCount++
 					}
 				}
 			}
 		}
+	} else {
+		// フォールバック: N > 500 の場合の直接参照方式
+		for s := 0; s < maxK; s++ {
+			for uIdx := 0; uIdx < N; uIdx++ {
+				currCost := scratch.distTable[s*N+uIdx]
+				if currCost == INF {
+					continue
+				}
 
-		// 経路全体が特例ルールの内部に収まっていた経路は、そのまま追加（分割許可）
-		if isFullyEnclosedInRule {
-			tasks = append(tasks, EvaluationTask{
-				Segments: []RouteSegment{{Path: path, Locked: locked}},
-			})
-			continue
-		}
+				currID := candStations[uIdx]
+				baseIdx := int32(mIdx)*u.numStations*u.numStations + int32(currID)*u.numStations
 
-		// 上記以外（通常の経路やオーバーシュートを含む経路）の展開
-		segmentsCombos := u.expandPath(path, locked, rules)
-		for _, segments := range segmentsCombos {
-			tasks = append(tasks, EvaluationTask{Segments: segments})
-		}
-	}
+				for vIdx := 0; vIdx < N; vIdx++ {
+					if uIdx == vIdx {
+						continue
+					}
 
-	return tasks
-}
+					nextID := candStations[vIdx]
+					idx := baseIdx + int32(nextID)
+					fareVal := int(u.fares[idx])
+					if fareVal <= 0 {
+						continue
+					}
 
-// buildOvershootPath は発着駅が遠回り上にある場合、分岐駅まで延長した経路と locked を生成します（分岐2用）。
-func (u *SearchOptimalSplit) buildOvershootPath(path []int, locked []bool, rule domain.ResolvedBypassRule) ([]int, []bool) {
-	// 始点のオーバーシュート判定
-	for i := 1; i < len(rule.DetourPath)-1; i++ {
-		suffix := rule.DetourPath[i:]
-		if len(path) >= len(suffix) && u.isMatch(path[:len(suffix)], suffix) {
-			newPath := make([]int, 0, len(rule.ShortcutPath)+len(path)-len(suffix))
-			newLocked := make([]bool, 0, cap(newPath))
+					newCost := currCost + fareVal
+					targetIdx := (s+1)*N + vIdx
 
-			newPath = append(newPath, rule.ShortcutPath...)
-			newLocked = append(newLocked, makeShortcutLocked(rule.ShortcutPath)...)
+					if newCost < scratch.distTable[targetIdx] {
+						scratch.distTable[targetIdx] = newCost
 
-			newPath = append(newPath, path[len(suffix):]...)
-			newLocked = append(newLocked, locked[len(suffix):]...)
+						if scratch.nodeCount >= len(scratch.nodes) {
+							newNodes := make([]staticListNode, len(scratch.nodes)*2)
+							copy(newNodes, scratch.nodes)
+							scratch.nodes = newNodes
+						}
 
-			return newPath, newLocked
-		}
-	}
+						scratch.nodes[scratch.nodeCount] = staticListNode{
+							parentIdx: uIdx,
+							sections:  s,
+							next:      -1,
+						}
+						scratch.headTable[targetIdx] = scratch.nodeCount
+						scratch.nodeCount++
+					} else if newCost == scratch.distTable[targetIdx] {
+						if scratch.nodeCount >= len(scratch.nodes) {
+							newNodes := make([]staticListNode, len(scratch.nodes)*2)
+							copy(newNodes, scratch.nodes)
+							scratch.nodes = newNodes
+						}
 
-	// 終点のオーバーシュート判定
-	for i := 1; i < len(rule.DetourPath)-1; i++ {
-		prefix := rule.DetourPath[:i+1]
-		if len(path) >= len(prefix) {
-			startMatchIdx := len(path) - len(prefix)
-			if u.isMatch(path[startMatchIdx:], prefix) {
-				newPath := make([]int, 0, startMatchIdx+len(rule.ShortcutPath))
-				newLocked := make([]bool, 0, cap(newPath))
-
-				newPath = append(newPath, path[:startMatchIdx]...)
-				newLocked = append(newLocked, locked[:startMatchIdx]...)
-
-				newPath = append(newPath, rule.ShortcutPath...)
-				newLocked = append(newLocked, makeShortcutLocked(rule.ShortcutPath)...)
-
-				return newPath, newLocked
-			}
-		}
-	}
-
-	return nil, nil
-}
-
-// expandPath は経路内の遠回り区間を再帰的に展開し、強制分割の全組み合わせを返します。
-func (u *SearchOptimalSplit) expandPath(path []int, locked []bool, rules []domain.ResolvedBypassRule) [][]RouteSegment {
-	for _, rule := range rules {
-		startIdx, _ := u.findSubPath(path, rule.DetourPath)
-		if startIdx == -1 {
-			continue
-		}
-
-		detourMiddleCount := len(rule.DetourPath) - 2
-		if detourMiddleCount <= 0 {
-			continue
-		}
-
-		var results [][]RouteSegment
-
-		splitCandidates := make([]int, detourMiddleCount)
-		for i := range splitCandidates {
-			splitCandidates[i] = startIdx + 1 + i
-		}
-		sort.Ints(splitCandidates)
-
-		for _, splitIdx := range splitCandidates {
-			leftPath := make([]int, splitIdx+1)
-			copy(leftPath, path[:splitIdx+1])
-			leftLocked := make([]bool, splitIdx+1)
-			copy(leftLocked, locked[:splitIdx+1])
-
-			rightPath := make([]int, len(path)-splitIdx)
-			copy(rightPath, path[splitIdx:])
-			rightLocked := make([]bool, len(path)-splitIdx)
-			copy(rightLocked, locked[splitIdx:])
-
-			leftExpanded := u.expandPath(leftPath, leftLocked, rules)
-			rightExpanded := u.expandPath(rightPath, rightLocked, rules)
-
-			for _, l := range leftExpanded {
-				for _, r := range rightExpanded {
-					combined := make([]RouteSegment, 0, len(l)+len(r))
-					combined = append(combined, l...)
-					combined = append(combined, r...)
-					results = append(results, combined)
+						scratch.nodes[scratch.nodeCount] = staticListNode{
+							parentIdx: uIdx,
+							sections:  s,
+							next:      scratch.headTable[targetIdx],
+						}
+						scratch.headTable[targetIdx] = scratch.nodeCount
+						scratch.nodeCount++
+					}
 				}
 			}
 		}
-
-		return results
 	}
 
-	return [][]RouteSegment{{{Path: path, Locked: locked}}}
-}
+	// 最小コストの探索
+	minCostToEnd := INF
+	for s := 1; s <= maxK; s++ {
+		cost := scratch.distTable[s*N+endIdx]
+		if cost < minCostToEnd {
+			minCostToEnd = cost
+		}
+	}
 
-func (u *SearchOptimalSplit) evaluateTasks(tasks []EvaluationTask, months int) ([]SplitResult, error) {
-	var allPatterns []SplitResult
+	if minCostToEnd == INF {
+		return nil, domain.ErrNoValidPattern
+	}
 
-	for _, task := range tasks {
-		var taskTotalAmount int
-		var taskSegments []SplitSegment
-		isValidTask := true
+	// 最安コストを達成する状態からバックトラックして全経路を抽出
+	var optimalPaths [][]int
+	for s := 1; s <= maxK; s++ {
+		if scratch.distTable[s*N+endIdx] == minCostToEnd {
+			u.backtrackZeroAlloc(endIdx, s, scratch, 0, startIdx, candStations, N, &optimalPaths)
+		}
+	}
 
-		for _, seg := range task.Segments {
-			results, err := u.split.Execute(seg.Path, months, seg.Locked)
+	if len(optimalPaths) == 0 {
+		return nil, domain.ErrNoValidPattern
+	}
+
+	// 各パスについて、セグメントの実際の中間経路を動的に復元
+	var results []SplitResult
+	for _, path := range optimalPaths {
+		var segments []SplitSegment
+		isValid := true
+		for i := 0; i < len(path)-1; i++ {
+			seg, err := u.getCheapestNoSplitSegment(path[i], path[i+1], months)
 			if err != nil {
-				if errors.Is(err, domain.ErrInvalidPath) {
-					isValidTask = false
-					break
-				}
-				return nil, fmt.Errorf("evaluateTasks: %w", err)
+				isValid = false
+				break
 			}
-			bestForSeg := results[0]
-			taskTotalAmount += bestForSeg.TotalAmount
-			taskSegments = append(taskSegments, bestForSeg.Segments...)
+			segments = append(segments, seg)
 		}
-
-		if isValidTask {
-			allPatterns = append(allPatterns, SplitResult{
-				TotalAmount: taskTotalAmount,
-				Segments:    taskSegments,
+		if isValid {
+			results = append(results, SplitResult{
+				TotalAmount: minCostToEnd,
+				Segments:    segments,
 			})
 		}
 	}
 
-	if len(allPatterns) == 0 {
-		return nil, fmt.Errorf("searchOptimalSplit: %w", domain.ErrNoValidPattern)
+	if len(results) == 0 {
+		return nil, domain.ErrNoValidPattern
 	}
-	return allPatterns, nil
+
+	return results, nil
 }
 
-func (u *SearchOptimalSplit) filterGlobalOptimal(patterns []SplitResult) []SplitResult {
-	if len(patterns) == 0 {
+func (u *SearchOptimalSplit) backtrackZeroAlloc(
+	currIdx, currS int,
+	scratch *dpScratch,
+	depth int,
+	startIdx int,
+	candStations []int,
+	N int,
+	optimalPaths *[][]int,
+) {
+	if depth >= len(scratch.pathBuf) {
+		return
+	}
+	scratch.pathBuf[depth] = candStations[currIdx]
+
+	if currIdx == startIdx && currS == 0 {
+		path := make([]int, depth+1)
+		for i := 0; i <= depth; i++ {
+			path[i] = scratch.pathBuf[depth-i]
+		}
+		*optimalPaths = append(*optimalPaths, path)
+		return
+	}
+
+	targetIdx := currS*N + currIdx
+	nodeIdx := scratch.headTable[targetIdx]
+	for nodeIdx != -1 {
+		node := scratch.nodes[nodeIdx]
+		u.backtrackZeroAlloc(node.parentIdx, node.sections, scratch, depth+1, startIdx, candStations, N, optimalPaths)
+		nodeIdx = node.next
+	}
+}
+
+func (u *SearchOptimalSplit) getCheapestNoSplitSegment(start, end, months int) (SplitSegment, error) {
+	cands, err := u.getNoSplitCandidates(start, end)
+	if err != nil || len(cands) == 0 {
+		return SplitSegment{}, domain.ErrInvalidPath
+	}
+
+	minFare := math.MaxInt
+	var bestPath []int
+	var bestResult *CalculationResult
+
+	for _, path := range cands {
+		res, err := u.split.calc.Execute(path, months)
+		if err != nil {
+			continue
+		}
+		if res.TotalAmount() < minFare {
+			minFare = res.TotalAmount()
+			bestPath = path
+			bestResult = res
+		}
+	}
+
+	if minFare == math.MaxInt {
+		return SplitSegment{}, domain.ErrInvalidPath
+	}
+
+	return SplitSegment{
+		Path:   bestPath,
+		Result: bestResult,
+	}, nil
+}
+
+func reconstructPathFromFlat(prev []int16, numStations, start, end int) []int {
+	if len(prev) == 0 || end < 0 || end >= numStations {
+		if start == end {
+			return []int{start}
+		}
 		return nil
 	}
-	minAmount := math.MaxInt
-	for _, p := range patterns {
-		if p.TotalAmount < minAmount {
-			minAmount = p.TotalAmount
-		}
+	idx := start*numStations + end
+	if prev[idx] == -1 && start != end {
+		return nil
 	}
-	var optimalPatterns []SplitResult
-	for _, p := range patterns {
-		if p.TotalAmount == minAmount {
-			optimalPatterns = append(optimalPatterns, p)
+
+	path := make([]int, 0, 32)
+	curr := end
+	loopCount := 0
+	for curr != start {
+		if curr == -1 || loopCount > numStations {
+			return nil
 		}
+		path = append(path, curr)
+		curr = int(prev[start*numStations+curr])
+		loopCount++
 	}
-	return optimalPatterns
+	path = append(path, start)
+
+	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
+		path[i], path[j] = path[j], path[i]
+	}
+	return path
 }
 
-// isEntirelyOnRule は経路の全駅が特例の近道・遠回りのいずれかに含まれているかを判定します（分岐1用）。
-func (u *SearchOptimalSplit) isEntirelyOnRule(path []int, rule domain.ResolvedBypassRule) bool {
-	for _, stationID := range path {
-		if !u.containsStation(rule.ShortcutPath, stationID) && !u.containsStation(rule.DetourPath, stationID) {
-			return false
+func (u *SearchOptimalSplit) getNoSplitCandidates(start, end int) ([][]int, error) {
+	rg := u.graph
+	numStations := int(u.numStations)
+
+	var cands [][]int
+
+	// ① 最短営業キロ経路
+	var pathEigyo []int
+	if len(rg.PrevEigyo) > 0 {
+		pathEigyo = reconstructPathFromFlat(rg.PrevEigyo, numStations, start, end)
+	} else {
+		_, prevEigyo := rg.FindAllShortestPathsEigyo(start)
+		pathEigyo = reconstructPath(prevEigyo, start, end)
+	}
+	if len(pathEigyo) >= 2 {
+		cands = append(cands, pathEigyo)
+	}
+
+	// ② 最短擬制キロ経路
+	var pathGisei []int
+	if len(rg.PrevGisei) > 0 {
+		pathGisei = reconstructPathFromFlat(rg.PrevGisei, numStations, start, end)
+	} else {
+		_, prevGisei := rg.FindAllShortestPathsGisei(start)
+		pathGisei = reconstructPath(prevGisei, start, end)
+	}
+	if len(pathGisei) >= 2 {
+		cands = append(cands, pathGisei)
+	}
+
+	// ③ 経路全体が1つの特例に含まれる場合のみ、近道の経路
+	for _, rule := range u.rules {
+		aOnRule := u.containsStation(rule.ShortcutPath, start) || u.containsStation(rule.DetourPath, start)
+		bOnRule := u.containsStation(rule.ShortcutPath, end) || u.containsStation(rule.DetourPath, end)
+		if aOnRule && bOnRule {
+			aOnDetourMiddle := u.isOnDetourMiddle(start, rule)
+			bOnDetourMiddle := u.isOnDetourMiddle(end, rule)
+			if aOnDetourMiddle || bOnDetourMiddle {
+				shortcutPath := make([]int, len(rule.ShortcutPath))
+				copy(shortcutPath, rule.ShortcutPath)
+				cands = append(cands, shortcutPath)
+			}
 		}
 	}
-	return true
-}
 
-// isOnDetourMiddle は駅IDが遠回りルールの中間駅（分岐駅を除く）に含まれるかを返します。
-func (u *SearchOptimalSplit) isOnDetourMiddle(stationID int, rule domain.ResolvedBypassRule) bool {
-	for i := 1; i < len(rule.DetourPath)-1; i++ {
-		if rule.DetourPath[i] == stationID {
-			return true
+	// ④ 発着駅が遠回り上にあるが、完全に内包されていない場合、経由していない方の分岐駅まで特例の近道経路（オーバーシュート）
+	for _, rule := range u.rules {
+		startOnDetour := u.isOnDetourMiddle(start, rule)
+		endOnDetour := u.isOnDetourMiddle(end, rule)
+
+		if startOnDetour {
+			// Option A: J1 から進入
+			pathJ2ToEnd, err := rg.FindShortestPathGisei(rule.ShortcutPath[len(rule.ShortcutPath)-1], end)
+			if err == nil && len(pathJ2ToEnd.StationIDs) >= 2 {
+				cand := append([]int(nil), rule.ShortcutPath...)
+				cand = append(cand, pathJ2ToEnd.StationIDs[1:]...)
+				cands = append(cands, cand)
+			}
+
+			// Option B: J2 から進入
+			pathJ1ToEnd, err := rg.FindShortestPathGisei(rule.ShortcutPath[0], end)
+			if err == nil && len(pathJ1ToEnd.StationIDs) >= 2 {
+				revShortcut := reverseSlice(rule.ShortcutPath)
+				cand := append([]int(nil), revShortcut...)
+				cand = append(cand, pathJ1ToEnd.StationIDs[1:]...)
+				cands = append(cands, cand)
+			}
+		}
+
+		if endOnDetour {
+			// Option A: J1 から退出
+			pathStartToJ1, err := rg.FindShortestPathGisei(start, rule.ShortcutPath[0])
+			if err == nil && len(pathStartToJ1.StationIDs) >= 2 {
+				cand := append([]int(nil), pathStartToJ1.StationIDs...)
+				cand = append(cand, rule.ShortcutPath[1:]...)
+				cands = append(cands, cand)
+			}
+
+			// Option B: J2 から退出
+			pathStartToJ2, err := rg.FindShortestPathGisei(start, rule.ShortcutPath[len(rule.ShortcutPath)-1])
+			if err == nil && len(pathStartToJ2.StationIDs) >= 2 {
+				revShortcut := reverseSlice(rule.ShortcutPath)
+				cand := append([]int(nil), pathStartToJ2.StationIDs...)
+				cand = append(cand, revShortcut[1:]...)
+				cands = append(cands, cand)
+			}
 		}
 	}
-	return false
+
+	return cands, nil
 }
 
-// containsStation は経路内に指定の駅IDが含まれるかを返します。
+func reconstructPath(prev []int, start, end int) []int {
+	if prev == nil || end < 0 || end >= len(prev) || prev[end] == -1 {
+		if start == end {
+			return []int{start}
+		}
+		return nil
+	}
+	path := []int{}
+	for i := end; i != -1; i = prev[i] {
+		path = append(path, i)
+	}
+	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
+		path[i], path[j] = path[j], path[i]
+	}
+	return path
+}
+
 func (u *SearchOptimalSplit) containsStation(path []int, stationID int) bool {
 	for _, id := range path {
 		if id == stationID {
@@ -413,64 +752,26 @@ func (u *SearchOptimalSplit) containsStation(path []int, stationID int) bool {
 	return false
 }
 
-// indexOf はスライス内の要素のインデックスを返します。見つからない場合は -1 を返します。
-func (u *SearchOptimalSplit) indexOf(path []int, stationID int) int {
-	for i, id := range path {
-		if id == stationID {
-			return i
+func (u *SearchOptimalSplit) isOnDetourMiddle(stationID int, rule domain.ResolvedBypassRule) bool {
+	for i := 1; i < len(rule.DetourPath)-1; i++ {
+		if rule.DetourPath[i] == stationID {
+			return true
 		}
 	}
-	return -1
+	return false
 }
 
-// makeShortcutLocked は近道ルートの駅をロック状態に設定する純粋関数です。
-func makeShortcutLocked(shortcutPath []int) []bool {
-	locked := make([]bool, len(shortcutPath))
-	for k := 1; k < len(shortcutPath)-1; k++ {
-		locked[k] = true
-	}
-	return locked
-}
-
-// findSubPath は2つのスライス間の部分一致を検索し、開始インデックスと終了インデックスを返します。見つからない場合は (-1, -1) を返します。
-func (u *SearchOptimalSplit) findSubPath(a, b []int) (int, int) {
-	if len(b) == 0 || len(a) < len(b) {
-		return -1, -1
-	}
-	for i := 0; i <= len(a)-len(b); i++ {
-		if u.isMatch(a[i:i+len(b)], b) {
-			return i, i + len(b) - 1
-		}
-	}
-	return -1, -1
-}
-
-func (u *SearchOptimalSplit) isMatch(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-// makeUniqueBidirectionalRules は双方向ルールを生成しつつ、重複を完全に排除する純粋関数です。
 func makeUniqueBidirectionalRules(rules []domain.ResolvedBypassRule) []domain.ResolvedBypassRule {
 	var biRules []domain.ResolvedBypassRule
 	seen := make(map[string]bool)
 
 	for _, r := range rules {
-		// 順方向
 		fwdKey := generateRuleKey(r.ShortcutPath, r.DetourPath)
 		if !seen[fwdKey] {
 			seen[fwdKey] = true
 			biRules = append(biRules, r)
 		}
 
-		// 逆方向
 		revShortcut := reverseSlice(r.ShortcutPath)
 		revDetour := reverseSlice(r.DetourPath)
 		revKey := generateRuleKey(revShortcut, revDetour)
@@ -486,22 +787,18 @@ func makeUniqueBidirectionalRules(rules []domain.ResolvedBypassRule) []domain.Re
 	return biRules
 }
 
-// generateRuleKey は衝突を防ぐための安全なキー生成関数です。
 func generateRuleKey(shortcut, detour []int) string {
 	var sb strings.Builder
 	sb.Grow((len(shortcut) + len(detour)) * 5)
 
-	// スタック上に一時バッファを確保（64bit整数の最大桁数20バイトで十分）
-	// ※ヒープではなくスタックに置かれるためアロケーションコストはゼロです
 	var buf [20]byte
 
 	for i, id := range shortcut {
 		if i > 0 {
 			sb.WriteByte(',')
 		}
-		// buf[:0]（容量20の空スライス）に数値を文字データとして追記
 		b := strconv.AppendInt(buf[:0], int64(id), 10)
-		sb.Write(b) // Builderの内部バッファへ直接コピー（文字列化を経由しない）
+		sb.Write(b)
 	}
 
 	sb.WriteByte('|')
@@ -517,11 +814,43 @@ func generateRuleKey(shortcut, detour []int) string {
 	return sb.String()
 }
 
-// reverseSlice はスライスを反転する純粋関数です。
 func reverseSlice(s []int) []int {
 	res := make([]int, len(s))
 	for i, v := range s {
 		res[len(s)-1-i] = v
 	}
 	return res
+}
+
+// RunBenchmarkDPForTest は外部ベンチマークテストから内部DP処理を直接実行するためのテスト専用メソッドです。
+func (u *SearchOptimalSplit) RunBenchmarkDPForTest(startID, endID, months int, maxSections int, candStations []int, scratch interface{}) error {
+	sc := scratch.(*dpScratch)
+	_, err := u.searchOptimalSplitDP(startID, endID, months, maxSections, candStations, sc)
+	return err
+}
+
+// GetDPScratchForTest は内部の dpScratchPool から scratch 領域を取得します。
+func GetDPScratchForTest() interface{} {
+	return dpScratchPool.Get()
+}
+
+// PutDPScratchForTest は scratch 領域を dpScratchPool に戻します。
+func PutDPScratchForTest(scratch interface{}) {
+	dpScratchPool.Put(scratch)
+}
+
+// EnsureSizeForTest は scratch のサイズを確認・確保します。
+func EnsureSizeForTest(scratch interface{}, numStations, maxK, numCandidates int) {
+	sc := scratch.(*dpScratch)
+	sc.ensureSize(numStations, maxK, numCandidates)
+}
+
+// GetCandFlagsForTest は scratch の candFlags スライスを返します。
+func GetCandFlagsForTest(scratch interface{}) []bool {
+	return scratch.(*dpScratch).candFlags
+}
+
+// GetCandStationsBufForTest は scratch の candStationsBuf スライスを返します。
+func GetCandStationsBufForTest(scratch interface{}) []int {
+	return scratch.(*dpScratch).candStationsBuf
 }

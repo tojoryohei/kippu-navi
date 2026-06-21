@@ -20,6 +20,7 @@ type StationProvider interface {
 	GetID(name string) (int, bool)
 	GetName(id int) string
 	NumStations() int
+	GetGroupID(id int) int
 }
 
 // TopologyProvider は駅間の接続情報を取得するためのインターフェースです。
@@ -30,7 +31,6 @@ type TopologyProvider interface {
 // PathFinder はグラフ上の経路探索を行うためのインターフェースです。
 type PathFinder interface {
 	FindShortestPathGisei(startID, endID int) (*PathResult, error)
-	FindAllCandidatePaths(startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error)
 }
 
 // Graph は駅データとネットワーク構造を統合して管理するためのインターフェースです。
@@ -45,6 +45,11 @@ type Graph interface {
 type RailwayGraph struct {
 	*FastGraph
 	*StationNameIDMapper
+	GroupIDs  []int // 連結成分ごとのグループID
+	PrevGisei []int16
+	PrevEigyo []int16
+	DistGisei []uint16
+	DistEigyo []uint16
 }
 
 // NewGraph は空のグラフインスタンスを作成します。
@@ -53,6 +58,15 @@ func NewGraph(numStations int) *RailwayGraph {
 		FastGraph:           NewFastGraph(numStations),
 		StationNameIDMapper: NewStationNameIDMapper(),
 	}
+}
+
+// GetGroupID は指定された駅IDのグループIDを返します。
+// 設定されていない場合や範囲外の場合はデフォルト値として 1 を返します。
+func (g *RailwayGraph) GetGroupID(id int) int {
+	if g.GroupIDs == nil || id < 0 || id >= len(g.GroupIDs) {
+		return 1 // ベースグラフなどのデフォルト挙動
+	}
+	return g.GroupIDs[id]
 }
 
 // NewFastGraph は指定された駅数の容量を持つ新しい FastGraph インスタンスを作成します。

@@ -10,4 +10,5 @@ type Edge struct {
 	Company                CompanyID
 	IsTrainSpecificSection bool
 	IsBarrierFreeSection   bool
+	IsIcPassArea           bool
 }

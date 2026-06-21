@@ -46,7 +46,7 @@ func (pq *priorityQueue) Pop() interface{} {
 	return item
 }
 
-// FindShortestPathGisei はダイクストラ法を用いて最短擬制キロ経路を検索します。
+// FindShortestPathGisei はダイクストラ法を用いて最短擬制キロ経路を検索します（事前計算データがあればダイクストラを回避します）。
 func (g *RailwayGraph) FindShortestPathGisei(startID, endID int) (*PathResult, error) {
 	if startID < 0 || startID >= len(g.IDToName) {
 		return nil, fmt.Errorf("FindShortestPathGisei: %w: ID %d", domain.ErrStationNotFound, startID)
@@ -56,11 +56,44 @@ func (g *RailwayGraph) FindShortestPathGisei(startID, endID int) (*PathResult, e
 	}
 
 	numStations := len(g.IDToName)
+
+	if len(g.PrevGisei) > 0 && len(g.DistGisei) > 0 && len(g.DistEigyo) > 0 {
+		idx := startID*numStations + endID
+		if g.PrevGisei[idx] == -1 && startID != endID {
+			return nil, ErrPathNotFound
+		}
+
+		// 経路復元 (逆順トラバース)
+		path := make([]int, 0, 64)
+		curr := endID
+		loopCount := 0
+		for curr != startID {
+			if curr == -1 || loopCount > numStations {
+				return nil, ErrPathNotFound
+			}
+			path = append(path, curr)
+			curr = int(g.PrevGisei[startID*numStations+curr])
+			loopCount++
+		}
+		path = append(path, startID)
+
+		// 逆順に並び替え
+		for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
+			path[i], path[j] = path[j], path[i]
+		}
+
+		return &PathResult{
+			StationIDs: path,
+			GiseiKilo:  domain.DeciKilo(g.DistGisei[idx]),
+			EigyoKilo:  domain.DeciKilo(g.DistEigyo[idx]),
+		}, nil
+	}
+
 	dist := make([]domain.DeciKilo, numStations)
 	eigyoDist := make([]domain.DeciKilo, numStations)
 	prev := make([]int, numStations)
 	for i := range dist {
-		dist[i] = domain.DeciKilo(1<<31 - 1) // math.MaxInt32
+		dist[i] = domain.DeciKilo(65535)
 		prev[i] = -1
 	}
 
@@ -107,64 +140,128 @@ func (g *RailwayGraph) FindShortestPathGisei(startID, endID int) (*PathResult, e
 	}, nil
 }
 
-// FindAllCandidatePaths は指定された最短擬制キロ以内に収まる全ての合理的な経路を探索します。
-// これにより、分割購入で安くなる可能性がある経路を網羅します。
-func (g *RailwayGraph) FindAllCandidatePaths(startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
-	if startID < 0 || startID >= len(g.IDToName) {
-		return nil, fmt.Errorf("FindAllCandidatePaths: %w: ID %d", domain.ErrStationNotFound, startID)
+// FindAllShortestPathsGisei はダイクストラ法を用いて、開始駅から他のすべての駅への最短擬制キロ経路の距離と前移行配列を求めます（事前計算データがあればダイクストラを回避します）。
+func (g *RailwayGraph) FindAllShortestPathsGisei(startID int) ([]domain.DeciKilo, []int) {
+	numStations := len(g.IDToName)
+
+	if len(g.PrevGisei) > 0 && len(g.DistGisei) > 0 {
+		dist := make([]domain.DeciKilo, numStations)
+		prev := make([]int, numStations)
+		startIdx := startID * numStations
+		for i := 0; i < numStations; i++ {
+			dist[i] = domain.DeciKilo(g.DistGisei[startIdx+i])
+			prev[i] = int(g.PrevGisei[startIdx+i])
+		}
+		return dist, prev
 	}
-	if endID < 0 || endID >= len(g.IDToName) {
-		return nil, fmt.Errorf("FindAllCandidatePaths: %w: ID %d", domain.ErrStationNotFound, endID)
+
+	dist := make([]domain.DeciKilo, numStations)
+	prev := make([]int, numStations)
+	for i := range dist {
+		dist[i] = domain.DeciKilo(65535)
+		prev[i] = -1
 	}
 
-	var results []*PathResult
-	visited := make([]bool, len(g.IDToName))
+	dist[startID] = 0
+	pq := &priorityQueue{}
+	heap.Init(pq)
+	heap.Push(pq, &node{stationID: startID, giseiKilo: 0})
 
-	// 探索中の状態を保持するスタック用の変数
-	currentPath := []int{startID}
-	visited[startID] = true
+	for pq.Len() > 0 {
+		curr := heap.Pop(pq).(*node)
 
-	var dfs func(currID int, currGisei, currEigyo domain.DeciKilo)
-	dfs = func(currID int, currGisei, currEigyo domain.DeciKilo) {
-		// 目的地に到達
-		if currID == endID {
-			pathIDs := make([]int, len(currentPath))
-			copy(pathIDs, currentPath)
-			results = append(results, &PathResult{
-				StationIDs: pathIDs,
-				GiseiKilo:  currGisei,
-				EigyoKilo:  currEigyo,
-			})
-			return
+		if curr.giseiKilo > dist[curr.stationID] {
+			continue
 		}
 
-		// 隣接駅を探索
-		for _, edge := range g.Edges[currID] {
-			nextID := edge.ToID
-			nextGisei := currGisei + edge.GiseiKilo
-			nextEigyo := currEigyo + edge.EigyoKilo
-
-			// 枝切り条件:
-			// 1. 既に訪問済み（ループ防止）
-			// 2. 累積擬制キロが制限(maxGisei)を超過
-			if !visited[nextID] && nextGisei <= maxGisei {
-				visited[nextID] = true
-				currentPath = append(currentPath, nextID)
-
-				dfs(nextID, nextGisei, nextEigyo)
-
-				// バックトラッキング
-				currentPath = currentPath[:len(currentPath)-1]
-				visited[nextID] = false
+		for _, edge := range g.Edges[curr.stationID] {
+			newDist := dist[curr.stationID] + edge.GiseiKilo
+			if newDist < dist[edge.ToID] {
+				dist[edge.ToID] = newDist
+				prev[edge.ToID] = curr.stationID
+				heap.Push(pq, &node{stationID: edge.ToID, giseiKilo: newDist})
 			}
 		}
 	}
+	return dist, prev
+}
 
-	dfs(startID, 0, 0)
+type nodeEigyo struct {
+	stationID int
+	eigyoKilo domain.DeciKilo
+	index     int
+}
 
-	if len(results) == 0 {
-		return nil, ErrNoCandidatePaths
+type priorityQueueEigyo []*nodeEigyo
+
+func (pq priorityQueueEigyo) Len() int           { return len(pq) }
+func (pq priorityQueueEigyo) Less(i, j int) bool { return pq[i].eigyoKilo < pq[j].eigyoKilo }
+func (pq priorityQueueEigyo) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+	pq[i].index = i
+	pq[j].index = j
+}
+func (pq *priorityQueueEigyo) Push(x interface{}) {
+	n := len(*pq)
+	item := x.(*nodeEigyo)
+	item.index = n
+	*pq = append(*pq, item)
+}
+func (pq *priorityQueueEigyo) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	old[n-1] = nil
+	item.index = -1
+	*pq = old[0 : n-1]
+	return item
+}
+
+// FindAllShortestPathsEigyo はダイクストラ法を用いて、開始駅から他のすべての駅への最短営業キロ経路の距離と前移行配列を求めます（事前計算データがあればダイクストラを回避します）。
+func (g *RailwayGraph) FindAllShortestPathsEigyo(startID int) ([]domain.DeciKilo, []int) {
+	numStations := len(g.IDToName)
+
+	if len(g.PrevEigyo) > 0 && len(g.DistEigyo) > 0 {
+		dist := make([]domain.DeciKilo, numStations)
+		prev := make([]int, numStations)
+		startIdx := startID * numStations
+		for i := 0; i < numStations; i++ {
+			dist[i] = domain.DeciKilo(g.DistEigyo[startIdx+i])
+			prev[i] = int(g.PrevEigyo[startIdx+i])
+		}
+		return dist, prev
 	}
 
-	return results, nil
+	dist := make([]domain.DeciKilo, numStations)
+	prev := make([]int, numStations)
+	for i := range dist {
+		dist[i] = domain.DeciKilo(65535)
+		prev[i] = -1
+	}
+
+	dist[startID] = 0
+	pq := &priorityQueueEigyo{}
+	heap.Init(pq)
+	heap.Push(pq, &nodeEigyo{stationID: startID, eigyoKilo: 0})
+
+	for pq.Len() > 0 {
+		curr := heap.Pop(pq).(*nodeEigyo)
+
+		if curr.eigyoKilo > dist[curr.stationID] {
+			continue
+		}
+
+		for _, edge := range g.Edges[curr.stationID] {
+			newDist := dist[curr.stationID] + edge.EigyoKilo
+			if newDist < dist[edge.ToID] {
+				dist[edge.ToID] = newDist
+				prev[edge.ToID] = curr.stationID
+				heap.Push(pq, &nodeEigyo{stationID: edge.ToID, eigyoKilo: newDist})
+			}
+		}
+	}
+	return dist, prev
 }
+
+
+

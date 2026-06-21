@@ -4,12 +4,13 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
 import { SearchOption, SearchType, SplitApiResponse, Station } from "@/app/types";
+import { calculateAction } from "@/app/split/actions";
 
 interface ExtendedSplitFormInput {
     startStation: Station | null;
@@ -28,12 +29,12 @@ interface SplitFormProps {
 
 const SEARCH_TYPE_OPTIONS: SearchOption[] = [
     { value: "ticket", label: "普通乗車券" },
-    { value: "pass1", label: "通勤１箇月" },
-    { value: "pass3", label: "通勤３箇月" },
-    { value: "pass6", label: "通勤６箇月" },
+    { value: "pass1", label: "通勤定期券１箇月" },
+    { value: "pass3", label: "通勤定期券３箇月" },
+    { value: "pass6", label: "通勤定期券６箇月" },
 ];
 
-export const TEMPORARY_STATIONS = [
+const TEMPORARY_STATIONS = [
     "原生花園",
     "ラベンダー畑",
     "細岡",
@@ -55,8 +56,22 @@ export default function SplitForm({
     serverTime: initialServerTime,
 }: SplitFormProps) {
     const router = useRouter();
+    const pathname = usePathname();
     const posthog = usePostHog();
     const [isPending, startTransition] = useTransition();
+
+    const isIcPass = pathname === "/split-icpass";
+
+    // ローカルでの計算結果・エラー・計測時間および検索タイプの管理State
+    const [isCalculating, setIsCalculating] = useState(false);
+    const [result, setResult] = useState<SplitApiResponse | null>(initialResult || null);
+    const [error, setError] = useState<string | null>(initialError || null);
+    const [serverTime, setServerTime] = useState<number | null>(initialServerTime || null);
+    const [searchedType, setSearchedType] = useState<SearchType>(
+        (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
+            ? initialSearchType
+            : (isIcPass ? "pass1" : "ticket")
+    );
 
     const lastTrackedSearch = useRef<string>("");
 
@@ -65,7 +80,7 @@ export default function SplitForm({
 
     const defaultSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
         ? initialSearchType
-        : "ticket";
+        : (isIcPass ? "pass1" : "ticket");
 
     const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, reset, trigger } = useForm<ExtendedSplitFormInput>({
         mode: "onChange",
@@ -81,39 +96,52 @@ export default function SplitForm({
         const endStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
         const currentSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
             ? initialSearchType
-            : "ticket";
+            : (isIcPass ? "pass1" : "ticket");
 
         reset({
             startStation,
             endStation,
             searchType: currentSearchType,
         });
-    }, [initialFrom, initialTo, initialSearchType, reset]);
+
+        // ページ遷移後にバリデーションを再実行する（例: 磁気定期券→IC定期券切替時のエリアチェック）
+        // reset() はバリデーションをトリガーしないため、明示的に trigger() を呼ぶ
+        if (startStation || endStation) {
+            // reset後にreact-hook-formの内部状態が更新されるのを待ってからtriggerする
+            setTimeout(() => {
+                trigger(["startStation", "endStation"]);
+            }, 0);
+        }
+    }, [initialFrom, initialTo, initialSearchType, isIcPass, reset, trigger]);
 
     // GA4 & PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
         if (typeof window === "undefined") return;
 
-        if (initialFrom && initialTo) {
-            const currentSearchKey = `${initialFrom}_${initialTo}_${initialSearchType || "ticket"}`;
+        const currentFrom = getValues("startStation")?.name;
+        const currentTo = getValues("endStation")?.name;
+        const currentSearchType = getValues("searchType") || "ticket";
+
+        if (currentFrom && currentTo) {
+            const currentSearchKey = `${currentFrom}_${currentTo}_${currentSearchType}`;
 
             // 同じ検索条件での重複送信を防止
             if (lastTrackedSearch.current !== currentSearchKey) {
                 // 1. 正常に計算結果が返ってきた場合
-                if (initialResult) {
-                    const normalFare = initialResult.cheapestKippuData?.fare || 0;
-                    const bestFare = initialResult.splitKippuDatasList?.length > 0
-                        ? initialResult.splitKippuDatasList[0].totalFare
+                if (result) {
+                    const normalFare = result.cheapestKippuData?.fare || 0;
+                    const bestFare = result.splitKippuDatasList?.length > 0
+                        ? result.splitKippuDatasList[0].totalFare
                         : normalFare;
 
                     const savedAmount = Math.max(0, normalFare - bestFare);
-                    const isSplitFound = savedAmount > 0;
+                    const isSaving = savedAmount > 0;
 
                     const eventParams = {
-                        search_type: initialSearchType || "ticket",
-                        from_station: initialFrom,
-                        to_station: initialTo,
-                        is_split_found: isSplitFound,
+                        search_type: currentSearchType,
+                        from_station: currentFrom,
+                        to_station: currentTo,
+                        is_saving: isSaving,
                         saved_amount: savedAmount
                     };
 
@@ -127,13 +155,13 @@ export default function SplitForm({
                     lastTrackedSearch.current = currentSearchKey;
                 }
                 // 2. エラーが返ってきた場合
-                else if (initialError) {
+                else if (error) {
                     const errorParams = {
-                        search_type: initialSearchType || "ticket",
-                        from_station: initialFrom,
-                        to_station: initialTo,
+                        search_type: currentSearchType,
+                        from_station: currentFrom,
+                        to_station: currentTo,
                         error_type: "calculation_error",
-                        error_message: initialError
+                        error_message: error
                     };
 
                     if (typeof window.gtag === "function") {
@@ -147,11 +175,12 @@ export default function SplitForm({
                 }
             }
         }
-    }, [initialFrom, initialTo, initialSearchType, initialResult, initialError, posthog]);
+    }, [result, error, posthog, getValues]);
 
-    const searchedTypeLabel = SEARCH_TYPE_OPTIONS.find(
-        o => o.value === ((initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6") ? initialSearchType : "ticket")
+    const baseLabel = SEARCH_TYPE_OPTIONS.find(
+        o => o.value === searchedType
     )?.label || "運賃";
+    const searchedTypeLabel = (searchedType !== "ticket" && isIcPass) ? `IC${baseLabel}` : baseLabel;
 
     const [showAllPatterns, setShowAllPatterns] = useState(false);
 
@@ -160,6 +189,14 @@ export default function SplitForm({
     const currentType = useWatch({ control, name: "searchType" });
 
     const canSwap = !!startStationVal || !!endStationVal;
+    const isPeriodDisabled = !isIcPass && currentType === "ticket";
+
+    // 駅名が変更された際に、相互のバリデーションを再評価する
+    useEffect(() => {
+        if (startStationVal?.name || endStationVal?.name) {
+            trigger(["startStation", "endStation"]);
+        }
+    }, [startStationVal?.name, endStationVal?.name, trigger]);
 
     const handleSwapStations = () => {
         const currentStart = getValues("startStation");
@@ -170,58 +207,230 @@ export default function SplitForm({
 
     const stations = new Set((stationDatas as Station[]).map((s) => s.name))
 
-    const validateStation = (value: Station | null) => {
-        if (!value || !value.name) return "駅名を入力してください";
+    const validateStation = (value: Station | null, fieldName: "startStation" | "endStation") => {
+        if (!value || !value.name) return false;
         const exists = stations.has(value.name);
         if (!exists) return "正しい駅名を選択または入力してください";
+
         const currentSearchType = getValues("searchType");
-        if (currentSearchType !== "ticket" && TEMPORARY_STATIONS.includes(value.name)) {
+        const isPass = isIcPass || (currentSearchType !== "ticket");
+        if (isPass && TEMPORARY_STATIONS.includes(value.name)) {
             return "臨時駅発着の定期券は計算できません";
+        }
+
+        // IC定期券の時のエリアバリデーション
+        if (isIcPass) {
+            const startVal = getValues("startStation");
+            const endVal = getValues("endStation");
+            const currentStationData = stationDatas.find(s => s.name === value.name);
+
+            if (!currentStationData?.icPassAreaName) {
+                return "この駅はIC定期券エリア外のため、IC定期券の計算はできません";
+            }
+
+            if (fieldName === "startStation" && endVal?.name) {
+                const partnerStationData = stationDatas.find(s => s.name === endVal.name);
+                if (partnerStationData?.icPassAreaName && currentStationData.icPassAreaName !== partnerStationData.icPassAreaName) {
+                    return `エリアを跨ぐ計算はできません（${currentStationData.name}駅は${currentStationData.icPassAreaName}です）`;
+                }
+            } else if (fieldName === "endStation" && startVal?.name) {
+                const partnerStationData = stationDatas.find(s => s.name === startVal.name);
+                if (partnerStationData?.icPassAreaName && currentStationData.icPassAreaName !== partnerStationData.icPassAreaName) {
+                    return `エリアを跨ぐ計算はできません（${currentStationData.name}駅は${currentStationData.icPassAreaName}です）`;
+                }
+            }
         }
 
         return true;
     };
 
-    const onSubmit: SubmitHandler<ExtendedSplitFormInput> = (data) => {
-        setShowAllPatterns(false);
+    const handleTabChange = (tab: "ticket" | "magnetic-pass" | "ic-pass") => {
+        setResult(null);
+        setError(null);
+        setServerTime(null);
+
+        let nextPath = "/split";
+        let nextSearchType: SearchType = "ticket";
+
+        if (tab === "magnetic-pass") {
+            nextSearchType = (currentType === "pass1" || currentType === "pass3" || currentType === "pass6")
+                ? currentType
+                : "pass1";
+        } else if (tab === "ic-pass") {
+            nextSearchType = (currentType === "pass1" || currentType === "pass3" || currentType === "pass6")
+                ? currentType
+                : "pass1";
+            nextPath = "/split-icpass";
+        }
+
+        updateUrlAndState(nextPath, nextSearchType);
+    };
+
+    const handlePeriodChange = (period: "pass1" | "pass3" | "pass6") => {
+        setResult(null);
+        setError(null);
+        setServerTime(null);
+
+        const nextPath = isIcPass ? "/split-icpass" : "/split";
+        updateUrlAndState(nextPath, period);
+    };
+
+    const updateUrlAndState = (nextPath: string, nextSearchType: SearchType) => {
+        setValue("searchType", nextSearchType, { shouldValidate: true });
+        trigger(["startStation", "endStation"]);
+
+        const startStation = getValues("startStation");
+        const endStation = getValues("endStation");
 
         const searchParams = new URLSearchParams();
-        if (data.startStation?.name) searchParams.set("from", data.startStation.name);
-        if (data.endStation?.name) searchParams.set("to", data.endStation.name);
+        if (startStation?.name) searchParams.set("from", startStation.name);
+        if (endStation?.name) searchParams.set("to", endStation.name);
+
+        if (nextSearchType !== "ticket") {
+            searchParams.set("searchType", nextSearchType);
+        }
+
+        const newUrl = `${nextPath}?${searchParams.toString()}`;
+
+        // パスが変わる場合のみ router.push でルーティング遷移（例: /split ↔ /split-icpass）
+        if (nextPath !== pathname) {
+            startTransition(() => {
+                router.push(newUrl, { scroll: false });
+            });
+        } else {
+            // 同じページ内ならURLバーだけ更新
+            window.history.replaceState(null, "", newUrl);
+        }
+    };
+
+    const onSubmit: SubmitHandler<ExtendedSplitFormInput> = async (data) => {
+        if (!data.startStation?.name || !data.endStation?.name) return;
+
+        setShowAllPatterns(false);
+        setError(null);
+        setResult(null);
+        setServerTime(null);
+        setIsCalculating(true);
+
+        const searchParams = new URLSearchParams();
+        searchParams.set("from", data.startStation.name);
+        searchParams.set("to", data.endStation.name);
 
         if (data.searchType && data.searchType !== "ticket") {
             searchParams.set("searchType", data.searchType);
-        } else {
-            searchParams.delete("searchType");
         }
 
-        const newUrl = `?${searchParams.toString()}`;
-        window.history.pushState(null, "", newUrl);
+        const nextPath = isIcPass ? "/split-icpass" : "/split";
+        const newUrl = `${nextPath}?${searchParams.toString()}`;
+        // URLバーだけ更新
+        window.history.replaceState(null, "", newUrl);
 
-        startTransition(() => {
-            router.replace(newUrl, { scroll: false });
-        });
+        // 検索タイプの確定
+        setSearchedType(data.searchType);
+
+        try {
+            const res = await calculateAction(
+                data.startStation.name,
+                data.endStation.name,
+                data.searchType,
+                isIcPass
+            );
+            if (res.error) {
+                setError(res.error);
+            } else {
+                setResult(res.result || null);
+                setServerTime(res.serverTime || null);
+            }
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(`計算中にエラーが発生しました : ${err.message}`);
+            } else {
+                setError(`計算中にエラーが発生しました : ${String(err)}`);
+            }
+        } finally {
+            setIsCalculating(false);
+        }
     };
 
     return (
         <main className="max-w-2xl mx-auto w-full">
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-xl mb-6">
-                {SEARCH_TYPE_OPTIONS.map((option) => (
+            {/* 第1階層: 目的選択タブ */}
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl mb-4">
+                <button
+                    type="button"
+                    onClick={() => handleTabChange("ticket")}
+                    className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${!isIcPass && currentType === "ticket"
+                        ? "bg-white text-blue-600 shadow-sm font-bold"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                        }`}
+                >
+                    普通乗車券
+                </button>
+                <button
+                    type="button"
+                    onClick={() => handleTabChange("magnetic-pass")}
+                    className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${!isIcPass && currentType !== "ticket"
+                        ? "bg-white text-blue-600 shadow-sm font-bold"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                        }`}
+                >
+                    磁気定期券
+                </button>
+                <button
+                    type="button"
+                    onClick={() => handleTabChange("ic-pass")}
+                    className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${isIcPass
+                        ? "bg-white text-blue-600 shadow-sm font-bold"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                        }`}
+                >
+                    IC定期券
+                </button>
+            </div>
+
+            {/* 第2階層: 期間選択トグル */}
+            <div className="h-11 mb-6">
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-50 border border-slate-200 rounded-xl">
                     <button
-                        key={option.value}
                         type="button"
-                        onClick={() => {
-                            setValue("searchType", option.value, { shouldValidate: true });
-                            trigger(["startStation", "endStation"]);
-                        }}
-                        className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${currentType === option.value
-                            ? "bg-white text-blue-600 shadow-xs font-bold"
-                            : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                        onClick={() => handlePeriodChange("pass1")}
+                        disabled={isPeriodDisabled}
+                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && currentType === "pass1"
+                            ? "bg-white text-blue-600 shadow-sm font-bold cursor-pointer"
+                            : isPeriodDisabled
+                                ? "text-slate-400 cursor-not-allowed opacity-50"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
                             }`}
                     >
-                        {option.label}
+                        1箇月
                     </button>
-                ))}
+                    <button
+                        type="button"
+                        onClick={() => handlePeriodChange("pass3")}
+                        disabled={isPeriodDisabled}
+                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && currentType === "pass3"
+                            ? "bg-white text-blue-600 shadow-sm font-bold cursor-pointer"
+                            : isPeriodDisabled
+                                ? "text-slate-400 cursor-not-allowed opacity-50"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
+                            }`}
+                    >
+                        3箇月
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handlePeriodChange("pass6")}
+                        disabled={isPeriodDisabled}
+                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && currentType === "pass6"
+                            ? "bg-white text-blue-600 shadow-sm font-bold cursor-pointer"
+                            : isPeriodDisabled
+                                ? "text-slate-400 cursor-not-allowed opacity-50"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
+                            }`}
+                    >
+                        6箇月
+                    </button>
+                </div>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="w-full">
@@ -234,7 +443,7 @@ export default function SplitForm({
                                 <Controller
                                     name="startStation"
                                     control={control}
-                                    rules={{ validate: validateStation }}
+                                    rules={{ validate: (v) => validateStation(v, "startStation") }}
                                     render={({ field }) => (
                                         <SelectStation
                                             instanceId="start-station-split"
@@ -245,11 +454,13 @@ export default function SplitForm({
                                 />
                             </div>
                         </div>
-                        {errors.startStation && (
-                            <p className="text-red-500 text-xs mt-1 ml-17">
-                                {errors.startStation.message}
-                            </p>
-                        )}
+                        <div className="min-h-[24px] mt-1 ml-17">
+                            {errors.startStation && (
+                                <p className="text-red-500 text-xs">
+                                    {errors.startStation.message}
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex justify-center w-full -my-3 relative z-0">
@@ -272,7 +483,7 @@ export default function SplitForm({
                                 <Controller
                                     name="endStation"
                                     control={control}
-                                    rules={{ validate: validateStation }}
+                                    rules={{ validate: (v) => validateStation(v, "endStation") }}
                                     render={({ field }) => (
                                         <SelectStation
                                             instanceId="end-station-split"
@@ -283,63 +494,65 @@ export default function SplitForm({
                                 />
                             </div>
                         </div>
-                        {errors.endStation && (
-                            <p className="text-red-500 text-xs mt-1 ml-17">
-                                {errors.endStation.message}
-                            </p>
-                        )}
+                        <div className="min-h-[24px] mt-1 ml-17">
+                            {errors.endStation && (
+                                <p className="text-red-500 text-xs">
+                                    {errors.endStation.message}
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     <div className="mt-2 w-full">
                         <button
                             type="submit"
                             className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors"
-                            disabled={!isValid || isPending}
+                            disabled={!isValid || isCalculating}
                         >
-                            {isPending ? "計算中..." : `${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`}
+                            {isCalculating ? "計算中..." : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`}
                         </button>
                     </div>
                 </div>
             </form>
 
             <div className="my-8">
-                {isPending && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
-                {!isPending && initialServerTime != null && <p className="text-right text-xs text-gray-400">計算時間: {initialServerTime}ms</p>}
-                {!isPending && initialError && <p className="py-5 border-t text-red-500 text-center">{initialError}</p>}
+                {isCalculating && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
+                {!isCalculating && serverTime != null && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
+                {!isCalculating && error && <p className="py-5 border-t text-red-500 text-center">{error}</p>}
 
-                {!isPending && initialResult && (
+                {!isCalculating && result && (
                     <div className="border-t pt-8 space-y-8">
                         <h2 className="text-2xl font-bold text-center mb-6">計算結果</h2>
 
                         <section className="bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h3 className="font-bold text-lg mb-4 text-gray-700 border-b pb-2">通常の{searchedTypeLabel}（分割なし）</h3>
+                            <h3 className="font-bold text-lg mb-4 text-gray-700 border-b pb-2">分割前の{searchedTypeLabel}</h3>
                             <div className="flex justify-between items-center">
                                 <div>
                                     <div className="text-lg font-bold">
-                                        <span>{initialResult.cheapestKippuData.departureStation}</span>
+                                        <span>{result.cheapestKippuData.departureStation}</span>
                                         <span className="text-gray-400 mx-2">{searchedTypeLabel === "普通乗車券" ? "→" : "↔"}</span>
-                                        <span>{initialResult.cheapestKippuData.arrivalStation}</span>
-                                        {initialResult.cheapestKippuData.totalEigyoKilo > 0 && (
+                                        <span>{result.cheapestKippuData.arrivalStation}</span>
+                                        {result.cheapestKippuData.totalEigyoKilo > 0 && (
                                             <span className="text-sm font-normal text-gray-600 ml-1">
-                                                （{(initialResult.cheapestKippuData.totalEigyoKilo / 10).toFixed(1)}km）
+                                                （{(result.cheapestKippuData.totalEigyoKilo / 10).toFixed(1)}km）
                                             </span>
                                         )}
                                     </div>
                                     <div className="text-sm text-gray-600 mt-1">
-                                        経由：{initialResult.cheapestKippuData.printedViaLines.join("・") || "---"}
+                                        経由：{result.cheapestKippuData.printedViaLines.join("・") || "---"}
                                     </div>
                                 </div>
                                 <div className="text-3xl font-bold text-gray-800">
-                                    ¥{initialResult.cheapestKippuData.fare.toLocaleString()}
+                                    ¥{result.cheapestKippuData.fare.toLocaleString()}
                                 </div>
                             </div>
                         </section>
 
-                        {initialResult.splitKippuDatasList.length > 0 ? (
+                        {result.splitKippuDatasList.length > 0 ? (
                             <div className="space-y-6">
                                 {(() => {
-                                    const bestFare = initialResult.splitKippuDatasList[0].totalFare;
-                                    const diff = initialResult.cheapestKippuData.fare - bestFare;
+                                    const bestFare = result.splitKippuDatasList[0].totalFare;
+                                    const diff = result.cheapestKippuData.fare - bestFare;
                                     const isCheaper = diff > 0;
 
                                     return (
@@ -366,7 +579,7 @@ export default function SplitForm({
                                 })()}
 
                                 <div className="space-y-6">
-                                    {initialResult.splitKippuDatasList.map((splitPlan, planIndex) => {
+                                    {result.splitKippuDatasList.map((splitPlan, planIndex) => {
                                         if (!showAllPatterns && planIndex > 1) return null;
 
                                         const isFadedItem = !showAllPatterns && planIndex === 1;
@@ -378,7 +591,7 @@ export default function SplitForm({
                                                     }`}
                                             >
                                                 <div className={isFadedItem ? "p-4" : ""}>
-                                                    {initialResult.splitKippuDatasList.length > 1 && (
+                                                    {result.splitKippuDatasList.length > 1 && (
                                                         <h4 className="font-bold text-gray-700 mb-3 ml-1">
                                                             パターン {planIndex + 1}
                                                         </h4>
@@ -389,7 +602,7 @@ export default function SplitForm({
                                                             <div key={segIndex} className="bg-white p-4 rounded border border-gray-200 shadow-sm relative">
                                                                 <div className="text-sm text-gray-500 mb-1 flex items-center">
                                                                     <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs mr-2">利用区間</span>
-                                                                    <span>{segment.departureStation} → {segment.arrivalStation}</span>
+                                                                    <span>{segment.departureStation} {searchedTypeLabel === "普通乗車券" ? "→" : "↔"} {segment.arrivalStation}</span>
                                                                 </div>
 
                                                                 <div className="flex justify-between items-center mt-2">
@@ -435,7 +648,7 @@ export default function SplitForm({
                                         );
                                     })}
 
-                                    {showAllPatterns && initialResult.splitKippuDatasList.length > 1 && (
+                                    {showAllPatterns && result.splitKippuDatasList.length > 1 && (
                                         <div className="flex justify-center mt-8 pb-4">
                                             <button
                                                 type="button"
@@ -452,7 +665,7 @@ export default function SplitForm({
                                 </div>
                             </div>
                         ) : (
-                            !isPending && initialResult && <p className="text-center text-gray-500">有効な分割候補が見つかりませんでした。</p>
+                            <p className="text-center text-gray-500">有効な分割候補が見つかりませんでした。</p>
                         )}
                     </div>
                 )}
