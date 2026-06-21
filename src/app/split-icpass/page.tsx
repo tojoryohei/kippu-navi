@@ -3,15 +3,16 @@ import type { Metadata } from "next";
 import { RiScissorsFill, RiErrorWarningLine } from "react-icons/ri";
 
 export const metadata: Metadata = {
-  title: "JR分割乗車券プログラム",
-  description: "JR在来線の「発駅」「着駅」から普通乗車券と定期乗車券の分割乗車券の最安解を計算します。",
+  title: "JR分割IC定期券プログラム",
+  description: "JR在来線の「発駅」「着駅」から分割IC定期券の最安解を計算します。",
 };
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const params = await searchParams;
   const from = typeof params.from === "string" ? params.from : undefined;
   const to = typeof params.to === "string" ? params.to : undefined;
-  const searchType = typeof params.searchType === "string" ? params.searchType : "ticket";
+  // IC定期券のデフォルトは pass1
+  const searchType = typeof params.searchType === "string" ? params.searchType : "pass1";
 
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8">
@@ -21,11 +22,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ [
             <RiScissorsFill className="w-8 h-8 text-blue-600" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-3">
-            JR分割乗車券プログラム
+            JR分割IC定期券プログラム
           </h1>
           <p className="text-sm sm:text-base text-slate-600">
-            乗車する区間の「発駅」と「着駅」、および「券種」を選択してください。<br className="hidden sm:block" />
-            JR在来線において最もお得な分割ルートを計算します。
+            乗車する区間の「発駅」と「着駅」、および「定期の期間」を選択してください。<br className="hidden sm:block" />
+            Kitaca・Suica・ICOCAにおいて最もお得な分割IC定期ルートを計算します。
           </p>
         </div>
         <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
