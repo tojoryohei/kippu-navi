@@ -57,7 +57,7 @@ export async function getOptimalSplitWithCache(
         };
 
         // set()は非同期で実行し、完了を待たずにレスポンスを返す（APIの応答速度優先）
-        docRef.set(cacheData).catch(err => {
+        docRef.set(cacheData).catch((err: unknown) => {
             console.error(`[Firestore Write Error] Failed to save cache for ${cacheKey}:`, err);
         });
     } catch (error) {
