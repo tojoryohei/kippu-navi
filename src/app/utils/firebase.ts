@@ -1,13 +1,14 @@
-import * as admin from 'firebase-admin';
+import { getApps, initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
 /**
  * Firebase Admin SDKを初期化し、Firestoreのインスタンスを返す関数。
  * トップレベルでの初期化を避け、実行時にのみ初期化されるように遅延評価を行います。
  */
-export function getDb(): admin.firestore.Firestore {
+export function getDb(): Firestore {
     // 1. すでに初期化済みの場合は、既存のアプリのFirestoreを返す（多重初期化防止）
-    if (admin.apps.length > 0) {
-        return admin.firestore();
+    if (getApps().length > 0) {
+        return getFirestore();
     }
 
     // 2. 環境変数の取得
@@ -26,8 +27,8 @@ export function getDb(): admin.firestore.Firestore {
     }
 
     // 4. 初回のみ初期化を実行
-    admin.initializeApp({
-        credential: admin.credential.cert({
+    initializeApp({
+        credential: cert({
             projectId,
             clientEmail,
             privateKey,
@@ -35,5 +36,5 @@ export function getDb(): admin.firestore.Firestore {
     });
 
     // 5. Firestoreインスタンスを返す
-    return admin.firestore();
+    return getFirestore();
 }
