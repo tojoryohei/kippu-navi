@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.5.0...kippu-navi-v2.6.0) (2026-06-25)
+
+
+### Features
+
+* 遅延評価とDFSを用いた同額経路の全列挙および特例ルールの厳格化 ([#338](https://github.com/tojoryohei/kippu-navi/issues/338)) ([00525b7](https://github.com/tojoryohei/kippu-navi/commit/00525b7738fd634c6657806292eea90caad5ae8a))
+
 ## [2.5.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.4.0...kippu-navi-v2.5.0) (2026-06-21)
 
 
