@@ -581,8 +581,28 @@ func (u *SearchOptimalSplit) backtrackZeroAlloc(
 }
 
 func (u *SearchOptimalSplit) getCheapestNoSplitSegments(start, end, months int) ([]SplitSegment, error) {
-	cands, err := u.getNoSplitCandidates(start, end)
-	if err != nil || len(cands) == 0 {
+	shortest, err := u.graph.FindShortestPathGisei(start, end)
+	if err != nil {
+		return nil, domain.ErrInvalidPath
+	}
+	maxGisei := shortest.GiseiKilo + 50
+
+	dfsPaths := u.dfsFindPaths(start, end, maxGisei)
+	bypassPaths := u.getBypassCandidates(start, end)
+
+	allPaths := append(dfsPaths, bypassPaths...)
+
+	var validPaths [][]int
+	for _, path := range allPaths {
+		if !u.checkMixedRouteConflict(path) {
+			continue
+		}
+		if !containsPath(validPaths, path) {
+			validPaths = append(validPaths, path)
+		}
+	}
+
+	if len(validPaths) == 0 {
 		return nil, domain.ErrInvalidPath
 	}
 
@@ -590,7 +610,7 @@ func (u *SearchOptimalSplit) getCheapestNoSplitSegments(start, end, months int) 
 	var bestPaths [][]int
 	var bestResults []*CalculationResult
 
-	for _, path := range cands {
+	for _, path := range validPaths {
 		res, err := u.split.calc.Execute(path, months)
 		if err != nil {
 			continue
@@ -623,6 +643,159 @@ func (u *SearchOptimalSplit) getCheapestNoSplitSegments(start, end, months int) 
 	}
 
 	return segs, nil
+}
+
+func (u *SearchOptimalSplit) checkMixedRouteConflict(path []int) bool {
+	pathSet := make(map[int]bool, len(path))
+	for _, sid := range path {
+		pathSet[sid] = true
+	}
+
+	for _, rule := range u.rules {
+		hasShortcutInner := false
+		if len(rule.ShortcutPath) > 2 {
+			for i := 1; i < len(rule.ShortcutPath)-1; i++ {
+				if pathSet[rule.ShortcutPath[i]] {
+					hasShortcutInner = true
+					break
+				}
+			}
+		}
+
+		if !hasShortcutInner {
+			continue
+		}
+
+		hasAllDetour := true
+		for _, detID := range rule.DetourPath {
+			if !pathSet[detID] {
+				hasAllDetour = false
+				break
+			}
+		}
+
+		if hasShortcutInner && hasAllDetour {
+			return false
+		}
+	}
+	return true
+}
+
+func (u *SearchOptimalSplit) dfsFindPaths(start, end int, maxGisei domain.DeciKilo) [][]int {
+	var paths [][]int
+	numStations := int(u.numStations)
+	visited := make([]bool, numStations)
+	currentPath := make([]int, 0, 64)
+
+	currentPath = append(currentPath, start)
+	visited[start] = true
+
+	const maxPathsLimit = 5000
+
+	var dfs func(curr int, currentGisei domain.DeciKilo) bool
+	dfs = func(curr int, currentGisei domain.DeciKilo) bool {
+		if len(paths) >= maxPathsLimit {
+			return false
+		}
+
+		if curr == end {
+			pathCopy := make([]int, len(currentPath))
+			copy(pathCopy, currentPath)
+			paths = append(paths, pathCopy)
+			return true
+		}
+
+		edges := u.graph.GetEdges(curr)
+		for _, edge := range edges {
+			next := edge.ToID
+			if next < 0 || next >= numStations {
+				continue
+			}
+			if visited[next] {
+				continue
+			}
+
+			nextGisei := currentGisei + edge.GiseiKilo
+			if nextGisei > maxGisei {
+				continue
+			}
+
+			visited[next] = true
+			currentPath = append(currentPath, next)
+
+			if !dfs(next, nextGisei) {
+				return false
+			}
+
+			currentPath = currentPath[:len(currentPath)-1]
+			visited[next] = false
+		}
+		return true
+	}
+
+	dfs(start, 0)
+	return paths
+}
+
+func (u *SearchOptimalSplit) getBypassCandidates(start, end int) [][]int {
+	rg := u.graph
+	var cands [][]int
+
+	for _, rule := range u.rules {
+		aOnRule := u.containsStation(rule.ShortcutPath, start) || u.containsStation(rule.DetourPath, start)
+		bOnRule := u.containsStation(rule.ShortcutPath, end) || u.containsStation(rule.DetourPath, end)
+		if aOnRule && bOnRule {
+			aOnDetourMiddle := u.isOnDetourMiddle(start, rule)
+			bOnDetourMiddle := u.isOnDetourMiddle(end, rule)
+			if aOnDetourMiddle || bOnDetourMiddle {
+				shortcutPath := make([]int, len(rule.ShortcutPath))
+				copy(shortcutPath, rule.ShortcutPath)
+				cands = append(cands, shortcutPath)
+				break // 特例区間内での双方向重複生成を遮断
+			}
+		}
+	}
+
+	for _, rule := range u.rules {
+		startOnDetour := u.isOnDetourMiddle(start, rule)
+		endOnDetour := u.isOnDetourMiddle(end, rule)
+
+		if startOnDetour {
+			pathJ2ToEnd, err := rg.FindShortestPathGisei(rule.ShortcutPath[len(rule.ShortcutPath)-1], end)
+			if err == nil && len(pathJ2ToEnd.StationIDs) >= 2 {
+				cand := append([]int(nil), rule.ShortcutPath...)
+				cand = append(cand, pathJ2ToEnd.StationIDs[1:]...)
+				cands = append(cands, cand)
+			}
+
+			pathJ1ToEnd, err := rg.FindShortestPathGisei(rule.ShortcutPath[0], end)
+			if err == nil && len(pathJ1ToEnd.StationIDs) >= 2 {
+				revShortcut := reverseSlice(rule.ShortcutPath)
+				cand := append([]int(nil), revShortcut...)
+				cand = append(cand, pathJ1ToEnd.StationIDs[1:]...)
+				cands = append(cands, cand)
+			}
+		}
+
+		if endOnDetour {
+			pathStartToJ1, err := rg.FindShortestPathGisei(start, rule.ShortcutPath[0])
+			if err == nil && len(pathStartToJ1.StationIDs) >= 2 {
+				cand := append([]int(nil), pathStartToJ1.StationIDs...)
+				cand = append(cand, rule.ShortcutPath[1:]...)
+				cands = append(cands, cand)
+			}
+
+			pathStartToJ2, err := rg.FindShortestPathGisei(start, rule.ShortcutPath[len(rule.ShortcutPath)-1])
+			if err == nil && len(pathStartToJ2.StationIDs) >= 2 {
+				revShortcut := reverseSlice(rule.ShortcutPath)
+				cand := append([]int(nil), pathStartToJ2.StationIDs...)
+				cand = append(cand, revShortcut[1:]...)
+				cands = append(cands, cand)
+			}
+		}
+	}
+
+	return cands
 }
 
 func containsPath(paths [][]int, target []int) bool {
@@ -666,146 +839,6 @@ func generateCombinations(candidates [][]SplitSegment) [][]SplitSegment {
 
 	helper(0, nil)
 	return result
-}
-
-func reconstructPathFromFlat(prev []int16, numStations, start, end int) []int {
-	if len(prev) == 0 || end < 0 || end >= numStations {
-		if start == end {
-			return []int{start}
-		}
-		return nil
-	}
-	idx := start*numStations + end
-	if prev[idx] == -1 && start != end {
-		return nil
-	}
-
-	path := make([]int, 0, 32)
-	curr := end
-	loopCount := 0
-	for curr != start {
-		if curr == -1 || loopCount > numStations {
-			return nil
-		}
-		path = append(path, curr)
-		curr = int(prev[start*numStations+curr])
-		loopCount++
-	}
-	path = append(path, start)
-
-	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
-		path[i], path[j] = path[j], path[i]
-	}
-	return path
-}
-
-func (u *SearchOptimalSplit) getNoSplitCandidates(start, end int) ([][]int, error) {
-	rg := u.graph
-	numStations := int(u.numStations)
-
-	var cands [][]int
-
-	// ① 最短営業キロ経路
-	var pathEigyo []int
-	if len(rg.PrevEigyo) > 0 {
-		pathEigyo = reconstructPathFromFlat(rg.PrevEigyo, numStations, start, end)
-	} else {
-		_, prevEigyo := rg.FindAllShortestPathsEigyo(start)
-		pathEigyo = reconstructPath(prevEigyo, start, end)
-	}
-	if len(pathEigyo) >= 2 {
-		cands = append(cands, pathEigyo)
-	}
-
-	// ② 最短擬制キロ経路
-	var pathGisei []int
-	if len(rg.PrevGisei) > 0 {
-		pathGisei = reconstructPathFromFlat(rg.PrevGisei, numStations, start, end)
-	} else {
-		_, prevGisei := rg.FindAllShortestPathsGisei(start)
-		pathGisei = reconstructPath(prevGisei, start, end)
-	}
-	if len(pathGisei) >= 2 {
-		cands = append(cands, pathGisei)
-	}
-
-	// ③ 経路全体が1つの特例に含まれる場合のみ、近道の経路
-	for _, rule := range u.rules {
-		aOnRule := u.containsStation(rule.ShortcutPath, start) || u.containsStation(rule.DetourPath, start)
-		bOnRule := u.containsStation(rule.ShortcutPath, end) || u.containsStation(rule.DetourPath, end)
-		if aOnRule && bOnRule {
-			aOnDetourMiddle := u.isOnDetourMiddle(start, rule)
-			bOnDetourMiddle := u.isOnDetourMiddle(end, rule)
-			if aOnDetourMiddle || bOnDetourMiddle {
-				shortcutPath := make([]int, len(rule.ShortcutPath))
-				copy(shortcutPath, rule.ShortcutPath)
-				cands = append(cands, shortcutPath)
-			}
-		}
-	}
-
-	// ④ 発着駅が遠回り上にあるが、完全に内包されていない場合、経由していない方の分岐駅まで特例の近道経路（オーバーシュート）
-	for _, rule := range u.rules {
-		startOnDetour := u.isOnDetourMiddle(start, rule)
-		endOnDetour := u.isOnDetourMiddle(end, rule)
-
-		if startOnDetour {
-			// Option A: J1 から進入
-			pathJ2ToEnd, err := rg.FindShortestPathGisei(rule.ShortcutPath[len(rule.ShortcutPath)-1], end)
-			if err == nil && len(pathJ2ToEnd.StationIDs) >= 2 {
-				cand := append([]int(nil), rule.ShortcutPath...)
-				cand = append(cand, pathJ2ToEnd.StationIDs[1:]...)
-				cands = append(cands, cand)
-			}
-
-			// Option B: J2 から進入
-			pathJ1ToEnd, err := rg.FindShortestPathGisei(rule.ShortcutPath[0], end)
-			if err == nil && len(pathJ1ToEnd.StationIDs) >= 2 {
-				revShortcut := reverseSlice(rule.ShortcutPath)
-				cand := append([]int(nil), revShortcut...)
-				cand = append(cand, pathJ1ToEnd.StationIDs[1:]...)
-				cands = append(cands, cand)
-			}
-		}
-
-		if endOnDetour {
-			// Option A: J1 から退出
-			pathStartToJ1, err := rg.FindShortestPathGisei(start, rule.ShortcutPath[0])
-			if err == nil && len(pathStartToJ1.StationIDs) >= 2 {
-				cand := append([]int(nil), pathStartToJ1.StationIDs...)
-				cand = append(cand, rule.ShortcutPath[1:]...)
-				cands = append(cands, cand)
-			}
-
-			// Option B: J2 から退出
-			pathStartToJ2, err := rg.FindShortestPathGisei(start, rule.ShortcutPath[len(rule.ShortcutPath)-1])
-			if err == nil && len(pathStartToJ2.StationIDs) >= 2 {
-				revShortcut := reverseSlice(rule.ShortcutPath)
-				cand := append([]int(nil), pathStartToJ2.StationIDs...)
-				cand = append(cand, revShortcut[1:]...)
-				cands = append(cands, cand)
-			}
-		}
-	}
-
-	return cands, nil
-}
-
-func reconstructPath(prev []int, start, end int) []int {
-	if prev == nil || end < 0 || end >= len(prev) || prev[end] == -1 {
-		if start == end {
-			return []int{start}
-		}
-		return nil
-	}
-	path := []int{}
-	for i := end; i != -1; i = prev[i] {
-		path = append(path, i)
-	}
-	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
-		path[i], path[j] = path[j], path[i]
-	}
-	return path
 }
 
 func (u *SearchOptimalSplit) containsStation(path []int, stationID int) bool {
