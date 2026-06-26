@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.1...kippu-navi-v2.6.2) (2026-06-26)
+
+
+### Performance Improvements
+
+* ハイブリッドアーキテクチャへの完全移行（mmap + Wasm/Web Worker） ([#344](https://github.com/tojoryohei/kippu-navi/issues/344)) ([5cfceb3](https://github.com/tojoryohei/kippu-navi/commit/5cfceb3eb99cfb7e1655e5817b8128c456db19ee))
+
 ## [2.6.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.0...kippu-navi-v2.6.1) (2026-06-26)
 
 
