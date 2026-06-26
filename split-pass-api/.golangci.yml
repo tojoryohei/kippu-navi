@@ -1,4 +1,0 @@
-run:
-  # Wasm向けのコードはビルド制約が異なるため、ローダーの解析対象（skip-dirs）から完全に除外します
-  skip-dirs:
-    - cmd/wasm
