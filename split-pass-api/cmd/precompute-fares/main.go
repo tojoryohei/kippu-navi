@@ -484,6 +484,9 @@ func computeCheapestNoSplit(
 
 	minFare := math.MaxInt
 	for _, cand := range cands {
+		if !checkMixedRouteConflictPrecompute(rules, cand) {
+			continue
+		}
 		res, err := calc.Execute(cand, months)
 		if err != nil {
 			continue
@@ -498,6 +501,42 @@ func computeCheapestNoSplit(
 		return 0
 	}
 	return minFare
+}
+
+func checkMixedRouteConflictPrecompute(rules []domain.ResolvedBypassRule, path []int) bool {
+	pathSet := make(map[int]bool, len(path))
+	for _, sid := range path {
+		pathSet[sid] = true
+	}
+
+	for _, rule := range rules {
+		hasShortcutInner := false
+		if len(rule.ShortcutPath) > 2 {
+			for i := 1; i < len(rule.ShortcutPath)-1; i++ {
+				if pathSet[rule.ShortcutPath[i]] {
+					hasShortcutInner = true
+					break
+				}
+			}
+		}
+
+		if !hasShortcutInner {
+			continue
+		}
+
+		hasAllDetour := true
+		for _, detID := range rule.DetourPath {
+			if !pathSet[detID] {
+				hasAllDetour = false
+				break
+			}
+		}
+
+		if hasShortcutInner && hasAllDetour {
+			return false
+		}
+	}
+	return true
 }
 
 func reconstructPath(prev []int, start, end int) []int {
