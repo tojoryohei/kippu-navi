@@ -180,5 +180,4 @@ jobs:
 
       - name: Run Go Test
         working-directory: split-pass-api
-        run: |
-          go test -v -race $(go list ./... | grep -v 'split-pass-api/cmd/wasm')
+        run: go test -v -race ./...
