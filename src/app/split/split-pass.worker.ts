@@ -17,7 +17,7 @@ interface WorkerGlobalScope {
   initGraphFromBuffer(size: number): boolean | string;
   reconstructAndCalculate(splitStationsJson: string, months: number, isIc: boolean): string;
 }
-declare const self: WorkerGlobalScope & typeof globalThis;
+const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
 
 interface WasmSegment {
   start: string;
@@ -59,7 +59,7 @@ async function initWasm() {
     const size = graphArrayBuffer.byteLength;
 
     // Go側にメモリ確保を依頼し、そのポインタ (オフセット) を取得
-    const ptr = self.prepareGraphBuffer(size);
+    const ptr = workerSelf.prepareGraphBuffer(size);
 
     // Wasmのリニアメモリに直接書き込み (Zero-copy Memory Offset Injection)
     const wasmMem = (wasmInstance.exports.mem || (go.importObject.env && go.importObject.env.memory)) as WebAssembly.Memory;
@@ -67,7 +67,7 @@ async function initWasm() {
     wasmMemory.set(new Uint8Array(graphArrayBuffer), ptr);
 
     // Go側の初期化関数を実行
-    const initResult = self.initGraphFromBuffer(size);
+    const initResult = workerSelf.initGraphFromBuffer(size);
     if (initResult !== true) {
       throw new Error(`Graph initialization failed: ${initResult}`);
     }
@@ -100,7 +100,7 @@ onmessage = async (e: MessageEvent) => {
       for (const path of splitPaths) {
         // splitStations は JSON 文字列として Go に渡す
         const splitStationsJson = JSON.stringify(path);
-        const resultJsonStr = self.reconstructAndCalculate(splitStationsJson, months, isIc);
+        const resultJsonStr = workerSelf.reconstructAndCalculate(splitStationsJson, months, isIc);
 
         const result = JSON.parse(resultJsonStr);
         if (result.error) {
