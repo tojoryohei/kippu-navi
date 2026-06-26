@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.2...kippu-navi-v2.6.3) (2026-06-26)
+
+
+### Bug Fixes
+
+* Docker実行イメージへの事前計算データ同梱漏れを修正し起動エラーを解消 ([#349](https://github.com/tojoryohei/kippu-navi/issues/349)) ([7980ef0](https://github.com/tojoryohei/kippu-navi/commit/7980ef074cc70a2b90c7d9d46cb13bb519ff56bd))
+
 ## [2.6.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.1...kippu-navi-v2.6.2) (2026-06-26)
 
 
