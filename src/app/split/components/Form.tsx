@@ -469,11 +469,6 @@ export default function SplitForm({
                 setIsCalculating(false);
             } else if (res.result && "passStations" in res.result) {
                 const { passStations } = res.result as { passStations: { normal: string[], results: string[][] } };
-                if (!passStations.results || passStations.results.length === 0) {
-                    setError("有効な分割候補が見つかりませんでした。");
-                    setIsCalculating(false);
-                    return;
-                }
 
                 if (!workerRef.current) {
                     setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
@@ -484,10 +479,14 @@ export default function SplitForm({
                 const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
                 const months = monthsMap[data.searchType] || 1;
 
+                const splitPaths = (passStations.results && passStations.results.length > 0)
+                    ? passStations.results
+                    : [passStations.normal];
+
                 workerRef.current.postMessage({
                     type: "calculate",
                     payload: {
-                        splitPaths: passStations.results,
+                        splitPaths,
                         months,
                         isIc: isIcPass
                     }
