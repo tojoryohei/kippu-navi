@@ -7,7 +7,6 @@ import tsParser from "@typescript-eslint/parser";
 import securityPlugin from "eslint-plugin-security";
 
 export default [
-    securityPlugin.configs.recommended,
     {
         ignores: [
             ".next/**",
@@ -18,6 +17,7 @@ export default [
             "public/**"
         ],
     },
+    securityPlugin.configs.recommended,
     {
         files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
         languageOptions: {
