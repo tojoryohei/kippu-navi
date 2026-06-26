@@ -151,33 +151,6 @@ jobs:
           go-version: '1.24'
           cache: true
 
-      - name: Create data directories
-        run: |
-          mkdir -p src/data
-
-      - name: Cache data
-        id: cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            src/data/routes.json
-          key: kippu-navi-routes-data-v20260526-${{ hashFiles('.github/workflows/test.yml') }}
-
-      - name: Authenticate to Google Cloud
-        if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-
-      - name: Set up Cloud SDK
-        if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Download data from private GCS
-        if: steps.cache.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
-        run: |
-          gcloud storage cp gs://kippu-navi-build-secrets/data/routes.json ./src/data/
-
       - name: Run Go Test
         working-directory: split-pass-api
         run: go test -v -race ./...
