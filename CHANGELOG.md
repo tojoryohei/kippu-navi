@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.0...kippu-navi-v2.6.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* 事前計算処理への特例混在排除ルールの適用（ロジック整合性の確保） ([#341](https://github.com/tojoryohei/kippu-navi/issues/341)) ([287b26c](https://github.com/tojoryohei/kippu-navi/commit/287b26c32889b967ed88d121de04294ac54815d9))
+
 ## [2.6.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.5.0...kippu-navi-v2.6.0) (2026-06-25)
 
 
