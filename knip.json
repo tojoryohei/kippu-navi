@@ -3,6 +3,9 @@
   "entry": [
     "scripts/**/*.ts"
   ],
+  "ignore": [
+    "public/wasm_exec.js"
+  ],
   "ignoreDependencies": [
     "tsx"
   ]

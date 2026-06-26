@@ -14,7 +14,8 @@ export default [
             "node_modules/**",
             "out/**",
             "build/**",
-            "next-env.d.ts"
+            "next-env.d.ts",
+            "public/**"
         ],
     },
     {
