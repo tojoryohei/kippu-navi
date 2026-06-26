@@ -482,12 +482,15 @@ func getCheapestNoSplitSegmentsWasm(start, end, months int) ([]SplitSegment, err
 	return segs, nil
 }
 
-// Bitset 訪問フラグを使用した高速 DFS
+// Bitset 訪問フラグを使用した高速 DFS (逆ダイクストラによる枝刈り付き)
 func dfsFindPathsWasm(start, end int, maxGisei domain.DeciKilo) [][]int {
 	var paths [][]int
 	numStations := wasmGraph.NumStations()
 	visited := NewBitset(numStations)
 	currentPath := make([]int, 0, 64)
+
+	// ゴール（end）から全駅への最短擬制キロを一瞬で計算
+	distToEnd, _ := activeGraph.FindAllShortestPathsGisei(end)
 
 	currentPath = append(currentPath, start)
 	visited.Set(start)
@@ -518,7 +521,8 @@ func dfsFindPathsWasm(start, end int, maxGisei domain.DeciKilo) [][]int {
 			}
 
 			nextGisei := currentGisei + edge.GiseiKilo
-			if nextGisei > maxGisei {
+			// 「これまでの擬制キロ」＋「今回の辺」＋「次の駅からゴールまでの残り最小擬制キロ」が制限を超える場合は枝刈り
+			if nextGisei+distToEnd[next] > maxGisei {
 				continue
 			}
 
