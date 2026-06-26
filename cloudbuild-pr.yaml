@@ -1,21 +1,21 @@
 steps:
   # 1. 秘匿バケットから DB・JSON データをダウンロードし、所定のディレクトリに配置する（本番と同様）
-  - name: 'gcr.io/cloud-builders/gsutil'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         mkdir -p src/data
-        gsutil -m cp gs://kippu-navi-build-secrets/data/*.db ./src/data/
-        gsutil -m cp gs://kippu-navi-build-secrets/data/*.json ./src/data/
+        gcloud storage cp gs://kippu-navi-build-secrets/data/*.db ./src/data/
+        gcloud storage cp gs://kippu-navi-build-secrets/data/*.json ./src/data/
         mkdir -p src/app/mr/data
-        gsutil -m cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
+        gcloud storage cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
         mkdir -p src/app/split/data
-        gsutil -m cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
+        gcloud storage cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
         
         # Wasm and Graph data injection
-        gsutil cp gs://kippu-navi-build-secrets/wasm/split_pass.wasm ./public/
-        gsutil cp gs://kippu-navi-build-secrets/wasm/graph_data.bin ./public/
+        gcloud storage cp gs://kippu-navi-build-secrets/wasm/split_pass.wasm ./public/
+        gcloud storage cp gs://kippu-navi-build-secrets/wasm/graph_data.bin ./public/
 
   # 2. JSON が揃った状態で Docker ビルドを実行する（タグを PR 番号に変更）
   - name: 'gcr.io/cloud-builders/docker'
