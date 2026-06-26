@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.3...kippu-navi-v2.6.4) (2026-06-26)
+
+
+### Bug Fixes
+
+* 分割候補がない短距離区間でのエラー表示を解消し、通し運賃へフォールバックする ([#352](https://github.com/tojoryohei/kippu-navi/issues/352)) ([003513f](https://github.com/tojoryohei/kippu-navi/commit/003513fdc4605dab0949cd64c6d6cc099768b8d5))
+
 ## [2.6.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.2...kippu-navi-v2.6.3) (2026-06-26)
 
 
