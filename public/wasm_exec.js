@@ -119,6 +119,8 @@
 			const setInt64 = (addr, v) => {
 				this.mem.setUint32(addr + 0, v, true);
 				this.mem.setUint32(addr + 4, Math.floor(v / 4294967296), true);
+			}
+
 			const getInt64 = (addr) => {
 				const low = this.mem.getUint32(addr + 0, true);
 				const high = this.mem.getInt32(addr + 4, true);
@@ -250,8 +252,8 @@
 					},
 
 					// func resetMemoryDataView()
-					"runtime.resetMemoryDataView": (sp) => {
-						sp >>>= 0;
+					"runtime.resetMemoryDataView": (_sp) => {
+						_sp >>>= 0;
 						this.mem = new DataView(this._inst.exports.mem.buffer);
 					},
 
@@ -557,6 +559,7 @@
 		}
 
 		_makeFuncWrapper(id) {
+			// eslint-disable-next-line @typescript-eslint/no-this-alias
 			const go = this;
 			return function () {
 				const event = { id: id, this: this, args: arguments };

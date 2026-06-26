@@ -13,8 +13,7 @@ export default [
             "node_modules/**",
             "out/**",
             "build/**",
-            "next-env.d.ts",
-            "public/**"
+            "next-env.d.ts"
         ],
     },
     securityPlugin.configs.recommended,
