@@ -148,6 +148,7 @@ export default function SplitForm({
         const initWorker = () => {
             if (workerRef.current) {
                 workerRef.current.terminate();
+                workerRef.current = null;
             }
             setIsWasmReady(false);
 
@@ -182,6 +183,7 @@ export default function SplitForm({
         return () => {
             if (workerRef.current) {
                 workerRef.current.terminate();
+                workerRef.current = null;
             }
         };
     }, []);
