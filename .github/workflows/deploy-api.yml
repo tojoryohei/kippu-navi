@@ -34,6 +34,9 @@ jobs:
           service_account: '${{ secrets.SA_EMAIL }}'
           token_format: 'access_token'
 
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
       - name: Login to Artifact Registry
         uses: docker/login-action@v3
         with:
@@ -44,7 +47,7 @@ jobs:
       - name: Get precomputed_server.bin Metadata
         id: gcs-meta
         run: |
-          MD5=$(gsutil stat gs://kippu-navi-build-secrets/data/precomputed_server.bin | grep "Hash (md5):" | awk '{print $3}')
+          MD5=$(gcloud storage objects describe gs://kippu-navi-build-secrets/data/precomputed_server.bin --format="value(md5Hash)")
           CLEAN_MD5=$(echo "$MD5" | tr -dc 'a-zA-Z0-9')
           echo "md5=$CLEAN_MD5" >> $GITHUB_OUTPUT
 
@@ -58,7 +61,7 @@ jobs:
       - name: Download Precomputed Server Binary
         if: steps.cache-bin.outputs.cache-hit != 'true'
         run: |
-          gsutil cp gs://kippu-navi-build-secrets/data/precomputed_server.bin ./split-pass-api/internal/graph/data/
+          gcloud storage cp gs://kippu-navi-build-secrets/data/precomputed_server.bin ./split-pass-api/internal/graph/data/
 
       - name: Build and Push Docker Image
         run: |
