@@ -59,20 +59,14 @@ func setupSearch(t testing.TB) (*graph.RailwayGraph, *usecase.SearchOptimalSplit
 	)
 	opt := optimizer.NewDPOptimizer(amount)
 	split := usecase.NewFindOptimalSplit(opt, amount)
-	baseFares, _,
-		basePrevGisei, basePrevEigyo, baseDistGisei, baseDistEigyo,
-		_, _, _, _,
-		numStations, err := data.LoadPrecomputedFares()
+	baseFares, _, baseDistGisei, _, numStations, err := data.LoadPrecomputedFares("../../internal/graph/data/precomputed_server.bin")
 	if err != nil {
 		t.Fatalf("事前計算された運賃データのロードに失敗しました: %v", err)
 	}
 	if int32(g.NumStations()) != numStations {
 		t.Fatalf("データ不整合: edges.jsonの駅数(%d)が事前計算データの駅数(%d)と一致しません。事前計算ファイルを再生成してください", g.NumStations(), numStations)
 	}
-	g.PrevGisei = basePrevGisei
-	g.PrevEigyo = basePrevEigyo
 	g.DistGisei = baseDistGisei
-	g.DistEigyo = baseDistEigyo
 	search := usecase.NewSearchOptimalSplit(g, split, bypassRules, 0, baseFares, numStations)
 
 	return g, search, amount
@@ -156,13 +150,27 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 			}
 
 			if err == nil {
-				if len(results.Optimals) == 0 {
+				if len(results) == 0 {
 					t.Error("結果が空です")
 					return
 				}
 
-				if results.Optimals[0].TotalAmount != tt.want {
-					t.Errorf("Execute() TotalAmount = %d, want %d", results.Optimals[0].TotalAmount, tt.want)
+				path := results[0]
+				if len(results) > 1 {
+					path = results[1]
+				}
+
+				totalFare := 0
+				for i := 0; i < len(path)-1; i++ {
+					segs, err := search.GetCheapestNoSplitSegments(path[i], path[i+1], tt.months)
+					if err != nil {
+						t.Fatalf("GetCheapestNoSplitSegments failed: %v", err)
+					}
+					totalFare += segs[0].Result.TotalAmount()
+				}
+
+				if totalFare != tt.want {
+					t.Errorf("TotalAmount = %d, want %d", totalFare, tt.want)
 				}
 			}
 		})

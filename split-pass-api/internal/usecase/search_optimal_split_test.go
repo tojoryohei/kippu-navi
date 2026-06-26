@@ -60,12 +60,18 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			t.Fatalf("Execute が失敗しました: %v", err)
 		}
 
-		if len(got.Optimals) == 0 {
+		if len(got) == 0 {
 			t.Fatal("結果が空です")
 		}
 
-		if got.Optimals[0].TotalAmount != 2000 {
-			t.Errorf("TotalAmount = %d, 期待値は 2000", got.Optimals[0].TotalAmount)
+		hasABC := false
+		for _, path := range got {
+			if len(path) == 3 && path[0] == id("A") && path[1] == id("B") && path[2] == id("C") {
+				hasABC = true
+			}
+		}
+		if !hasABC {
+			t.Error("期待される分割経路 A-B-C が見つかりません")
 		}
 	})
 
@@ -94,14 +100,8 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			t.Fatalf("Execute が失敗しました: %v", err)
 		}
 
-		if len(got.Optimals) == 0 {
+		if len(got) == 0 {
 			t.Fatal("結果が空です")
-		}
-
-		// D-A(5km:1000円) + A-B-C(通し計算で20km:2500円) = 3500円 など、
-		// 補正されたルート群の中でDPが計算した最安値が返ることを確認
-		if got.Optimals[0].TotalAmount <= 0 {
-			t.Errorf("有効な TotalAmount が期待されますが、%d を取得しました", got.Optimals[0].TotalAmount)
 		}
 	})
 
@@ -184,39 +184,28 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			t.Fatalf("Execute(1) が失敗しました: %v", err1)
 		}
 
-		if got0.Optimals[0].TotalAmount != 3000 {
-			t.Errorf("maxSections=0 の TotalAmount = %d, 期待値は 3000", got0.Optimals[0].TotalAmount)
-		}
-		if got2.Optimals[0].TotalAmount != 4000 {
-			t.Errorf("maxSections=2 の TotalAmount = %d, 期待値は 4000", got2.Optimals[0].TotalAmount)
-		}
-		if got1.Optimals[0].TotalAmount != 5000 {
-			t.Errorf("maxSections=1 の TotalAmount = %d, 期待値は 5000", got1.Optimals[0].TotalAmount)
-		}
-
-		// maxSections=0 の場合は 3区間のパターンが存在するはず
-		has3Sections := false
-		for _, opt := range got0.Optimals {
-			if len(opt.Segments) == 3 {
-				has3Sections = true
-				break
+		// maxSections=0 の場合は A-B-C-D (長さ4) が含まれるはず
+		hasLength4 := false
+		for _, path := range got0 {
+			if len(path) == 4 {
+				hasLength4 = true
 			}
 		}
-		if !has3Sections {
-			t.Errorf("maxSections=0 なのに 3区間 のパターンが含まれていません")
+		if !hasLength4 {
+			t.Errorf("maxSections=0 なのに長さ4の経路が含まれていません")
 		}
 
-		// maxSections=2 の場合は 2区間であるはず
-		for _, opt := range got2.Optimals {
-			if len(opt.Segments) > 2 {
-				t.Errorf("maxSections=2 なのに %d区間のパターンが含まれています", len(opt.Segments))
+		// maxSections=2 の場合は長さが3以下であるはず
+		for _, path := range got2 {
+			if len(path) > 3 {
+				t.Errorf("maxSections=2 なのに長さが %d の経路が含まれています", len(path))
 			}
 		}
 
-		// maxSections=1 の場合は 1区間であるはず
-		for _, opt := range got1.Optimals {
-			if len(opt.Segments) > 1 {
-				t.Errorf("maxSections=1 なのに %d区間のパターンが含まれています", len(opt.Segments))
+		// maxSections=1 の場合は長さが2以下であるはず
+		for _, path := range got1 {
+			if len(path) > 2 {
+				t.Errorf("maxSections=1 なのに長さが %d の経路が含まれています", len(path))
 			}
 		}
 	})
@@ -263,35 +252,21 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			t.Fatalf("Execute が失敗しました: %v", err)
 		}
 
-		if len(got.Optimals) != 2 {
-			t.Fatalf("最安結果の組み合わせ数 = %d, 期待値は 2", len(got.Optimals))
-		}
-
 		hasABD := false
 		hasACD := false
-		for _, opt := range got.Optimals {
-			if len(opt.Segments) == 2 {
-				seg1 := opt.Segments[0]
-				seg2 := opt.Segments[1]
-
-				if seg1.StartStationID != id3("A") || (seg1.EndStationID != id3("B") && seg1.EndStationID != id3("C")) {
-					t.Errorf("不正な StartStationID または EndStationID: %+v", seg1)
+		for _, path := range got {
+			if len(path) == 3 {
+				if path[0] == id3("A") && path[1] == id3("B") && path[2] == id3("D") {
+					hasABD = true
 				}
-
-				if seg1.EndStationID == id3("B") {
-					if seg2.StartStationID == id3("B") && seg2.EndStationID == id3("D") {
-						hasABD = true
-					}
-				} else if seg1.EndStationID == id3("C") {
-					if seg2.StartStationID == id3("C") && seg2.EndStationID == id3("D") {
-						hasACD = true
-					}
+				if path[0] == id3("A") && path[1] == id3("C") && path[2] == id3("D") {
+					hasACD = true
 				}
 			}
 		}
 
 		if !hasABD || !hasACD {
-			t.Errorf("A-B-D または A-C-D の経路組み合わせが不足しています: ABD=%v, ACD=%v", hasABD, hasACD)
+			t.Errorf("A-B-D または A-C-D の経路が不足しています: ABD=%v, ACD=%v", hasABD, hasACD)
 		}
 	})
 
@@ -339,29 +314,23 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 
 		search := usecase.NewSearchOptimalSplit(g4, split4, nil, 0, fares4, int32(g4.NumStations()))
 
-		got, err := search.Execute(id4("A"), id4("D"), 1)
+		segs, err := search.GetCheapestNoSplitSegments(id4("A"), id4("D"), 1)
 		if err != nil {
-			t.Fatalf("Execute が失敗しました: %v", err)
-		}
-
-		if got.Normal.TotalAmount != 1000 {
-			t.Errorf("TotalAmount = %d, 期待値は 1000", got.Normal.TotalAmount)
+			t.Fatalf("GetCheapestNoSplitSegments が失敗しました: %v", err)
 		}
 
 		hasACD := false
 		hasABD := false
 		hasAED := false
-		for _, opt := range got.Optimals {
-			for _, seg := range opt.Segments {
-				if isMatch(seg.Path, []int{id4("A"), id4("C"), id4("D")}) {
-					hasACD = true
-				}
-				if isMatch(seg.Path, []int{id4("A"), id4("B"), id4("D")}) {
-					hasABD = true
-				}
-				if isMatch(seg.Path, []int{id4("A"), id4("E"), id4("D")}) {
-					hasAED = true
-				}
+		for _, seg := range segs {
+			if isMatch(seg.Path, []int{id4("A"), id4("C"), id4("D")}) {
+				hasACD = true
+			}
+			if isMatch(seg.Path, []int{id4("A"), id4("B"), id4("D")}) {
+				hasABD = true
+			}
+			if isMatch(seg.Path, []int{id4("A"), id4("E"), id4("D")}) {
+				hasAED = true
 			}
 		}
 
@@ -420,17 +389,15 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 
 		search := usecase.NewSearchOptimalSplit(g5, split5, rules, 0, fares5, int32(g5.NumStations()))
 
-		got, err := search.Execute(id5("B"), id5("C"), 1)
+		segs, err := search.GetCheapestNoSplitSegments(id5("B"), id5("C"), 1)
 		if err != nil {
-			t.Fatalf("Execute が失敗しました: %v", err)
+			t.Fatalf("GetCheapestNoSplitSegments が失敗しました: %v", err)
 		}
 
 		hasMixedRoute := false
-		for _, opt := range got.Optimals {
-			for _, seg := range opt.Segments {
-				if isMatch(seg.Path, []int{id5("B"), id5("A"), id5("D"), id5("C")}) {
-					hasMixedRoute = true
-				}
+		for _, seg := range segs {
+			if isMatch(seg.Path, []int{id5("B"), id5("A"), id5("D"), id5("C")}) {
+				hasMixedRoute = true
 			}
 		}
 

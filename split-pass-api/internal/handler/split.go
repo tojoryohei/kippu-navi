@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 	"split-pass-api/internal/usecase"
 	"strings"
@@ -40,27 +39,11 @@ type CalculateRequest struct {
 	Months int    `json:"months"`
 }
 
-// SegmentResponse は駅名を含む評価済みの区間を表現します。
-type SegmentResponse struct {
-	Path           []string                   `json:"path"`
-	Via            []string                   `json:"via"`
-	Result         *usecase.CalculationResult `json:"result"`
-	TotalEigyoKilo domain.DeciKilo            `json:"totalEigyoKilo"`
-	Start          string                     `json:"start"`
-	End            string                     `json:"end"`
-}
-
-// ResultResponse は1つの最適な分割パターンを表現します。
-type ResultResponse struct {
-	TotalAmount int               `json:"totalAmount"`
-	Segments    []SegmentResponse `json:"segments"`
-}
-
 // CalculateResponse はレスポンスのペイロードを表現します。
 type CalculateResponse struct {
-	Normal  *ResultResponse  `json:"normal,omitempty"`
-	Results []ResultResponse `json:"results"`
-	Error   string           `json:"error,omitempty"`
+	Normal  []string   `json:"normal"`
+	Results [][]string `json:"results"`
+	Error   string     `json:"error,omitempty"`
 }
 
 // HandleCalculate は計算リクエストを処理します。
@@ -104,7 +87,6 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// O(1) 事前バリデーション: 連結成分（エリア）のチェック
-	// 孤立駅（GroupID=0）や、異なるエリア間（GroupIDが不一致）の場合は即座にエラーを返す
 	startGroupID := h.graph.GetGroupID(startID)
 	endGroupID := h.graph.GetGroupID(endID)
 	if startGroupID == 0 || endGroupID == 0 || startGroupID != endGroupID {
@@ -125,44 +107,19 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mapToResultResponse := func(res usecase.SplitResult) ResultResponse {
-		apiSegments := make([]SegmentResponse, len(res.Segments))
-		for j, seg := range res.Segments {
-			pathNames := make([]string, len(seg.Path))
-			for k, id := range seg.Path {
-				pathNames[k] = h.graph.GetName(id)
-			}
-			viaNames := usecase.GetVia(h.graph, seg.Path)
+	var normalResp []string
+	var apiResults [][]string
 
-			var eigyo domain.DeciKilo
-			if seg.Result != nil {
-				eigyo = seg.Result.TotalEigyoKilo
-			}
-
-			apiSegments[j] = SegmentResponse{
-				Path:           pathNames,
-				Via:            viaNames,
-				Result:         seg.Result,
-				TotalEigyoKilo: eigyo,
-				Start:          h.graph.GetName(seg.StartStationID),
-				End:            h.graph.GetName(seg.EndStationID),
-			}
+	for i, path := range optResult {
+		names := make([]string, len(path))
+		for j, id := range path {
+			names[j] = h.graph.GetName(id)
 		}
-		return ResultResponse{
-			TotalAmount: res.TotalAmount,
-			Segments:    apiSegments,
+		if i == 0 {
+			normalResp = names
+		} else {
+			apiResults = append(apiResults, names)
 		}
-	}
-
-	var normalResp *ResultResponse
-	if optResult.Normal.TotalAmount > 0 {
-		nr := mapToResultResponse(optResult.Normal)
-		normalResp = &nr
-	}
-
-	apiResults := make([]ResultResponse, len(optResult.Optimals))
-	for i, res := range optResult.Optimals {
-		apiResults[i] = mapToResultResponse(res)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

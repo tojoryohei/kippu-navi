@@ -127,10 +127,7 @@ func run() error {
 	splitUseCase := usecase.NewFindOptimalSplit(opt, amountCalc)
 
 	// 事前計算された運賃および経路データのロード
-	baseFares, icFares,
-		basePrevGisei, basePrevEigyo, baseDistGisei, baseDistEigyo,
-		icPrevGisei, icPrevEigyo, icDistGisei, icDistEigyo,
-		numStations, err := data.LoadPrecomputedFares()
+	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := data.LoadPrecomputedFares("./internal/graph/data/precomputed_server.bin")
 	if err != nil {
 		return fmt.Errorf("事前計算された運賃データのロードに失敗しました: %w", err)
 	}
@@ -139,10 +136,7 @@ func run() error {
 	}
 
 	// グラフに事前計算されたマトリクスを格納
-	g.PrevGisei = basePrevGisei
-	g.PrevEigyo = basePrevEigyo
 	g.DistGisei = baseDistGisei
-	g.DistEigyo = baseDistEigyo
 
 	// 磁気定期券用: 区間数無制限 (0)
 	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules, 0, baseFares, numStations)
@@ -152,10 +146,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("ICグラフの生成に失敗しました: %w", err)
 	}
-	icGraph.PrevGisei = icPrevGisei
-	icGraph.PrevEigyo = icPrevEigyo
 	icGraph.DistGisei = icDistGisei
-	icGraph.DistEigyo = icDistEigyo
 
 	icSearchUseCase := usecase.NewSearchOptimalSplit(icGraph, splitUseCase, bypassRules, 2, icFares, numStations)
 

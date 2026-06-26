@@ -47,14 +47,8 @@ func NewSearchOptimalSplit(
 	}
 }
 
-// OptimalSearchResult は探索結果全体（通常運賃と最適分割運賃）を保持します。
-type OptimalSearchResult struct {
-	Normal   SplitResult   // 分割なしの最安結果
-	Optimals []SplitResult // 分割時の最安結果
-}
-
 // Execute は指定された発着駅間の最安分割結果を探索します。
-func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearchResult, error) {
+func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([][]int, error) {
 	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
 	if err != nil {
 		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の検索に失敗: %w", err)
@@ -149,60 +143,29 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) (*OptimalSearch
 	}
 	candStations := scratch.candStationsBuf[:candLen]
 
-	optimals, err := u.searchOptimalSplitDP(startID, endID, months, u.maxSections, candStations, scratch)
+	_, optimalPaths, err := u.searchOptimalSplitDPMinimal(startID, endID, months, u.maxSections, candStations, scratch)
 
 	// プールへの返却
 	dpScratchPool.Put(scratch)
 
 	if err != nil {
-		// 分割パターンが見つからない場合は、分割なし（通常経路）の結果のみを返すか、エラーにする
 		if errors.Is(err, domain.ErrNoValidPattern) {
-			return &OptimalSearchResult{
-				Normal: SplitResult{
-					TotalAmount: normalAmount,
-					Segments: []SplitSegment{
-						{
-							Path:           shortest.StationIDs,
-							Result:         calcResult,
-							StartStationID: startID,
-							EndStationID:   endID,
-						},
-					},
-				},
-				Optimals: []SplitResult{
-					{
-						TotalAmount: normalAmount,
-						Segments: []SplitSegment{
-							{
-								Path:           shortest.StationIDs,
-								Result:         calcResult,
-								StartStationID: startID,
-								EndStationID:   endID,
-							},
-						},
-					},
-				},
-			}, nil
+			return [][]int{{startID, endID}}, nil
 		}
 		return nil, err
 	}
 
-	normalResult := SplitResult{
-		TotalAmount: normalAmount,
-		Segments: []SplitSegment{
-			{
-				Path:           shortest.StationIDs,
-				Result:         calcResult,
-				StartStationID: startID,
-				EndStationID:   endID,
-			},
-		},
+	var results [][]int
+	results = append(results, []int{startID, endID})
+
+	for _, path := range optimalPaths {
+		if len(path) == 2 && path[0] == startID && path[1] == endID {
+			continue
+		}
+		results = append(results, path)
 	}
 
-	return &OptimalSearchResult{
-		Normal:   normalResult,
-		Optimals: optimals,
-	}, nil
+	return results, nil
 }
 
 type staticListNode struct {
@@ -523,7 +486,7 @@ func (u *SearchOptimalSplit) searchOptimalSplitDP(startID, endID, months, maxSec
 		var allSegCandidates [][]SplitSegment
 		isValid := true
 		for i := 0; i < len(path)-1; i++ {
-			segs, err := u.getCheapestNoSplitSegments(path[i], path[i+1], months)
+			segs, err := u.GetCheapestNoSplitSegments(path[i], path[i+1], months)
 			if err != nil {
 				isValid = false
 				break
@@ -580,7 +543,7 @@ func (u *SearchOptimalSplit) backtrackZeroAlloc(
 	}
 }
 
-func (u *SearchOptimalSplit) getCheapestNoSplitSegments(start, end, months int) ([]SplitSegment, error) {
+func (u *SearchOptimalSplit) GetCheapestNoSplitSegments(start, end, months int) ([]SplitSegment, error) {
 	shortest, err := u.graph.FindShortestPathGisei(start, end)
 	if err != nil {
 		return nil, domain.ErrInvalidPath
@@ -951,4 +914,218 @@ func GetCandFlagsForTest(scratch interface{}) []bool {
 // GetCandStationsBufForTest は scratch の candStationsBuf スライスを返します。
 func GetCandStationsBufForTest(scratch interface{}) []int {
 	return scratch.(*dpScratch).candStationsBuf
+}
+
+func (u *SearchOptimalSplit) searchOptimalSplitDPMinimal(startID, endID, months, maxSections int, candStations []int, scratch *dpScratch) (int, [][]int, error) {
+	numStations := int(u.numStations)
+
+	maxK := maxSections
+	if maxSections <= 0 {
+		maxK = len(candStations) - 1
+		if maxK > defaultMaxSectionsLimit {
+			maxK = defaultMaxSectionsLimit
+		}
+	}
+
+	mIdx := monthToIndex(months)
+	N := len(candStations)
+
+	scratch.ensureSize(numStations, maxK, N)
+	scratch.nodeCount = 0
+
+	// 逆写像テーブルの初期化
+	for i := 0; i < numStations; i++ {
+		scratch.stationToIndex[i] = -1
+	}
+	for i, sid := range candStations {
+		scratch.stationToIndex[sid] = i
+	}
+
+	startIdx := scratch.stationToIndex[startID]
+	endIdx := scratch.stationToIndex[endID]
+	if startIdx == -1 || endIdx == -1 {
+		return 0, nil, domain.ErrNoValidPattern
+	}
+
+	// DPテーブルの初期化
+	const INF = math.MaxInt
+	dpSize := (maxK + 1) * N
+	for i := 0; i < dpSize; i++ {
+		scratch.distTable[i] = INF
+		scratch.headTable[i] = -1
+	}
+
+	// 初期状態の設定
+	scratch.distTable[0*N+startIdx] = 0
+
+	if N <= 500 {
+		// CSR と Local Matrix の構築 (アロケーションフリー)
+		edgeCount := 0
+		scratch.adjHead[0] = 0
+
+		for uIdx := 0; uIdx < N; uIdx++ {
+			currID := candStations[uIdx]
+			baseIdx := int32(mIdx)*u.numStations*u.numStations + int32(currID)*u.numStations
+			uOffset := uIdx * N
+
+			for vIdx := 0; vIdx < N; vIdx++ {
+				if uIdx == vIdx {
+					scratch.localFares[uOffset+vIdx] = 0
+					continue
+				}
+
+				nextID := candStations[vIdx]
+				fareVal := int(u.fares[baseIdx+int32(nextID)])
+				scratch.localFares[uOffset+vIdx] = fareVal
+
+				if fareVal > 0 {
+					scratch.adjEdges[edgeCount] = int32(vIdx)
+					edgeCount++
+				}
+			}
+			scratch.adjHead[uIdx+1] = int32(edgeCount)
+		}
+
+		// 多ステージ DP 遷移 (CSR + Local Matrix 形式)
+		for s := 0; s < maxK; s++ {
+			for uIdx := 0; uIdx < N; uIdx++ {
+				currCost := scratch.distTable[s*N+uIdx]
+				if currCost == INF {
+					continue
+				}
+
+				startEdgeIdx := int(scratch.adjHead[uIdx])
+				endEdgeIdx := int(scratch.adjHead[uIdx+1])
+				uOffset := uIdx * N
+
+				for e := startEdgeIdx; e < endEdgeIdx; e++ {
+					vIdx := int(scratch.adjEdges[e])
+					fareVal := scratch.localFares[uOffset+vIdx]
+
+					newCost := currCost + fareVal
+					targetIdx := (s+1)*N + vIdx
+
+					if newCost < scratch.distTable[targetIdx] {
+						scratch.distTable[targetIdx] = newCost
+
+						if scratch.nodeCount >= len(scratch.nodes) {
+							newNodes := make([]staticListNode, len(scratch.nodes)*2)
+							copy(newNodes, scratch.nodes)
+							scratch.nodes = newNodes
+						}
+
+						scratch.nodes[scratch.nodeCount] = staticListNode{
+							parentIdx: uIdx,
+							sections:  s,
+							next:      -1,
+						}
+						scratch.headTable[targetIdx] = scratch.nodeCount
+						scratch.nodeCount++
+					} else if newCost == scratch.distTable[targetIdx] {
+						if scratch.nodeCount >= len(scratch.nodes) {
+							newNodes := make([]staticListNode, len(scratch.nodes)*2)
+							copy(newNodes, scratch.nodes)
+							scratch.nodes = newNodes
+						}
+
+						scratch.nodes[scratch.nodeCount] = staticListNode{
+							parentIdx: uIdx,
+							sections:  s,
+							next:      scratch.headTable[targetIdx],
+						}
+						scratch.headTable[targetIdx] = scratch.nodeCount
+						scratch.nodeCount++
+					}
+				}
+			}
+		}
+	} else {
+		// フォールバック: N > 500 の場合の直接参照方式
+		for s := 0; s < maxK; s++ {
+			for uIdx := 0; uIdx < N; uIdx++ {
+				currCost := scratch.distTable[s*N+uIdx]
+				if currCost == INF {
+					continue
+				}
+
+				currID := candStations[uIdx]
+				baseIdx := int32(mIdx)*u.numStations*u.numStations + int32(currID)*u.numStations
+
+				for vIdx := 0; vIdx < N; vIdx++ {
+					if uIdx == vIdx {
+						continue
+					}
+
+					nextID := candStations[vIdx]
+					idx := baseIdx + int32(nextID)
+					fareVal := int(u.fares[idx])
+					if fareVal <= 0 {
+						continue
+					}
+
+					newCost := currCost + fareVal
+					targetIdx := (s+1)*N + vIdx
+
+					if newCost < scratch.distTable[targetIdx] {
+						scratch.distTable[targetIdx] = newCost
+
+						if scratch.nodeCount >= len(scratch.nodes) {
+							newNodes := make([]staticListNode, len(scratch.nodes)*2)
+							copy(newNodes, scratch.nodes)
+							scratch.nodes = newNodes
+						}
+
+						scratch.nodes[scratch.nodeCount] = staticListNode{
+							parentIdx: uIdx,
+							sections:  s,
+							next:      -1,
+						}
+						scratch.headTable[targetIdx] = scratch.nodeCount
+						scratch.nodeCount++
+					} else if newCost == scratch.distTable[targetIdx] {
+						if scratch.nodeCount >= len(scratch.nodes) {
+							newNodes := make([]staticListNode, len(scratch.nodes)*2)
+							copy(newNodes, scratch.nodes)
+							scratch.nodes = newNodes
+						}
+
+						scratch.nodes[scratch.nodeCount] = staticListNode{
+							parentIdx: uIdx,
+							sections:  s,
+							next:      scratch.headTable[targetIdx],
+						}
+						scratch.headTable[targetIdx] = scratch.nodeCount
+						scratch.nodeCount++
+					}
+				}
+			}
+		}
+	}
+
+	// 最小コストの探索
+	minCostToEnd := INF
+	for s := 1; s <= maxK; s++ {
+		cost := scratch.distTable[s*N+endIdx]
+		if cost < minCostToEnd {
+			minCostToEnd = cost
+		}
+	}
+
+	if minCostToEnd == INF {
+		return 0, nil, domain.ErrNoValidPattern
+	}
+
+	// 最安コストを達成する状態からバックトラックして全分割経路を抽出
+	var optimalPaths [][]int
+	for s := 1; s <= maxK; s++ {
+		if scratch.distTable[s*N+endIdx] == minCostToEnd {
+			u.backtrackZeroAlloc(endIdx, s, scratch, 0, startIdx, candStations, N, &optimalPaths)
+		}
+	}
+
+	if len(optimalPaths) == 0 {
+		return 0, nil, domain.ErrNoValidPattern
+	}
+
+	return minCostToEnd, optimalPaths, nil
 }
