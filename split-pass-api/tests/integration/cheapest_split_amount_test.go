@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"os"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 	"split-pass-api/internal/graph/data"
@@ -13,6 +14,13 @@ import (
 
 func setupSearch(t testing.TB) (*graph.RailwayGraph, *usecase.SearchOptimalSplit, *usecase.CalculateAmount) {
 	t.Helper()
+
+	binPath := "../../internal/graph/data/precomputed_server.bin"
+	if _, err := os.Stat(binPath); os.IsNotExist(err) {
+		t.Skipf("事前計算ファイルが存在しないため、テストをスキップします (%s)", binPath)
+		return nil, nil, nil
+	}
+
 	// 1. 環境構築 (main.go と同様のセットアップ)
 	loader := &graphio.JSONLoader{}
 	g, err := loader.Load(data.GetEdgesReader())
@@ -59,7 +67,7 @@ func setupSearch(t testing.TB) (*graph.RailwayGraph, *usecase.SearchOptimalSplit
 	)
 	opt := optimizer.NewDPOptimizer(amount)
 	split := usecase.NewFindOptimalSplit(opt, amount)
-	baseFares, _, baseDistGisei, _, numStations, err := data.LoadPrecomputedFares("../../internal/graph/data/precomputed_server.bin")
+	baseFares, _, baseDistGisei, _, numStations, err := data.LoadPrecomputedFares(binPath)
 	if err != nil {
 		t.Fatalf("事前計算された運賃データのロードに失敗しました: %v", err)
 	}
