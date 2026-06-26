@@ -1,4 +1,4 @@
-run:
+issues:
   # Wasm向けのコードはビルド制約が異なるため、ホスト環境（Linux）でのリント対象から除外します
   exclude-dirs:
     - cmd/wasm
