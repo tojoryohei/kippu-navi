@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.4...kippu-navi-v2.6.5) (2026-06-26)
+
+
+### Performance Improvements
+
+* Wasmの経路復元アルゴリズムをDFSからダイクストラ法+特例枝刈りへ最適化 ([#355](https://github.com/tojoryohei/kippu-navi/issues/355)) ([74b3687](https://github.com/tojoryohei/kippu-navi/commit/74b36876df12a950788860572b27f4912b2bf070))
+
 ## [2.6.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.3...kippu-navi-v2.6.4) (2026-06-26)
 
 
