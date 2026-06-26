@@ -54,3 +54,6 @@ tsconfig.tsbuildinfo
 # local compiled binaries
 *.exe
 split-pass-api/*.exe
+
+# Next.js automatic type definitions
+next-env.d.ts
