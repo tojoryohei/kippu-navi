@@ -12,6 +12,10 @@ steps:
         gsutil -m cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
         mkdir -p src/app/split/data
         gsutil -m cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
+        
+        # Wasm and Graph data injection
+        gsutil cp gs://kippu-navi-build-secrets/wasm/split_pass.wasm ./public/
+        gsutil cp gs://kippu-navi-build-secrets/wasm/graph_data.bin ./public/
 
   # 2. JSON が揃った状態で Docker ビルドを実行する（タグを PR 番号に変更）
   - name: 'gcr.io/cloud-builders/docker'
