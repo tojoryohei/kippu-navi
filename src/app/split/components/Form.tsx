@@ -9,7 +9,7 @@ import { usePostHog } from "posthog-js/react";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
-import { SearchOption, SearchType, SplitApiResponse, Station } from "@/app/types";
+import { SearchOption, SearchType, SplitApiResponse, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
 import { calculateAction } from "@/app/split/actions";
 
 interface ExtendedSplitFormInput {
@@ -47,6 +47,69 @@ const TEMPORARY_STATIONS = [
     "バルーンさが",
 ];
 
+interface WasmSegment {
+    start: string;
+    end: string;
+    path: string[];
+    via: string[];
+    totalEigyoKilo?: number;
+    result?: {
+        Fare: number;
+        BarrierFreeFee: number;
+        Charge: number;
+    };
+}
+
+interface WasmResultResponse {
+    totalAmount: number;
+    segments: WasmSegment[];
+}
+
+interface WasmClientResponse {
+    normal: WasmResultResponse;
+    results: WasmResultResponse[];
+}
+
+function adaptWasmResponseToSplitApiResponse(wasmRes: WasmClientResponse): SplitApiResponse {
+    const normalSegs = wasmRes.normal?.segments || [];
+    const cheapestKippuData: KippuData = {
+        departureStation: normalSegs[0]?.start || "",
+        arrivalStation: normalSegs[normalSegs.length - 1]?.end || "",
+        totalEigyoKilo: normalSegs.reduce((sum: number, s: WasmSegment) => sum + (s.totalEigyoKilo || 0), 0),
+        printedViaLines: normalSegs.flatMap((s: WasmSegment) => s.via || []),
+        fare: wasmRes.normal?.totalAmount || 0,
+        validDays: 0,
+    };
+
+    const splitKippuDatasList: SplitKippuDatas[] = (wasmRes.results || []).map((res: WasmResultResponse) => {
+        const splitKippuDatas: SplitKippuData[] = (res.segments || []).map((seg: WasmSegment) => {
+            const segFare = (seg.result?.Fare || 0) + (seg.result?.BarrierFreeFee || 0) + (seg.result?.Charge || 0);
+            return {
+                departureStation: seg.start,
+                arrivalStation: seg.end,
+                kippuData: {
+                    departureStation: seg.path[0],
+                    arrivalStation: seg.path[seg.path.length - 1],
+                    totalEigyoKilo: seg.totalEigyoKilo || 0,
+                    printedViaLines: seg.via || [],
+                    fare: segFare,
+                    validDays: 0,
+                }
+            };
+        });
+
+        return {
+            totalFare: res.totalAmount || 0,
+            splitKippuDatas
+        };
+    });
+
+    return {
+        cheapestKippuData,
+        splitKippuDatasList
+    };
+}
+
 export default function SplitForm({
     initialFrom,
     initialTo,
@@ -74,6 +137,56 @@ export default function SplitForm({
     );
 
     const lastTrackedSearch = useRef<string>("");
+
+    const workerRef = useRef<Worker | null>(null);
+    const [isWasmReady, setIsWasmReady] = useState(false);
+    const calculationCountRef = useRef<number>(0);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const initWorker = () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
+            setIsWasmReady(false);
+
+            const worker = new Worker(new URL("../split-pass.worker.ts", import.meta.url));
+            workerRef.current = worker;
+            calculationCountRef.current = 0;
+
+            worker.onmessage = (e) => {
+                const { type, result, error } = e.data;
+                if (type === "ready") {
+                    setIsWasmReady(true);
+                } else if (type === "success") {
+                    const adaptedResult = adaptWasmResponseToSplitApiResponse(result);
+                    setResult(adaptedResult);
+                    setIsCalculating(false);
+
+                    calculationCountRef.current += 1;
+                    // 10回の計算毎にWorkerをリサイクルしてWasmリニアメモリを解放
+                    if (calculationCountRef.current >= 10) {
+                        console.log("Recycling Web Worker to reclaim Wasm linear memory...");
+                        initWorker();
+                    }
+                } else if (type === "error") {
+                    setError(error);
+                    setIsCalculating(false);
+                }
+            };
+        };
+
+        initWorker();
+
+        return () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
+        };
+    }, []);
 
     const initialStartStation = initialFrom ? stationDatas.find(s => s.name === initialFrom) || { name: initialFrom, kana: "" } : null;
     const initialEndStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
@@ -145,11 +258,19 @@ export default function SplitForm({
                         saved_amount: savedAmount
                     };
 
-                    if (typeof window.gtag === "function") {
-                        window.gtag("event", "search_split", eventParams);
-                    }
-                    if (posthog) {
-                        posthog.capture("search_split", eventParams);
+                    const runTracking = () => {
+                        if (typeof window.gtag === "function") {
+                            window.gtag("event", "search_split", eventParams);
+                        }
+                        if (posthog) {
+                            posthog.capture("search_split", eventParams);
+                        }
+                    };
+
+                    if (typeof window.requestIdleCallback === "function") {
+                        window.requestIdleCallback(runTracking);
+                    } else {
+                        setTimeout(runTracking, 50);
                     }
 
                     lastTrackedSearch.current = currentSearchKey;
@@ -164,11 +285,19 @@ export default function SplitForm({
                         error_message: error
                     };
 
-                    if (typeof window.gtag === "function") {
-                        window.gtag("event", "search_error", errorParams);
-                    }
-                    if (posthog) {
-                        posthog.capture("search_error", errorParams);
+                    const runTrackingError = () => {
+                        if (typeof window.gtag === "function") {
+                            window.gtag("event", "search_error", errorParams);
+                        }
+                        if (posthog) {
+                            posthog.capture("search_error", errorParams);
+                        }
+                    };
+
+                    if (typeof window.requestIdleCallback === "function") {
+                        window.requestIdleCallback(runTrackingError);
+                    } else {
+                        setTimeout(runTrackingError, 50);
                     }
 
                     lastTrackedSearch.current = currentSearchKey;
@@ -337,9 +466,39 @@ export default function SplitForm({
             );
             if (res.error) {
                 setError(res.error);
+                setIsCalculating(false);
+            } else if (res.result && "passStations" in res.result) {
+                const { passStations } = res.result as { passStations: { normal: string[], results: string[][] } };
+                if (!passStations.results || passStations.results.length === 0) {
+                    setError("有効な分割候補が見つかりませんでした。");
+                    setIsCalculating(false);
+                    return;
+                }
+
+                if (!workerRef.current) {
+                    setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
+                    setIsCalculating(false);
+                    return;
+                }
+
+                const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
+                const months = monthsMap[data.searchType] || 1;
+
+                workerRef.current.postMessage({
+                    type: "calculate",
+                    payload: {
+                        splitPaths: passStations.results,
+                        months,
+                        isIc: isIcPass
+                    }
+                });
+
+                // APIの応答時間をサーバー時間として設定 (Wasm復元は極めて高速なため、大半がAPI通信時間)
+                setServerTime(res.serverTime || null);
             } else {
                 setResult(res.result || null);
                 setServerTime(res.serverTime || null);
+                setIsCalculating(false);
             }
         } catch (err: unknown) {
             if (err instanceof Error) {
@@ -347,7 +506,6 @@ export default function SplitForm({
             } else {
                 setError(String(err));
             }
-        } finally {
             setIsCalculating(false);
         }
     };
@@ -433,6 +591,7 @@ export default function SplitForm({
                 </div>
             </div>
 
+            {/* eslint-disable-next-line react-hooks/refs */}
             <form onSubmit={handleSubmit(onSubmit)} className="w-full">
                 <div className="flex flex-col gap-4 w-full">
 
@@ -506,10 +665,15 @@ export default function SplitForm({
                     <div className="mt-2 w-full">
                         <button
                             type="submit"
-                            className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors"
-                            disabled={!isValid || isCalculating}
+                            className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                            disabled={!isValid || isCalculating || (currentType !== "ticket" && !isWasmReady)}
                         >
-                            {isCalculating ? "計算中..." : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`}
+                            {isCalculating 
+                                ? "計算中..." 
+                                : (currentType !== "ticket" && !isWasmReady) 
+                                    ? "計算エンジン初期化中..." 
+                                    : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`
+                            }
                         </button>
                     </div>
                 </div>

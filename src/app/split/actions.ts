@@ -3,7 +3,6 @@
 import { getOptimalSplitWithCache } from "@/app/split/lib/getOptimalSplitWithCache";
 import { StationCountLimitExceededError, RouteNotFoundError } from "@/app/utils/errors";
 import stationDatas from "@/app/split/data/stationDatas.json";
-import { ApiCalculateResponse } from "@/app/types";
 
 const STATION_NAMES = new Set(stationDatas.map((s) => s.name));
 const TEMPORARY_STATIONS = [
@@ -37,60 +36,19 @@ async function fetchPassApi(from: string, to: string, months: number, isIc: bool
     throw new Error(errData.error || "サーバー内部でエラーが発生しました。");
   }
 
-  const data: ApiCalculateResponse = await response.json();
+  const data = await response.json();
 
-  if (!data.results || data.results.length === 0) {
-    throw new Error("経路が見つかりませんでした。");
-  }
-
-  const normalApiResult = data.normal || data.results[0];
-  const normalDeparture = normalApiResult.segments[0].path[0];
-  const normalArrival = normalApiResult.segments[normalApiResult.segments.length - 1].path[normalApiResult.segments[normalApiResult.segments.length - 1].path.length - 1];
-  const normalVia = normalApiResult.segments.flatMap((s) => s.via);
-  const normalTotalEigyoKilo = normalApiResult.segments.reduce((acc, s) => acc + (s.totalEigyoKilo || 0), 0);
-
-  const cheapestKippuData = {
-    totalEigyoKilo: normalTotalEigyoKilo,
-    departureStation: normalDeparture,
-    arrivalStation: normalArrival,
-    printedViaLines: normalVia,
-    fare: normalApiResult.totalAmount,
-    validDays: 0,
-  };
-
-  const splitKippuDatasList = [];
-
-  for (const res of data.results) {
-    const splitKippuDatas = [];
-
-    for (let i = 0; i < res.segments.length; i++) {
-      const seg = res.segments[i];
-      const segDeparture = seg.path[0];
-      const segArrival = seg.path[seg.path.length - 1];
-      const segFare = seg.result.Fare + seg.result.BarrierFreeFee + seg.result.Charge;
-
-      splitKippuDatas.push({
-        departureStation: seg.start,
-        arrivalStation: seg.end,
-        kippuData: {
-          totalEigyoKilo: seg.totalEigyoKilo || 0,
-          departureStation: segDeparture,
-          arrivalStation: segArrival,
-          printedViaLines: seg.via,
-          fare: segFare,
-          validDays: 0,
-        }
-      });
-    }
-
-    splitKippuDatasList.push({
-      totalFare: res.totalAmount,
-      splitKippuDatas: splitKippuDatas
-    });
+  if (data.error) {
+    throw new Error(data.error);
   }
 
   return {
-    result: { cheapestKippuData, splitKippuDatasList },
+    result: {
+      passStations: {
+        normal: data.normal || [],
+        results: data.results || []
+      }
+    },
     serverTime: performance.now() - start
   };
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"compress/gzip"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -25,13 +24,12 @@ func main() {
 }
 
 func run(args []string) error {
-	if len(args) < 4 {
-		return fmt.Errorf("使用法: precompute-fares <入力JSON> <出力FARES.BIN.GZ> <出力PATHS.BIN.GZ>")
+	if len(args) < 3 {
+		return fmt.Errorf("使用法: precompute-fares <入力JSON> <出力SERVER_BIN>")
 	}
 
 	inputJSON := args[1]
-	outputFaresBinGz := args[2]
-	outputPathsBinGz := args[3]
+	outputServerBin := args[2]
 
 	log.Printf("JSONファイルを読み込んでいます: %s", inputJSON)
 	inFile, err := os.Open(inputJSON)
@@ -240,163 +238,71 @@ func run(args []string) error {
 	}
 	wgFares.Wait()
 
-	log.Printf("運賃バイナリファイルを書き出しています: %s", outputFaresBinGz)
-	outFaresFile, err := os.Create(outputFaresBinGz)
+	log.Printf("サーバー用バイナリファイルを書き出しています: %s", outputServerBin)
+	outServerFile, err := os.Create(outputServerBin)
 	if err != nil {
-		return fmt.Errorf("出力FARESファイルの作成に失敗しました: %w", err)
+		return fmt.Errorf("出力SERVER_BINファイルの作成に失敗しました: %w", err)
 	}
-	defer outFaresFile.Close()
+	defer outServerFile.Close()
 
-	gzFaresWriter, err := gzip.NewWriterLevel(outFaresFile, gzip.BestCompression)
-	if err != nil {
-		return fmt.Errorf("fares gzipライターの作成に失敗しました: %w", err)
-	}
-	defer gzFaresWriter.Close()
-
-	// Magic
-	if _, err := gzFaresWriter.Write([]byte("FARES")); err != nil {
+	// Magic: 8 bytes ("SRVRBIN\0" アライメント調整済)
+	magic := [8]byte{'S', 'R', 'V', 'R', 'B', 'I', 'N', 0}
+	if _, err := outServerFile.Write(magic[:]); err != nil {
 		return fmt.Errorf("Magicの書き込みに失敗しました: %w", err)
 	}
-	// NumStations
-	if err := binary.Write(gzFaresWriter, binary.LittleEndian, int32(numStations)); err != nil {
+
+	// NumStations: 4 bytes (int32)
+	if err := binary.Write(outServerFile, binary.LittleEndian, int32(numStations)); err != nil {
 		return fmt.Errorf("駅数の書き込みに失敗しました: %w", err)
 	}
 
+	// Padding: 4 bytes (アライメント調整用)
+	padding := [4]byte{0, 0, 0, 0}
+	if _, err := outServerFile.Write(padding[:]); err != nil {
+		return fmt.Errorf("Paddingの書き込みに失敗しました: %w", err)
+	}
+
+	// これにより、マジック(8) + 駅数(4) + パディング(4) = 16バイトのオフセットから int32 データが始まるため、
+	// 後続の baseFares 等が 8バイト境界アライメントを満たす。
+
 	// BaseFares
-	if err := binary.Write(gzFaresWriter, binary.LittleEndian, baseFares); err != nil {
+	if err := binary.Write(outServerFile, binary.LittleEndian, baseFares); err != nil {
 		return fmt.Errorf("BaseFaresの書き込みに失敗しました: %w", err)
 	}
 
 	// IcFares
-	if err := binary.Write(gzFaresWriter, binary.LittleEndian, icFares); err != nil {
+	if err := binary.Write(outServerFile, binary.LittleEndian, icFares); err != nil {
 		return fmt.Errorf("IcFaresの書き込みに失敗しました: %w", err)
 	}
 
-	if err := gzFaresWriter.Close(); err != nil {
-		return fmt.Errorf("fares gzipライターのクローズに失敗しました: %w", err)
-	}
-
-	// 平坦化処理
+	// 平坦化した baseDistGisei と icDistGisei の書き出し
 	flatSize := numStations * numStations
-
-	flatBasePrevGisei := make([]int16, flatSize)
-	flatBasePrevEigyo := make([]int16, flatSize)
 	flatBaseDistGisei := make([]uint16, flatSize)
-	flatBaseDistEigyo := make([]uint16, flatSize)
-
-	flatIcPrevGisei := make([]int16, flatSize)
-	flatIcPrevEigyo := make([]int16, flatSize)
 	flatIcDistGisei := make([]uint16, flatSize)
-	flatIcDistEigyo := make([]uint16, flatSize)
-
 	const INF = uint16(65535)
 
 	for i := 0; i < numStations; i++ {
 		for j := 0; j < numStations; j++ {
 			idx := i*numStations + j
-
-			// Base
-			if basePrevGisei[i] != nil && j < len(basePrevGisei[i]) {
-				flatBasePrevGisei[idx] = int16(basePrevGisei[i][j])
-			} else {
-				flatBasePrevGisei[idx] = -1
-			}
-			if basePrevEigyo[i] != nil && j < len(basePrevEigyo[i]) {
-				flatBasePrevEigyo[idx] = int16(basePrevEigyo[i][j])
-			} else {
-				flatBasePrevEigyo[idx] = -1
-			}
 			if baseDistGisei[i] != nil && j < len(baseDistGisei[i]) {
 				flatBaseDistGisei[idx] = uint16(baseDistGisei[i][j])
 			} else {
 				flatBaseDistGisei[idx] = INF
-			}
-			if baseDistEigyo[i] != nil && j < len(baseDistEigyo[i]) {
-				flatBaseDistEigyo[idx] = uint16(baseDistEigyo[i][j])
-			} else {
-				flatBaseDistEigyo[idx] = INF
-			}
-
-			// IC
-			if icPrevGisei[i] != nil && j < len(icPrevGisei[i]) {
-				flatIcPrevGisei[idx] = int16(icPrevGisei[i][j])
-			} else {
-				flatIcPrevGisei[idx] = -1
-			}
-			if icPrevEigyo[i] != nil && j < len(icPrevEigyo[i]) {
-				flatIcPrevEigyo[idx] = int16(icPrevEigyo[i][j])
-			} else {
-				flatIcPrevEigyo[idx] = -1
 			}
 			if icDistGisei[i] != nil && j < len(icDistGisei[i]) {
 				flatIcDistGisei[idx] = uint16(icDistGisei[i][j])
 			} else {
 				flatIcDistGisei[idx] = INF
 			}
-			if icDistEigyo[i] != nil && j < len(icDistEigyo[i]) {
-				flatIcDistEigyo[idx] = uint16(icDistEigyo[i][j])
-			} else {
-				flatIcDistEigyo[idx] = INF
-			}
 		}
 	}
 
-	log.Printf("経路/距離バイナリファイルを書き出しています: %s", outputPathsBinGz)
-	outPathsFile, err := os.Create(outputPathsBinGz)
-	if err != nil {
-		return fmt.Errorf("出力PATHSファイルの作成に失敗しました: %w", err)
-	}
-	defer outPathsFile.Close()
-
-	gzPathsWriter, err := gzip.NewWriterLevel(outPathsFile, gzip.BestCompression)
-	if err != nil {
-		return fmt.Errorf("paths gzipライターの作成に失敗しました: %w", err)
-	}
-	defer gzPathsWriter.Close()
-
-	// Magic
-	if _, err := gzPathsWriter.Write([]byte("PATHS")); err != nil {
-		return fmt.Errorf("Magicの書き込みに失敗しました: %w", err)
-	}
-	// NumStations
-	if err := binary.Write(gzPathsWriter, binary.LittleEndian, int32(numStations)); err != nil {
-		return fmt.Errorf("駅数の書き込みに失敗しました: %w", err)
-	}
-	// BasePrevGisei
-	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatBasePrevGisei); err != nil {
-		return fmt.Errorf("BasePrevGiseiの書き込みに失敗しました: %w", err)
-	}
-	// BasePrevEigyo
-	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatBasePrevEigyo); err != nil {
-		return fmt.Errorf("BasePrevEigyoの書き込みに失敗しました: %w", err)
-	}
-	// BaseDistGisei
-	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatBaseDistGisei); err != nil {
+	if err := binary.Write(outServerFile, binary.LittleEndian, flatBaseDistGisei); err != nil {
 		return fmt.Errorf("BaseDistGiseiの書き込みに失敗しました: %w", err)
 	}
-	// BaseDistEigyo
-	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatBaseDistEigyo); err != nil {
-		return fmt.Errorf("BaseDistEigyoの書き込みに失敗しました: %w", err)
-	}
-	// IcPrevGisei
-	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatIcPrevGisei); err != nil {
-		return fmt.Errorf("IcPrevGiseiの書き込みに失敗しました: %w", err)
-	}
-	// IcPrevEigyo
-	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatIcPrevEigyo); err != nil {
-		return fmt.Errorf("IcPrevEigyoの書き込みに失敗しました: %w", err)
-	}
-	// IcDistGisei
-	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatIcDistGisei); err != nil {
-		return fmt.Errorf("IcDistGiseiの書き込みに失敗しました: %w", err)
-	}
-	// IcDistEigyo
-	if err := binary.Write(gzPathsWriter, binary.LittleEndian, flatIcDistEigyo); err != nil {
-		return fmt.Errorf("IcDistEigyoの書き込みに失敗しました: %w", err)
-	}
 
-	if err := gzPathsWriter.Close(); err != nil {
-		return fmt.Errorf("paths gzipライターのクローズに失敗しました: %w", err)
+	if err := binary.Write(outServerFile, binary.LittleEndian, flatIcDistGisei); err != nil {
+		return fmt.Errorf("IcDistGiseiの書き込みに失敗しました: %w", err)
 	}
 
 	return nil

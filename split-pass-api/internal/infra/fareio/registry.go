@@ -105,8 +105,9 @@ type Calculators struct {
 	AdjustedRoute *fare.RouteMatcher
 }
 
-// InitRegistry はJSONデータをデコードし、全ての運賃計算機を初期化して返します。
-func InitRegistry(g graph.Graph) (*Calculators, error) {
+// InitRegistryWithOptions は JSON データをデコードし、全ての運賃計算機を初期化して返します。
+// ignoreMissing が true の場合、特定運賃等の ID 解決エラーを無視してスキップします（モックテスト用）。
+func InitRegistryWithOptions(g graph.Graph, ignoreMissing bool) (*Calculators, error) {
 	eastTrunk, err := loadFareTable(eastTrunkFaresJSON)
 	if err != nil {
 		return nil, fmt.Errorf("eastTrunkFaresの読み込みに失敗: %w", err)
@@ -165,7 +166,7 @@ func InitRegistry(g graph.Graph) (*Calculators, error) {
 		return nil, fmt.Errorf("特定運賃区間の読み込みに失敗: %w", err)
 	}
 	specificSectionMatcher := fare.NewRouteMatcher()
-	if err := specificSectionMatcher.LoadFromDomain(specificFares, g); err != nil {
+	if err := specificSectionMatcher.LoadFromDomainWithOptions(specificFares, g, ignoreMissing); err != nil {
 		return nil, fmt.Errorf("特定運賃区間マッチャーの構築に失敗: %w", err)
 	}
 
@@ -175,7 +176,7 @@ func InitRegistry(g graph.Graph) (*Calculators, error) {
 		return nil, fmt.Errorf("調整運賃区間の読み込みに失敗: %w", err)
 	}
 	adjustedFareMatcher := fare.NewRouteMatcher()
-	if err := adjustedFareMatcher.LoadFromDomain(adjustedFares, g); err != nil {
+	if err := adjustedFareMatcher.LoadFromDomainWithOptions(adjustedFares, g, ignoreMissing); err != nil {
 		return nil, fmt.Errorf("調整運賃区間マッチャーの構築に失敗: %w", err)
 	}
 
@@ -185,4 +186,9 @@ func InitRegistry(g graph.Graph) (*Calculators, error) {
 		SpecificRoute: specificSectionMatcher,
 		AdjustedRoute: adjustedFareMatcher,
 	}, nil
+}
+
+// InitRegistry はJSONデータをデコードし、全ての運賃計算機を初期化して返します。
+func InitRegistry(g graph.Graph) (*Calculators, error) {
+	return InitRegistryWithOptions(g, false)
 }

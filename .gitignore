@@ -40,3 +40,20 @@ src/data/*.db
 src/data/*.json
 src/app/mr/data/*.json
 src/app/split/data/*.json
+
+# wasm and graph data (injected during build from cloud storage)
+public/split_pass.wasm
+public/graph_data.bin
+
+# split-pass-api large precomputed data
+split-pass-api/internal/graph/data/precomputed_server.bin
+
+# TypeScript build info cache
+tsconfig.tsbuildinfo
+
+# local compiled binaries
+*.exe
+split-pass-api/*.exe
+
+# Next.js automatic type definitions
+next-env.d.ts

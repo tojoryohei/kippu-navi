@@ -1,4 +1,7 @@
+//go:build !js || !wasm
+
 package fareio_test
+
 
 import (
 	"os"
