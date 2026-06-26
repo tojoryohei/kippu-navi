@@ -79,7 +79,7 @@ func LoadPrecomputedFares(path string) (
 // ClosePrecomputedFares はマッピングされたメモリとファイルディスクリプタを解放します。
 func ClosePrecomputedFares() {
 	if mmapData != nil {
-		munmapFile(mmapData)
+		_ = munmapFile(mmapData)
 		mmapData = nil
 	}
 	if mmapFileObj != nil {
