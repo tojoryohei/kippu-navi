@@ -87,6 +87,10 @@ export default function Form() {
                     setIsWasmReady(true);
                 } else if (type === "success_route_pass") {
                     setResultPass(wResult);
+                    if (wResult.correctedPath) {
+                        setCorrectedStartPass(wResult.correctedPath[0] || "");
+                        setCorrectedEndPass(wResult.correctedPath[wResult.correctedPath.length - 1] || "");
+                    }
                     setIsLoading(false);
 
                     calculationCountRef.current += 1;
@@ -297,13 +301,12 @@ export default function Form() {
                 const months = monthsMap[data.searchType] || 1;
 
                 const cPath: string[] = responseData.data.correctedPath;
-                setCorrectedStartPass(cPath[0] || "");
-                setCorrectedEndPass(cPath[cPath.length - 1] || "");
 
                 workerRef.current.postMessage({
                     type: "calculateRoutePass",
                     payload: {
                         stationNames: cPath,
+                        calculationMode: data.calculationMode,
                         months,
                         isIc: false
                     }

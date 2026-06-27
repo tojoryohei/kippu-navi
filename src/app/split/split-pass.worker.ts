@@ -16,7 +16,7 @@ interface WorkerGlobalScope {
   prepareGraphBuffer(size: number): number;
   initGraphFromBuffer(size: number): boolean | string;
   reconstructAndCalculate(splitStationsJson: string, months: number, isIc: boolean): string;
-  calculateRoutePass(stationNamesJson: string, months: number, isIc: boolean): string;
+  calculateRoutePass(stationNamesJson: string, months: number, isIc: boolean, calculationMode: string): string;
 }
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
 
@@ -93,10 +93,10 @@ onmessage = async (e: MessageEvent) => {
       return;
     }
 
-    const { stationNames, months, isIc } = payload;
+    const { stationNames, months, isIc, calculationMode } = payload;
     try {
       const stationNamesJson = JSON.stringify(stationNames);
-      const resultJsonStr = workerSelf.calculateRoutePass(stationNamesJson, months, isIc);
+      const resultJsonStr = workerSelf.calculateRoutePass(stationNamesJson, months, isIc, calculationMode || 'normal');
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
         postMessage({ type: 'error', error: result.error });

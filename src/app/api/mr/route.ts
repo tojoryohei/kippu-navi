@@ -1,4 +1,4 @@
-import { generateKippu, getCorrectedPath } from '@/app/mr/lib/generateKippu';
+import { generateKippu, createFullPath } from '@/app/mr/lib/generateKippu';
 import { NextResponse } from 'next/server';
 
 import { RouteRequest } from '@/app/types';
@@ -38,8 +38,8 @@ export async function POST(request: Request) {
 
         const isPass = body.searchType && body.searchType !== "ticket";
         if (isPass) {
-            const correctedPath = getCorrectedPath(body.path, body.calculationMode);
-            const stationNames = correctedPath.map(p => p.stationName);
+            const fullPath = createFullPath(body.path);
+            const stationNames = fullPath.map(p => p.stationName);
             const firstPart = stationNames.slice(0, -1);
             const hasDuplicateInFirstPart = firstPart.some((name, index) => firstPart.indexOf(name) !== index);
             if (hasDuplicateInFirstPart) {
