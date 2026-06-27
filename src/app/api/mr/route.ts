@@ -38,8 +38,20 @@ export async function POST(request: Request) {
 
         const isPass = body.searchType && body.searchType !== "ticket";
         if (isPass) {
+            const TEMPORARY_STATIONS = [
+                "原生花園",
+                "ラベンダー畑",
+                "細岡",
+                "猪苗代湖畔",
+                "ガーラ湯沢",
+                "偕楽園",
+                "鹿島サッカースタジアム",
+                "津島ノ宮",
+                "田井ノ浜",
+                "バルーンさが"
+            ];
             const fullPath = createFullPath(body.path);
-            const stationNames = fullPath.map(p => p.stationName);
+            const stationNames = fullPath.map(p => p.stationName).filter(name => !TEMPORARY_STATIONS.includes(name));
             const firstPart = stationNames.slice(0, -1);
             const hasDuplicateInFirstPart = firstPart.some((name, index) => firstPart.indexOf(name) !== index);
             if (hasDuplicateInFirstPart) {
