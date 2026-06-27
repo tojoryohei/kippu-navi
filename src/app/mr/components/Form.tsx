@@ -220,6 +220,7 @@ export default function Form() {
 
         setValue("startStation", newStart, { shouldValidate: true });
         replace(reversedSegments);
+        trigger();
     };
 
     const createApiRequestBody = (data: FormValues) => {
