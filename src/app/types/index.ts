@@ -56,6 +56,7 @@ export interface PathStep {
 export interface RouteRequest {
     path: PathStep[];
     calculationMode: CalculationMode;
+    searchType?: SearchType;
 }
 
 export interface KippuData {

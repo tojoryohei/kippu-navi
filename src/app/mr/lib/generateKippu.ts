@@ -12,16 +12,8 @@ interface GenerateKippuOptions {
     calculationMode?: CalculationMode;
 }
 
-export function generateKippu(request: RouteRequest, options: GenerateKippuOptions = {}): KippuData {
-    const userInputPath = request.path;
-    const calculationMode = options.calculationMode ?? "normal";
-
-    // 経路の展開
-    let fullPath = createFullPath(userInputPath);
-
-    const majorCitySuburbanSection = whichMajorCitySuburbanSections(fullPath);
-
-    // 経路の補正
+export function getCorrectedPath(path: PathStep[], calculationMode: CalculationMode): PathStep[] {
+    let fullPath = createFullPath(path);
     let correctedPath: PathStep[];
 
     switch (calculationMode) {
@@ -29,26 +21,42 @@ export function generateKippu(request: RouteRequest, options: GenerateKippuOptio
             correctedPath = uncorrectPath(fullPath);
             break;
         case "cheapest":
-            if (majorCitySuburbanSection !== null) {
-                return load.getMajorCitySuburbanSectionFares(
-                    majorCitySuburbanSection,
-                    fullPath[0].stationName,
-                    fullPath[fullPath.length - 1].stationName
-                );
-            }
             correctedPath = cheapestPathAndFare(fullPath).path;
             break;
         case "normal":
         default:
-            if (majorCitySuburbanSection !== null) {
-                return load.getMajorCitySuburbanSectionFares(
-                    majorCitySuburbanSection,
-                    fullPath[0].stationName,
-                    fullPath[fullPath.length - 1].stationName
-                );
-            }
             correctedPath = correctPath(fullPath);
             break;
+    }
+    return correctedPath;
+}
+
+export function generateKippu(request: RouteRequest, options: GenerateKippuOptions = {}): KippuData {
+    const userInputPath = request.path;
+    const calculationMode = options.calculationMode ?? "normal";
+
+    const correctedPath = getCorrectedPath(userInputPath, calculationMode);
+
+    // 重複駅チェック (通常、最安、補正禁止の3パターンすべてに適用。環状・6の字乗車を許容するため、最後の一駅を除いた区間内での重複をチェックする)
+    const stationNames = correctedPath.map(p => p.stationName);
+    const firstPart = stationNames.slice(0, -1);
+    const hasDuplicateInFirstPart = firstPart.some((name, index) => firstPart.indexOf(name) !== index);
+    if (hasDuplicateInFirstPart) {
+        throw new Error("経路が重複しています。");
+    }
+
+    // 大都市近郊区間の判定と運賃取得
+    let fullPath = createFullPath(userInputPath);
+    const majorCitySuburbanSection = whichMajorCitySuburbanSections(fullPath);
+
+    if (calculationMode === "cheapest" || calculationMode === "normal") {
+        if (majorCitySuburbanSection !== null) {
+            return load.getMajorCitySuburbanSectionFares(
+                majorCitySuburbanSection,
+                fullPath[0].stationName,
+                fullPath[fullPath.length - 1].stationName
+            );
+        }
     }
 
     // 出発駅と到着駅の名前を取得して変数に代入
@@ -72,7 +80,7 @@ export function generateKippu(request: RouteRequest, options: GenerateKippuOptio
     };
 }
 
-function createFullPath(path: PathStep[]): PathStep[] {
+export function createFullPath(path: PathStep[]): PathStep[] {
     if (path.length <= 1) {
         return path;
     }

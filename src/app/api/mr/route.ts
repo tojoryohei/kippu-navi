@@ -1,5 +1,5 @@
+import { generateKippu, getCorrectedPath } from '@/app/mr/lib/generateKippu';
 import { NextResponse } from 'next/server';
-import { generateKippu } from '@/app/mr/lib/generateKippu';
 
 import { RouteRequest } from '@/app/types';
 
@@ -33,6 +33,37 @@ export async function POST(request: Request) {
                     time: calculationTimeMs
                 },
                 { status: 400 }
+            );
+        }
+
+        const isPass = body.searchType && body.searchType !== "ticket";
+        if (isPass) {
+            const correctedPath = getCorrectedPath(body.path, body.calculationMode);
+            const stationNames = correctedPath.map(p => p.stationName);
+            const firstPart = stationNames.slice(0, -1);
+            const hasDuplicateInFirstPart = firstPart.some((name, index) => firstPart.indexOf(name) !== index);
+            if (hasDuplicateInFirstPart) {
+                const endTime = performance.now();
+                const calculationTimeMs = endTime - startTime;
+                return NextResponse.json(
+                    {
+                        error: '経路が重複しています。',
+                        time: calculationTimeMs
+                    },
+                    { status: 400 }
+                );
+            }
+
+            const endTime = performance.now();
+            const calculationTimeMs = endTime - startTime;
+            return NextResponse.json(
+                {
+                    data: {
+                        correctedPath: stationNames
+                    },
+                    time: calculationTimeMs
+                },
+                { status: 200 }
             );
         }
 
