@@ -13,9 +13,18 @@ import SelectLine from "@/app/mr/components/SelectLine";
 import { Station, Line, KippuData, IFormInput, PathStep, CalculationMode } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
-
-
-
+const TEMPORARY_STATIONS = [
+    "原生花園",
+    "ラベンダー畑",
+    "細岡",
+    "猪苗代湖畔",
+    "ガーラ湯沢",
+    "偕楽園",
+    "鹿島サッカースタジアム",
+    "津島ノ宮",
+    "田井ノ浜",
+    "バルーンさが"
+];
 interface FormValues extends IFormInput {
     calculationMode: CalculationMode;
     searchType: "ticket" | "pass1" | "pass3" | "pass6";
@@ -406,7 +415,10 @@ export default function Form() {
                                     if (!selected) return "発駅を入力してください";
                                     const exists = stationData.some(s => s.name === selected.name);
                                     if (!exists) return "該当する駅が存在しません";
-                                    
+                                    const currentSearchType = getValues("searchType");
+                                    if (currentSearchType !== "ticket" && TEMPORARY_STATIONS.includes(selected.name)) {
+                                        return "臨時駅発着の定期券は計算できません";
+                                    }
                                     return true;
                                 }
                             }}
@@ -487,6 +499,10 @@ export default function Form() {
                                                 const exists = stationsOnLine.some(s => s.name === selected.name);
                                                 if (!exists) return "選択された路線にこの駅は存在しません";
 
+                                                const currentSearchType = getValues("searchType");
+                                                if (currentSearchType !== "ticket" && isLastStation && TEMPORARY_STATIONS.includes(selected.name)) {
+                                                    return "臨時駅発着の定期券は計算できません";
+                                                }
                                                 return true;
                                             }
                                         }}

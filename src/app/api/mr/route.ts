@@ -50,6 +50,20 @@ export async function POST(request: Request) {
                 "田井ノ浜",
                 "バルーンさが"
             ];
+            const startName = body.path[0].stationName;
+            const endName = body.path[body.path.length - 1].stationName;
+            if (TEMPORARY_STATIONS.includes(startName) || TEMPORARY_STATIONS.includes(endName)) {
+                const endTime = performance.now();
+                const calculationTimeMs = endTime - startTime;
+                return NextResponse.json(
+                    {
+                        error: '臨時駅発着の定期券は計算できません',
+                        time: calculationTimeMs
+                    },
+                    { status: 400 }
+                );
+            }
+
             const fullPath = createFullPath(body.path);
             const stationNames = fullPath.map(p => p.stationName).filter(name => !TEMPORARY_STATIONS.includes(name));
             const firstPart = stationNames.slice(0, -1);
