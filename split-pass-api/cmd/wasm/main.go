@@ -321,12 +321,12 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 	combinations := generateCombinationsWasm(allSegCandidates)
 
 	type SegmentResponse struct {
-		Path           []string                  `json:"path"`
-		Via            []string                  `json:"via"`
+		Path           []string                   `json:"path"`
+		Via            []string                   `json:"via"`
 		Result         *usecase.CalculationResult `json:"result"`
-		TotalEigyoKilo domain.DeciKilo           `json:"totalEigyoKilo"`
-		Start          string                    `json:"start"`
-		End            string                    `json:"end"`
+		TotalEigyoKilo domain.DeciKilo            `json:"totalEigyoKilo"`
+		Start          string                     `json:"start"`
+		End            string                     `json:"end"`
 	}
 
 	type ResultResponse struct {
@@ -704,12 +704,72 @@ func generateCombinationsWasm(segs [][]SplitSegment) [][]SplitSegment {
 	return helper(0)
 }
 
+func calculateRoutePass(this js.Value, args []js.Value) interface{} {
+	stationNamesJson := args[0].String()
+	months := args[1].Int()
+	isIc := args[2].Bool()
+
+	if isIc {
+		activeGraph = icGraph
+		activeAmountCalc = icAmountCalc
+	} else {
+		activeGraph = baseGraph
+		activeAmountCalc = baseAmountCalc
+	}
+
+	var stationNames []string
+	if err := json.Unmarshal([]byte(stationNamesJson), &stationNames); err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSON unmarshal failed: %v"}`, err))
+	}
+
+	if len(stationNames) < 2 {
+		return js.ValueOf(`{"error":"at least 2 stations required"}`)
+	}
+
+	stationIDs := make([]int, len(stationNames))
+	for i, name := range stationNames {
+		id, ok := wasmGraph.GetID(name)
+		if !ok {
+			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
+		}
+		stationIDs[i] = id
+	}
+
+	res, err := activeAmountCalc.Execute(stationIDs, months)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"calculation failed: %v"}`, err))
+	}
+
+	viaList := usecase.GetVia(wasmGraph, stationIDs)
+
+	type RoutePassResponse struct {
+		Fare            int      `json:"fare"`
+		BarrierFreeFee  int      `json:"barrierFreeFee"`
+		Charge          int      `json:"charge"`
+		TotalEigyoKilo  int      `json:"totalEigyoKilo"`
+		PrintedViaLines []string `json:"printedViaLines"`
+		Error           string   `json:"error,omitempty"`
+	}
+
+	resp := RoutePassResponse{
+		Fare:            res.Fare,
+		BarrierFreeFee:  res.BarrierFreeFee,
+		Charge:          res.Charge,
+		TotalEigyoKilo:  int(res.TotalEigyoKilo),
+		PrintedViaLines: viaList,
+	}
+
+	resBytes, _ := json.Marshal(resp)
+	return js.ValueOf(string(resBytes))
+}
+
 func main() {
-	c := make(chan struct{}, 0)
+	c := make(chan struct{})
 
 	js.Global().Set("prepareGraphBuffer", js.FuncOf(prepareGraphBuffer))
 	js.Global().Set("initGraphFromBuffer", js.FuncOf(initGraphFromBuffer))
 	js.Global().Set("reconstructAndCalculate", js.FuncOf(reconstructAndCalculate))
+	js.Global().Set("calculateRoutePass", js.FuncOf(calculateRoutePass))
 
 	<-c
 }

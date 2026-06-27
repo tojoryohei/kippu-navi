@@ -16,6 +16,7 @@ interface WorkerGlobalScope {
   prepareGraphBuffer(size: number): number;
   initGraphFromBuffer(size: number): boolean | string;
   reconstructAndCalculate(splitStationsJson: string, months: number, isIc: boolean): string;
+  calculateRoutePass(stationNamesJson: string, months: number, isIc: boolean): string;
 }
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
 
@@ -86,7 +87,26 @@ initWasm();
 onmessage = async (e: MessageEvent) => {
   const { type, payload } = e.data;
 
-  if (type === 'calculate') {
+  if (type === 'calculateRoutePass') {
+    if (!graphInitialized) {
+      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
+      return;
+    }
+
+    const { stationNames, months, isIc } = payload;
+    try {
+      const stationNamesJson = JSON.stringify(stationNames);
+      const resultJsonStr = workerSelf.calculateRoutePass(stationNamesJson, months, isIc);
+      const result = JSON.parse(resultJsonStr);
+      if (result.error) {
+        postMessage({ type: 'error', error: result.error });
+        return;
+      }
+      postMessage({ type: 'success_route_pass', result });
+    } catch (err) {
+      postMessage({ type: 'error', error: String(err) });
+    }
+  } else if (type === 'calculate') {
     if (!graphInitialized) {
       postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
       return;
