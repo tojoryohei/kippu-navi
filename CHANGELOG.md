@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.1...kippu-navi-v2.8.2) (2026-06-28)
+
+
+### Bug Fixes
+
+* CSPのstyle-srcにR2ドメインを追加してCSSブロックを解消 ([#367](https://github.com/tojoryohei/kippu-navi/issues/367)) ([084a143](https://github.com/tojoryohei/kippu-navi/commit/084a143a79711fcce3f52b7631be578cad03a768))
+
 ## [2.8.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.0...kippu-navi-v2.8.1) (2026-06-28)
 
 
