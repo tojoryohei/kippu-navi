@@ -72,9 +72,16 @@ export default function RootLayout({
                     var urlString = scriptURL.toString();
                     var finalURL = scriptURL;
                     if (urlString.indexOf('http') === 0 && urlString.indexOf(window.location.origin) !== 0) {
+                      if (urlString.indexOf('turbopack-worker') !== -1) {
+                        return new OriginalWorker(scriptURL, options);
+                      }
                       var blobCode = 'importScripts(' + JSON.stringify(urlString) + ');';
                       var blob = new Blob([blobCode], { type: 'application/javascript' });
                       finalURL = URL.createObjectURL(blob);
+                      var hashIdx = urlString.indexOf('#');
+                      if (hashIdx !== -1) {
+                        finalURL += urlString.substring(hashIdx);
+                      }
                     }
                     return new OriginalWorker(finalURL, options);
                   };
