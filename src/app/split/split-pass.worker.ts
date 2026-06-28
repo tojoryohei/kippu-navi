@@ -1,7 +1,10 @@
 /// <reference lib="webworker" />
 
+const assetPrefix = process.env.ASSET_PREFIX || '';
+const baseOrigin = assetPrefix ? assetPrefix.replace(/\/$/, '') : '';
+
 // Go Wasm ローダーの読み込み
-importScripts('/wasm_exec.js');
+importScripts(`${baseOrigin}/engine/wasm_exec.js`);
 
 interface GoInstance {
   importObject: WebAssembly.Imports;
@@ -46,7 +49,7 @@ async function initWasm() {
   if (wasmInstance) return;
 
   try {
-    const wasmResponse = await fetch('/split_pass.wasm');
+    const wasmResponse = await fetch(`${baseOrigin}/engine/split_pass.wasm`);
     const wasmArrayBuffer = await wasmResponse.arrayBuffer();
     const result = await WebAssembly.instantiate(wasmArrayBuffer, go.importObject);
     wasmInstance = result.instance;
@@ -55,7 +58,7 @@ async function initWasm() {
     go.run(wasmInstance);
 
     // グラフデータのロード (真のゼロコピー)
-    const graphResponse = await fetch('/graph_data.bin');
+    const graphResponse = await fetch(`${baseOrigin}/engine/graph_data.bin`);
     const graphArrayBuffer = await graphResponse.arrayBuffer();
     const size = graphArrayBuffer.byteLength;
 
