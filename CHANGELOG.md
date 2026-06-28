@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.5...kippu-navi-v2.7.0) (2026-06-28)
+
+
+### Features
+
+* /mr への定期乗車券計算機能の追加および経由印字ロジックのGo側への集約 ([#358](https://github.com/tojoryohei/kippu-navi/issues/358)) ([12bc010](https://github.com/tojoryohei/kippu-navi/commit/12bc0105164d8ae4929b020359549e147d37334f))
+
 ## [2.6.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.4...kippu-navi-v2.6.5) (2026-06-26)
 
 
