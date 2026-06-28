@@ -1,7 +1,10 @@
 /// <reference lib="webworker" />
 
 const assetPrefix = process.env.ASSET_PREFIX || '';
-const baseOrigin = assetPrefix ? assetPrefix.replace(/\/$/, '') : '';
+const defaultOrigin = assetPrefix ? assetPrefix.replace(/\/$/, '') : '';
+const baseOrigin = (typeof self !== 'undefined' && self.location && self.location.origin && self.location.origin.indexOf('kippu-navi.com') === -1)
+  ? self.location.origin
+  : defaultOrigin;
 
 // Go Wasm ローダーの読み込み
 importScripts(`${baseOrigin}/engine/wasm_exec.js`);
