@@ -271,6 +271,7 @@ func initGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		return js.ValueOf(fmt.Sprintf("error: ResolveIDs failed: %v", err))
 	}
 	bypassRules = rules
+	initPassBypassRules()
 
 	// 初期化完了に伴い、一時バッファへのピン留めを解除しGCに開放
 	tempBuffer = nil
@@ -321,12 +322,12 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 	combinations := generateCombinationsWasm(allSegCandidates)
 
 	type SegmentResponse struct {
-		Path           []string                  `json:"path"`
-		Via            []string                  `json:"via"`
+		Path           []string                   `json:"path"`
+		Via            []string                   `json:"via"`
 		Result         *usecase.CalculationResult `json:"result"`
-		TotalEigyoKilo domain.DeciKilo           `json:"totalEigyoKilo"`
-		Start          string                    `json:"start"`
-		End            string                    `json:"end"`
+		TotalEigyoKilo domain.DeciKilo            `json:"totalEigyoKilo"`
+		Start          string                     `json:"start"`
+		End            string                     `json:"end"`
 	}
 
 	type ResultResponse struct {
@@ -704,12 +705,346 @@ func generateCombinationsWasm(segs [][]SplitSegment) [][]SplitSegment {
 	return helper(0)
 }
 
+type passBypassRule struct {
+	detour   []int
+	shortcut []int
+}
+
+var passBypassRules []passBypassRule
+
+func initPassBypassRules() {
+	rawRules := []struct {
+		detour   []string
+		shortcut []string
+	}{
+		{
+			detour:   []string{"大沼", "鹿部", "渡島沼尻", "渡島砂原", "掛澗", "尾白内", "東森", "森"},
+			shortcut: []string{"大沼", "大沼公園", "赤井川", "駒ケ岳", "森"},
+		},
+		{
+			detour:   []string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"},
+			shortcut: []string{"日暮里", "尾久", "赤羽"},
+		},
+		{
+			detour:   []string{"赤羽", "北赤羽", "浮間舟渡", "戸田公園", "（北）戸田", "北戸田", "武蔵浦和", "中浦和", "南与野", "与野本町", "北与野", "大宮"},
+			shortcut: []string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"},
+		},
+		{
+			detour:   []string{"品川", "西大井", "武蔵小杉", "新川崎", "鶴見"},
+			shortcut: []string{"品川", "大井町", "大森", "蒲田", "川崎", "鶴見"},
+		},
+	}
+
+	passBypassRules = nil
+	for _, r := range rawRules {
+		detIDs := make([]int, len(r.detour))
+		for i, name := range r.detour {
+			id, _ := wasmGraph.GetID(name)
+			detIDs[i] = id
+		}
+		shIDs := make([]int, len(r.shortcut))
+		for i, name := range r.shortcut {
+			id, _ := wasmGraph.GetID(name)
+			shIDs[i] = id
+		}
+		passBypassRules = append(passBypassRules, passBypassRule{
+			detour:   detIDs,
+			shortcut: shIDs,
+		})
+	}
+}
+
+func applyNormalBypassCorrection(path []int) []int {
+	for _, rule := range passBypassRules {
+		if index, ok := findSubslice(path, rule.detour); ok {
+			if !hasAnyInnerShortcut(path, rule.shortcut) {
+				path, _ = replaceSubsliceAt(path, index, len(rule.detour), rule.shortcut)
+			}
+		} else if index, ok := findSubslice(path, reverseSlice(rule.detour)); ok {
+			if !hasAnyInnerShortcut(path, rule.shortcut) {
+				path, _ = replaceSubsliceAt(path, index, len(rule.detour), reverseSlice(rule.shortcut))
+			}
+		}
+	}
+	return path
+}
+
+func findSubslice(slice []int, target []int) (int, bool) {
+	n := len(slice)
+	m := len(target)
+	if m == 0 || n < m {
+		return -1, false
+	}
+	for i := 0; i <= n-m; i++ {
+		match := true
+		for j := 0; j < m; j++ {
+			if slice[i+j] != target[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+func replaceSubsliceAt(slice []int, start, length int, newSeq []int) ([]int, bool) {
+	res := make([]int, 0, len(slice)-length+len(newSeq))
+	res = append(res, slice[:start]...)
+	res = append(res, newSeq...)
+	res = append(res, slice[start+length:]...)
+	return res, true
+}
+
+func hasAnyInnerShortcut(path []int, shortcut []int) bool {
+	inner := shortcut[1 : len(shortcut)-1]
+	for _, sID := range inner {
+		for _, pID := range path {
+			if sID == pID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func generateCheapestCandidates(path []int) [][]int {
+	var candidates [][]int
+	normalPath := applyNormalBypassCorrection(path)
+	candidates = append(candidates, normalPath)
+
+	start := path[0]
+	end := path[len(path)-1]
+
+	var startExtensions [][]int
+	for _, rule := range passBypassRules {
+		if isStationInMiddle(start, rule.shortcut) {
+			p1 := getSubpathOnRule(rule.shortcut, rule.shortcut[0], start)
+			startExtensions = append(startExtensions, p1)
+			p2 := getSubpathOnRule(rule.shortcut, rule.shortcut[len(rule.shortcut)-1], start)
+			startExtensions = append(startExtensions, p2)
+		}
+		if isStationInMiddle(start, rule.detour) {
+			p1 := getSubpathOnRule(rule.detour, rule.detour[0], start)
+			startExtensions = append(startExtensions, p1)
+			p2 := getSubpathOnRule(rule.detour, rule.detour[len(rule.detour)-1], start)
+			startExtensions = append(startExtensions, p2)
+		}
+	}
+
+	var endExtensions [][]int
+	for _, rule := range passBypassRules {
+		if isStationInMiddle(end, rule.shortcut) {
+			p1 := getSubpathOnRule(rule.shortcut, end, rule.shortcut[0])
+			endExtensions = append(endExtensions, p1)
+			p2 := getSubpathOnRule(rule.shortcut, end, rule.shortcut[len(rule.shortcut)-1])
+			endExtensions = append(endExtensions, p2)
+		}
+		if isStationInMiddle(end, rule.detour) {
+			p1 := getSubpathOnRule(rule.detour, end, rule.detour[0])
+			endExtensions = append(endExtensions, p1)
+			p2 := getSubpathOnRule(rule.detour, end, rule.detour[len(rule.detour)-1])
+			endExtensions = append(endExtensions, p2)
+		}
+	}
+
+	var basePaths [][]int
+	basePaths = append(basePaths, normalPath)
+
+	for _, ext := range startExtensions {
+		if len(ext) > 1 {
+			cand := append([]int(nil), ext...)
+			cand = append(cand, normalPath[1:]...)
+			basePaths = append(basePaths, cand)
+		}
+	}
+
+	var finalCandidates [][]int
+	finalCandidates = append(finalCandidates, basePaths...)
+	for _, bp := range basePaths {
+		for _, ext := range endExtensions {
+			if len(ext) > 1 {
+				cand := append([]int(nil), bp...)
+				cand = append(cand, ext[1:]...)
+				finalCandidates = append(finalCandidates, cand)
+			}
+		}
+	}
+
+	var finalCorrected [][]int
+	for _, cand := range finalCandidates {
+		corr := applyNormalBypassCorrection(cand)
+		if !containsPath(finalCorrected, corr) {
+			finalCorrected = append(finalCorrected, corr)
+		}
+	}
+
+	return finalCorrected
+}
+
+func isStationInMiddle(stationID int, rulePath []int) bool {
+	if len(rulePath) < 3 {
+		return false
+	}
+	for i := 1; i < len(rulePath)-1; i++ {
+		if rulePath[i] == stationID {
+			return true
+		}
+	}
+	return false
+}
+
+func getSubpathOnRule(rulePath []int, from, to int) []int {
+	fromIdx := -1
+	toIdx := -1
+	for i, id := range rulePath {
+		if id == from {
+			fromIdx = i
+		}
+		if id == to {
+			toIdx = i
+		}
+	}
+	if fromIdx == -1 || toIdx == -1 {
+		return nil
+	}
+
+	if fromIdx < toIdx {
+		res := make([]int, toIdx-fromIdx+1)
+		copy(res, rulePath[fromIdx:toIdx+1])
+		return res
+	} else {
+		res := make([]int, fromIdx-toIdx+1)
+		for i := 0; i < len(res); i++ {
+			res[i] = rulePath[fromIdx-i]
+		}
+		return res
+	}
+}
+
+func isPathValidWasm(path []int) bool {
+	if len(path) < 2 {
+		return true
+	}
+	firstPart := path[:len(path)-1]
+	seen := make(map[int]bool)
+	for _, id := range firstPart {
+		if seen[id] {
+			return false
+		}
+		seen[id] = true
+	}
+	return true
+}
+
+func calculateRoutePass(this js.Value, args []js.Value) interface{} {
+	stationNamesJson := args[0].String()
+	months := args[1].Int()
+	isIc := args[2].Bool()
+	calculationMode := args[3].String()
+
+	if isIc {
+		activeGraph = icGraph
+		activeAmountCalc = icAmountCalc
+	} else {
+		activeGraph = baseGraph
+		activeAmountCalc = baseAmountCalc
+	}
+
+	var stationNames []string
+	if err := json.Unmarshal([]byte(stationNamesJson), &stationNames); err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSON unmarshal failed: %v"}`, err))
+	}
+
+	if len(stationNames) < 2 {
+		return js.ValueOf(`{"error":"at least 2 stations required"}`)
+	}
+
+	stationIDs := make([]int, len(stationNames))
+	for i, name := range stationNames {
+		id, ok := wasmGraph.GetID(name)
+		if !ok {
+			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
+		}
+		stationIDs[i] = id
+	}
+
+	var finalPath []int
+	if calculationMode == "uncorrect" {
+		finalPath = stationIDs
+	} else if calculationMode == "normal" {
+		finalPath = applyNormalBypassCorrection(stationIDs)
+	} else if calculationMode == "cheapest" {
+		cands := generateCheapestCandidates(stationIDs)
+		minFare := math.MaxInt
+		var bestPath []int
+		for _, cand := range cands {
+			if !isPathValidWasm(cand) {
+				continue
+			}
+			res, err := activeAmountCalc.Execute(cand, months)
+			if err != nil {
+				continue
+			}
+			fare := res.TotalAmount()
+			if fare < minFare {
+				minFare = fare
+				bestPath = cand
+			}
+		}
+		if bestPath == nil {
+			finalPath = applyNormalBypassCorrection(stationIDs)
+		} else {
+			finalPath = bestPath
+		}
+	} else {
+		finalPath = applyNormalBypassCorrection(stationIDs)
+	}
+
+	res, err := activeAmountCalc.Execute(finalPath, months)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"calculation failed: %v"}`, err))
+	}
+
+	viaList := usecase.GetVia(wasmGraph, finalPath)
+
+	correctedPathNames := make([]string, len(finalPath))
+	for i, id := range finalPath {
+		correctedPathNames[i] = wasmGraph.GetName(id)
+	}
+
+	type RoutePassResponse struct {
+		Fare            int      `json:"fare"`
+		BarrierFreeFee  int      `json:"barrierFreeFee"`
+		Charge          int      `json:"charge"`
+		TotalEigyoKilo  int      `json:"totalEigyoKilo"`
+		PrintedViaLines []string `json:"printedViaLines"`
+		CorrectedPath   []string `json:"correctedPath"`
+		Error           string   `json:"error,omitempty"`
+	}
+
+	resp := RoutePassResponse{
+		Fare:            res.Fare,
+		BarrierFreeFee:  res.BarrierFreeFee,
+		Charge:          res.Charge,
+		TotalEigyoKilo:  int(res.TotalEigyoKilo),
+		PrintedViaLines: viaList,
+		CorrectedPath:   correctedPathNames,
+	}
+
+	resBytes, _ := json.Marshal(resp)
+	return js.ValueOf(string(resBytes))
+}
+
 func main() {
-	c := make(chan struct{}, 0)
+	c := make(chan struct{})
 
 	js.Global().Set("prepareGraphBuffer", js.FuncOf(prepareGraphBuffer))
 	js.Global().Set("initGraphFromBuffer", js.FuncOf(initGraphFromBuffer))
 	js.Global().Set("reconstructAndCalculate", js.FuncOf(reconstructAndCalculate))
+	js.Global().Set("calculateRoutePass", js.FuncOf(calculateRoutePass))
 
 	<-c
 }

@@ -56,6 +56,7 @@ export interface PathStep {
 export interface RouteRequest {
     path: PathStep[];
     calculationMode: CalculationMode;
+    searchType?: SearchType;
 }
 
 export interface KippuData {
@@ -81,11 +82,6 @@ export interface SplitKippuDatas {
 export interface SplitApiResponse {
     cheapestKippuData: KippuData;
     splitKippuDatasList: SplitKippuDatas[];
-}
-
-export interface ApiFullResponse {
-    data: KippuData;
-    time: number;
 }
 
 export interface CacheResult {

@@ -2,7 +2,7 @@
 
 import { useForm, Controller, SubmitHandler, useFieldArray, useWatch } from "react-hook-form";
 import type { SingleValue } from "react-select";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
 
 import stationData from "@/app/mr/data/stations.json";
@@ -10,27 +10,156 @@ import lineData from "@/app/mr/data/lines.json";
 import SelectStation from "@/app/mr/components/SelectStation";
 import SelectLine from "@/app/mr/components/SelectLine";
 
-import { Station, Line, KippuData, ApiFullResponse, IFormInput, PathStep, CalculationMode } from "@/app/types";
+import { Station, Line, KippuData, IFormInput, PathStep, CalculationMode } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
-
+const TEMPORARY_STATIONS = [
+    "原生花園",
+    "ラベンダー畑",
+    "細岡",
+    "猪苗代湖畔",
+    "ガーラ湯沢",
+    "偕楽園",
+    "鹿島サッカースタジアム",
+    "津島ノ宮",
+    "田井ノ浜",
+    "バルーンさが"
+];
 interface FormValues extends IFormInput {
     calculationMode: CalculationMode;
+    searchType: "ticket" | "pass1" | "pass3" | "pass6";
 }
 
 export default function Form() {
-    const { register, handleSubmit, control, setValue, getValues, formState: { isValid } } = useForm<FormValues>({
+    const { register, handleSubmit, control, setValue, getValues, trigger, formState: { isValid } } = useForm<FormValues>({
         mode: 'onChange',
         defaultValues: {
             startStation: null,
             segments: [{ viaLine: null, destinationStation: null }],
             calculationMode: "normal",
+            searchType: "ticket",
         },
     });
 
     const { fields, append, replace } = useFieldArray({ control, name: "segments" });
 
     const formValues = useWatch({ control }) as FormValues;
+
+    // React state hooks defined before workerRef / useEffect to satisfy ESLint variable declaration order
+    const [result, setResult] = useState<KippuData | null>(null);
+    const [serverTime, setServerTime] = useState<number | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const workerRef = useRef<Worker | null>(null);
+    const [isWasmReady, setIsWasmReady] = useState(false);
+    const calculationCountRef = useRef<number>(0);
+
+    const [resultPass, setResultPass] = useState<{
+        fare: number;
+        barrierFreeFee: number;
+        charge: number;
+        totalEigyoKilo: number;
+        printedViaLines?: string[];
+    } | null>(null);
+    const [correctedStartPass, setCorrectedStartPass] = useState<string>("");
+    const [correctedEndPass, setCorrectedEndPass] = useState<string>("");
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const initWorker = () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
+            setIsWasmReady(false);
+
+            const worker = new Worker(new URL("../../split/split-pass.worker.ts", import.meta.url));
+            workerRef.current = worker;
+            calculationCountRef.current = 0;
+
+            worker.onmessage = (e) => {
+                const { type, result: wResult, error: wError } = e.data;
+                if (type === "ready") {
+                    setIsWasmReady(true);
+                } else if (type === "success_route_pass") {
+                    setResultPass(wResult);
+                    if (wResult.correctedPath) {
+                        setCorrectedStartPass(wResult.correctedPath[0] || "");
+                        setCorrectedEndPass(wResult.correctedPath[wResult.correctedPath.length - 1] || "");
+                    }
+                    setIsLoading(false);
+
+                    calculationCountRef.current += 1;
+                    if (calculationCountRef.current >= 10) {
+                        console.log("Recycling Web Worker to reclaim Wasm linear memory...");
+                        initWorker();
+                    }
+                } else if (type === "error") {
+                    setError(wError);
+                    setIsLoading(false);
+                }
+            };
+        };
+
+        initWorker();
+
+        return () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
+        };
+    }, []);
+
+    const currentType = formValues.searchType;
+    const isPeriodDisabled = currentType === "ticket";
+
+    const handleTabChange = (tab: "ticket" | "pass") => {
+        setResult(null);
+        setResultPass(null);
+        setCorrectedStartPass("");
+        setCorrectedEndPass("");
+        setError(null);
+        setServerTime(null);
+
+        const nextSearchType = tab === "ticket" ? "ticket" : "pass1";
+        setValue("searchType", nextSearchType, { shouldValidate: true });
+
+        // 即時バリデーション
+        setTimeout(() => {
+            if (!getValues("startStation")) return;
+            const fieldsCount = getValues("segments").length;
+            const fieldsToTrigger = ["startStation"];
+            if (fieldsCount > 0) {
+                fieldsToTrigger.push(`segments.${fieldsCount - 1}.destinationStation`);
+            }
+            trigger(fieldsToTrigger as Parameters<typeof trigger>[0]);
+        }, 0);
+    };
+
+    const handlePeriodChange = (period: "pass1" | "pass3" | "pass6") => {
+        setResult(null);
+        setResultPass(null);
+        setCorrectedStartPass("");
+        setCorrectedEndPass("");
+        setError(null);
+        setServerTime(null);
+
+        setValue("searchType", period, { shouldValidate: true });
+
+        // 即時バリデーション
+        setTimeout(() => {
+            if (!getValues("startStation")) return;
+            const fieldsCount = getValues("segments").length;
+            const fieldsToTrigger = ["startStation"];
+            if (fieldsCount > 0) {
+                fieldsToTrigger.push(`segments.${fieldsCount - 1}.destinationStation`);
+            }
+            trigger(fieldsToTrigger as Parameters<typeof trigger>[0]);
+        }, 0);
+    };
 
     const lastSegment = formValues.segments?.[formValues.segments?.length - 1];
     const lastDestination = lastSegment?.destinationStation;
@@ -91,6 +220,7 @@ export default function Form() {
 
         setValue("startStation", newStart, { shouldValidate: true });
         replace(reversedSegments);
+        trigger();
     };
 
     const createApiRequestBody = (data: FormValues) => {
@@ -117,19 +247,18 @@ export default function Form() {
 
         return {
             path,
-            calculationMode: data.calculationMode
+            calculationMode: data.calculationMode,
+            searchType: data.searchType
         };
     };
-
-    const [result, setResult] = useState<KippuData | null>(null);
-    const [serverTime, setServerTime] = useState<number | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         setIsLoading(true);
         setError(null);
         setResult(null);
+        setResultPass(null);
+        setCorrectedStartPass("");
+        setCorrectedEndPass("");
         setServerTime(null);
 
         const apiRequestBody = createApiRequestBody(data);
@@ -162,10 +291,30 @@ export default function Form() {
                 throw new Error(errorData.error);
             }
 
-            const responseData: ApiFullResponse = await response.json();
-            if (responseData.data && typeof responseData.time === "number") {
+            const responseData = await response.json();
+            if (responseData.data && "correctedPath" in responseData.data) {
+                if (!workerRef.current || !isWasmReady) {
+                    throw new Error("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
+                }
+                const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
+                const months = monthsMap[data.searchType] || 1;
+
+                const cPath: string[] = responseData.data.correctedPath;
+
+                workerRef.current.postMessage({
+                    type: "calculateRoutePass",
+                    payload: {
+                        stationNames: cPath,
+                        calculationMode: data.calculationMode,
+                        months,
+                        isIc: false
+                    }
+                });
+                setServerTime(responseData.time);
+            } else if (responseData.data) {
                 setResult(responseData.data);
                 setServerTime(responseData.time);
+                setIsLoading(false);
             } else {
                 throw new Error("サーバーからのレスポンス形式が不正です。");
             }
@@ -176,13 +325,82 @@ export default function Form() {
             } else {
                 setError("計算に失敗しました。");
             }
-        } finally {
             setIsLoading(false);
         }
     };
 
     return (
         <>
+            {/* 第1階層: きっぷ・定期券切り替えタブ */}
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl mb-4">
+                <button
+                    type="button"
+                    onClick={() => handleTabChange("ticket")}
+                    className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${currentType === "ticket"
+                        ? "bg-white text-blue-600 shadow-sm font-bold"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                        }`}
+                >
+                    普通乗車券
+                </button>
+                <button
+                    type="button"
+                    onClick={() => handleTabChange("pass")}
+                    className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${currentType !== "ticket"
+                        ? "bg-white text-blue-600 shadow-sm font-bold"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                        }`}
+                >
+                    定期乗車券
+                </button>
+            </div>
+
+            {/* 第2階層: 定期券期間選択トグル */}
+            <div className="h-11 mb-6">
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-50 border border-slate-200 rounded-xl">
+                    <button
+                        type="button"
+                        onClick={() => handlePeriodChange("pass1")}
+                        disabled={isPeriodDisabled}
+                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && currentType === "pass1"
+                            ? "bg-white text-blue-600 shadow-sm font-bold cursor-pointer"
+                            : isPeriodDisabled
+                                ? "text-slate-400 cursor-not-allowed opacity-50"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
+                            }`}
+                    >
+                        1箇月
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handlePeriodChange("pass3")}
+                        disabled={isPeriodDisabled}
+                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && currentType === "pass3"
+                            ? "bg-white text-blue-600 shadow-sm font-bold cursor-pointer"
+                            : isPeriodDisabled
+                                ? "text-slate-400 cursor-not-allowed opacity-50"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
+                            }`}
+                    >
+                        3箇月
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handlePeriodChange("pass6")}
+                        disabled={isPeriodDisabled}
+                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && currentType === "pass6"
+                            ? "bg-white text-blue-600 shadow-sm font-bold cursor-pointer"
+                            : isPeriodDisabled
+                                ? "text-slate-400 cursor-not-allowed opacity-50"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
+                            }`}
+                    >
+                        6箇月
+                    </button>
+                </div>
+            </div>
+
+            {/* eslint-disable-next-line react-hooks/refs */}
             <form onSubmit={handleSubmit(onSubmit)} className="p-8 w-full">
                 <div className="flex flex-col gap-4 w-full">
 
@@ -197,7 +415,12 @@ export default function Form() {
                                 validate: (selected) => {
                                     if (!selected) return "発駅を入力してください";
                                     const exists = stationData.some(s => s.name === selected.name);
-                                    return exists || "該当する駅が存在しません";
+                                    if (!exists) return "該当する駅が存在しません";
+                                    const currentSearchType = getValues("searchType");
+                                    if (currentSearchType !== "ticket" && TEMPORARY_STATIONS.includes(selected.name)) {
+                                        return "臨時駅発着の定期券は計算できません";
+                                    }
+                                    return true;
                                 }
                             }}
                             render={({ field, fieldState }) => (
@@ -275,7 +498,13 @@ export default function Form() {
                                             validate: (selected) => {
                                                 if (!selected) return `${stationLabel}を入力してください`;
                                                 const exists = stationsOnLine.some(s => s.name === selected.name);
-                                                return exists || "選択された路線にこの駅は存在しません";
+                                                if (!exists) return "選択された路線にこの駅は存在しません";
+
+                                                const currentSearchType = getValues("searchType");
+                                                if (currentSearchType !== "ticket" && isLastStation && TEMPORARY_STATIONS.includes(selected.name)) {
+                                                    return "臨時駅発着の定期券は計算できません";
+                                                }
+                                                return true;
                                             }
                                         }}
                                         render={({ field, fieldState }) => (
@@ -363,19 +592,28 @@ export default function Form() {
                         </div>
                     </div>
 
-                    <button type="submit" className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2" disabled={!isValid}>
-                        運賃計算をする
+                    <button
+                        type="submit"
+                        className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2 cursor-pointer disabled:cursor-not-allowed"
+                        disabled={!isValid || isLoading || (currentType !== "ticket" && !isWasmReady)}
+                    >
+                        {isLoading 
+                            ? "計算中..." 
+                            : (currentType !== "ticket" && !isWasmReady) 
+                                ? "計算エンジン初期化中..." 
+                                : "運賃計算をする"
+                        }
                     </button>
                 </div>
             </form>
 
             <div className="my-8 p-4">
-                {isLoading && <p className="py-5 border-t">計算中...</p>}
-                {serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
+                {isLoading && <p className="py-5 border-t text-center text-gray-500">計算中...</p>}
+                {!isLoading && serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
 
-                {error && <p className="py-5 border-t text-red-500">{error}</p>}
+                {!isLoading && error && <p className="py-5 border-t text-red-500 text-center">{error}</p>}
 
-                {result && (
+                {!isLoading && result && (
                     <div>
                         <h2 className="py-5 text-2xl border-t">計算結果</h2>
                         <div>営業キロ: {(result.totalEigyoKilo / 10).toFixed(1)} km</div>
@@ -402,6 +640,37 @@ export default function Form() {
                         <span className="flex justify-between items-center mt-2">
                             <span>{result.validDays + " 日間有効"}</span>
                             <span className="text-xl">¥{result.fare > 0 ? result.fare.toLocaleString() : "***"}</span>
+                        </span>
+                    </div>
+                )}
+
+                {!isLoading && resultPass && (
+                    <div>
+                        <h2 className="py-5 text-2xl border-t">計算結果</h2>
+                        <div>営業キロ: {(resultPass.totalEigyoKilo / 10).toFixed(1)} km</div>
+                        <div className="flex justify-between items-center my-3 gap-2">
+                            <div className="flex-1 text-right">
+                                <div className={`font-bold flex justify-around flex-wrap ${correctedStartPass.length > 6 ? 'text-lg sm:text-xl' : 'text-2xl'}`}>
+                                    {correctedStartPass.split('').map((char, idx) => (
+                                        <span key={idx}>{char}</span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="text-2xl shrink-0 text-center text-slate-400">↔</div>
+
+                            <div className="flex-1 text-left text-wrap">
+                                <div className={`font-bold flex justify-around flex-wrap ${correctedEndPass.length > 6 ? 'text-lg sm:text-xl' : 'text-2xl'}`}>
+                                    {correctedEndPass.split('').map((char, idx) => (
+                                        <span key={idx}>{char}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <span>経由：{!resultPass.printedViaLines || resultPass.printedViaLines.length === 0 ? "ーーー" : resultPass.printedViaLines.join("・")}</span>
+                        <span className="flex justify-between items-center mt-2">
+                            <span>{(( { pass1: 1, pass3: 3, pass6: 6 } as Record<string, number> )[formValues.searchType] || 1) + " 箇月有効"}</span>
+                            <span className="text-xl">¥{(resultPass.fare + resultPass.barrierFreeFee + resultPass.charge).toLocaleString()}</span>
                         </span>
                     </div>
                 )}
