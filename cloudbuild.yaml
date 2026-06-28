@@ -12,10 +12,6 @@ steps:
         gcloud storage cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
         mkdir -p src/app/split/data
         gcloud storage cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
-        
-        # Wasm and Graph data injection
-        gcloud storage cp gs://kippu-navi-build-secrets/wasm/split_pass.wasm ./public/
-        gcloud storage cp gs://kippu-navi-build-secrets/wasm/graph_data.bin ./public/
 
   # 2. JSON が揃った状態で Docker ビルドを実行する
   - name: 'gcr.io/cloud-builders/docker'
@@ -41,15 +37,46 @@ steps:
       - 'NEXT_PUBLIC_POSTHOG_KEY=${_NEXT_PUBLIC_POSTHOG_KEY}'
       - '--build-arg'
       - 'NEXT_PUBLIC_POSTHOG_HOST=${_NEXT_PUBLIC_POSTHOG_HOST}'
+      - '--build-arg'
+      - 'ASSET_PREFIX=https://assets.kippu-navi.com'
       - '.'
 
-  # 3. ビルドしたイメージを Artifact Registry に Push
+  # 3. ビルド済みイメージから _next/static を抽出する
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        CONTAINER_ID=$(docker create asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA)
+        docker cp $CONTAINER_ID:/app/.next/static /workspace/_next_static
+        docker rm $CONTAINER_ID
+
+  # 4. _next/static の新規・変更ファイルのみを R2 へ差分アップロードする
+  #    ※ デプロイ前に実行し、新チャンクが R2 に存在する状態を確保する
+  #    ※ copy は追加のみ（旧ファイルは削除しない）ので、旧リビジョン利用中のユーザーに影響しない
+  - name: 'rclone/rclone:latest'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        rclone copy /workspace/_next_static r2:kippu-navi/_next/static/ \
+          --checksum \
+          --header-upload "Cache-Control: public, max-age=31536000, immutable" \
+          --verbose
+    env:
+      - 'RCLONE_CONFIG_R2_TYPE=s3'
+      - 'RCLONE_CONFIG_R2_PROVIDER=Cloudflare'
+      - 'RCLONE_CONFIG_R2_ENDPOINT=${_R2_ENDPOINT}'
+      - 'RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true'
+    secretEnv: ['RCLONE_CONFIG_R2_ACCESS_KEY_ID', 'RCLONE_CONFIG_R2_SECRET_ACCESS_KEY']
+
+  # 5. ビルドしたイメージを Artifact Registry に Push
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'push'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
 
-  # 4. 本番の Cloud Run へデプロイし、トラフィックを100%向ける
+  # 6. 本番の Cloud Run へデプロイし、トラフィックを100%向ける
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
@@ -65,9 +92,18 @@ steps:
           --to-latest \
           --region asia-northeast1
 
+
+
 # 正常終了の条件として、指定したイメージが正しくビルド・プッシュされたか検証する
 images:
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/R2_ACCESS_KEY_ID/versions/latest
+      env: 'RCLONE_CONFIG_R2_ACCESS_KEY_ID'
+    - versionName: projects/$PROJECT_ID/secrets/R2_SECRET_ACCESS_KEY/versions/latest
+      env: 'RCLONE_CONFIG_R2_SECRET_ACCESS_KEY'
 
 options:
   logging: CLOUD_LOGGING_ONLY
