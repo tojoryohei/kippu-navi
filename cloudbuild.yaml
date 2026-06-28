@@ -47,9 +47,9 @@ steps:
     args:
       - '-c'
       - |
-        CONTAINER_ID=$(docker create asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA)
-        docker cp $CONTAINER_ID:/app/.next/static /workspace/_next_static
-        docker rm $CONTAINER_ID
+        CONTAINER_ID=$(docker create "asia-northeast1-docker.pkg.dev/${PROJECT_ID}/kippu-navi/kippu-navi:${SHORT_SHA}")
+        docker cp $$CONTAINER_ID:/app/.next/static /workspace/_next_static
+        docker rm $$CONTAINER_ID
 
   # 4. _next/static の新規・変更ファイルのみを R2 へ差分アップロードする
   #    ※ デプロイ前に実行し、新チャンクが R2 に存在する状態を確保する
