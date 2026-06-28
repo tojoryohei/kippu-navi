@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.2...kippu-navi-v2.8.3) (2026-06-28)
+
+
+### Bug Fixes
+
+* CSPポリシーに Cloudflare Insights, PostHog, AdSense 用の外部ドメインを追加 ([#370](https://github.com/tojoryohei/kippu-navi/issues/370)) ([0b9d4b9](https://github.com/tojoryohei/kippu-navi/commit/0b9d4b9039fc9f9ad856851d9339e6a978a48745))
+
 ## [2.8.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.1...kippu-navi-v2.8.2) (2026-06-28)
 
 
