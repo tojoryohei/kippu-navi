@@ -62,6 +62,30 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof window !== 'undefined' && !window.__patched_worker__) {
+                  var OriginalWorker = window.Worker;
+                  var PatchedWorker = function(scriptURL, options) {
+                    var urlString = scriptURL.toString();
+                    var finalURL = scriptURL;
+                    if (urlString.indexOf('http') === 0 && urlString.indexOf(window.location.origin) !== 0) {
+                      var blobCode = 'importScripts(' + JSON.stringify(urlString) + ');';
+                      var blob = new Blob([blobCode], { type: 'application/javascript' });
+                      finalURL = URL.createObjectURL(blob);
+                    }
+                    return new OriginalWorker(finalURL, options);
+                  };
+                  PatchedWorker.prototype = OriginalWorker.prototype;
+                  window.Worker = PatchedWorker;
+                  window.__patched_worker__ = true;
+                }
+              })();
+            `
+          }}
+        />
         <link rel="icon" href="https://assets.kippu-navi.com/icons/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="https://assets.kippu-navi.com/icons/apple-touch-icon.png" />
         <link rel="apple-touch-icon-precomposed" href="https://assets.kippu-navi.com/icons/apple-touch-icon-precomposed.png" />
