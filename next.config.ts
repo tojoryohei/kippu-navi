@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const R2_ORIGIN = 'https://assets.kippu-navi.com';
+const isDev = process.env.NODE_ENV === 'development';
+const unsafeEval = isDev ? "'unsafe-eval'" : "";
 
 const nextConfig: NextConfig = {
   assetPrefix: process.env.ASSET_PREFIX || undefined,
@@ -34,7 +36,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' ${R2_ORIGIN} https://www.google-analytics.com https://www.googletagmanager.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://adservice.google.com https://static.cloudflareinsights.com https://*.posthog.com https://us-assets.i.posthog.com https://*.adtrafficquality.google; style-src 'self' 'unsafe-inline' ${R2_ORIGIN} https://fonts.googleapis.com; img-src 'self' data: blob: https: ${R2_ORIGIN}; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ${R2_ORIGIN} https://*.posthog.com https://*.firebaseio.com https://*.googleapis.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.g.doubleclick.net https://pagead2.googlesyndication.com https://*.adtrafficquality.google; frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://docs.google.com; frame-ancestors 'self';`,
+            value: `default-src 'self'; script-src 'self' ${unsafeEval} 'unsafe-inline' ${R2_ORIGIN} https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://*.posthog.com https://us-assets.i.posthog.com https://pagead2.googlesyndication.com https://adservice.google.com https://*.adtrafficquality.google; style-src 'self' 'unsafe-inline' ${R2_ORIGIN} https://fonts.googleapis.com; img-src 'self' data: blob: https: ${R2_ORIGIN}; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ${R2_ORIGIN} https://*.posthog.com https://*.google-analytics.com https://*.adtrafficquality.google https://*.googletagmanager.com https://*.analytics.google.com https://*.g.doubleclick.net https://pagead2.googlesyndication.com; frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://docs.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; upgrade-insecure-requests;`,
           }
         ],
       },
