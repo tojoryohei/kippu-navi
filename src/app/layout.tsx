@@ -51,6 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const gaId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
+  const assetPrefix = process.env.ASSET_PREFIX || '';
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -68,19 +69,16 @@ export default function RootLayout({
               (function() {
                 if (typeof window !== 'undefined' && !window.__patched_worker__) {
                   var OriginalWorker = window.Worker;
+                  var assetPrefix = ${JSON.stringify(assetPrefix)};
                   var PatchedWorker = function(scriptURL, options) {
                     var urlString = scriptURL.toString();
-                    var finalURL = scriptURL;
-                    if (urlString.indexOf('http') === 0 && urlString.indexOf(window.location.origin) !== 0) {
-                      var blobCode = 'importScripts(' + JSON.stringify(urlString) + ');';
-                      var blob = new Blob([blobCode], { type: 'application/javascript' });
-                      finalURL = URL.createObjectURL(blob);
-                      var hashIdx = urlString.indexOf('#');
-                      if (hashIdx !== -1) {
-                        finalURL += urlString.substring(hashIdx);
-                      }
+                    if (assetPrefix) {
+                      var encodedPrefix = encodeURIComponent(assetPrefix);
+                      var encodedOrigin = encodeURIComponent(window.location.origin);
+                      urlString = urlString.split(assetPrefix).join(window.location.origin);
+                      urlString = urlString.split(encodedPrefix).join(encodedOrigin);
                     }
-                    return new OriginalWorker(finalURL, options);
+                    return new OriginalWorker(urlString, options);
                   };
                   PatchedWorker.prototype = OriginalWorker.prototype;
                   window.Worker = PatchedWorker;
