@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.7.0...kippu-navi-v2.8.0) (2026-06-28)
+
+
+### Features
+
+* 静的アセットとWASMのCloudflare R2配信への移行 ([#361](https://github.com/tojoryohei/kippu-navi/issues/361)) ([78574b0](https://github.com/tojoryohei/kippu-navi/commit/78574b07917c59134f74522523ee76178c8a3f13))
+
 ## [2.7.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.5...kippu-navi-v2.7.0) (2026-06-28)
 
 
