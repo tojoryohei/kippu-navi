@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.0...kippu-navi-v2.8.1) (2026-06-28)
+
+
+### Bug Fixes
+
+* Cloud Buildでのローカル変数パースエラーを修正（エスケープ対応） ([#364](https://github.com/tojoryohei/kippu-navi/issues/364)) ([5f43cf9](https://github.com/tojoryohei/kippu-navi/commit/5f43cf91920eb7a8373a962fde5b403e46c215a3))
+
 ## [2.8.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.7.0...kippu-navi-v2.8.0) (2026-06-28)
 
 
