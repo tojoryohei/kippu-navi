@@ -84,11 +84,6 @@ export interface SplitApiResponse {
     splitKippuDatasList: SplitKippuDatas[];
 }
 
-export interface ApiFullResponse {
-    data: KippuData;
-    time: number;
-}
-
 export interface CacheResult {
     data: SplitApiResponse;
     isCacheHit: boolean;

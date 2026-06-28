@@ -12,7 +12,7 @@ interface GenerateKippuOptions {
     calculationMode?: CalculationMode;
 }
 
-export function getCorrectedPath(path: PathStep[], calculationMode: CalculationMode): PathStep[] {
+function getCorrectedPath(path: PathStep[], calculationMode: CalculationMode): PathStep[] {
     let fullPath = createFullPath(path);
     let correctedPath: PathStep[];
 
