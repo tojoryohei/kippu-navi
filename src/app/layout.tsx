@@ -51,6 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const gaId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
+  const assetPrefix = process.env.ASSET_PREFIX || '';
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -62,6 +63,31 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof window !== 'undefined' && !window.__patched_worker__) {
+                  var OriginalWorker = window.Worker;
+                  var assetPrefix = ${JSON.stringify(assetPrefix)};
+                  var PatchedWorker = function(scriptURL, options) {
+                    var urlString = scriptURL.toString();
+                    if (assetPrefix) {
+                      var encodedPrefix = encodeURIComponent(assetPrefix);
+                      var encodedOrigin = encodeURIComponent(window.location.origin);
+                      urlString = urlString.split(assetPrefix).join(window.location.origin);
+                      urlString = urlString.split(encodedPrefix).join(encodedOrigin);
+                    }
+                    return new OriginalWorker(urlString, options);
+                  };
+                  PatchedWorker.prototype = OriginalWorker.prototype;
+                  window.Worker = PatchedWorker;
+                  window.__patched_worker__ = true;
+                }
+              })();
+            `
+          }}
+        />
         <link rel="icon" href="https://assets.kippu-navi.com/icons/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="https://assets.kippu-navi.com/icons/apple-touch-icon.png" />
         <link rel="apple-touch-icon-precomposed" href="https://assets.kippu-navi.com/icons/apple-touch-icon-precomposed.png" />
