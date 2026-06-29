@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.5...kippu-navi-v2.8.6) (2026-06-29)
+
+
+### Bug Fixes
+
+* Wasm/データのみのR2配信化およびNext.jsアセットの同一ドメイン配信への回帰 ([#385](https://github.com/tojoryohei/kippu-navi/issues/385)) ([9956f25](https://github.com/tojoryohei/kippu-navi/commit/9956f25ae6e9e21e9671fd0ceb4a7273218b9adb))
+
 ## [2.8.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.4...kippu-navi-v2.8.5) (2026-06-29)
 
 
