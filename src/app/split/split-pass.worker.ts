@@ -46,8 +46,8 @@ async function initWasm(origin: string) {
     const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
     const baseUrl = isLocal ? origin : 'https://assets.kippu-navi.com';
 
-    // 環境に応じたベースURLからロードする
-    importScripts(`${baseUrl}/engine/wasm_exec.js`);
+    // 軽量スクリプトである wasm_exec.js は同一オリジン (origin) からロードする
+    importScripts(`${origin}/engine/wasm_exec.js`);
     go = new Go();
 
     const wasmResponse = await fetch(`${baseUrl}/engine/split_pass.wasm`);
