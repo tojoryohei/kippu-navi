@@ -67,19 +67,36 @@ export default function Form() {
 
     useEffect(() => {
         if (typeof window === "undefined") return;
+        let isMounted = true;
+
+        const handleWorkerError = (err: any) => {
+            if (!isMounted) return;
+            console.error("Worker error:", err);
+            let message = "計算エンジンの実行中にエラーが発生しました。";
+            if (typeof err === "string") {
+                message = err;
+            } else if (err && typeof err === "object") {
+                message = err.message || message;
+            }
+            setError(message);
+            setIsLoading(false);
+        };
 
         const initWorker = () => {
             if (workerRef.current) {
                 workerRef.current.terminate();
                 workerRef.current = null;
             }
-            setIsWasmReady(false);
+            if (isMounted) {
+                setIsWasmReady(false);
+            }
 
             const worker = new Worker(new URL("../../split/split-pass.worker.ts", import.meta.url));
             workerRef.current = worker;
             calculationCountRef.current = 0;
 
             worker.onmessage = (e) => {
+                if (!isMounted || workerRef.current !== worker) return;
                 const { type, result: wResult, error: wError } = e.data;
                 if (type === "ready") {
                     setIsWasmReady(true);
@@ -97,15 +114,23 @@ export default function Form() {
                         initWorker();
                     }
                 } else if (type === "error") {
-                    setError(wError);
-                    setIsLoading(false);
+                    handleWorkerError(wError);
                 }
             };
+
+            worker.onerror = (err) => {
+                if (!isMounted || workerRef.current !== worker) return;
+                handleWorkerError(err);
+            };
+
+            // メインスレッドの origin を明示的に渡して初期化を開始する
+            worker.postMessage({ type: "init", payload: { origin: window.location.origin } });
         };
 
         initWorker();
 
         return () => {
+            isMounted = false;
             if (workerRef.current) {
                 workerRef.current.terminate();
                 workerRef.current = null;

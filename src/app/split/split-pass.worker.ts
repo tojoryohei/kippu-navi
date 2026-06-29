@@ -1,19 +1,5 @@
 /// <reference lib="webworker" />
 
-// importScripts は Turbopack のオリジンチェックに阻まれるため、
-// 常に Worker 自身のオリジン（同一オリジン）から読み込む。
-// wasm_exec.js は ~20KB 程度なので Cloud Run から配信しても帯域への影響は軽微。
-const selfOrigin = (typeof self !== 'undefined' && self.location && self.location.origin && self.location.origin !== 'null')
-  ? self.location.origin
-  : '';
-
-// 大容量バイナリ（wasm, graph_data）は fetch で取得するため Turbopack に干渉されない。
-// 同一オリジン（Cloud Run）から直接取得する。
-const cdnOrigin = selfOrigin;
-
-// Go Wasm ローダーの読み込み（importScripts → 同一オリジン必須）
-importScripts(`${selfOrigin}/engine/wasm_exec.js`);
-
 interface GoInstance {
   importObject: WebAssembly.Imports;
   run(instance: WebAssembly.Instance): Promise<void>;
@@ -49,15 +35,19 @@ interface WasmResultResponse {
   segments: WasmSegment[];
 }
 
-const go = new Go();
+let go: GoInstance;
 let wasmInstance: WebAssembly.Instance | null = null;
 let graphInitialized = false;
 
-async function initWasm() {
+async function initWasm(origin: string) {
   if (wasmInstance) return;
 
   try {
-    const wasmResponse = await fetch(`${cdnOrigin}/engine/split_pass.wasm`);
+    // メインスレッドから送られた origin をもとに wasm_exec.js を読み込む
+    importScripts(`${origin}/engine/wasm_exec.js`);
+    go = new Go();
+
+    const wasmResponse = await fetch(`${origin}/engine/split_pass.wasm`);
     const wasmArrayBuffer = await wasmResponse.arrayBuffer();
     const result = await WebAssembly.instantiate(wasmArrayBuffer, go.importObject);
     wasmInstance = result.instance;
@@ -66,7 +56,7 @@ async function initWasm() {
     go.run(wasmInstance);
 
     // グラフデータのロード (真のゼロコピー)
-    const graphResponse = await fetch(`${cdnOrigin}/engine/graph_data.bin`);
+    const graphResponse = await fetch(`${origin}/engine/graph_data.bin`);
     const graphArrayBuffer = await graphResponse.arrayBuffer();
     const size = graphArrayBuffer.byteLength;
 
@@ -88,19 +78,31 @@ async function initWasm() {
     postMessage({ type: 'ready' });
   } catch (error) {
     console.error('Wasm/Graph initialization error:', error);
-    postMessage({ type: 'error', error: String(error) });
+    postMessage({
+      type: 'error',
+      error: {
+        code: 'WASM_INIT_FAILED',
+        message: String(error)
+      }
+    });
   }
 }
-
-// 起動時に初期化開始
-initWasm();
 
 onmessage = async (e: MessageEvent) => {
   const { type, payload } = e.data;
 
-  if (type === 'calculateRoutePass') {
+  if (type === 'init') {
+    const { origin } = payload;
+    await initWasm(origin);
+  } else if (type === 'calculateRoutePass') {
     if (!graphInitialized) {
-      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
+      postMessage({
+        type: 'error',
+        error: {
+          code: 'NOT_INITIALIZED',
+          message: 'Wasm graph not initialized yet'
+        }
+      });
       return;
     }
 
@@ -110,16 +112,34 @@ onmessage = async (e: MessageEvent) => {
       const resultJsonStr = workerSelf.calculateRoutePass(stationNamesJson, months, isIc, calculationMode || 'normal');
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
-        postMessage({ type: 'error', error: result.error });
+        postMessage({
+          type: 'error',
+          error: {
+            code: 'CALCULATION_FAILED',
+            message: result.error
+          }
+        });
         return;
       }
       postMessage({ type: 'success_route_pass', result });
     } catch (err) {
-      postMessage({ type: 'error', error: String(err) });
+      postMessage({
+        type: 'error',
+        error: {
+          code: 'CALCULATION_UNCAUGHT_FAILED',
+          message: String(err)
+        }
+      });
     }
   } else if (type === 'calculate') {
     if (!graphInitialized) {
-      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
+      postMessage({
+        type: 'error',
+        error: {
+          code: 'NOT_INITIALIZED',
+          message: 'Wasm graph not initialized yet'
+        }
+      });
       return;
     }
 
@@ -135,7 +155,13 @@ onmessage = async (e: MessageEvent) => {
 
         const result = JSON.parse(resultJsonStr);
         if (result.error) {
-          postMessage({ type: 'error', error: result.error });
+          postMessage({
+            type: 'error',
+            error: {
+              code: 'CALCULATION_FAILED',
+              message: result.error
+            }
+          });
           return;
         }
 
@@ -164,7 +190,13 @@ onmessage = async (e: MessageEvent) => {
 
       postMessage({ type: 'success', result: { normal: normalResult, results: uniqueResults } });
     } catch (err) {
-      postMessage({ type: 'error', error: String(err) });
+      postMessage({
+        type: 'error',
+        error: {
+          code: 'CALCULATION_UNCAUGHT_FAILED',
+          message: String(err)
+        }
+      });
     }
   }
 };
