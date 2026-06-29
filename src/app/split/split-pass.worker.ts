@@ -8,10 +8,8 @@ const selfOrigin = (typeof self !== 'undefined' && self.location && self.locatio
   : '';
 
 // 大容量バイナリ（wasm, graph_data）は fetch で取得するため Turbopack に干渉されない。
-// CDN (R2) から配信することで Cloud Run の帯域コストを抑える。
-const cdnOrigin = process.env.ASSET_PREFIX
-  ? process.env.ASSET_PREFIX.replace(/\/$/, '')
-  : selfOrigin;
+// 同一オリジン（Cloud Run）から直接取得する。
+const cdnOrigin = selfOrigin;
 
 // Go Wasm ローダーの読み込み（importScripts → 同一オリジン必須）
 importScripts(`${selfOrigin}/engine/wasm_exec.js`);

@@ -13,10 +13,12 @@ steps:
         mkdir -p src/app/split/data
         gcloud storage cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
         
-        # wasm_exec.js のみ Cloud Run 上に配置（importScripts 用、~20KB）
-        # split_pass.wasm / graph_data.bin は CDN (R2) から fetch で取得するためここでは不要
+        # Wasm と Graph data を Cloud Run 上に配置（同一オリジンから配信するため）
         mkdir -p ./public/engine
+        gcloud storage cp gs://kippu-navi-build-secrets/wasm/split_pass.wasm ./public/engine/
+        gcloud storage cp gs://kippu-navi-build-secrets/wasm/graph_data.bin ./public/engine/
         cp ./public/wasm_exec.js ./public/engine/
+
 
   # 2. JSON が揃った状態で Docker ビルドを実行する
   - name: 'gcr.io/cloud-builders/docker'
