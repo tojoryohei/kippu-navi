@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.9...kippu-navi-v2.8.10) (2026-06-29)
+
+
+### Bug Fixes
+
+* Blob Worker環境下でのwasm_exec.js読み込みエラーを絶対URL解決で修正 ([#398](https://github.com/tojoryohei/kippu-navi/issues/398)) ([10830b1](https://github.com/tojoryohei/kippu-navi/commit/10830b1fbe0c5a9649e8638cea95e57a99a6dc0b))
+
 ## [2.8.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.8...kippu-navi-v2.8.9) (2026-06-29)
 
 
