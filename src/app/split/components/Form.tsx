@@ -146,14 +146,19 @@ export default function SplitForm({
         if (typeof window === "undefined") return;
         let isMounted = true;
 
-        const handleWorkerError = (err: any) => {
+        const handleWorkerError = (err: unknown) => {
             if (!isMounted) return;
             console.error("Worker error:", err);
             let message = "計算エンジンの実行中にエラーが発生しました。";
             if (typeof err === "string") {
                 message = err;
+            } else if (err instanceof Error) {
+                message = err.message;
             } else if (err && typeof err === "object") {
-                message = err.message || message;
+                const errObj = err as Record<string, unknown>;
+                if (typeof errObj.message === "string") {
+                    message = errObj.message;
+                }
             }
             setError(message);
             setIsCalculating(false);
