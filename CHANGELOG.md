@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.4...kippu-navi-v2.8.5) (2026-06-29)
+
+
+### Bug Fixes
+
+* Worker内のアセット読み込みを自ホスト(origin)に固定し、本番ビルドにエンジンDLを追加 ([#383](https://github.com/tojoryohei/kippu-navi/issues/383)) ([4e7781d](https://github.com/tojoryohei/kippu-navi/commit/4e7781ddff10c8598394f7c0dbf7144c59f89d76))
+
 ## [2.8.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.3...kippu-navi-v2.8.4) (2026-06-28)
 
 
