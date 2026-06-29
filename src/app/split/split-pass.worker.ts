@@ -1,21 +1,20 @@
 /// <reference lib="webworker" />
 
-const assetPrefix = process.env.ASSET_PREFIX || '';
-const defaultOrigin = assetPrefix ? assetPrefix.replace(/\/$/, '') : '';
-const selfOrigin = (typeof self !== 'undefined' && self.location && self.location.origin) ? self.location.origin : '';
-const isProductionDomain = (() => {
-  if (!selfOrigin) return false;
-  try {
-    const { hostname } = new URL(selfOrigin);
-    return hostname === 'kippu-navi.com' || hostname.endsWith('.kippu-navi.com');
-  } catch {
-    return false;
-  }
-})();
-const baseOrigin = (selfOrigin && !isProductionDomain) ? selfOrigin : defaultOrigin;
+// importScripts は Turbopack のオリジンチェックに阻まれるため、
+// 常に Worker 自身のオリジン（同一オリジン）から読み込む。
+// wasm_exec.js は ~20KB 程度なので Cloud Run から配信しても帯域への影響は軽微。
+const selfOrigin = (typeof self !== 'undefined' && self.location && self.location.origin && self.location.origin !== 'null')
+  ? self.location.origin
+  : '';
 
-// Go Wasm ローダーの読み込み
-importScripts(`${baseOrigin}/engine/wasm_exec.js`);
+// 大容量バイナリ（wasm, graph_data）は fetch で取得するため Turbopack に干渉されない。
+// CDN (R2) から配信することで Cloud Run の帯域コストを抑える。
+const cdnOrigin = process.env.ASSET_PREFIX
+  ? process.env.ASSET_PREFIX.replace(/\/$/, '')
+  : selfOrigin;
+
+// Go Wasm ローダーの読み込み（importScripts → 同一オリジン必須）
+importScripts(`${selfOrigin}/engine/wasm_exec.js`);
 
 interface GoInstance {
   importObject: WebAssembly.Imports;
@@ -60,7 +59,7 @@ async function initWasm() {
   if (wasmInstance) return;
 
   try {
-    const wasmResponse = await fetch(`${baseOrigin}/engine/split_pass.wasm`);
+    const wasmResponse = await fetch(`${cdnOrigin}/engine/split_pass.wasm`);
     const wasmArrayBuffer = await wasmResponse.arrayBuffer();
     const result = await WebAssembly.instantiate(wasmArrayBuffer, go.importObject);
     wasmInstance = result.instance;
@@ -69,7 +68,7 @@ async function initWasm() {
     go.run(wasmInstance);
 
     // グラフデータのロード (真のゼロコピー)
-    const graphResponse = await fetch(`${baseOrigin}/engine/graph_data.bin`);
+    const graphResponse = await fetch(`${cdnOrigin}/engine/graph_data.bin`);
     const graphArrayBuffer = await graphResponse.arrayBuffer();
     const size = graphArrayBuffer.byteLength;
 
