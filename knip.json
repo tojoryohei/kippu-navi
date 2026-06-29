@@ -4,7 +4,7 @@
     "scripts/**/*.ts"
   ],
   "ignore": [
-    "public/wasm_exec.js"
+    "public/engine/wasm_exec.js"
   ],
   "ignoreDependencies": [
     "tsx"
