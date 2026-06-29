@@ -96,18 +96,7 @@ export default function Form() {
                 setIsWasmReady(false);
             }
 
-            const workerUrl = new URL("../../split/split-pass.worker.ts", import.meta.url).toString();
-            let worker: Worker;
-
-            if (workerUrl.startsWith(window.location.origin)) {
-                worker = new Worker(workerUrl);
-            } else {
-                const blobCode = `importScripts(${JSON.stringify(workerUrl)});`;
-                const blob = new Blob([blobCode], { type: "application/javascript" });
-                const blobUrl = URL.createObjectURL(blob);
-                worker = new Worker(blobUrl);
-                URL.revokeObjectURL(blobUrl);
-            }
+            const worker = new Worker(new URL("../../split/split-pass.worker.ts", import.meta.url));
 
             workerRef.current = worker;
             calculationCountRef.current = 0;
