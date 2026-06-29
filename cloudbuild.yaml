@@ -12,10 +12,6 @@ steps:
         gcloud storage cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
         mkdir -p src/app/split/data
         gcloud storage cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
-        
-        # Wasm and Graph data injection
-        gcloud storage cp gs://kippu-navi-build-secrets/wasm/split_pass.wasm ./public/
-        gcloud storage cp gs://kippu-navi-build-secrets/wasm/graph_data.bin ./public/
 
   # 2. JSON が揃った状態で Docker ビルドを実行する
   - name: 'gcr.io/cloud-builders/docker'
