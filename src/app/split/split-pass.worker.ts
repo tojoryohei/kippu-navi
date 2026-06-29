@@ -1,7 +1,10 @@
 /// <reference lib="webworker" />
 
-// Go Wasm ローダーの読み込み
-importScripts('/wasm_exec.js');
+// Go Wasm ローダーの読み込み（Blob Worker環境で相対パスエラーを防ぐため絶対URLに解決）
+const selfOrigin = (typeof self !== 'undefined' && self.location && self.location.origin && self.location.origin !== 'null')
+  ? self.location.origin
+  : '';
+importScripts(`${selfOrigin}/wasm_exec.js`);
 
 interface GoInstance {
   importObject: WebAssembly.Imports;
