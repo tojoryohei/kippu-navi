@@ -9,7 +9,7 @@ interface GoInstance {
 }
 
 declare const Go: {
-  new (): GoInstance;
+  new(): GoInstance;
 };
 
 interface WorkerGlobalScope {
@@ -42,11 +42,21 @@ const go = new Go();
 let wasmInstance: WebAssembly.Instance | null = null;
 let graphInitialized = false;
 
+const isLocal = typeof self !== 'undefined' && (
+  self.location.hostname === 'localhost' ||
+  self.location.hostname === '127.0.0.1' ||
+  self.location.hostname.startsWith('192.168.') ||
+  self.location.hostname.endsWith('.local')
+);
+
+const WASM_URL = isLocal ? '/engine/split_pass.wasm' : 'https://assets.kippu-navi.com/engine/split_pass.wasm';
+const GRAPH_URL = isLocal ? '/engine/graph_data.bin' : 'https://assets.kippu-navi.com/engine/graph_data.bin';
+
 async function initWasm() {
   if (wasmInstance) return;
 
   try {
-    const wasmResponse = await fetch('/split_pass.wasm');
+    const wasmResponse = await fetch(WASM_URL);
     const wasmArrayBuffer = await wasmResponse.arrayBuffer();
     const result = await WebAssembly.instantiate(wasmArrayBuffer, go.importObject);
     wasmInstance = result.instance;
@@ -55,7 +65,7 @@ async function initWasm() {
     go.run(wasmInstance);
 
     // グラフデータのロード (真のゼロコピー)
-    const graphResponse = await fetch('/graph_data.bin');
+    const graphResponse = await fetch(GRAPH_URL);
     const graphArrayBuffer = await graphResponse.arrayBuffer();
     const size = graphArrayBuffer.byteLength;
 

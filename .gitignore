@@ -41,9 +41,9 @@ src/data/*.json
 src/app/mr/data/*.json
 src/app/split/data/*.json
 
-# wasm and graph data (injected during build from cloud storage)
-public/split_pass.wasm
-public/graph_data.bin
+# wasm and graph data
+public/engine/split_pass.wasm
+public/engine/graph_data.bin
 
 # split-pass-api large precomputed data
 split-pass-api/internal/graph/data/precomputed_server.bin

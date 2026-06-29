@@ -61,6 +61,11 @@ export default function RootLayout({
 
   return (
     <html lang="ja">
+      <head>
+        <link rel="icon" href="https://assets.kippu-navi.com/icons/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="https://assets.kippu-navi.com/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon-precomposed" href="https://assets.kippu-navi.com/icons/apple-touch-icon-precomposed.png" />
+      </head>
       <PHProvider>
         <body className={`flex flex-col min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden ${geistSans.variable} ${geistMono.variable} antialiased`}>
           <script
