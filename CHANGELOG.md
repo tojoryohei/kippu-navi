@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.8...kippu-navi-v2.8.9) (2026-06-29)
+
+
+### Bug Fixes
+
+* Web Worker起動のためのCSP (worker-src / child-src) の設定 ([#396](https://github.com/tojoryohei/kippu-navi/issues/396)) ([9c59bf4](https://github.com/tojoryohei/kippu-navi/commit/9c59bf47fde0b0f3c9558496d33d63acc2abc4c7))
+
 ## [2.8.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.7...kippu-navi-v2.8.8) (2026-06-29)
 
 
