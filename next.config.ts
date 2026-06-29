@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const R2_ORIGIN = 'https://assets.kippu-navi.com';
 const isDev = process.env.NODE_ENV === 'development';
-const unsafeEval = isDev ? "'unsafe-eval'" : "";
+const unsafeEval = isDev ? "'unsafe-eval' 'wasm-unsafe-eval'" : "'wasm-unsafe-eval'";
 
 const nextConfig: NextConfig = {
   async headers() {
