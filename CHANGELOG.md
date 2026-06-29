@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.7...kippu-navi-v2.8.8) (2026-06-29)
+
+
+### Bug Fixes
+
+* アナリティクスおよび広告ツール向けのCSP(script-src)許可ドメイン追加 ([#394](https://github.com/tojoryohei/kippu-navi/issues/394)) ([7141aa3](https://github.com/tojoryohei/kippu-navi/commit/7141aa350c52e6b86c27d0ff2ae2968adadac0b9))
+
 ## [2.8.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.6...kippu-navi-v2.8.7) (2026-06-29)
 
 
