@@ -12,8 +12,10 @@ steps:
         gcloud storage cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
         mkdir -p src/app/split/data
         gcloud storage cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
-
-
+        
+        # Wasm and Graph data injection
+        gcloud storage cp gs://kippu-navi-build-secrets/wasm/split_pass.wasm ./public/
+        gcloud storage cp gs://kippu-navi-build-secrets/wasm/graph_data.bin ./public/
 
   # 2. JSON が揃った状態で Docker ビルドを実行する（タグを PR 番号に変更）
   - name: 'gcr.io/cloud-builders/docker'
@@ -40,17 +42,15 @@ steps:
       - 'NEXT_PUBLIC_POSTHOG_KEY=${_NEXT_PUBLIC_POSTHOG_KEY}'
       - '--build-arg'
       - 'NEXT_PUBLIC_POSTHOG_HOST=${_NEXT_PUBLIC_POSTHOG_HOST}'
-
       - '.'
 
-
-  # 5. ビルドしたプレビュー用イメージを Artifact Registry に Push
+  # 3. ビルドしたプレビュー用イメージを Artifact Registry に Push
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'push'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
 
-  # 6. Cloud Run へデプロイし、プレビュー用の仮URLを発行する
+  # 4. Cloud Run へデプロイし、プレビュー用の仮URLを発行する
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -69,8 +69,6 @@ steps:
 # 正常終了の条件（検証対象のイメージ名をPR用に合わせる）
 images:
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
-
-
 
 options:
   logging: CLOUD_LOGGING_ONLY

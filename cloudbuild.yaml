@@ -12,8 +12,10 @@ steps:
         gcloud storage cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
         mkdir -p src/app/split/data
         gcloud storage cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
-
-
+        
+        # Wasm and Graph data injection
+        gcloud storage cp gs://kippu-navi-build-secrets/wasm/split_pass.wasm ./public/
+        gcloud storage cp gs://kippu-navi-build-secrets/wasm/graph_data.bin ./public/
 
   # 2. JSON が揃った状態で Docker ビルドを実行する
   - name: 'gcr.io/cloud-builders/docker'
@@ -39,17 +41,15 @@ steps:
       - 'NEXT_PUBLIC_POSTHOG_KEY=${_NEXT_PUBLIC_POSTHOG_KEY}'
       - '--build-arg'
       - 'NEXT_PUBLIC_POSTHOG_HOST=${_NEXT_PUBLIC_POSTHOG_HOST}'
-
       - '.'
 
-
-  # 5. ビルドしたイメージを Artifact Registry に Push
+  # 3. ビルドしたイメージを Artifact Registry に Push
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'push'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
 
-  # 6. 本番の Cloud Run へデプロイし、トラフィックを100%向ける
+  # 4. 本番の Cloud Run へデプロイし、トラフィックを100%向ける
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
@@ -65,13 +65,9 @@ steps:
           --to-latest \
           --region asia-northeast1
 
-
-
 # 正常終了の条件として、指定したイメージが正しくビルド・プッシュされたか検証する
 images:
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
-
-
 
 options:
   logging: CLOUD_LOGGING_ONLY
