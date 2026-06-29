@@ -1,5 +1,8 @@
 /// <reference lib="webworker" />
 
+// Go Wasm ローダーの読み込み
+importScripts('/wasm_exec.js');
+
 interface GoInstance {
   importObject: WebAssembly.Imports;
   run(instance: WebAssembly.Instance): Promise<void>;
@@ -35,22 +38,15 @@ interface WasmResultResponse {
   segments: WasmSegment[];
 }
 
-let go: GoInstance;
+const go = new Go();
 let wasmInstance: WebAssembly.Instance | null = null;
 let graphInitialized = false;
 
-async function initWasm(origin: string) {
+async function initWasm() {
   if (wasmInstance) return;
 
   try {
-    const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
-    const baseUrl = isLocal ? origin : 'https://assets.kippu-navi.com';
-
-    // 軽量スクリプトである wasm_exec.js は同一オリジン (origin) からロードする
-    importScripts(`${origin}/engine/wasm_exec.js`);
-    go = new Go();
-
-    const wasmResponse = await fetch(`${baseUrl}/engine/split_pass.wasm`);
+    const wasmResponse = await fetch('/split_pass.wasm');
     const wasmArrayBuffer = await wasmResponse.arrayBuffer();
     const result = await WebAssembly.instantiate(wasmArrayBuffer, go.importObject);
     wasmInstance = result.instance;
@@ -59,7 +55,7 @@ async function initWasm(origin: string) {
     go.run(wasmInstance);
 
     // グラフデータのロード (真のゼロコピー)
-    const graphResponse = await fetch(`${baseUrl}/engine/graph_data.bin`);
+    const graphResponse = await fetch('/graph_data.bin');
     const graphArrayBuffer = await graphResponse.arrayBuffer();
     const size = graphArrayBuffer.byteLength;
 
@@ -81,31 +77,19 @@ async function initWasm(origin: string) {
     postMessage({ type: 'ready' });
   } catch (error) {
     console.error('Wasm/Graph initialization error:', error);
-    postMessage({
-      type: 'error',
-      error: {
-        code: 'WASM_INIT_FAILED',
-        message: String(error)
-      }
-    });
+    postMessage({ type: 'error', error: String(error) });
   }
 }
+
+// 起動時に初期化開始
+initWasm();
 
 onmessage = async (e: MessageEvent) => {
   const { type, payload } = e.data;
 
-  if (type === 'init') {
-    const { origin } = payload;
-    await initWasm(origin);
-  } else if (type === 'calculateRoutePass') {
+  if (type === 'calculateRoutePass') {
     if (!graphInitialized) {
-      postMessage({
-        type: 'error',
-        error: {
-          code: 'NOT_INITIALIZED',
-          message: 'Wasm graph not initialized yet'
-        }
-      });
+      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
       return;
     }
 
@@ -115,34 +99,16 @@ onmessage = async (e: MessageEvent) => {
       const resultJsonStr = workerSelf.calculateRoutePass(stationNamesJson, months, isIc, calculationMode || 'normal');
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
-        postMessage({
-          type: 'error',
-          error: {
-            code: 'CALCULATION_FAILED',
-            message: result.error
-          }
-        });
+        postMessage({ type: 'error', error: result.error });
         return;
       }
       postMessage({ type: 'success_route_pass', result });
     } catch (err) {
-      postMessage({
-        type: 'error',
-        error: {
-          code: 'CALCULATION_UNCAUGHT_FAILED',
-          message: String(err)
-        }
-      });
+      postMessage({ type: 'error', error: String(err) });
     }
   } else if (type === 'calculate') {
     if (!graphInitialized) {
-      postMessage({
-        type: 'error',
-        error: {
-          code: 'NOT_INITIALIZED',
-          message: 'Wasm graph not initialized yet'
-        }
-      });
+      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
       return;
     }
 
@@ -158,13 +124,7 @@ onmessage = async (e: MessageEvent) => {
 
         const result = JSON.parse(resultJsonStr);
         if (result.error) {
-          postMessage({
-            type: 'error',
-            error: {
-              code: 'CALCULATION_FAILED',
-              message: result.error
-            }
-          });
+          postMessage({ type: 'error', error: result.error });
           return;
         }
 
@@ -193,13 +153,7 @@ onmessage = async (e: MessageEvent) => {
 
       postMessage({ type: 'success', result: { normal: normalResult, results: uniqueResults } });
     } catch (err) {
-      postMessage({
-        type: 'error',
-        error: {
-          code: 'CALCULATION_UNCAUGHT_FAILED',
-          message: String(err)
-        }
-      });
+      postMessage({ type: 'error', error: String(err) });
     }
   }
 };

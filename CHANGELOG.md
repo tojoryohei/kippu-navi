@@ -1,54 +1,5 @@
 # Changelog
 
-## [2.8.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.5...kippu-navi-v2.8.6) (2026-06-29)
-
-
-### Bug Fixes
-
-* Wasm/データのみのR2配信化およびNext.jsアセットの同一ドメイン配信への回帰 ([#385](https://github.com/tojoryohei/kippu-navi/issues/385)) ([9956f25](https://github.com/tojoryohei/kippu-navi/commit/9956f25ae6e9e21e9671fd0ceb4a7273218b9adb))
-
-## [2.8.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.4...kippu-navi-v2.8.5) (2026-06-29)
-
-
-### Bug Fixes
-
-* Worker内のアセット読み込みを自ホスト(origin)に固定し、本番ビルドにエンジンDLを追加 ([#383](https://github.com/tojoryohei/kippu-navi/issues/383)) ([4e7781d](https://github.com/tojoryohei/kippu-navi/commit/4e7781ddff10c8598394f7c0dbf7144c59f89d76))
-
-## [2.8.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.3...kippu-navi-v2.8.4) (2026-06-28)
-
-
-### Bug Fixes
-
-* 本番環境のCSP・Web Workerエラー修正およびPR環境のアセットCDN配信同期 ([#375](https://github.com/tojoryohei/kippu-navi/issues/375)) ([a881bd8](https://github.com/tojoryohei/kippu-navi/commit/a881bd853f3e7a3cb923849903c22fa15794e45f))
-
-## [2.8.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.2...kippu-navi-v2.8.3) (2026-06-28)
-
-
-### Bug Fixes
-
-* CSPポリシーに Cloudflare Insights, PostHog, AdSense 用の外部ドメインを追加 ([#370](https://github.com/tojoryohei/kippu-navi/issues/370)) ([0b9d4b9](https://github.com/tojoryohei/kippu-navi/commit/0b9d4b9039fc9f9ad856851d9339e6a978a48745))
-
-## [2.8.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.1...kippu-navi-v2.8.2) (2026-06-28)
-
-
-### Bug Fixes
-
-* CSPのstyle-srcにR2ドメインを追加してCSSブロックを解消 ([#367](https://github.com/tojoryohei/kippu-navi/issues/367)) ([084a143](https://github.com/tojoryohei/kippu-navi/commit/084a143a79711fcce3f52b7631be578cad03a768))
-
-## [2.8.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.0...kippu-navi-v2.8.1) (2026-06-28)
-
-
-### Bug Fixes
-
-* Cloud Buildでのローカル変数パースエラーを修正（エスケープ対応） ([#364](https://github.com/tojoryohei/kippu-navi/issues/364)) ([5f43cf9](https://github.com/tojoryohei/kippu-navi/commit/5f43cf91920eb7a8373a962fde5b403e46c215a3))
-
-## [2.8.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.7.0...kippu-navi-v2.8.0) (2026-06-28)
-
-
-### Features
-
-* 静的アセットとWASMのCloudflare R2配信への移行 ([#361](https://github.com/tojoryohei/kippu-navi/issues/361)) ([78574b0](https://github.com/tojoryohei/kippu-navi/commit/78574b07917c59134f74522523ee76178c8a3f13))
-
 ## [2.7.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.6.5...kippu-navi-v2.7.0) (2026-06-28)
 
 
