@@ -43,11 +43,14 @@ async function initWasm(origin: string) {
   if (wasmInstance) return;
 
   try {
-    // メインスレッドから送られた origin をもとに wasm_exec.js を読み込む
-    importScripts(`${origin}/engine/wasm_exec.js`);
+    const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
+    const baseUrl = isLocal ? origin : 'https://assets.kippu-navi.com';
+
+    // 環境に応じたベースURLからロードする
+    importScripts(`${baseUrl}/engine/wasm_exec.js`);
     go = new Go();
 
-    const wasmResponse = await fetch(`${origin}/engine/split_pass.wasm`);
+    const wasmResponse = await fetch(`${baseUrl}/engine/split_pass.wasm`);
     const wasmArrayBuffer = await wasmResponse.arrayBuffer();
     const result = await WebAssembly.instantiate(wasmArrayBuffer, go.importObject);
     wasmInstance = result.instance;
@@ -56,7 +59,7 @@ async function initWasm(origin: string) {
     go.run(wasmInstance);
 
     // グラフデータのロード (真のゼロコピー)
-    const graphResponse = await fetch(`${origin}/engine/graph_data.bin`);
+    const graphResponse = await fetch(`${baseUrl}/engine/graph_data.bin`);
     const graphArrayBuffer = await graphResponse.arrayBuffer();
     const size = graphArrayBuffer.byteLength;
 

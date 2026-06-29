@@ -5,10 +5,6 @@ const isDev = process.env.NODE_ENV === 'development';
 const unsafeEval = isDev ? "'unsafe-eval'" : "";
 
 const nextConfig: NextConfig = {
-  assetPrefix: process.env.ASSET_PREFIX || undefined,
-  env: {
-    ASSET_PREFIX: process.env.ASSET_PREFIX || '',
-  },
   async headers() {
     return [
       {
