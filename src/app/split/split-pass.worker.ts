@@ -1,7 +1,18 @@
 /// <reference lib="webworker" />
 
 const assetPrefix = process.env.ASSET_PREFIX || '';
-const baseOrigin = assetPrefix ? assetPrefix.replace(/\/$/, '') : '';
+const defaultOrigin = assetPrefix ? assetPrefix.replace(/\/$/, '') : '';
+const selfOrigin = (typeof self !== 'undefined' && self.location && self.location.origin) ? self.location.origin : '';
+const isProductionDomain = (() => {
+  if (!selfOrigin) return false;
+  try {
+    const { hostname } = new URL(selfOrigin);
+    return hostname === 'kippu-navi.com' || hostname.endsWith('.kippu-navi.com');
+  } catch {
+    return false;
+  }
+})();
+const baseOrigin = (selfOrigin && !isProductionDomain) ? selfOrigin : defaultOrigin;
 
 // Go Wasm ローダーの読み込み
 importScripts(`${baseOrigin}/engine/wasm_exec.js`);

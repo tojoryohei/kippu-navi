@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.3...kippu-navi-v2.8.4) (2026-06-28)
+
+
+### Bug Fixes
+
+* 本番環境のCSP・Web Workerエラー修正およびPR環境のアセットCDN配信同期 ([#375](https://github.com/tojoryohei/kippu-navi/issues/375)) ([a881bd8](https://github.com/tojoryohei/kippu-navi/commit/a881bd853f3e7a3cb923849903c22fa15794e45f))
+
 ## [2.8.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.2...kippu-navi-v2.8.3) (2026-06-28)
 
 
