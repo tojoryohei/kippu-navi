@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "経路を入力してJRの運賃と営業キロを計算するためのページです。有効期限も正しく計算されます。",
 };
 
-export default function Page() {
+export default function MrPage() {
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8">
       <main className="max-w-xl mx-auto">
@@ -34,7 +34,7 @@ export default function Page() {
             <ul className="text-xs sm:text-sm text-slate-500 list-disc list-inside space-y-1">
               <li>このプログラムで計算できる経由路線数の上限は99です。</li>
               <li>経路の重複による運賃計算の制限は行っていません。</li>
-              <li>大都市近郊区間内完結の場合の「最安」は外方に経路を伸ばしません。</li>
+              <li>大都市近郊区間内完結の場合は、実際の乗車経路に関わらず最安経路に補正されます。</li>
               <li>出力される経由は実際の経由印字と異なることがあります。</li>
               <li>新幹線を経由する場合の運賃計算は現在開発中の機能です。</li>
             </ul>

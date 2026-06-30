@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "JR在来線の「発駅」「着駅」から分割IC定期券の最安解を計算します。",
 };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+export default async function SplitIcPassPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const params = await searchParams;
   const from = typeof params.from === "string" ? params.from : undefined;
   const to = typeof params.to === "string" ? params.to : undefined;
@@ -34,7 +34,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ [
           <div className="text-sm text-amber-800 leading-relaxed">
             <span className="font-bold block mb-1">【お知らせ】長距離区間の計算制限について</span>
             <p>
-              システム負荷軽減のため、<strong>発着駅間の駅数が100を超える場合</strong>の計算をしないことがあります。
+              システム負荷軽減のため、<strong>発着駅間の駅数が100を超える場合</strong>は計算を制限することがあります。
             </p>
           </div>
         </div>
