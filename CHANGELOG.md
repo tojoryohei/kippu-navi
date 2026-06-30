@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.11](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.10...kippu-navi-v2.8.11) (2026-06-30)
+
+
+### Bug Fixes
+
+* Cloudflareのセキュリティブロック回避のためのWASM同一ドメイン配信化 ([#400](https://github.com/tojoryohei/kippu-navi/issues/400)) ([b72258c](https://github.com/tojoryohei/kippu-navi/commit/b72258ccd8d9df527da714456a00611b1b915610))
+
 ## [2.8.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.9...kippu-navi-v2.8.10) (2026-06-29)
 
 
