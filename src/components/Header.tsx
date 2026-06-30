@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { FaBookOpen } from "react-icons/fa";
 import { MdMenu, MdClear, MdHome } from "react-icons/md";
-import { RiGuideLine, RiScissorsFill } from "react-icons/ri";
+import { RiBookOpenFill, RiGuideLine, RiScissorsFill } from "react-icons/ri";
 
 import { menuItem } from "@/app/types";
 
 const MENU_ITEMS: menuItem[] = [
     { href: "/", icon: MdHome, label: "ホーム" },
-    { href: "/logic", icon: FaBookOpen, label: "仕組み" },
+    { href: "/guide", icon: RiBookOpenFill, label: "はじめての方へ" },
     { href: "/mr", icon: RiGuideLine, label: "運賃計算" },
     { href: "/split", icon: RiScissorsFill, label: "分割乗車券" }
 ];
