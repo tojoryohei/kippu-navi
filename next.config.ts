@@ -32,6 +32,15 @@ const nextConfig: NextConfig = {
           }
         ],
       },
+      {
+        source: '/engine/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, s-maxage=31536000, immutable',
+          },
+        ],
+      },
     ];
   },
   async redirects() {
@@ -51,6 +60,14 @@ const nextConfig: NextConfig = {
         ],
         destination: 'https://kippu-navi.com/:path*',
         permanent: true,
+      },
+    ]
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/engine/:path*',
+        destination: 'https://assets.kippu-navi.com/engine/:path*',
       },
     ]
   },

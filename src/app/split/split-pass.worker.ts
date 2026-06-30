@@ -45,15 +45,8 @@ const go = new Go();
 let wasmInstance: WebAssembly.Instance | null = null;
 let graphInitialized = false;
 
-const isLocal = typeof self !== 'undefined' && (
-  self.location.hostname === 'localhost' ||
-  self.location.hostname === '127.0.0.1' ||
-  self.location.hostname.startsWith('192.168.') ||
-  self.location.hostname.endsWith('.local')
-);
-
-const WASM_URL = isLocal ? '/engine/split_pass.wasm' : 'https://assets.kippu-navi.com/engine/split_pass.wasm';
-const GRAPH_URL = isLocal ? '/engine/graph_data.bin' : 'https://assets.kippu-navi.com/engine/graph_data.bin';
+const WASM_URL = '/engine/split_pass.wasm';
+const GRAPH_URL = '/engine/graph_data.bin';
 
 async function initWasm() {
   if (wasmInstance) return;
