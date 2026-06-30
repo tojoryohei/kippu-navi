@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.11...kippu-navi-v2.9.0) (2026-06-30)
+
+
+### Features
+
+* 使い方ガイドページの追加とドキュメント・関連ページのUI/UXリファクタリング ([#403](https://github.com/tojoryohei/kippu-navi/issues/403)) ([c6ebe2d](https://github.com/tojoryohei/kippu-navi/commit/c6ebe2d42e7df4fecee68cbcd1207c249f3a38f1))
+
 ## [2.8.11](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.10...kippu-navi-v2.8.11) (2026-06-30)
 
 
