@@ -54,6 +54,14 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async rewrites() {
+    return [
+      {
+        source: '/engine/:path*',
+        destination: 'https://assets.kippu-navi.com/engine/:path*',
+      },
+    ]
+  },
   output: 'standalone',
   poweredByHeader: false,
 };
