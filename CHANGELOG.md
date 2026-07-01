@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.9.0...kippu-navi-v2.10.0) (2026-07-01)
+
+
+### Features
+
+* 普通乗車券と定期券の分割計算ページの分離、およびクエリパラメータのmonth化 ([#406](https://github.com/tojoryohei/kippu-navi/issues/406)) ([329a819](https://github.com/tojoryohei/kippu-navi/commit/329a8195732215c36ec745a00c76053446dc696c))
+
 ## [2.9.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.8.11...kippu-navi-v2.9.0) (2026-06-30)
 
 
