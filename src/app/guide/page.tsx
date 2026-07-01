@@ -69,7 +69,7 @@ export default function GuidePage() {
                 </h1>
                 <p className="mt-8 text-slate-500">
                     <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                        分割乗車券プログラム
+                        分割きっぷ計算機
                     </Link>
                     の操作方法から、購入手順や利用方法まで分かりやすく解説します。
                 </p>
@@ -127,7 +127,7 @@ export default function GuidePage() {
                                 基本的には<strong>安くなるから</strong>です。
                                 当サイトでは、発着駅間の最安解を求めるための
                                 <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                    分割乗車券プログラム
+                                    分割きっぷ計算機
                                 </Link>
                                 を公開してます。
                             </p>
@@ -166,7 +166,7 @@ export default function GuidePage() {
                     <div className="space-y-6 text-slate-800 leading-relaxed">
                         <p>
                             <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                分割乗車券プログラム
+                                分割きっぷ計算機
                             </Link>
                             で出力された複数枚の乗車券を購入する手順です。
                         </p>
@@ -208,8 +208,7 @@ export default function GuidePage() {
                                     </Link>
                                     などのインターネット予約サービスを使うと便利です。
                                     これらを利用すれば他駅発売の制限を受けませんが、受け取りできる駅が限られているため注意が必要です。
-                                    みどりの窓口（きっぷうりば）では、不正乗車防止の観点から発売してもらえる可能性は低くなりつつあります。
-                                    つまり無人駅から乗車する場合は、原則として通しの運賃を支払う必要があります。
+                                    近年、みどりの窓口（きっぷうりば）では、不正乗車防止の観点から発売してもらえる可能性は低くなりつつあります。
                                 </p>
                                 <p>
                                     ※近距離きっぷでも分割乗車券として利用できます。
@@ -279,7 +278,7 @@ export default function GuidePage() {
                     <div className="space-y-6 text-slate-800 leading-relaxed">
                         <p>
                             <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                分割乗車券プログラム
+                                分割きっぷ計算機
                             </Link>
                             で出力された複数枚の乗車券を利用する手順です。
                         </p>

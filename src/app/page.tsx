@@ -30,13 +30,6 @@ export default async function Home() {
               <RiBookOpenFill className="text-xl" />
               <span>はじめての方へ（使い方ガイド）</span>
             </Link>
-            <Link
-              href="/split"
-              className="px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 group cursor-pointer hover:border-slate-400 transform hover:-translate-y-0.5 active:translate-y-0 duration-200"
-            >
-              <RiScissorsFill className="text-xl text-blue-600 animate-pulse-subtle" />
-              <span>分割計算をする</span>
-            </Link>
           </div>
         </div>
 
