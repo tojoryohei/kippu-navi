@@ -1,6 +1,6 @@
 export const metadata = {
     title: "計算の仕組み・技術情報",
-    description: "JRの乗車券を分割すると安くなる理由や、当サイトが採用している経路探索アルゴリズム、技術情報について解説します。",
+    description: "JRのきっぷを分割すると安くなる理由や、当サイトが採用している経路探索アルゴリズム、技術情報について解説します。",
 };
 
 export default function LogicPage() {
@@ -12,8 +12,8 @@ export default function LogicPage() {
                     計算の仕組み・技術情報
                 </h1>
                 <p className="mt-8 text-slate-500">
-                    当サイトは、JR線の利用において移動コストを最小化する「最安分割乗車券」と、それを実現する経路を自動的に導出するシステムです。
-                    ここでは、なぜ乗車券を分割すると安くなるのかという仕組みと、当サイトを支える情報工学に基づいた計算アルゴリズムについて解説します。
+                    当サイトは、JR線の利用において移動コストを最小化する「最安分割きっぷ」と、それを実現する経路を自動的に導出するシステムです。
+                    ここでは、なぜきっぷを分割すると安くなるのかという仕組みと、当サイトを支える情報工学に基づいた計算アルゴリズムについて解説します。
                     また、どのように運営されているかの技術情報も説明します。
                 </p>
             </header>
@@ -25,7 +25,7 @@ export default function LogicPage() {
                     <li className="flex items-start">
                         <span className="mr-2 text-slate-900 w-5 shrink-0">1.</span>
                         <a href="#why-split" className="text-blue-600 hover:underline font-medium">
-                            なぜ乗車券を分割すると安くなるのか？
+                            なぜきっぷを分割すると安くなるのか？
                         </a>
                     </li>
                     <li className="flex items-start">
@@ -52,10 +52,10 @@ export default function LogicPage() {
             {/* コンテンツコンテナ */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 space-y-12">
 
-                {/* 1. なぜ乗車券を分割すると安くなるのか？ */}
+                {/* 1. なぜきっぷを分割すると安くなるのか？ */}
                 <section id="why-split" className="scroll-mt-20">
                     <h2 className="text-2xl font-bold text-slate-800 mb-6 border-b pb-2 flex items-center">
-                        1. なぜ乗車券を分割すると安くなるのか？
+                        1. なぜきっぷを分割すると安くなるのか？
                     </h2>
                     <div className="space-y-6 text-slate-700 leading-relaxed">
                         <p>
@@ -514,7 +514,8 @@ export default function LogicPage() {
                     </h2>
                     <div className="space-y-6 text-slate-700 leading-relaxed">
                         <p>
-                            既存の分割乗車券プログラムの多くは、利用者が事前に「乗車する経路」を指定する必要がありました。また、計算速度を優先した単純な動的計画法（DP）では、最適化の過程で同額となる別の分割パターンが枝刈りされてしまい、出力される解が一つに限定されるという課題がありました。
+                            既存の分割乗車券プログラムの多くは、利用者が事前に「乗車する経路」を指定する必要がありました。
+                            また、計算速度を優先した単純な動的計画法（DP）では、最適化の過程で同額となる別の分割パターンが枝刈りされてしまい、出力される解が一つに限定されるという課題がありました。
                         </p>
                         <p>
                             当システムでは、情報工学におけるグラフ理論と最新のWeb技術を応用し、以下の独自アプローチを採用しています。
@@ -659,7 +660,9 @@ export default function LogicPage() {
                             <div>
                                 <h4 className="text-lg font-semibold text-slate-900 mb-2">④ WasmとグラフデータのR2配信による高速化とコスト最適化</h4>
                                 <p className="text-sm text-slate-700 leading-relaxed">
-                                    最速の経路計算を実現するためにWebAssemblyを採用しています。Wasmモジュール（`split_pass.wasm`）および運賃計算に必要なグラフデータ（`graph_data.bin`）は、配信にかかるデータ転送量（エグレス）手数料が発生しない Cloudflare R2 から配信しています。これにより、インフラコストを最小限に抑えつつ、ユーザーへのロード時間を大幅に短縮しています。
+                                    運賃計算をユーザーの端末で計算させるためにWebAssemblyを採用しています。
+                                    Wasmモジュール（`split_pass.wasm`）および運賃計算に必要なグラフデータ（`graph_data.bin`）は、配信にかかるデータ転送量手数料が発生しない Cloudflare R2 から配信しています。
+                                    これにより、インフラコストを最小限に抑えつつ、ユーザーへのロード時間を大幅に短縮しています。
                                 </p>
                             </div>
                         </div>

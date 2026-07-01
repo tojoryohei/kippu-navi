@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 
 export const metadata = {
     title: "はじめての方へ（使い方ガイド）",
-    description: "きっぷナビの使い方、駅の券売機やみどりの窓口（きっぷうりば）でのきっぷの買い方、よくある質問について解説します。",
+    description: "きっぷナビの使い方、駅の券売機やみどりの窓口（きっぷうりば）での分割きっぷの買い方、よくある質問について解説します。",
 };
 
 // 汎用アコーディオン項目
@@ -21,14 +21,14 @@ function AccordionItem({ title, children }: AccordionItemProps) {
                     <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24" className="w-5 h-5"><path d="M19 9l-7 7-7-7"></path></svg>
                 </span>
             </summary>
-            <div className="text-slate-700 mt-3 text-sm leading-relaxed border-t border-slate-100 pt-3 space-y-2">
+            <div className="text-slate-800 mt-3 text-sm leading-relaxed border-t border-slate-100 pt-3 space-y-2">
                 {children}
             </div>
         </details>
     );
 }
 
-// FAQ専用アコーディオン項目（セマンティックな見出しとQ/Aアイコン付き）
+// FAQ専用アコーディオン項目
 interface FaqItemProps {
     question: string;
     children: ReactNode;
@@ -42,13 +42,13 @@ function FaqItem({ question, children }: FaqItemProps) {
                     <span className="shrink-0 bg-blue-100 text-blue-600 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">Q</span>
                     {question}
                 </h3>
-                <span className="transition-transform duration-200 group-open:rotate-180 text-slate-500">
+                <span className="transition-transform duration-200 group-open:rotate-180 text-slate-500 p-1">
                     <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24" className="w-5 h-5"><path d="M19 9l-7 7-7-7"></path></svg>
                 </span>
             </summary>
             <div className="text-slate-700 mt-3 text-sm leading-relaxed border-t border-slate-100 pt-3">
                 <div className="mt-1 flex items-start">
-                    <span className="shrink-0 bg-slate-200 text-slate-700 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">A</span>
+                    <span className="shrink-0 bg-slate-200 text-slate-800 w-7 h-7 rounded-full flex items-center justify-center mr-3 text-sm">A</span>
                     <div className="w-full space-y-2">
                         {children}
                     </div>
@@ -63,8 +63,9 @@ export default function GuidePage() {
         <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
             {/* ページヘッダー */}
             <header className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">
-                    はじめての方へ（使い方ガイド）
+                <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl space-y-2">
+                    <p>はじめての方へ</p>
+                    <p>（使い方ガイド）</p>
                 </h1>
                 <p className="mt-8 text-slate-500">
                     <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
@@ -114,12 +115,12 @@ export default function GuidePage() {
             {/* コンテンツコンテナ */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 space-y-12">
 
-                {/* 1. 分割乗車券の調べ方 */}
+                {/* 1. 分割きっぷの調べ方 */}
                 <section id="how-to-search" className="scroll-mt-20">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6 border-b pb-2 flex items-center">
-                        1. 分割乗車券の調べ方
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
+                        1. 分割きっぷの調べ方
                     </h2>
-                    <div className="space-y-6 text-slate-700 leading-relaxed">
+                    <div className="space-y-6 text-slate-800 leading-relaxed">
                         <div>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">そもそもなぜ分割するのか</h3>
                             <p>
@@ -138,7 +139,7 @@ export default function GuidePage() {
                                 検索ボックスに、発駅と着駅を入力します。入力に合わせて候補の駅名がサジェストされます。
                             </p>
                             <p className="bg-slate-50 p-4 rounded-lg text-sm text-slate-700 mt-2">
-                                ※定期券の場合、臨時駅を選択することはできません。また、IC定期券の場合、異なるエリア同士を選択することはできません。
+                                ※定期券およびIC定期券では、臨時駅を選択することはできません。また、IC定期券の場合、異なるエリア同士を選択することはできません。
                             </p>
                         </div>
 
@@ -159,10 +160,10 @@ export default function GuidePage() {
 
                 {/* 2. 分割乗車券の買い方 */}
                 <section id="how-to-buy" className="scroll-mt-20">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6 border-b pb-2 flex items-center">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
                         2. 分割乗車券の買い方
                     </h2>
-                    <div className="space-y-6 text-slate-700 leading-relaxed">
+                    <div className="space-y-6 text-slate-800 leading-relaxed">
                         <p>
                             <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                 分割乗車券プログラム
@@ -170,7 +171,7 @@ export default function GuidePage() {
                             で出力された複数枚の乗車券を購入する手順です。
                         </p>
                         <p>
-                            原則として、<strong>分割乗車券は発駅から乗車する際に、これから利用する全ての乗車券を所持している必要があります。</strong>
+                            原則として、<strong className="underline">分割乗車券は発駅で乗車する際に、着駅までに利用する全ての乗車券を所持している必要があります。</strong>
                         </p>
                         <p>
                             ここで前提知識として、以下に記載する
@@ -179,25 +180,25 @@ export default function GuidePage() {
                             </Link>
                             をご覧ください。
                         </p>
-                        <blockquote className="bg-slate-50 p-4 rounded-lg text-slate-700 mt-2 space-y-2 border-l-4 border-slate-300">
+                        <blockquote className="bg-slate-50 p-4 text-slate-700 mt-2 space-y-2 border-l-4 border-slate-300">
                             <p className="text-sm">
                                 駅において発売する乗車券類は、その駅から有効なものに限って発売する。ただし、他駅から有効な乗車券類を発売することがある。
                             </p>
                             <cite className="block text-xs text-slate-500 not-italic">
-                                出典：
+                                出典:
                                 <Link href="https://www.jreast.co.jp/ryokaku/02_hen/02_syo/01_setsu/02.html" target="_blank" className="hover:underline underline-offset-2 mx-1">
                                     JR東日本：旅客営業規則＞第2編 旅客営業 -第2章 乗車券類の発売 -第1節 通則
                                 </Link>
                             </cite>
                         </blockquote>
                         <p>
-                            つまり、<strong>必ずしも駅の券売機やみどりの窓口（きっぷうりば）で分割乗車券を購入できるとは限りません。</strong>
+                            つまり、<strong className="underline">必ずしも駅の券売機やみどりの窓口（きっぷうりば）で分割乗車券を購入できるとは限りません。</strong>
                         </p>
 
                         <div className="space-y-4">
-                            <AccordionItem title="分割普通乗車券の購入方法">
+                            <AccordionItem title="分割乗車券の購入方法">
                                 <p>
-                                    普通乗車券を分割購入したいときは
+                                    乗車券を分割購入したいときは
                                     <Link href="https://www.eki-net.com" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                         えきねっと
                                     </Link>
@@ -211,21 +212,22 @@ export default function GuidePage() {
                                     つまり無人駅から乗車する場合は、原則として通しの運賃を支払う必要があります。
                                 </p>
                                 <p>
-                                    ※近距離きっぷでも分割普通乗車券として利用できます。
+                                    ※近距離きっぷでも分割乗車券として利用できます。
                                     ただ、出場時に発駅から分割駅までの運賃と一致しているかの確認に時間を要する可能性があります。
-                                    指定席券売機（みどりの券売機）やみどりの窓口（きっぷうりば）があれば、駅名→駅名となる普通乗車券（マルス券）の購入がおすすめです。
+                                    指定席券売機（みどりの券売機）やみどりの窓口（きっぷうりば）があれば、駅名→駅名となる乗車券（マルス券）の購入がおすすめです。
                                 </p>
                                 <div className="mt-4 p-3 bg-white border border-slate-200 rounded-lg space-y-1">
                                     <p className="font-bold text-slate-800">【例】東京駅から横浜駅まで</p>
                                     <p>
-                                        東京→横浜は530円ですが、東京→蒲田と蒲田→横浜はそれぞれ260円です。よって、分割することで10円安く移動することができます。
-                                        このとき、東京駅の自動券売機で東京→蒲田の普通乗車券を購入することはできますが、蒲田→横浜の普通乗車券を購入することはできません。
+                                        東京→横浜は530円ですが、東京→蒲田と蒲田→横浜はそれぞれ260円です。
+                                        よって、分割することで10円安く移動することができます。
+                                        このとき、東京駅の自動券売機で東京→蒲田の乗車券を購入することはできますが、蒲田→横浜の乗車券を購入することはできません。
                                         そのため、えきねっと等を利用して蒲田→横浜の乗車券を事前に購入し、東京駅で受け取る必要があります。
                                     </p>
                                 </div>
                             </AccordionItem>
 
-                            <AccordionItem title="分割定期乗車券の購入方法">
+                            <AccordionItem title="分割定期券の購入方法">
                                 <div className="space-y-4">
                                     <div>
                                         <p className="font-bold text-slate-800">【磁気定期券】</p>
@@ -236,7 +238,7 @@ export default function GuidePage() {
                                     </div>
                                     <hr className="border-slate-100" />
                                     <div>
-                                        <p className="font-bold text-slate-800">【Kitaca / Suica定期券】</p>
+                                        <p className="font-bold text-slate-800">【Kitaca／Suica定期券】</p>
                                         <p>
                                             各定期券を取り扱う駅の窓口で購入してください。最大分割数は1回（2区間）までで、他社線を含めることはできません。
                                         </p>
@@ -271,10 +273,10 @@ export default function GuidePage() {
 
                 {/* 3. 分割乗車券の使い方 */}
                 <section id="how-to-use" className="scroll-mt-20">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6 border-b pb-2 flex items-center">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
                         3. 分割乗車券の使い方
                     </h2>
-                    <div className="space-y-6 text-slate-700 leading-relaxed">
+                    <div className="space-y-6 text-slate-800 leading-relaxed">
                         <p>
                             <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                 分割乗車券プログラム
@@ -282,40 +284,40 @@ export default function GuidePage() {
                             で出力された複数枚の乗車券を利用する手順です。
                         </p>
 
-                        <AccordionItem title="分割普通乗車券の利用方法">
+                        <AccordionItem title="分割乗車券の利用方法">
                             <ul className="list-disc list-inside space-y-2 ml-2 mt-2 text-sm">
-                                <li><strong>入場時：</strong> 最初に乗車する区間の普通乗車券（発駅が含まれる普通乗車券）だけを使って入場します。</li>
-                                <li><strong>検札時：</strong> 車内検札がある場合は、所持している分割したすべての普通乗車券を提示してください。</li>
-                                <li><strong>出場時：</strong> 目的地の駅で出場する際は、有人改札で<strong>分割したすべての普通乗車券</strong>を渡してください。</li>
+                                <li><strong>入場時：</strong> 最初に乗車する区間の乗車券（発駅が含まれる乗車券）だけを使って入場します。</li>
+                                <li><strong>検札時：</strong> 車内検札がある場合は、所持している分割したすべての乗車券を提示してください。</li>
+                                <li><strong>出場時：</strong> 目的地の駅で出場する際は、有人改札で<strong>分割したすべての乗車券</strong>を渡してください。</li>
                             </ul>
                             <div className="mt-4 p-3 bg-white border border-slate-200 rounded-lg space-y-2">
                                 <p className="font-bold text-slate-800">【例】東京駅から横浜駅まで</p>
                                 <p>
-                                    東京駅では「東京→蒲田」の普通乗車券だけを使って入場してください。
+                                    東京駅では「東京→蒲田」の乗車券だけを使って入場してください。
                                     このとき、蒲田駅を通過する東海道線で移動しても問題ありません。
                                 </p>
                                 <p className="text-rose-600 font-medium">
-                                    ただし、蒲田駅を経由しない横須賀線（品鶴線経由など）を利用して移動してはいけません。なぜなら、購入したきっぷの分割駅である「蒲田駅」を実際に経由する経路で乗車する必要があるためです。
+                                    ただし、蒲田駅を経由しない横須賀線（品鶴線経由など）を利用して移動してはいけません。なぜなら、分割駅である「蒲田駅」を実際に経由する経路で乗車する必要があるためです。
                                 </p>
                                 <p>
-                                    横浜駅に着いたら、有人改札へ行き「東京→蒲田」と「蒲田→横浜」の両方の普通乗車券を渡せば出場できます。
+                                    横浜駅に着いたら、有人改札へ行き「東京→蒲田」と「蒲田→横浜」の両方の乗車券を渡せば出場できます。
                                 </p>
                             </div>
                         </AccordionItem>
 
-                        <AccordionItem title="分割定期乗車券の利用方法">
+                        <AccordionItem title="分割定期券の利用方法">
                             <div className="space-y-4">
                                 <div>
                                     <p className="font-bold text-slate-800">【磁気定期券】</p>
                                     <ul className="list-disc list-inside space-y-1 ml-2 mt-1 text-sm">
-                                        <li><strong>入場時：</strong> 最初に乗車する区間の定期乗車券だけを使って入場します。</li>
-                                        <li><strong>検札時：</strong> 分割したすべての定期乗車券を提示してください。</li>
-                                        <li><strong>出場時：</strong> 最後に乗車する区間の定期乗車券だけを使って出場します。</li>
+                                        <li><strong>入場時：</strong> 最初に乗車する区間の定期券だけを使って入場します。</li>
+                                        <li><strong>検札時：</strong> 分割したすべての定期券を提示してください。</li>
+                                        <li><strong>出場時：</strong> 最後に乗車する区間の定期券だけを使って出場します。</li>
                                     </ul>
                                 </div>
                                 <hr className="border-slate-100" />
                                 <div>
-                                    <p className="font-bold text-slate-800">【ICカード / モバイルSuica定期券】</p>
+                                    <p className="font-bold text-slate-800">【ICカード／モバイルSuica定期券】</p>
                                     <ul className="list-disc list-inside space-y-1 ml-2 mt-1 text-sm">
                                         <li><strong>入場時：</strong> 自動改札機にタッチして入場します。</li>
                                         <li><strong>検札時：</strong> ICカードの券面、またはアプリ画面を提示してください。</li>
@@ -329,17 +331,19 @@ export default function GuidePage() {
 
                 {/* 4. よくある質問 */}
                 <section id="faq" className="scroll-mt-20">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6 border-b pb-2 flex items-center">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
                         4. よくある質問（FAQ）
                     </h2>
                     <div className="space-y-4">
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">【全般】</h3>
+
                         <FaqItem question="分割乗車券は違法ではありませんか？">
                             <p>
                                 いいえ、全く問題ありません。
                                 <Link href="https://www.jreast.co.jp/ryokaku/02_hen/04_syo/02_setsu/03.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                     旅客営業規則 第157条
                                 </Link>
-                                にも、2枚以上の普通乗車券を併用して使用することが想定された条文が存在します。
+                                にも、2枚以上の乗車券を併用して使用することが想定された条文が存在します。
                             </p>
                         </FaqItem>
 
@@ -347,7 +351,7 @@ export default function GuidePage() {
                             <p>はい、あります。主に以下の2点です。</p>
                             <ul className="list-disc list-outside ml-5 mt-2 space-y-1">
                                 <li>
-                                    払い戻しの際に、きっぷの枚数分の
+                                    払い戻しの際に、乗車券の枚数分
                                     <Link href="https://www.jreast.co.jp/kippu/22.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                         手数料
                                     </Link>
@@ -357,63 +361,115 @@ export default function GuidePage() {
                                     <Link href="https://www.jreast.co.jp/ryokaku/02_hen/07_syo/03_setsu/10.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                         列車の運行不能・遅延等の場合の取扱方
                                     </Link>
-                                    が通しのきっぷと異なる場合がある。
+                                    が通しの乗車券と異なる場合がある。
                                 </li>
                             </ul>
                         </FaqItem>
 
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">【乗車券について】</h3>
+
+                        <FaqItem question="ICカードを使って分割乗車できますか？">
+                            <p>
+                                分割駅で下車をして、自動改札機で「出場」と「入場」をする必要があります。
+                                なお、当サイトではICカード運賃は考慮されていません。
+                            </p>
+                        </FaqItem>
+
+                        <FaqItem question="発駅が無人駅で乗車券を持たないまま乗車する場合どうすればいいですか？">
+                            <p>
+                                基本的に分割乗車券は諦めてください。
+                                乗車券を持たないまま分割駅を通り過ぎて、着駅で分割乗車券が発売されることはありません。
+                            </p>
+                        </FaqItem>
+
+                        <FaqItem question="発駅で分割乗車券の1枚目の乗車券だけ購入した場合どうなりますか？">
+                            <p>
+                                多くの場合は、乗越精算となるため安くならないです。
+                                打切計算となる場合は安くなります。
+                                詳しくは
+                                <Link href="https://jreastfaq.jreast.co.jp/faq/show/1168" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
+                                    こちら
+                                </Link>
+                                をご覧ください。
+                            </p>
+                            <div className="mt-4 p-3 bg-white border border-slate-200 rounded-lg space-y-1">
+                                <p className="font-bold text-slate-800">【例】東京駅から横浜駅まで</p>
+                                <p>
+                                    東京→横浜は530円ですが、東京→蒲田と蒲田→横浜はそれぞれ260円です。
+                                    よって、分割することで10円安く移動することができます。
+                                    このとき、東京駅の自動券売機で東京→蒲田の乗車券を購入することはできますが、蒲田→横浜の乗車券を購入することはできません。
+                                    東京→蒲田の乗車券を使って横浜駅で乗越精算をしても、東京駅からの差額精算となり530円 － 260円 ＝ 270円を支払うことになりやすく移動ができません。
+                                </p>
+                            </div>
+                        </FaqItem>
+
                         <FaqItem question="分割した乗車券で、途中下車はできますか？">
                             <p>
-                                原則、乗車券に記載の経路上であれば、全ての駅で降りることができます（分割駅を含む）。
-                                ただし、片道の営業キロが100km以下の場合など、購入した普通乗車券の条件によっては下車駅から先の区間が無効になる場合があります。
+                                下車したい駅が含まれる乗車券次第です。
                                 詳しくは
                                 <Link href="https://www.jreast.co.jp/kippu/05.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                     こちら
                                 </Link>
                                 をご覧ください。
+                                もちろん、分割駅で降りることはできます。
                             </p>
                         </FaqItem>
 
-                        <FaqItem question="特急券や新幹線特急券はどうすればよいですか？">
-                            <p>
-                                特急券は分割せず、通しで購入して問題ありません。ただし、特急券も区間を分割したほうが安くなる場合があります。
-                            </p>
-                            <p>
-                                乗車券のみを分割した状態で、新幹線特急券と一緒に自動改札機で使用することもできます（投入できる枚数制限あり）。このとき、必ず乗車経路と乗車券の経路が一致していることを確認してください。
-                            </p>
-                            <p className="text-xs text-slate-500 mt-2">
-                                ※当サイトのプログラムはJR在来線のみを対象としており、新幹線や在来線特急の料金計算には現在対応していません。
-                            </p>
+                        <FaqItem question="特急券も分割する必要はありますか？">
+                            <div>
+                                <p>
+                                    特急券は分割せず、通しで購入して問題ありません。
+                                </p>
+                                <p className="text-xs">
+                                    ※特急券も分割して購入したほうが安くなる場合があります。
+                                </p>
+                            </div>
+                            <div>
+                                <p>
+                                    新幹線の自動改札機では、分割した乗車券や特急券の利用ができます。
+                                    このとき、必ず実乗車経路と乗車券の経路が一致していることを確認してください。
+                                </p>
+                                <p className="text-xs">
+                                    ※当サイトのプログラムはJR在来線のみを対象としており、新幹線や在来線特急の料金計算には現在対応していません。また、自動改札機には一度に投入できる枚数制限があります。
+                                </p>
+                            </div>
                         </FaqItem>
 
-                        {/* 追加されたFAQ 1 */}
-                        <FaqItem question="「東京都区内」などの特定都区市内発着のきっぷはどう計算されますか？">
-                            <p>
-                                当サイトの分割乗車券プログラムでは、特定都区市内発着の特例（旅客営業規則第86条）も考慮して最安となる経路を探索・計算しています。
-                            </p>
-                            <p>
-                                ただし、分割駅が特定都区市内の境界駅やエリア内の駅となる場合など、通常の通しきっぷと効力や途中下車の条件が異なることがあるため、実際の乗車経路と照らし合わせてご利用ください。
-                            </p>
-                        </FaqItem>
-
-                        {/* 追加されたFAQ 2 */}
-                        <FaqItem question="学生割引（学割）を適用した運賃の計算はできますか？">
-                            <p>
-                                現在のプログラムは、大人普通運賃（片道）を基準に計算しております。
-                            </p>
-                            <p>
-                                学割（片道101km以上で運賃が2割引）を適用可能な距離をご利用の場合、分割せずに通しで学割適用乗車券を購入した方が安くなるケースが多く存在します。長距離を利用される学生の方は、事前にみどりの窓口等で通しの学割運賃をご確認いただくことをおすすめします。
-                            </p>
+                        <FaqItem question="学割など、割引乗車券の分割計算はできますか？">
+                            <ul className="list-disc list-outside ml-5 mt-2 space-y-1">
+                                <li>
+                                    <strong>学生割引乗車券</strong> および <strong>小児の旅客運賃：</strong>
+                                    対応を検討中です。
+                                </li>
+                                <li>
+                                    <strong>通学定期券：</strong>
+                                    分割して購入することはできません。
+                                    詳しくは
+                                    <Link href="https://www.jreast.co.jp/railway/teiki/school.html/#basic_03" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
+                                        こちら
+                                    </Link>
+                                    をご覧ください。
+                                </li>
+                                <li>
+                                    <strong>オフピーク定期券：</strong>
+                                    分割して購入することはできません。
+                                    詳しくは
+                                    <Link href="https://jreastfaq.jreast.co.jp/faq/show/2956" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
+                                        こちら
+                                    </Link>
+                                    をご覧ください。
+                                </li>
+                            </ul>
                         </FaqItem>
                     </div>
                 </section>
 
                 {/* 5. 仕組みについて */}
                 <section id="about-logic" className="scroll-mt-20">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6 border-b pb-2 flex items-center">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
                         5. 仕組みについて
                     </h2>
-                    <div className="space-y-4 text-slate-700 leading-relaxed">
+                    <div className="space-y-4 text-slate-800 leading-relaxed">
                         <p>
                             きっぷナビがどのようにして最安経路や分割パターンを計算しているか、なぜ安くなるか、数学的な背景や探索アルゴリズムについて解説した技術資料を用意しています。
                         </p>
