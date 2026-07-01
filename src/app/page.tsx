@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { RiScissorsFill, RiGuideLine } from "react-icons/ri";
+import { RiScissorsFill, RiGuideLine, RiBookOpenFill } from "react-icons/ri";
 import { getChangelogs } from '@/app/lib/changelog';
 
 export const metadata = {
   title: "きっぷナビ",
-  description: "JRの運賃計算プログラムや最も安くなるきっぷの組み合わせを計算する最安分割乗車券プログラムを公開しています。",
+  description: "発着駅を指定するだけで、最も安い分割きっぷの組み合わせを計算する最安分割きっぷ計算機を公開しています。",
 };
 
 export default async function Home() {
@@ -14,30 +14,47 @@ export default async function Home() {
       <div className="max-w-4xl mx-auto space-y-12">
 
         {/* ヒーローセクション */}
-        <div className="text-center space-y-6">
+        <div className="text-center space-y-6 animate-fade-in">
           <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight sm:text-5xl">
             きっぷナビへようこそ
           </h1>
           <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-600 leading-relaxed">
-            発駅と着駅を指定するだけで、最も安い分割乗車券の組み合わせを計算します。
-            また、開発の基盤となっている運賃計算プログラムもお試しいただけます。
+            発駅と着駅を指定するだけで、最も安い分割きっぷの計算をするプログラムを公開しています。<br className="hidden sm:block" />
+            また、開発の基盤となっている運賃計算のプログラムもお試しいただけます。
           </p>
+          <div className="flex flex-wrap justify-center gap-4 pt-2">
+            <Link
+              href="/guide"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center gap-2 group cursor-pointer hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0 duration-200"
+            >
+              <RiBookOpenFill className="text-xl" />
+              <span>はじめての方へ（使い方ガイド）</span>
+            </Link>
+            <Link
+              href="/split"
+              className="px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 group cursor-pointer hover:border-slate-400 transform hover:-translate-y-0.5 active:translate-y-0 duration-200"
+            >
+              <RiScissorsFill className="text-xl text-blue-600 animate-pulse-subtle" />
+              <span>分割計算をする</span>
+            </Link>
+          </div>
         </div>
 
         {/* リンクカードセクション */}
         <div className="grid md:grid-cols-2 gap-6">
-          {/* 分割運賃プログラム */}
+          {/* JR分割きっぷ計算機 */}
           <Link href="/split" className="group bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-500 transition-all duration-300 flex flex-col h-full">
             <div className="flex items-center space-x-4 mb-4">
               <div className="bg-blue-100 p-3 rounded-xl group-hover:bg-blue-600 transition-colors duration-300">
                 <RiScissorsFill className="w-7 h-7 text-blue-600 group-hover:text-white transition-colors duration-300" />
               </div>
               <h2 className="text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors duration-300">
-                JR分割乗車券プログラム
+                JR分割きっぷ計算機
               </h2>
             </div>
             <p className="text-slate-600 mb-6 grow">
-              最も安くなる分割乗車券の組み合わせを検索します。実際の旅行や交通費の節約に活用したい方はこちらをご利用ください。また、定期券の分割（分割定期券）にも対応しています。
+              最も安くなる分割きっぷの組み合わせを検索するプログラムです。
+              実際の旅行や通勤時の交通費の節約に活用したい方はこちらをご利用ください。
             </p>
             <div className="text-blue-600 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300">
               分割計算をする
@@ -45,21 +62,23 @@ export default async function Home() {
             </div>
           </Link>
 
-          {/* 運賃計算プログラム */}
+          {/* JR運賃計算機 */}
           <Link href="/mr" className="group bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-slate-400 transition-all duration-300 flex flex-col h-full">
             <div className="flex items-center space-x-4 mb-4">
               <div className="bg-slate-100 p-3 rounded-xl group-hover:bg-slate-700 transition-colors duration-300">
                 <RiGuideLine className="w-7 h-7 text-slate-600 group-hover:text-white transition-colors duration-300" />
               </div>
               <h2 className="text-2xl font-bold text-slate-800">
-                JR運賃計算プログラム
+                JR運賃計算機
               </h2>
             </div>
             <p className="text-slate-600 mb-6 grow">
-              分割計算の基礎となる、JR乗車券の運賃を計算します。
+              分割計算の基礎となる、きっぷの運賃を計算するプログラムです。
+              指定した経路から正確な運賃を算出します。
+              複雑な経路を計算したい方はこちらをご利用ください。
             </p>
             <div className="text-slate-700 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300">
-              運賃計算する
+              運賃計算をする
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
             </div>
           </Link>
@@ -72,10 +91,11 @@ export default async function Home() {
           </h2>
           <div className="space-y-4 text-slate-600 leading-relaxed">
             <p>
-              JRの運賃は乗車経路に応じて計算されますが、途中の駅で乗車券を区切って購入する「分割乗車券」を利用することで、通しで購入するよりも安くなるケースが存在します。
+              JRの運賃は乗車経路に応じて計算されますが、途中の駅できっぷを区切って購入する「分割きっぷ」を利用することで、通しで購入するよりも安くなるケースが存在します。
             </p>
             <p>
-              しかし、数ある駅の中から最も安くなる分割パターンを見つけ出すのは非常に困難です。当サイトでは、情報工学に基づいた独自の経路探索アルゴリズムを活用し、出発駅から到着駅までの多くの組み合わせから「最安となる分割乗車券の組み合わせ」を自動算出します。
+              しかし、数ある駅の中から最も安くなる分割経路を見つけ出すのは非常に困難です。
+              当サイトでは、情報工学に基づいた独自の経路探索アルゴリズムを活用し、出発駅から到着駅までの多くの組み合わせから「最安となる分割きっぷの組み合わせ」を自動算出します。
             </p>
           </div>
         </div>
@@ -94,7 +114,8 @@ export default async function Home() {
               <li><strong>最大割引額：</strong> 長距離や複雑な境界線を跨ぐ経路において、1回の乗車で1,000円以上の差額が発生した事例も存在します。</li>
             </ul>
             <p className="text-sm mt-4">
-              ※実際の割引額や分割枚数は、利用する区間やJRの最新の運賃改定状況によって変動します。また、分割乗車券が最安の移動方法とは限らないため、他の交通手段と比較検討することもおすすめします。
+              ※実際の割引額や分割枚数は、利用する区間やJRの運賃改定によって変動します。
+              また、分割きっぷが最安の移動方法とは限らないため、他の交通手段と比較検討することもおすすめします。
             </p>
           </div>
         </div>

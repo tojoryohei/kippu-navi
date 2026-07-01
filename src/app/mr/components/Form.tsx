@@ -351,7 +351,7 @@ export default function Form() {
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    乗車券
+                    定期券
                 </button>
             </div>
 
