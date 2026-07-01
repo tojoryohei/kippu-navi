@@ -3,15 +3,15 @@ import type { Metadata } from "next";
 import { RiScissorsFill, RiErrorWarningLine } from "react-icons/ri";
 
 export const metadata: Metadata = {
-  title: "JR分割乗車券プログラム",
-  description: "JR在来線の「発駅」「着駅」から普通乗車券と定期乗車券の分割乗車券の最安解を計算します。",
+  title: "JR分割乗車券計算機",
+  description: "発着駅を入力するだけで、乗車券の最安分割パターンを自動計算。経路の指定は必要ありません。",
 };
 
 export default async function SplitPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const params = await searchParams;
   const from = typeof params.from === "string" ? params.from : undefined;
   const to = typeof params.to === "string" ? params.to : undefined;
-  const searchType = typeof params.searchType === "string" ? params.searchType : "ticket";
+  const searchType = "ticket";
 
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8">
@@ -21,11 +21,12 @@ export default async function SplitPage({ searchParams }: { searchParams: Promis
             <RiScissorsFill className="w-8 h-8 text-blue-600" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-3">
-            JR分割乗車券プログラム
+            {"JR分割乗車券計算機"}
           </h1>
           <p className="text-sm sm:text-base text-slate-600">
-            乗車する区間の「発駅」と「着駅」、および「券種」を選択してください。<br className="hidden sm:block" />
-            JR在来線において最もお得な分割ルートを計算します。
+            {"乗車する区間の「発駅」と「着駅」を選択してください。"}
+            <br className="hidden sm:block" />
+            {"JRの在来線において最もお得な分割ルートを計算します。"}
           </p>
         </div>
         <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
@@ -33,7 +34,7 @@ export default async function SplitPage({ searchParams }: { searchParams: Promis
           <div className="text-sm text-amber-800 leading-relaxed">
             <span className="font-bold block mb-1">【お知らせ】長距離区間の計算制限について</span>
             <p>
-              システム負荷軽減のため、<strong>発着駅間の駅数が100を超える場合</strong>は計算を制限することがあります。
+              システム負荷軽減のため、<strong>発着駅間の駅数が100を超える場合</strong>{"は計算を制限することがあります。"}
             </p>
           </div>
         </div>

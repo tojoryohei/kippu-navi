@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
@@ -28,10 +28,10 @@ interface SplitFormProps {
 }
 
 const SEARCH_TYPE_OPTIONS: SearchOption[] = [
-    { value: "ticket", label: "普通乗車券" },
-    { value: "pass1", label: "通勤定期券１箇月" },
-    { value: "pass3", label: "通勤定期券３箇月" },
-    { value: "pass6", label: "通勤定期券６箇月" },
+    { value: "ticket", label: "乗車券" },
+    { value: "pass1", label: "定期券１箇月" },
+    { value: "pass3", label: "定期券３箇月" },
+    { value: "pass6", label: "定期券６箇月" },
 ];
 
 const TEMPORARY_STATIONS = [
@@ -120,10 +120,12 @@ export default function SplitForm({
 }: SplitFormProps) {
     const router = useRouter();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const posthog = usePostHog();
     const [isPending, startTransition] = useTransition();
 
     const isIcPass = pathname === "/split-icpass";
+    const isPass = pathname === "/split-pass";
 
     // ローカルでの計算結果・エラー・計測時間および検索タイプの管理State
     const [isCalculating, setIsCalculating] = useState(false);
@@ -133,7 +135,7 @@ export default function SplitForm({
     const [searchedType, setSearchedType] = useState<SearchType>(
         (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
             ? initialSearchType
-            : (isIcPass ? "pass1" : "ticket")
+            : (isIcPass || isPass ? "pass6" : "ticket")
     );
 
     const lastTrackedSearch = useRef<string>("");
@@ -193,7 +195,7 @@ export default function SplitForm({
 
     const defaultSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
         ? initialSearchType
-        : (isIcPass ? "pass1" : "ticket");
+        : (isIcPass || isPass ? "pass6" : "ticket");
 
     const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, reset, trigger } = useForm<ExtendedSplitFormInput>({
         mode: "onChange",
@@ -209,7 +211,7 @@ export default function SplitForm({
         const endStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
         const currentSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
             ? initialSearchType
-            : (isIcPass ? "pass1" : "ticket");
+            : (isIcPass || isPass ? "pass6" : "ticket");
 
         reset({
             startStation,
@@ -217,7 +219,7 @@ export default function SplitForm({
             searchType: currentSearchType,
         });
 
-        // ページ遷移後にバリデーションを再実行する（例: 磁気定期券→IC定期券切替時のエリアチェック）
+        // ページ遷移後にバリデーションを再実行する（例: 定期券→IC定期券切替時のエリアチェック）
         // reset() はバリデーションをトリガーしないため、明示的に trigger() を呼ぶ
         if (startStation || endStation) {
             // reset後にreact-hook-formの内部状態が更新されるのを待ってからtriggerする
@@ -225,7 +227,7 @@ export default function SplitForm({
                 trigger(["startStation", "endStation"]);
             }, 0);
         }
-    }, [initialFrom, initialTo, initialSearchType, isIcPass, reset, trigger]);
+    }, [initialFrom, initialTo, initialSearchType, isIcPass, isPass, reset, trigger]);
 
     // GA4 & PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
@@ -318,7 +320,7 @@ export default function SplitForm({
     const currentType = useWatch({ control, name: "searchType" });
 
     const canSwap = !!startStationVal || !!endStationVal;
-    const isPeriodDisabled = !isIcPass && currentType === "ticket";
+    const isPeriodDisabled = pathname === "/split";
 
     // 駅名が変更された際に、相互のバリデーションを再評価する
     useEffect(() => {
@@ -342,8 +344,8 @@ export default function SplitForm({
         if (!exists) return "正しい駅名を選択または入力してください";
 
         const currentSearchType = getValues("searchType");
-        const isPass = isIcPass || (currentSearchType !== "ticket");
-        if (isPass && TEMPORARY_STATIONS.includes(value.name)) {
+        const isPassOption = isIcPass || isPass || (currentSearchType !== "ticket");
+        if (isPassOption && TEMPORARY_STATIONS.includes(value.name)) {
             return "臨時駅発着の定期券は計算できません";
         }
 
@@ -384,11 +386,12 @@ export default function SplitForm({
         if (tab === "magnetic-pass") {
             nextSearchType = (currentType === "pass1" || currentType === "pass3" || currentType === "pass6")
                 ? currentType
-                : "pass1";
+                : "pass6";
+            nextPath = "/split-pass";
         } else if (tab === "ic-pass") {
             nextSearchType = (currentType === "pass1" || currentType === "pass3" || currentType === "pass6")
                 ? currentType
-                : "pass1";
+                : "pass6";
             nextPath = "/split-icpass";
         }
 
@@ -400,8 +403,7 @@ export default function SplitForm({
         setError(null);
         setServerTime(null);
 
-        const nextPath = isIcPass ? "/split-icpass" : "/split";
-        updateUrlAndState(nextPath, period);
+        updateUrlAndState(pathname, period);
     };
 
     const updateUrlAndState = (nextPath: string, nextSearchType: SearchType) => {
@@ -411,17 +413,28 @@ export default function SplitForm({
         const startStation = getValues("startStation");
         const endStation = getValues("endStation");
 
-        const searchParams = new URLSearchParams();
-        if (startStation?.name) searchParams.set("from", startStation.name);
-        if (endStation?.name) searchParams.set("to", endStation.name);
-
-        if (nextSearchType !== "ticket") {
-            searchParams.set("searchType", nextSearchType);
+        // クエリパラメータをマージ (from, to, month の順に並び替え)
+        const newParams = new URLSearchParams();
+        if (startStation?.name) {
+            newParams.set("from", startStation.name);
         }
+        if (endStation?.name) {
+            newParams.set("to", endStation.name);
+        }
+        if (nextSearchType !== "ticket") {
+            const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
+            const mVal = monthsMap[nextSearchType] || "6";
+            newParams.set("month", mVal);
+        }
+        searchParams.forEach((val, key) => {
+            if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType") {
+                newParams.set(key, val);
+            }
+        });
 
-        const newUrl = `${nextPath}?${searchParams.toString()}`;
+        const newUrl = `${nextPath}?${newParams.toString()}`;
 
-        // パスが変わる場合のみ router.push でルーティング遷移（例: /split ↔ /split-icpass）
+        // パスが変わる場合のみ router.push でルーティング遷移
         if (nextPath !== pathname) {
             startTransition(() => {
                 router.push(newUrl, { scroll: false });
@@ -441,16 +454,26 @@ export default function SplitForm({
         setServerTime(null);
         setIsCalculating(true);
 
-        const searchParams = new URLSearchParams();
-        searchParams.set("from", data.startStation.name);
-        searchParams.set("to", data.endStation.name);
-
-        if (data.searchType && data.searchType !== "ticket") {
-            searchParams.set("searchType", data.searchType);
+        const newParams = new URLSearchParams();
+        if (data.startStation.name) {
+            newParams.set("from", data.startStation.name);
         }
+        if (data.endStation.name) {
+            newParams.set("to", data.endStation.name);
+        }
+        if (data.searchType && data.searchType !== "ticket") {
+            const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
+            const mVal = monthsMap[data.searchType] || "6";
+            newParams.set("month", mVal);
+        }
+        searchParams.forEach((val, key) => {
+            if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType") {
+                newParams.set(key, val);
+            }
+        });
 
-        const nextPath = isIcPass ? "/split-icpass" : "/split";
-        const newUrl = `${nextPath}?${searchParams.toString()}`;
+        const nextPath = pathname;
+        const newUrl = `${nextPath}?${newParams.toString()}`;
         // URLバーだけ更新
         window.history.replaceState(null, "", newUrl);
 
@@ -516,22 +539,22 @@ export default function SplitForm({
                 <button
                     type="button"
                     onClick={() => handleTabChange("ticket")}
-                    className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${!isIcPass && currentType === "ticket"
+                    className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${!isIcPass && !isPass
                         ? "bg-white text-blue-600 shadow-sm font-bold"
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    普通乗車券
+                    {"乗車券"}
                 </button>
                 <button
                     type="button"
                     onClick={() => handleTabChange("magnetic-pass")}
-                    className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${!isIcPass && currentType !== "ticket"
+                    className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${isPass
                         ? "bg-white text-blue-600 shadow-sm font-bold"
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    磁気定期券
+                    {"定期券"}
                 </button>
                 <button
                     type="button"
@@ -541,7 +564,7 @@ export default function SplitForm({
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    IC定期券
+                    {"IC定期券"}
                 </button>
             </div>
 
@@ -559,7 +582,7 @@ export default function SplitForm({
                                 : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
                             }`}
                     >
-                        1箇月
+                        {"1箇月"}
                     </button>
                     <button
                         type="button"
@@ -572,7 +595,7 @@ export default function SplitForm({
                                 : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
                             }`}
                     >
-                        3箇月
+                        {"3箇月"}
                     </button>
                     <button
                         type="button"
@@ -585,7 +608,7 @@ export default function SplitForm({
                                 : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
                             }`}
                     >
-                        6箇月
+                        {"6箇月"}
                     </button>
                 </div>
             </div>
@@ -612,7 +635,7 @@ export default function SplitForm({
                                 />
                             </div>
                         </div>
-                        <div className="min-h-[24px] mt-1 ml-17">
+                        <div className="min-h-2 ml-17">
                             {errors.startStation && (
                                 <p className="text-red-500 text-xs">
                                     {errors.startStation.message}
@@ -621,7 +644,7 @@ export default function SplitForm({
                         </div>
                     </div>
 
-                    <div className="flex justify-center w-full -my-3 relative z-0">
+                    <div className="flex justify-center w-full -my-3 relative z-0 mb-1">
                         <button
                             type="button"
                             onClick={handleSwapStations}
@@ -652,7 +675,7 @@ export default function SplitForm({
                                 />
                             </div>
                         </div>
-                        <div className="min-h-[24px] mt-1 ml-17">
+                        <div className="min-h-2 ml-17">
                             {errors.endStation && (
                                 <p className="text-red-500 text-xs">
                                     {errors.endStation.message}
@@ -667,10 +690,10 @@ export default function SplitForm({
                             className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors cursor-pointer disabled:cursor-not-allowed"
                             disabled={!isValid || isCalculating || (currentType !== "ticket" && !isWasmReady)}
                         >
-                            {isCalculating 
-                                ? "計算中..." 
-                                : (currentType !== "ticket" && !isWasmReady) 
-                                    ? "計算エンジン初期化中..." 
+                            {isCalculating
+                                ? "計算中..."
+                                : (currentType !== "ticket" && !isWasmReady)
+                                    ? "計算エンジン初期化中..."
                                     : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`
                             }
                         </button>
@@ -693,7 +716,7 @@ export default function SplitForm({
                                 <div>
                                     <div className="text-lg font-bold">
                                         <span>{result.cheapestKippuData.departureStation}</span>
-                                        <span className="text-gray-400 mx-2">{searchedTypeLabel === "普通乗車券" ? "→" : "↔"}</span>
+                                        <span className="text-gray-400 mx-2">{searchedTypeLabel === "乗車券" ? "→" : "↔"}</span>
                                         <span>{result.cheapestKippuData.arrivalStation}</span>
                                         {result.cheapestKippuData.totalEigyoKilo > 0 && (
                                             <span className="text-sm font-normal text-gray-600 ml-1">
@@ -723,7 +746,7 @@ export default function SplitForm({
                                             <div className="flex justify-between items-center">
                                                 <div>
                                                     <h3 className="font-bold text-xl text-blue-800">
-                                                        最安分割運賃
+                                                        {"最安分割運賃"}
                                                     </h3>
                                                     {isCheaper ? (
                                                         <p className="text-red-600 font-bold mt-1 text-lg">
@@ -765,7 +788,7 @@ export default function SplitForm({
                                                             <div key={segIndex} className="bg-white p-4 rounded border border-gray-200 shadow-sm relative">
                                                                 <div className="text-sm text-gray-500 mb-1 flex items-center">
                                                                     <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs mr-2">利用区間</span>
-                                                                    <span>{segment.departureStation} {searchedTypeLabel === "普通乗車券" ? "→" : "↔"} {segment.arrivalStation}</span>
+                                                                    <span>{segment.departureStation} {searchedTypeLabel === "乗車券" ? "→" : "↔"} {segment.arrivalStation}</span>
                                                                 </div>
 
                                                                 <div className="flex justify-between items-center mt-2">
@@ -773,7 +796,7 @@ export default function SplitForm({
                                                                         <div className="text-lg font-bold text-gray-800 flex items-center flex-wrap gap-2">
                                                                             <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">切符</span>
                                                                             <span>{segment.kippuData.departureStation}</span>
-                                                                            <span className="text-gray-400">{searchedTypeLabel === "普通乗車券" ? "→" : "↔"}</span>
+                                                                            <span className="text-gray-400">{searchedTypeLabel === "乗車券" ? "→" : "↔"}</span>
                                                                             <span>{segment.kippuData.arrivalStation}</span>
                                                                             {segment.kippuData.totalEigyoKilo > 0 && (
                                                                                 <span className="text-sm font-normal text-gray-600 ml-1">
@@ -821,7 +844,7 @@ export default function SplitForm({
                                                 className="px-5 py-2.5 bg-white border border-gray-300 text-gray-600 font-medium rounded-full hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-2 text-sm"
                                             >
                                                 <HiChevronUp className="text-lg" />
-                                                追加のパターンを閉じる
+                                                {"追加のパターンを閉じる"}
                                             </button>
                                         </div>
                                     )}
@@ -836,15 +859,30 @@ export default function SplitForm({
             <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
                 <h3 className="font-bold text-gray-600 mb-2">💡 当システムについて</h3>
                 <p className="mb-4 leading-relaxed">
-                    出発駅と到着駅を入力するだけで、分割乗車券の最安解を自動計算するツールです。経路は自動探索します。普通乗車券と定期乗車券の両方に対応しています。
+                    {isIcPass ? (
+                        "出発駅と到着駅を入力するだけで、分割IC定期券の最安解を自動計算するツールです。経路は自動探索します。IC定期券（Kitaca・Suica・ICOCAエリア）に対応しています。"
+                    ) : isPass ? (
+                        "出発駅と到着駅を入力するだけで、分割定期券の最安解を自動計算するツールです。経路は自動探索します。"
+                    ) : (
+                        "出発駅と到着駅を入力するだけで、分割乗車券の最安解を自動計算するツールです。経路は自動探索します。"
+                    )}
                 </p>
 
                 <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
                 <ol className="list-decimal list-inside space-y-1 ml-1">
-                    <li><strong>種類の選択:</strong> 「普通乗車券」と「定期乗車券(1/3/6箇月)」のいずれかを選択してください。</li>
+                    <li>
+                        <strong>種類の選択：</strong>
+                        {isIcPass ? (
+                            "「IC定期券」タブにて、定期の期間(1/3/6箇月)を選択してください。"
+                        ) : isPass ? (
+                            "「定期券」タブにて、定期の期間(1/3/6箇月)を選択してください。"
+                        ) : (
+                            "「乗車券」タブにて、運賃の計算が可能です。"
+                        )}
+                    </li>
                     <li><strong>駅の入力:</strong> 「発駅」と「着駅」に駅名を入力し、候補から選択します。</li>
                     <li><strong>駅の入れ替え:</strong> 検索フォームの入力を逆にしたい場合は ⇅ ボタンを押すことで切り替わります。</li>
-                    <li><strong>最安分割運賃の計算:</strong> 計算ボタンを押すと、自動で最安分割運賃と切符の情報が出力されます。</li>
+                    <li><strong>最安分割運賃の計算:</strong> 計算ボタンを押すと、自動で最安分割運賃とそれぞれのきっぷ情報が出力されます。</li>
                 </ol>
             </div>
         </main >

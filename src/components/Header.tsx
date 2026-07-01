@@ -11,7 +11,7 @@ const MENU_ITEMS: menuItem[] = [
     { href: "/", icon: MdHome, label: "ホーム" },
     { href: "/guide", icon: RiBookOpenFill, label: "はじめての方へ" },
     { href: "/mr", icon: RiGuideLine, label: "運賃計算" },
-    { href: "/split", icon: RiScissorsFill, label: "分割乗車券" }
+    { href: "/split", icon: RiScissorsFill, label: "分割きっぷ" }
 ];
 
 const Header = () => {
@@ -40,7 +40,7 @@ const Header = () => {
 
             <h1>
                 <Link href="/" className="text-2xl font-bold tracking-tight text-blue-600 hover:opacity-80 transition-opacity font-logo relative z-50">
-                    きっぷナビ
+                    {"きっぷナビ"}
                 </Link>
             </h1>
 
