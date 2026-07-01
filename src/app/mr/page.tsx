@@ -18,18 +18,19 @@ export default function MrPage() {
             <RiGuideLine className="w-8 h-8 text-slate-700" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-3">
-            JR運賃計算機
+            {"JR運賃計算機"}
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
-            発着駅、および経由を入力してください。<br className="hidden sm:block" />
-            きっぷの運賃を計算します。
+            {"発着駅、および経由を入力してください。"}
+            <br className="hidden sm:block" />
+            {"きっぷの運賃を計算します。"}
           </p>
 
           {/* 仕様・制限事項の枠組み */}
           <div className="inline-block text-left bg-slate-50 border border-slate-200 rounded-lg p-4 max-w-xl mx-auto">
             <p className="font-semibold text-xs sm:text-sm text-slate-600 mb-2">
-              【現在の仕様・制限事項】
+              {"【現在の仕様・制限事項】"}
             </p>
             <ul className="text-xs sm:text-sm text-slate-500 list-disc list-inside space-y-1">
               <li>このプログラムで計算できる経由路線数の上限は99です。</li>

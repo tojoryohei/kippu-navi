@@ -341,7 +341,7 @@ export default function Form() {
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    乗車券
+                    {"乗車券"}
                 </button>
                 <button
                     type="button"
@@ -351,7 +351,7 @@ export default function Form() {
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    定期券
+                    {"定期券"}
                 </button>
             </div>
 
@@ -369,7 +369,7 @@ export default function Form() {
                                 : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
                             }`}
                     >
-                        1箇月
+                        {"1箇月"}
                     </button>
                     <button
                         type="button"
@@ -382,7 +382,7 @@ export default function Form() {
                                 : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
                             }`}
                     >
-                        3箇月
+                        {"3箇月"}
                     </button>
                     <button
                         type="button"
@@ -395,7 +395,7 @@ export default function Form() {
                                 : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
                             }`}
                     >
-                        6箇月
+                        {"6箇月"}
                     </button>
                 </div>
             </div>
@@ -534,7 +534,7 @@ export default function Form() {
                             className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm whitespace-nowrap"
                             title={!isUnderPathLimit ? "経路数の上限（99件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
                         >
-                            経由路線を追加
+                            {"経由路線を追加"}
                         </button>
                         <button
                             type="button"
@@ -544,14 +544,14 @@ export default function Form() {
                             title="入力フォームの発着駅と経路を逆転させます"
                         >
                             <RiArrowUpDownLine className="w-5 h-5" />
-                            経路を逆転
+                            {"経路を逆転"}
                         </button>
                     </div>
 
                     {/* 運賃計算モード選択（ラジオボタン） */}
                     <div className="my-4 flex flex-col items-start bg-slate-50 p-4 rounded-md border border-slate-200 w-full">
                         <p className="block text-base font-bold text-slate-700 mb-3">
-                            運賃計算モード
+                            {"運賃計算モード"}
                         </p>
                         <div className="flex flex-col gap-3 w-full px-2">
                             <label className="inline-flex items-center cursor-pointer w-fit">
@@ -678,7 +678,7 @@ export default function Form() {
             <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
                 <h3 className="font-bold text-gray-600 mb-2">💡 当システムについて</h3>
                 <p className="mb-4 leading-relaxed">
-                    出発駅と到着駅、および経由する路線を入力するだけで、JRの運賃を計算するプログラムです。
+                    {"出発駅と到着駅、および経由する路線を入力するだけで、JRの運賃を計算するプログラムです。"}
                 </p>
 
                 <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>

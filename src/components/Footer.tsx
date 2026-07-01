@@ -8,22 +8,22 @@ const Footer = () => {
                 {/* フッターナビゲーションリンク */}
                 <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-6 text-sm text-slate-600 font-medium">
                     <Link href="/changelog" className="hover:text-blue-600 transition-colors">
-                        更新履歴
+                        {"更新履歴"}
                     </Link>
                     <Link href="/about" className="hover:text-blue-600 transition-colors">
-                        このサイトについて
+                        {"このサイトについて"}
                     </Link>
                     <Link href="/privacy" className="hover:text-blue-600 transition-colors">
-                        プライバシーポリシー
+                        {"プライバシーポリシー"}
                     </Link>
                     <Link href="/contact" className="hover:text-blue-600 transition-colors">
-                        お問い合わせ
+                        {"お問い合わせ"}
                     </Link>
                 </div>
 
                 {/* コピーライト */}
                 <div className="text-sm text-slate-400">
-                    Copyright © 2025-2026 きっぷナビ. All Rights Reserved.
+                    {"Copyright © 2025-2026 きっぷナビ. All Rights Reserved."}
                 </div>
 
             </div>

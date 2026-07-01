@@ -40,7 +40,7 @@ const Header = () => {
 
             <h1>
                 <Link href="/" className="text-2xl font-bold tracking-tight text-blue-600 hover:opacity-80 transition-opacity font-logo relative z-50">
-                    きっぷナビ
+                    {"きっぷナビ"}
                 </Link>
             </h1>
 

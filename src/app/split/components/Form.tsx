@@ -544,7 +544,7 @@ export default function SplitForm({
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    乗車券
+                    {"乗車券"}
                 </button>
                 <button
                     type="button"
@@ -554,7 +554,7 @@ export default function SplitForm({
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    定期券
+                    {"定期券"}
                 </button>
                 <button
                     type="button"
@@ -564,7 +564,7 @@ export default function SplitForm({
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    IC定期券
+                    {"IC定期券"}
                 </button>
             </div>
 
@@ -582,7 +582,7 @@ export default function SplitForm({
                                 : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
                             }`}
                     >
-                        1箇月
+                        {"1箇月"}
                     </button>
                     <button
                         type="button"
@@ -595,7 +595,7 @@ export default function SplitForm({
                                 : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
                             }`}
                     >
-                        3箇月
+                        {"3箇月"}
                     </button>
                     <button
                         type="button"
@@ -608,7 +608,7 @@ export default function SplitForm({
                                 : "text-slate-500 hover:text-slate-800 hover:bg-white/30 cursor-pointer"
                             }`}
                     >
-                        6箇月
+                        {"6箇月"}
                     </button>
                 </div>
             </div>
@@ -746,7 +746,7 @@ export default function SplitForm({
                                             <div className="flex justify-between items-center">
                                                 <div>
                                                     <h3 className="font-bold text-xl text-blue-800">
-                                                        最安分割運賃
+                                                        {"最安分割運賃"}
                                                     </h3>
                                                     {isCheaper ? (
                                                         <p className="text-red-600 font-bold mt-1 text-lg">
@@ -844,7 +844,7 @@ export default function SplitForm({
                                                 className="px-5 py-2.5 bg-white border border-gray-300 text-gray-600 font-medium rounded-full hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-2 text-sm"
                                             >
                                                 <HiChevronUp className="text-lg" />
-                                                追加のパターンを閉じる
+                                                {"追加のパターンを閉じる"}
                                             </button>
                                         </div>
                                     )}

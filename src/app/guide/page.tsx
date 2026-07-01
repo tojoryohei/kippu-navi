@@ -69,9 +69,9 @@ export default function GuidePage() {
                 </h1>
                 <p className="mt-8 text-slate-500">
                     <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                        分割きっぷ計算機
+                        {"分割きっぷ計算機"}
                     </Link>
-                    の操作方法から、購入手順や利用方法まで分かりやすく解説します。
+                    {"の操作方法から、購入手順や利用方法まで分かりやすく解説します。"}
                 </p>
             </header>
 
@@ -82,31 +82,31 @@ export default function GuidePage() {
                     <li className="flex items-start">
                         <span className="mr-2 text-slate-900 w-5 shrink-0">1.</span>
                         <a href="#how-to-search" className="text-blue-600 hover:underline font-medium">
-                            分割乗車券の調べ方
+                            {"分割乗車券の調べ方"}
                         </a>
                     </li>
                     <li className="flex items-start">
                         <span className="mr-2 text-slate-900 w-5 shrink-0">2.</span>
                         <a href="#how-to-buy" className="text-blue-600 hover:underline font-medium">
-                            分割乗車券の買い方
+                            {"分割乗車券の買い方"}
                         </a>
                     </li>
                     <li className="flex items-start">
                         <span className="mr-2 text-slate-900 w-5 shrink-0">3.</span>
                         <a href="#how-to-use" className="text-blue-600 hover:underline font-medium">
-                            分割乗車券の使い方
+                            {"分割乗車券の使い方"}
                         </a>
                     </li>
                     <li className="flex items-start">
                         <span className="mr-2 text-slate-900 w-5 shrink-0">4.</span>
                         <a href="#faq" className="text-blue-600 hover:underline font-medium">
-                            よくある質問（FAQ）
+                            {"よくある質問（FAQ）"}
                         </a>
                     </li>
                     <li className="flex items-start">
                         <span className="mr-2 text-slate-900 w-5 shrink-0">5.</span>
                         <a href="#about-logic" className="text-blue-600 hover:underline font-medium">
-                            仕組みについて
+                            {"仕組みについて"}
                         </a>
                     </li>
                 </ul>
@@ -118,35 +118,35 @@ export default function GuidePage() {
                 {/* 1. 分割きっぷの調べ方 */}
                 <section id="how-to-search" className="scroll-mt-20">
                     <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
-                        1. 分割きっぷの調べ方
+                        {"1. 分割きっぷの調べ方"}
                     </h2>
                     <div className="space-y-6 text-slate-800 leading-relaxed">
                         <div>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">そもそもなぜ分割するのか</h3>
                             <p>
-                                基本的には<strong>安くなるから</strong>です。
-                                当サイトでは、発着駅間の最安解を求めるための
+                                基本的には<strong>安くなるから</strong>{"です。"}
+                                {"当サイトでは、発着駅間の最安解を求めるための"}
                                 <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                    分割きっぷ計算機
+                                    {"分割きっぷ計算機"}
                                 </Link>
-                                を公開してます。
+                                {"を公開してます。"}
                             </p>
                         </div>
 
                         <div>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">発着駅の入力方法</h3>
                             <p>
-                                検索ボックスに、発駅と着駅を入力します。入力に合わせて候補の駅名がサジェストされます。
+                                {"検索ボックスに、発駅と着駅を入力します。入力に合わせて候補の駅名がサジェストされます。"}
                             </p>
                             <p className="bg-slate-50 p-4 rounded-lg text-sm text-slate-700 mt-2">
-                                ※定期券およびIC定期券では、臨時駅を選択することはできません。また、IC定期券の場合、異なるエリア同士を選択することはできません。
+                                {"※定期券およびIC定期券では、臨時駅を選択することはできません。また、IC定期券の場合、異なるエリア同士を選択することはできません。"}
                             </p>
                         </div>
 
                         <div>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">計算結果画面について</h3>
                             <p>
-                                計算が完了すると、通常通りに購入した場合（通し購入）と、乗車券を分割して購入した場合（分割購入）の運賃の比較が表示されます。
+                                {"計算が完了すると、通常通りに購入した場合（通し購入）と、乗車券を分割して購入した場合（分割購入）の運賃の比較が表示されます。"}
                             </p>
                             <ul className="list-disc list-inside space-y-1.5 ml-2 mt-2 text-sm">
                                 <li><strong>分割駅の表示：</strong> どの駅で乗車券を分割すれば最も安くなるかが視覚的に示されます。</li>
@@ -161,33 +161,33 @@ export default function GuidePage() {
                 {/* 2. 分割乗車券の買い方 */}
                 <section id="how-to-buy" className="scroll-mt-20">
                     <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
-                        2. 分割乗車券の買い方
+                        {"2. 分割乗車券の買い方"}
                     </h2>
                     <div className="space-y-6 text-slate-800 leading-relaxed">
                         <p>
                             <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                分割きっぷ計算機
+                                {"分割きっぷ計算機"}
                             </Link>
-                            で出力された複数枚の乗車券を購入する手順です。
+                            {"で出力された複数枚の乗車券を購入する手順です。"}
                         </p>
                         <p>
                             原則として、<strong className="underline">分割乗車券は発駅で乗車する際に、着駅までに利用する全ての乗車券を所持している必要があります。</strong>
                         </p>
                         <p>
-                            ここで前提知識として、以下に記載する
+                            {"ここで前提知識として、以下に記載する"}
                             <Link href="https://www.jreast.co.jp/ryokaku/02_hen/02_syo/01_setsu/02.html#20" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                旅客営業規則 第20条
+                                {"旅客営業規則 第20条"}
                             </Link>
-                            をご覧ください。
+                            {"をご覧ください。"}
                         </p>
                         <blockquote className="bg-slate-50 p-4 text-slate-700 mt-2 space-y-2 border-l-4 border-slate-300">
                             <p className="text-sm">
-                                駅において発売する乗車券類は、その駅から有効なものに限って発売する。ただし、他駅から有効な乗車券類を発売することがある。
+                                {"駅において発売する乗車券類は、その駅から有効なものに限って発売する。ただし、他駅から有効な乗車券類を発売することがある。"}
                             </p>
                             <cite className="block text-xs text-slate-500 not-italic">
-                                出典:
+                                {"出典:"}
                                 <Link href="https://www.jreast.co.jp/ryokaku/02_hen/02_syo/01_setsu/02.html" target="_blank" className="hover:underline underline-offset-2 mx-1">
-                                    JR東日本：旅客営業規則＞第2編 旅客営業 -第2章 乗車券類の発売 -第1節 通則
+                                    {"JR東日本：旅客営業規則＞第2編 旅客営業 -第2章 乗車券類の発売 -第1節 通則"}
                                 </Link>
                             </cite>
                         </blockquote>
@@ -198,30 +198,30 @@ export default function GuidePage() {
                         <div className="space-y-4">
                             <AccordionItem title="分割乗車券の購入方法">
                                 <p>
-                                    乗車券を分割購入したいときは
+                                    {"乗車券を分割購入したいときは"}
                                     <Link href="https://www.eki-net.com" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                        えきねっと
+                                        {"えきねっと"}
                                     </Link>
-                                    や
+                                    {"や"}
                                     <Link href="https://e5489.jr-odekake.net/e5489/cspc/CBTopMenuPC" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                        e5489
+                                        {"e5489"}
                                     </Link>
-                                    などのインターネット予約サービスを使うと便利です。
-                                    これらを利用すれば他駅発売の制限を受けませんが、受け取りできる駅が限られているため注意が必要です。
-                                    近年、みどりの窓口（きっぷうりば）では、不正乗車防止の観点から発売してもらえる可能性は低くなりつつあります。
+                                    {"などのインターネット予約サービスを使うと便利です。"}
+                                    {"これらを利用すれば他駅発売の制限を受けませんが、受け取りできる駅が限られているため注意が必要です。"}
+                                    {"近年、みどりの窓口（きっぷうりば）では、不正乗車防止の観点から発売してもらえる可能性は低くなりつつあります。"}
                                 </p>
                                 <p>
-                                    ※近距離きっぷでも分割乗車券として利用できます。
-                                    ただ、出場時に発駅から分割駅までの運賃と一致しているかの確認に時間を要する可能性があります。
-                                    指定席券売機（みどりの券売機）やみどりの窓口（きっぷうりば）があれば、駅名→駅名となる乗車券（マルス券）の購入がおすすめです。
+                                    {"※近距離きっぷでも分割乗車券として利用できます。"}
+                                    {"ただ、出場時に発駅から分割駅までの運賃と一致しているかの確認に時間を要する可能性があります。"}
+                                    {"指定席券売機（みどりの券売機）やみどりの窓口（きっぷうりば）があれば、駅名→駅名となる乗車券（マルス券）の購入がおすすめです。"}
                                 </p>
                                 <div className="mt-4 p-3 bg-white border border-slate-200 rounded-lg space-y-1">
                                     <p className="font-bold text-slate-800">【例】東京駅から横浜駅まで</p>
                                     <p>
-                                        東京→横浜は530円ですが、東京→蒲田と蒲田→横浜はそれぞれ260円です。
-                                        よって、分割することで10円安く移動することができます。
-                                        このとき、東京駅の自動券売機で東京→蒲田の乗車券を購入することはできますが、蒲田→横浜の乗車券を購入することはできません。
-                                        そのため、えきねっと等を利用して蒲田→横浜の乗車券を事前に購入し、東京駅で受け取る必要があります。
+                                        {"東京→横浜は530円ですが、東京→蒲田と蒲田→横浜はそれぞれ260円です。"}
+                                        {"よって、分割することで10円安く移動することができます。"}
+                                        {"このとき、東京駅の自動券売機で東京→蒲田の乗車券を購入することはできますが、蒲田→横浜の乗車券を購入することはできません。"}
+                                        {"そのため、えきねっと等を利用して蒲田→横浜の乗車券を事前に購入し、東京駅で受け取る必要があります。"}
                                     </p>
                                 </div>
                             </AccordionItem>
@@ -231,27 +231,27 @@ export default function GuidePage() {
                                     <div>
                                         <p className="font-bold text-slate-800">【磁気定期券】</p>
                                         <p>
-                                            駅の券売機やみどりの窓口で購入をしてください。購入後は有人改札へ行き「入場記録が無くても出場できる設定」をしてもらうことが多いです。
-                                            発売を断られたら、分割駅まで移動して購入するか諦めてください。
+                                            {"駅の券売機やみどりの窓口で購入をしてください。購入後は有人改札へ行き「入場記録が無くても出場できる設定」をしてもらうことが多いです。"}
+                                            {"発売を断られたら、分割駅まで移動して購入するか諦めてください。"}
                                         </p>
                                     </div>
                                     <hr className="border-slate-100" />
                                     <div>
                                         <p className="font-bold text-slate-800">【Kitaca／Suica定期券】</p>
                                         <p>
-                                            各定期券を取り扱う駅の窓口で購入してください。最大分割数は1回（2区間）までで、他社線を含めることはできません。
+                                            {"各定期券を取り扱う駅の窓口で購入してください。最大分割数は1回（2区間）までで、他社線を含めることはできません。"}
                                         </p>
                                     </div>
                                     <hr className="border-slate-100" />
                                     <div>
                                         <p className="font-bold text-slate-800">【ICOCA定期券】</p>
                                         <p>
-                                            ICOCA定期券を取り扱う駅の窓口で購入してください。最大分割数は1回（2区間）までで、他社線を含めることはできません。
-                                            詳しくは
+                                            {"ICOCA定期券を取り扱う駅の窓口で購入してください。最大分割数は1回（2区間）までで、他社線を含めることはできません。"}
+                                            {"詳しくは"}
                                             <Link href="https://www.jr-odekake.net/icoca/purchase/icoca_teiki.html#two" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                                こちら
+                                                {"こちら"}
                                             </Link>
-                                            をご覧ください。
+                                            {"をご覧ください。"}
                                         </p>
                                     </div>
                                     <hr className="border-slate-100" />
@@ -259,9 +259,9 @@ export default function GuidePage() {
                                         <p className="font-bold text-slate-800">【モバイルSuicaの定期券】</p>
                                         <p>
                                             <Link href="https://apfaq.mobilesuica.com/helpdesk?category_id=85" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                                モバイルSuicaサポートページ
+                                                {"モバイルSuicaサポートページ"}
                                             </Link>
-                                            に沿って購入してください。最大分割数は1回（2区間）までで、他社線を含めることはできません。
+                                            {"に沿って購入してください。最大分割数は1回（2区間）までで、他社線を含めることはできません。"}
                                         </p>
                                     </div>
                                 </div>
@@ -273,14 +273,14 @@ export default function GuidePage() {
                 {/* 3. 分割乗車券の使い方 */}
                 <section id="how-to-use" className="scroll-mt-20">
                     <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
-                        3. 分割乗車券の使い方
+                        {"3. 分割乗車券の使い方"}
                     </h2>
                     <div className="space-y-6 text-slate-800 leading-relaxed">
                         <p>
                             <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                分割きっぷ計算機
+                                {"分割きっぷ計算機"}
                             </Link>
-                            で出力された複数枚の乗車券を利用する手順です。
+                            {"で出力された複数枚の乗車券を利用する手順です。"}
                         </p>
 
                         <AccordionItem title="分割乗車券の利用方法">
@@ -292,14 +292,14 @@ export default function GuidePage() {
                             <div className="mt-4 p-3 bg-white border border-slate-200 rounded-lg space-y-2">
                                 <p className="font-bold text-slate-800">【例】東京駅から横浜駅まで</p>
                                 <p>
-                                    東京駅では「東京→蒲田」の乗車券だけを使って入場してください。
-                                    このとき、蒲田駅を通過する東海道線で移動しても問題ありません。
+                                    {"東京駅では「東京→蒲田」の乗車券だけを使って入場してください。"}
+                                    {"このとき、蒲田駅を通過する東海道線で移動しても問題ありません。"}
                                 </p>
                                 <p className="text-rose-600 font-medium">
-                                    ただし、蒲田駅を経由しない横須賀線（品鶴線経由など）を利用して移動してはいけません。なぜなら、分割駅である「蒲田駅」を実際に経由する経路で乗車する必要があるためです。
+                                    {"ただし、蒲田駅を経由しない横須賀線（品鶴線経由など）を利用して移動してはいけません。なぜなら、分割駅である「蒲田駅」を実際に経由する経路で乗車する必要があるためです。"}
                                 </p>
                                 <p>
-                                    横浜駅に着いたら、有人改札へ行き「東京→蒲田」と「蒲田→横浜」の両方の乗車券を渡せば出場できます。
+                                    {"横浜駅に着いたら、有人改札へ行き「東京→蒲田」と「蒲田→横浜」の両方の乗車券を渡せば出場できます。"}
                                 </p>
                             </div>
                         </AccordionItem>
@@ -331,18 +331,18 @@ export default function GuidePage() {
                 {/* 4. よくある質問 */}
                 <section id="faq" className="scroll-mt-20">
                     <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
-                        4. よくある質問（FAQ）
+                        {"4. よくある質問（FAQ）"}
                     </h2>
                     <div className="space-y-4">
                         <h3 className="text-lg font-bold text-slate-900 mb-2">【全般】</h3>
 
                         <FaqItem question="分割乗車券は違法ではありませんか？">
                             <p>
-                                いいえ、全く問題ありません。
+                                {"いいえ、全く問題ありません。"}
                                 <Link href="https://www.jreast.co.jp/ryokaku/02_hen/04_syo/02_setsu/03.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                    旅客営業規則 第157条
+                                    {"旅客営業規則 第157条"}
                                 </Link>
-                                にも、2枚以上の乗車券を併用して使用することが想定された条文が存在します。
+                                {"にも、2枚以上の乗車券を併用して使用することが想定された条文が存在します。"}
                             </p>
                         </FaqItem>
 
@@ -350,17 +350,17 @@ export default function GuidePage() {
                             <p>はい、あります。主に以下の2点です。</p>
                             <ul className="list-disc list-outside ml-5 mt-2 space-y-1">
                                 <li>
-                                    払い戻しの際に、乗車券の枚数分
+                                    {"払い戻しの際に、乗車券の枚数分"}
                                     <Link href="https://www.jreast.co.jp/kippu/22.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                        手数料
+                                        {"手数料"}
                                     </Link>
-                                    がかかる。
+                                    {"がかかる。"}
                                 </li>
                                 <li>
                                     <Link href="https://www.jreast.co.jp/ryokaku/02_hen/07_syo/03_setsu/10.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                        列車の運行不能・遅延等の場合の取扱方
+                                        {"列車の運行不能・遅延等の場合の取扱方"}
                                     </Link>
-                                    が通しの乗車券と異なる場合がある。
+                                    {"が通しの乗車券と異なる場合がある。"}
                                 </li>
                             </ul>
                         </FaqItem>
@@ -369,67 +369,67 @@ export default function GuidePage() {
 
                         <FaqItem question="ICカードを使って分割乗車できますか？">
                             <p>
-                                分割駅で下車をして、自動改札機で「出場」と「入場」をする必要があります。
-                                なお、当サイトではICカード運賃は考慮されていません。
+                                {"分割駅で下車をして、自動改札機で「出場」と「入場」をする必要があります。"}
+                                {"なお、当サイトではICカード運賃は考慮されていません。"}
                             </p>
                         </FaqItem>
 
                         <FaqItem question="発駅が無人駅で乗車券を持たないまま乗車する場合どうすればいいですか？">
                             <p>
-                                基本的に分割乗車券は諦めてください。
-                                乗車券を持たないまま分割駅を通り過ぎて、着駅で分割乗車券が発売されることはありません。
+                                {"基本的に分割乗車券は諦めてください。"}
+                                {"乗車券を持たないまま分割駅を通り過ぎて、着駅で分割乗車券が発売されることはありません。"}
                             </p>
                         </FaqItem>
 
                         <FaqItem question="発駅で分割乗車券の1枚目の乗車券だけ購入した場合どうなりますか？">
                             <p>
-                                多くの場合は、乗越精算となるため安くならないです。
-                                打切計算となる場合は安くなります。
-                                詳しくは
+                                {"多くの場合は、乗越精算となるため安くならないです。"}
+                                {"打切計算となる場合は安くなります。"}
+                                {"詳しくは"}
                                 <Link href="https://jreastfaq.jreast.co.jp/faq/show/1168" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                    こちら
+                                    {"こちら"}
                                 </Link>
-                                をご覧ください。
+                                {"をご覧ください。"}
                             </p>
                             <div className="mt-4 p-3 bg-white border border-slate-200 rounded-lg space-y-1">
                                 <p className="font-bold text-slate-800">【例】東京駅から横浜駅まで</p>
                                 <p>
-                                    東京→横浜は530円ですが、東京→蒲田と蒲田→横浜はそれぞれ260円です。
-                                    よって、分割することで10円安く移動することができます。
-                                    このとき、東京駅の自動券売機で東京→蒲田の乗車券を購入することはできますが、蒲田→横浜の乗車券を購入することはできません。
-                                    東京→蒲田の乗車券を使って横浜駅で乗越精算をしても、東京駅からの差額精算となり530円 － 260円 ＝ 270円を支払うことになりやすく移動ができません。
+                                    {"東京→横浜は530円ですが、東京→蒲田と蒲田→横浜はそれぞれ260円です。"}
+                                    {"よって、分割することで10円安く移動することができます。"}
+                                    {"このとき、東京駅の自動券売機で東京→蒲田の乗車券を購入することはできますが、蒲田→横浜の乗車券を購入することはできません。"}
+                                    {"東京→蒲田の乗車券を使って横浜駅で乗越精算をしても、東京駅からの差額精算となり530円 － 260円 ＝ 270円を支払うことになりやすく移動ができません。"}
                                 </p>
                             </div>
                         </FaqItem>
 
                         <FaqItem question="分割した乗車券で、途中下車はできますか？">
                             <p>
-                                下車したい駅が含まれる乗車券次第です。
-                                詳しくは
+                                {"下車したい駅が含まれる乗車券次第です。"}
+                                {"詳しくは"}
                                 <Link href="https://www.jreast.co.jp/kippu/05.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                    こちら
+                                    {"こちら"}
                                 </Link>
-                                をご覧ください。
-                                もちろん、分割駅で降りることはできます。
+                                {"をご覧ください。"}
+                                {"もちろん、分割駅で降りることはできます。"}
                             </p>
                         </FaqItem>
 
                         <FaqItem question="特急券も分割する必要はありますか？">
                             <div>
                                 <p>
-                                    特急券は分割せず、通しで購入して問題ありません。
+                                    {"特急券は分割せず、通しで購入して問題ありません。"}
                                 </p>
                                 <p className="text-xs">
-                                    ※特急券も分割して購入したほうが安くなる場合があります。
+                                    {"※特急券も分割して購入したほうが安くなる場合があります。"}
                                 </p>
                             </div>
                             <div>
                                 <p>
-                                    新幹線の自動改札機では、分割した乗車券や特急券の利用ができます。
-                                    このとき、必ず実乗車経路と乗車券の経路が一致していることを確認してください。
+                                    {"新幹線の自動改札機では、分割した乗車券や特急券の利用ができます。"}
+                                    {"このとき、必ず実乗車経路と乗車券の経路が一致していることを確認してください。"}
                                 </p>
                                 <p className="text-xs">
-                                    ※当サイトのプログラムはJR在来線のみを対象としており、新幹線や在来線特急の料金計算には現在対応していません。また、自動改札機には一度に投入できる枚数制限があります。
+                                    {"※当サイトのプログラムはJR在来線のみを対象としており、新幹線や在来線特急の料金計算には現在対応していません。また、自動改札機には一度に投入できる枚数制限があります。"}
                                 </p>
                             </div>
                         </FaqItem>
@@ -438,25 +438,25 @@ export default function GuidePage() {
                             <ul className="list-disc list-outside ml-5 mt-2 space-y-1">
                                 <li>
                                     <strong>学生割引乗車券</strong> および <strong>小児の旅客運賃：</strong>
-                                    対応を検討中です。
+                                    {"対応を検討中です。"}
                                 </li>
                                 <li>
                                     <strong>通学定期券：</strong>
-                                    分割して購入することはできません。
-                                    詳しくは
+                                    {"分割して購入することはできません。"}
+                                    {"詳しくは"}
                                     <Link href="https://www.jreast.co.jp/railway/teiki/school.html/#basic_03" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                        こちら
+                                        {"こちら"}
                                     </Link>
-                                    をご覧ください。
+                                    {"をご覧ください。"}
                                 </li>
                                 <li>
                                     <strong>オフピーク定期券：</strong>
-                                    分割して購入することはできません。
-                                    詳しくは
+                                    {"分割して購入することはできません。"}
+                                    {"詳しくは"}
                                     <Link href="https://jreastfaq.jreast.co.jp/faq/show/2956" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                        こちら
+                                        {"こちら"}
                                     </Link>
-                                    をご覧ください。
+                                    {"をご覧ください。"}
                                 </li>
                             </ul>
                         </FaqItem>
@@ -466,18 +466,18 @@ export default function GuidePage() {
                 {/* 5. 仕組みについて */}
                 <section id="about-logic" className="scroll-mt-20">
                     <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
-                        5. 仕組みについて
+                        {"5. 仕組みについて"}
                     </h2>
                     <div className="space-y-4 text-slate-800 leading-relaxed">
                         <p>
-                            きっぷナビがどのようにして最安経路や分割パターンを計算しているか、なぜ安くなるか、数学的な背景や探索アルゴリズムについて解説した技術資料を用意しています。
+                            {"きっぷナビがどのようにして最安経路や分割パターンを計算しているか、なぜ安くなるか、数学的な背景や探索アルゴリズムについて解説した技術資料を用意しています。"}
                         </p>
                         <p>
-                            最安値の計算ロジックや、同額パターンの完全列挙など、当サイトの裏側にあるプログラムの仕組みに興味がある方は、以下の詳細ページをご覧ください。どのように運営されているかの技術情報も含まれております。
+                            {"最安値の計算ロジックや、同額パターンの完全列挙など、当サイトの裏側にあるプログラムの仕組みに興味がある方は、以下の詳細ページをご覧ください。どのように運営されているかの技術情報も含まれております。"}
                         </p>
                         <div className="pt-2">
                             <Link href="/logic" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
-                                計算の仕組み・技術情報を見る
+                                {"計算の仕組み・技術情報を見る"}
                             </Link>
                         </div>
                     </div>

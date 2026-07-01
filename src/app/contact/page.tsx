@@ -10,12 +10,12 @@ export default function ContactPage() {
       {/* ページヘッダー */}
       <div className="text-center space-y-4">
         <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">
-          お問い合わせ
+          {"お問い合わせ"}
         </h1>
         <p className="text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          きっぷナビをご利用いただきありがとうございます。
+          {"きっぷナビをご利用いただきありがとうございます。"}
           <br className="hidden sm:block" />
-          サービスに関するご質問、不具合のご報告、その他ご意見がございましたら、以下のフォームよりお気軽にご連絡ください。
+          {"サービスに関するご質問、不具合のご報告、その他ご意見がございましたら、以下のフォームよりお気軽にご連絡ください。"}
         </p>
       </div>
 
@@ -31,7 +31,7 @@ export default function ContactPage() {
           title="お問い合わせフォーム"
           className="max-w-160"
         >
-          読み込んでいます…
+          {"読み込んでいます…"}
         </iframe>
       </div>
 
