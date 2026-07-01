@@ -331,7 +331,7 @@ export default function Form() {
 
     return (
         <>
-            {/* 第1階層: きっぷ・定期券切り替えタブ */}
+            {/* 第1階層: 乗車券・定期券切り替えタブ */}
             <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl mb-4">
                 <button
                     type="button"
@@ -341,7 +341,7 @@ export default function Form() {
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    普通乗車券
+                    乗車券
                 </button>
                 <button
                     type="button"
@@ -351,7 +351,7 @@ export default function Form() {
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                         }`}
                 >
-                    定期乗車券
+                    乗車券
                 </button>
             </div>
 
@@ -597,10 +597,10 @@ export default function Form() {
                         className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2 cursor-pointer disabled:cursor-not-allowed"
                         disabled={!isValid || isLoading || (currentType !== "ticket" && !isWasmReady)}
                     >
-                        {isLoading 
-                            ? "計算中..." 
-                            : (currentType !== "ticket" && !isWasmReady) 
-                                ? "計算エンジン初期化中..." 
+                        {isLoading
+                            ? "計算中..."
+                            : (currentType !== "ticket" && !isWasmReady)
+                                ? "計算エンジン初期化中..."
                                 : "運賃計算をする"
                         }
                     </button>
@@ -669,7 +669,7 @@ export default function Form() {
                         </div>
                         <span>経由：{!resultPass.printedViaLines || resultPass.printedViaLines.length === 0 ? "ーーー" : resultPass.printedViaLines.join("・")}</span>
                         <span className="flex justify-between items-center mt-2">
-                            <span>{(( { pass1: 1, pass3: 3, pass6: 6 } as Record<string, number> )[formValues.searchType] || 1) + " 箇月有効"}</span>
+                            <span>{(({ pass1: 1, pass3: 3, pass6: 6 } as Record<string, number>)[formValues.searchType] || 1) + " 箇月有効"}</span>
                             <span className="text-xl">¥{(resultPass.fare + resultPass.barrierFreeFee + resultPass.charge).toLocaleString()}</span>
                         </span>
                     </div>
@@ -678,7 +678,7 @@ export default function Form() {
             <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
                 <h3 className="font-bold text-gray-600 mb-2">💡 当システムについて</h3>
                 <p className="mb-4 leading-relaxed">
-                    出発駅と到着駅、および経由する路線を入力するだけで、JRの正しい乗車券運賃を自動計算するツールです。
+                    出発駅と到着駅、および経由する路線を入力するだけで、JRの運賃を計算するプログラムです。
                 </p>
 
                 <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
