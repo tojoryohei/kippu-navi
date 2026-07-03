@@ -65,13 +65,13 @@ export default function RootLayout({
         <link rel="icon" href="https://assets.kippu-navi.com/icons/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="https://assets.kippu-navi.com/icons/apple-touch-icon.png" />
         <link rel="apple-touch-icon-precomposed" href="https://assets.kippu-navi.com/icons/apple-touch-icon-precomposed.png" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </head>
-      <PHProvider>
-        <body className={`flex flex-col min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden ${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-          />
+      <body className={`flex flex-col min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden ${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <PHProvider>
           <PostHogPageView />
           {gaId && <GoogleAnalytics gaId={gaId} />}
           <AdSense />
@@ -79,8 +79,8 @@ export default function RootLayout({
           <main className="grow">{children}</main>
           <Footer />
           <ScrollToTopButton />
-        </body>
-      </PHProvider>
+        </PHProvider>
+      </body>
     </html>
   );
 }
