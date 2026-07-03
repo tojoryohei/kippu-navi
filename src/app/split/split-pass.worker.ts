@@ -4,15 +4,24 @@
 function getBaseOrigin(): string {
   if (typeof self === 'undefined' || !self.location) return '';
   const href = self.location.href || '';
+  let origin = (self.location.origin && self.location.origin !== 'null') ? self.location.origin : '';
+  
   if (href.startsWith('blob:')) {
     const rawUrl = href.replace('blob:', '');
     try {
-      return new URL(rawUrl).origin;
+      origin = new URL(rawUrl).origin;
     } catch {
       // ignore
     }
   }
-  return (self.location.origin && self.location.origin !== 'null') ? self.location.origin : '';
+
+  // Cloud RunのダイレクトURL (*.a.run.app) などCloudflareプロキシを経由しない環境の場合、
+  // /engine/ アセット（WASM/Graphデータ）が提供されている本番オリジンへフォールバックする
+  if (origin.includes('.a.run.app')) {
+    return 'https://kippu-navi.com';
+  }
+
+  return origin;
 }
 
 const baseOrigin = getBaseOrigin();
