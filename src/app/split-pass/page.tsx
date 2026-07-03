@@ -28,7 +28,7 @@ export default async function SplitPassPage({ searchParams }: { searchParams: Pr
           <p className="text-sm sm:text-base text-slate-600">
             {"乗車する区間の「発駅」と「着駅」、および「定期の期間」を選択してください。"}
             <br className="hidden sm:block" />
-            {"JRの在来線において最もお得な分割定期ルートを計算します。"}
+            {"JRの在来線において最もお得な分割ルートを計算します。"}
           </p>
         </div>
         <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">

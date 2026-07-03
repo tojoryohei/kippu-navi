@@ -375,7 +375,7 @@ export default function SplitForm({
         return true;
     };
 
-    const handleTabChange = (tab: "ticket" | "magnetic-pass" | "ic-pass") => {
+    const handleTabChange = (tab: "ticket" | "pass" | "icpass") => {
         setResult(null);
         setError(null);
         setServerTime(null);
@@ -383,12 +383,12 @@ export default function SplitForm({
         let nextPath = "/split";
         let nextSearchType: SearchType = "ticket";
 
-        if (tab === "magnetic-pass") {
+        if (tab === "pass") {
             nextSearchType = (currentType === "pass1" || currentType === "pass3" || currentType === "pass6")
                 ? currentType
                 : "pass6";
             nextPath = "/split-pass";
-        } else if (tab === "ic-pass") {
+        } else if (tab === "icpass") {
             nextSearchType = (currentType === "pass1" || currentType === "pass3" || currentType === "pass6")
                 ? currentType
                 : "pass6";
@@ -548,7 +548,7 @@ export default function SplitForm({
                 </button>
                 <button
                     type="button"
-                    onClick={() => handleTabChange("magnetic-pass")}
+                    onClick={() => handleTabChange("pass")}
                     className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${isPass
                         ? "bg-white text-blue-600 shadow-sm font-bold"
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
@@ -558,7 +558,7 @@ export default function SplitForm({
                 </button>
                 <button
                     type="button"
-                    onClick={() => handleTabChange("ic-pass")}
+                    onClick={() => handleTabChange("icpass")}
                     className={`py-2 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer text-center ${isIcPass
                         ? "bg-white text-blue-600 shadow-sm font-bold"
                         : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
@@ -860,7 +860,7 @@ export default function SplitForm({
                 <h3 className="font-bold text-gray-600 mb-2">💡 当システムについて</h3>
                 <p className="mb-4 leading-relaxed">
                     {isIcPass ? (
-                        "出発駅と到着駅を入力するだけで、分割IC定期券の最安解を自動計算するツールです。経路は自動探索します。IC定期券（Kitaca・Suica・ICOCAエリア）に対応しています。"
+                        "出発駅と到着駅を入力するだけで、分割IC定期券の最安解を自動計算するツールです。経路は自動探索します。IC定期券（Kitaca・Suica・ICOCAエリア）に対応しています。1枚のICカードに情報を書き込めるように最大分割数は1回に制限しています。"
                     ) : isPass ? (
                         "出発駅と到着駅を入力するだけで、分割定期券の最安解を自動計算するツールです。経路は自動探索します。"
                     ) : (

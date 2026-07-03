@@ -124,7 +124,7 @@ export default function Form() {
         setError(null);
         setServerTime(null);
 
-        const nextSearchType = tab === "ticket" ? "ticket" : "pass1";
+        const nextSearchType = tab === "ticket" ? "ticket" : "pass6";
         setValue("searchType", nextSearchType, { shouldValidate: true });
 
         // 即時バリデーション

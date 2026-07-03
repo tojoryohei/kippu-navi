@@ -28,9 +28,7 @@ export default async function SplitIcPassPage({ searchParams }: { searchParams: 
           <p className="text-sm sm:text-base text-slate-600">
             {"乗車する区間の「発駅」と「着駅」、および「定期の期間」を選択してください。"}
             <br className="hidden sm:block" />
-            {"Kitaca・Suica・ICOCAエリアにおいて最もお得な分割IC定期ルートを計算します。"}
-            <br className="hidden sm:block" />
-            {"1枚のICカードに情報を書き込めるように最大分割数は1回に制限しています。"}
+            {"Kitaca・Suica・ICOCAエリアにおいて最もお得な分割ルートを計算します。"}
           </p>
         </div>
         <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
