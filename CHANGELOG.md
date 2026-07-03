@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.0...kippu-navi-v2.11.1) (2026-07-03)
+
+
+### Bug Fixes
+
+* **config:** Server ActionsのallowedOriginsにカスタムドメインを追加 ([#414](https://github.com/tojoryohei/kippu-navi/issues/414)) ([4834615](https://github.com/tojoryohei/kippu-navi/commit/4834615dee44dbcf1cb2aaaee64a51734d4e3e59))
+
 ## [2.11.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.10.1...kippu-navi-v2.11.0) (2026-07-03)
 
 
