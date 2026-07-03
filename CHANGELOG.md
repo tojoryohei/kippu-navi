@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.10.0...kippu-navi-v2.10.1) (2026-07-03)
+
+
+### Bug Fixes
+
+* レイアウト構成の改善によるハイドレーションエラーの修正 ([#408](https://github.com/tojoryohei/kippu-navi/issues/408)) ([70d91e0](https://github.com/tojoryohei/kippu-navi/commit/70d91e096f29e4d1328f835975aba7d9adca020e))
+
 ## [2.10.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.9.0...kippu-navi-v2.10.0) (2026-07-01)
 
 
