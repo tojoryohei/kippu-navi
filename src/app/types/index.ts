@@ -93,7 +93,7 @@ export interface CacheResult {
 export interface SplitPassResult {
     passStations: {
         normal: string[];
-        results: string[][];
+        splitPatterns: string[][];
     };
 }
 

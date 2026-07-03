@@ -3,8 +3,13 @@ import { PassCacheResult, SplitPassResult } from '@/app/types';
 
 const FARE_DATA_VERSION = '2026-03';
 
-interface CachedSplitPass {
-    result: SplitPassResult;
+interface FirestoreCachedSplitPass {
+    result: {
+        passStations: {
+            normal: string[];
+            splitPatterns: { stations: string[] }[];
+        };
+    };
     version: string;
     createdAt: number;
 }
@@ -25,11 +30,17 @@ export async function getOptimalPassWithCache(
         const docSnap = await docRef.get();
 
         if (docSnap.exists) {
-            const data = docSnap.data() as CachedSplitPass;
+            const data = docSnap.data() as FirestoreCachedSplitPass;
             if (data.version === FARE_DATA_VERSION) {
                 const endTime = performance.now();
+                const result: SplitPassResult = {
+                    passStations: {
+                        normal: data.result?.passStations?.normal || [],
+                        splitPatterns: (data.result?.passStations?.splitPatterns || []).map(item => item.stations)
+                    }
+                };
                 return {
-                    data: data.result,
+                    data: result,
                     isCacheHit: true,
                     time: endTime - startTime,
                 };
@@ -70,7 +81,7 @@ export async function getOptimalPassWithCache(
     const result: SplitPassResult = {
         passStations: {
             normal: data.normal || [],
-            results: data.results || []
+            splitPatterns: data.splitPatterns || data.results || []
         }
     };
 
@@ -79,8 +90,13 @@ export async function getOptimalPassWithCache(
         const db = getDb();
         const docRef = db.collection('split_passes').doc(cacheKey);
 
-        const cacheData: CachedSplitPass = {
-            result,
+        const cacheData: FirestoreCachedSplitPass = {
+            result: {
+                passStations: {
+                    normal: result.passStations.normal,
+                    splitPatterns: result.passStations.splitPatterns.map(stations => ({ stations })),
+                }
+            },
             version: FARE_DATA_VERSION,
             createdAt: Date.now(),
         };
@@ -100,3 +116,4 @@ export async function getOptimalPassWithCache(
         time: endTime - startTime,
     };
 }
+
