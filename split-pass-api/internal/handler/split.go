@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"split-pass-api/internal/graph"
 	"split-pass-api/internal/usecase"
+	"strconv"
 	"strings"
 )
 
@@ -32,13 +33,6 @@ func NewSplit(
 	}
 }
 
-// CalculateRequest はリクエストのペイロードを表現します。
-type CalculateRequest struct {
-	Start  string `json:"start"`
-	End    string `json:"end"`
-	Months int    `json:"months"`
-}
-
 // CalculateResponse はレスポンスのペイロードを表現します。
 type CalculateResponse struct {
 	Normal  []string   `json:"normal"`
@@ -48,33 +42,35 @@ type CalculateResponse struct {
 
 // HandleCalculate は計算リクエストを処理します。
 func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodGet {
 		writeErrorResponse(w, http.StatusMethodNotAllowed, "許可されていないメソッドです")
 		return
 	}
 
-	var req CalculateRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeErrorResponse(w, http.StatusBadRequest, "不正なリクエスト形式です")
+	w.Header().Set("Cache-Control", "public, max-age=86400, s-maxage=604800")
+
+	query := r.URL.Query()
+	from := query.Get("from")
+	to := query.Get("to")
+	monthsStr := query.Get("months")
+
+	if from == "" || to == "" || monthsStr == "" {
+		writeErrorResponse(w, http.StatusBadRequest, "必要なパラメーター(from, to, months)が不足しています")
 		return
 	}
 
-	if req.Months != 1 && req.Months != 3 && req.Months != 6 {
-		writeErrorResponse(w, http.StatusBadRequest, "定期券の期間は1ヶ月、3ヶ月、6ヶ月のいずれかを指定してください")
+	months, err := strconv.Atoi(monthsStr)
+	if err != nil || (months != 1 && months != 3 && months != 6) {
+		writeErrorResponse(w, http.StatusBadRequest, "定期券の期間は1箇月、3箇月、6箇月のいずれかを指定してください")
 		return
 	}
 
-	startID, okStart := h.graph.GetID(req.Start)
-	endID, okEnd := h.graph.GetID(req.End)
+	reqStart := from
+	reqEnd := to
+	reqMonths := months
+
+	startID, okStart := h.graph.GetID(reqStart)
+	endID, okEnd := h.graph.GetID(reqEnd)
 
 	if !okStart || !okEnd {
 		writeErrorResponse(w, http.StatusBadRequest, "存在しない駅名が含まれています")
@@ -94,7 +90,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	optResult, err := h.search.Execute(startID, endID, req.Months)
+	optResult, err := h.search.Execute(startID, endID, reqMonths)
 	if err != nil {
 		log.Printf("分割定期券の計算エラー: %v", err)
 
