@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.10.1...kippu-navi-v2.11.0) (2026-07-03)
+
+
+### Features
+
+* 定期券分割計算のAPI連携最適化（キャッシュ導入）とGo backendのルート不整合の修正、および各種UI文言調整 ([#411](https://github.com/tojoryohei/kippu-navi/issues/411)) ([43759d9](https://github.com/tojoryohei/kippu-navi/commit/43759d99c3eb1f15aaddf5ac4e235ed3940013da))
+
 ## [2.10.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.10.0...kippu-navi-v2.10.1) (2026-07-03)
 
 
