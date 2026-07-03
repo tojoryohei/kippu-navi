@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.1...kippu-navi-v2.11.2) (2026-07-03)
+
+
+### Bug Fixes
+
+* Firestoreのネスト配列保存エラーの解消および splitPatterns への名称変更 ([#421](https://github.com/tojoryohei/kippu-navi/issues/421)) ([f7a7259](https://github.com/tojoryohei/kippu-navi/commit/f7a7259a3df58cd32808856efdcfcbe8d2b7c746))
+
 ## [2.11.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.0...kippu-navi-v2.11.1) (2026-07-03)
 
 
