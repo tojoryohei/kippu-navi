@@ -156,7 +156,7 @@ func run() error {
 	mux.HandleFunc("/api/split-pass", splitHandler.HandleCalculate)
 
 	icSplitHandler := handler.NewSplit(icGraph, icSearchUseCase)
-	mux.HandleFunc("/api/split-ic-pass", icSplitHandler.HandleCalculate)
+	mux.HandleFunc("/api/split-icpass", icSplitHandler.HandleCalculate)
 
 	server := &http.Server{
 		Addr:         listenAddr,

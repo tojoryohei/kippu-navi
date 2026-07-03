@@ -90,6 +90,19 @@ export interface CacheResult {
     time: number;
 }
 
+export interface SplitPassResult {
+    passStations: {
+        normal: string[];
+        results: string[][];
+    };
+}
+
+export interface PassCacheResult {
+    data: SplitPassResult;
+    isCacheHit: boolean;
+    time: number;
+}
+
 export interface RouteSegment {
     line: string;
     station0: string;

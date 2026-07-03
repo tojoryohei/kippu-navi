@@ -1,6 +1,7 @@
 "use server";
 
 import { getOptimalSplitWithCache } from "@/app/split/lib/getOptimalSplitWithCache";
+import { getOptimalPassWithCache } from "@/app/split/lib/getOptimalPassWithCache";
 import { StationCountLimitExceededError, RouteNotFoundError } from "@/app/utils/errors";
 import stationDatas from "@/app/split/data/stationDatas.json";
 
@@ -18,40 +19,7 @@ const TEMPORARY_STATIONS = [
   "バルーンさが",
 ];
 
-async function fetchPassApi(from: string, to: string, months: number, isIc: boolean) {
-  const start = performance.now();
-  const endpoint = isIc
-    ? "https://split-pass-api-yvgda2swha-an.a.run.app/api/split-ic-pass"
-    : "https://split-pass-api-yvgda2swha-an.a.run.app/api/split-pass";
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ start: from, end: to, months }),
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || "サーバー内部でエラーが発生しました。");
-  }
-
-  const data = await response.json();
-
-  if (data.error) {
-    throw new Error(data.error);
-  }
-
-  return {
-    result: {
-      passStations: {
-        normal: data.normal || [],
-        results: data.results || []
-      }
-    },
-    serverTime: performance.now() - start
-  };
-}
 
 export async function calculateAction(from: string, to: string, searchType: string, isIc: boolean) {
   if (from === to) {
@@ -99,8 +67,9 @@ export async function calculateAction(from: string, to: string, searchType: stri
   const months = monthsMap[searchType] || 1;
 
   try {
-    const apiData = await fetchPassApi(from, to, months, isIc);
-    return { result: apiData.result, serverTime: apiData.serverTime };
+    const cacheResult = await getOptimalPassWithCache(from, to, months, isIc);
+    if (!cacheResult) return { error: "指定された区間の経路が見つかりませんでした。" };
+    return { result: cacheResult.data, serverTime: cacheResult.time };
   } catch (err: unknown) {
     if (err instanceof Error) {
       return { error: err.message };
