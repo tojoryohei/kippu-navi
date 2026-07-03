@@ -40,14 +40,19 @@ export async function getOptimalPassWithCache(
     }
 
     // 2. キャッシュがない、またはエラーが発生した場合は新規にAPIを呼び出す
+    const params = new URLSearchParams({
+        from: startStation,
+        to: endStation,
+        months: months.toString(),
+    });
+
     const endpoint = isIc
         ? "https://kippu-navi.com/api/split-icpass"
         : "https://kippu-navi.com/api/split-pass";
 
-    const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ start: startStation, end: endStation, months }),
+    const response = await fetch(`${endpoint}?${params.toString()}`, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
         cache: "no-store"
     });
 
