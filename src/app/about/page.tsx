@@ -88,6 +88,11 @@ export default function AboutPage() {
                                     <td className="py-3 px-4 font-semibold text-slate-900">IC定期券</td>
                                     <td className="py-3 px-4">SuicaやPASMOなどのICカードに搭載された通勤用の定期券</td>
                                 </tr>
+                                <tr className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="py-3 px-4 font-medium text-slate-800">旅客運賃、鉄道バリアフリー料金</td>
+                                    <td className="py-3 px-4 font-semibold text-slate-900">運賃</td>
+                                    <td className="py-3 px-4">発売額（※博多南駅を発着とする定期券は博多南線の特急料金を含みます）</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -106,8 +111,8 @@ export default function AboutPage() {
                             </li>
                             <li className="font-medium">
                                 {"きっぷを購入したとき、鉄道事業者と旅客の間で運送等の契約が成立します。"}
-                                {"運送等の契約は、分割したそれぞれきっぷで交わされます。"}
-                                {"当サイトは運賃計算結果の情報提供のみを行っており、きっぷの発売や上記契約には一切関与いたしません。"}
+                                {"運送等の契約は、分割したそれぞれのきっぷで交わされます。"}
+                                {"当サイトではプログラムによる計算結果の情報提供のみを行っており、上記契約には一切関与いたしません。"}
                                 {"当サイトの計算結果によって生じた損害やトラブル等について、"}
                                 <strong className="text-red-500 underline">{"当サイトの運営者は一切の責任を負いません。"}</strong>
                             </li>
