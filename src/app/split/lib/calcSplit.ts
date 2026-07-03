@@ -182,7 +182,7 @@ class CalculatorSplit {
         const alpha = this.getSpecificCityBuffer(startStation, endStation);
         const limitDistance = (C_base / u_best) + alpha;
 
-        const MAX_K = 10;
+        const MAX_K = 5;
 
         for (let k = 1; k < MAX_K; k++) {
             const prevPath = A[k - 1];
