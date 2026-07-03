@@ -1,10 +1,31 @@
 /// <reference lib="webworker" />
 
-// Go Wasm ローダーの読み込み（Blob Worker環境で相対パスエラーを防ぐため絶対URLに解決）
-const selfOrigin = (typeof self !== 'undefined' && self.location && self.location.origin && self.location.origin !== 'null')
-  ? self.location.origin
-  : '';
-importScripts(`${selfOrigin}/wasm_exec.js`);
+// Blob Worker環境でも正しいオリジン（http://...）を抽出するヘルパー関数
+function getBaseOrigin(): string {
+  if (typeof self === 'undefined' || !self.location) return '';
+  const href = self.location.href || '';
+  let origin = (self.location.origin && self.location.origin !== 'null') ? self.location.origin : '';
+  
+  if (href.startsWith('blob:')) {
+    const rawUrl = href.replace('blob:', '');
+    try {
+      origin = new URL(rawUrl).origin;
+    } catch {
+      // ignore
+    }
+  }
+
+  // Cloud RunのダイレクトURL (*.a.run.app) などCloudflareプロキシを経由しない環境の場合、
+  // /engine/ アセット（WASM/Graphデータ）が提供されている本番オリジンへフォールバックする
+  if (origin.includes('.a.run.app')) {
+    return 'https://kippu-navi.com';
+  }
+
+  return origin;
+}
+
+const baseOrigin = getBaseOrigin();
+importScripts(`${baseOrigin}/wasm_exec.js`);
 
 interface GoInstance {
   importObject: WebAssembly.Imports;
@@ -45,14 +66,17 @@ const go = new Go();
 let wasmInstance: WebAssembly.Instance | null = null;
 let graphInitialized = false;
 
-const WASM_URL = '/engine/split_pass.wasm';
-const GRAPH_URL = '/engine/graph_data.bin';
+const WASM_URL = `${baseOrigin}/engine/split_pass.wasm`;
+const GRAPH_URL = `${baseOrigin}/engine/graph_data.bin`;
 
 async function initWasm() {
   if (wasmInstance) return;
 
   try {
     const wasmResponse = await fetch(WASM_URL);
+    if (!wasmResponse.ok) {
+      throw new Error(`WASM binary fetch failed from ${WASM_URL}: ${wasmResponse.status} ${wasmResponse.statusText}`);
+    }
     const wasmArrayBuffer = await wasmResponse.arrayBuffer();
     const result = await WebAssembly.instantiate(wasmArrayBuffer, go.importObject);
     wasmInstance = result.instance;
@@ -62,6 +86,9 @@ async function initWasm() {
 
     // グラフデータのロード (真のゼロコピー)
     const graphResponse = await fetch(GRAPH_URL);
+    if (!graphResponse.ok) {
+      throw new Error(`Graph data fetch failed from ${GRAPH_URL}: ${graphResponse.status} ${graphResponse.statusText}`);
+    }
     const graphArrayBuffer = await graphResponse.arrayBuffer();
     const size = graphArrayBuffer.byteLength;
 
