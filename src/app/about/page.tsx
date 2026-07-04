@@ -38,7 +38,7 @@ export default function AboutPage() {
                             {"よりご連絡いただけますと幸いです。"}
                         </p>
                         <p className="bg-slate-50 p-4 rounded-lg text-sm text-slate-700">
-                            {"現在サーバーの計算処理時間の制約上、分割乗車券の自動探索機能は「運賃計算キロが最短となる経路の駅数が100以下」の中距離区間に限定して提供しております。"}
+                            {"現在、サーバーの計算処理時間の制約上、分割乗車券の自動探索機能は「運賃計算キロが最短となる経路の駅数が100以下」の中距離区間に限定して提供しております。"}
                         </p>
                         <p className="pt-2 border-t border-slate-100 mt-4">
                             {"※「なぜきっぷを分割すると安くなるのか」という仕組みや、当サイトが採用している経路探索アルゴリズムに関する詳細な解説は、"}
@@ -107,7 +107,7 @@ export default function AboutPage() {
                         <ul className="list-disc list-outside pl-5 space-y-4">
                             <li className="font-medium">
                                 {"このサイトの情報や計算結果をもとにきっぷを購入するときは、旅客営業規則等を確認して"}
-                                <strong className="text-red-500 underline">{"必ずご自身の責任で購入および利用をしてください。"}</strong>
+                                <strong className="text-red-500 underline">{"必ずご自身の責任で購入・ご利用ください。"}</strong>
                             </li>
                             <li className="font-medium">
                                 {"きっぷを購入したとき、鉄道事業者と旅客の間で運送等の契約が成立します。"}

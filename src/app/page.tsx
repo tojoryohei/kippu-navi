@@ -19,7 +19,7 @@ export default async function Home() {
             {"きっぷナビへようこそ"}
           </h1>
           <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-600 leading-relaxed">
-            {"発駅と着駅を指定するだけで、最も安い分割きっぷの計算をするプログラムを公開しています。"}
+            {"発駅と着駅を指定するだけで、最も安い分割きっぷを計算するサービスです。"}
             <br className="hidden sm:block" />
             {"また、開発の基盤となっている運賃計算のプログラムもお試しいただけます。"}
           </p>
@@ -101,7 +101,7 @@ export default async function Home() {
           </h2>
           <div className="space-y-4 text-slate-600 leading-relaxed">
             <p>
-              {"当サイトの計算アルゴリズムは、2026年3～4月にユーザーが実行した1,625通りの計算データに基づくと、高い節約効果を出しています。"}
+              {"当サイトの計算アルゴリズムは、2026年3～4月にユーザーが実行した1,625通りの計算データによると、高い節約効果が実証されています。"}
             </p>
             <ul className="list-disc list-inside bg-slate-50 p-4 rounded-lg space-y-2 mt-4 text-slate-700">
               <li><strong>一般的な経路：</strong> 本システムを利用することで<strong>平均して約123円（中央値：70円）の運賃削減</strong>を確認しました。</li>

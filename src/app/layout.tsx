@@ -32,6 +32,13 @@ export const metadata: Metadata = {
     template: "%s | きっぷナビ",
   },
   description: "JRの最安分割運賃計算をするサイトです。",
+  icons: {
+    icon: "https://kippu-navi.com/favicon.ico",
+    apple: [
+      { url: "https://kippu-navi.com/apple-touch-icon.png" },
+      { url: "https://kippu-navi.com/apple-touch-icon-precomposed.png", rel: "apple-touch-icon-precomposed" },
+    ],
+  },
   alternates: {
     canonical: "/",
   },
@@ -62,9 +69,6 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <link rel="icon" href="https://assets.kippu-navi.com/icons/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="https://assets.kippu-navi.com/icons/apple-touch-icon.png" />
-        <link rel="apple-touch-icon-precomposed" href="https://assets.kippu-navi.com/icons/apple-touch-icon-precomposed.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -150,7 +150,7 @@ export default function LogicPage() {
                                     <p className="font-semibold mb-1">【例：横浜駅〜池袋駅（東海道本線・山手線）の場合】</p>
                                     <ul className="list-disc list-inside space-y-1 ml-2">
                                         <li><strong>通しで購入：</strong> 営業キロ37.4kmに対する通常計算で<strong>720円</strong>となります。</li>
-                                        <li><strong>渋谷駅で分割：</strong> 営業キロ29.2kmに対する運賃は530円ですが、渋谷〜横浜間には東急東横線に対抗するための「特定運賃」が設定されており、特例として<strong>440円</strong>となります。池袋〜渋谷間は通常の計算よる<strong>210円</strong>です。</li>
+                                        <li><strong>渋谷駅で分割：</strong> 営業キロ29.2kmに対する運賃は530円ですが、渋谷〜横浜間には東急東横線に対抗するための「特定運賃」が設定されており、特例として<strong>440円</strong>となります。池袋〜渋谷間は通常の計算による<strong>210円</strong>です。</li>
                                     </ul>
                                     <p className="mt-2">これらを合計すると<strong>650円</strong>となり、特定運賃の恩恵を受けることで通しで買うよりも安くなります。</p>
                                     <div className="w-full flex justify-center my-8 overflow-x-auto">

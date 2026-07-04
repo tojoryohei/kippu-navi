@@ -22,7 +22,7 @@ export default function MrPage() {
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
-            {"発着駅、および経由を入力してください。"}
+            {"発着駅および経由路線を入力してください。"}
             <br className="hidden sm:block" />
             {"きっぷの運賃を計算します。"}
           </p>
