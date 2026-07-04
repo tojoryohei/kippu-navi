@@ -416,7 +416,7 @@ export default function LogicPage() {
                                     <p className="font-semibold mb-1">【例：宮島口駅〜網干駅（山陽本線）の場合】</p>
                                     <ul className="list-disc list-inside space-y-1 ml-2">
                                         <li><strong>通しで購入：</strong> 営業キロ261.1kmは「261km～280km」の運賃帯で<strong>4,840円</strong>となります。</li>
-                                        <li><strong>五日市駅で分割：</strong> 五日市駅は広島市内にあるので、五日市〜東京（251.7km）は、「広島市内→網干」として中心駅の広島駅からの運賃計算です。広島～網干（239.6km）は「221～240km」の運賃帯（230kmとして計算）となり、<strong>4,070円</strong>となります。</li>
+                                        <li><strong>五日市駅で分割：</strong> 五日市駅は広島市内にあるので、五日市〜網干（251.7km）は、「広島市内→網干」として中心駅の広島駅からの運賃計算です。広島～網干（239.6km）は「221～240km」の運賃帯（230kmとして計算）となり、<strong>4,070円</strong>となります。</li>
                                     </ul>
                                     <p className="mt-2">結果として、分割するだけで250円安くなります。</p>
                                     <div className="w-full flex justify-center my-8 overflow-x-auto">
