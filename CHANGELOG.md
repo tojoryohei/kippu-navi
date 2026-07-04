@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.2...kippu-navi-v2.11.3) (2026-07-04)
+
+
+### Bug Fixes
+
+* App Routerメタデータ規約への準拠および各ページの日本語表現を最適化 ([#424](https://github.com/tojoryohei/kippu-navi/issues/424)) ([0e28a85](https://github.com/tojoryohei/kippu-navi/commit/0e28a852197a01ccd5d82d61e7e0ebb6cea0116d))
+
 ## [2.11.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.1...kippu-navi-v2.11.2) (2026-07-03)
 
 
