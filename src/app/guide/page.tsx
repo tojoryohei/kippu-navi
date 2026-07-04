@@ -82,19 +82,19 @@ export default function GuidePage() {
                     <li className="flex items-start">
                         <span className="mr-2 text-slate-900 w-5 shrink-0">1.</span>
                         <a href="#how-to-search" className="text-blue-600 hover:underline font-medium">
-                            {"分割乗車券の調べ方"}
+                            {"分割きっぷの調べ方"}
                         </a>
                     </li>
                     <li className="flex items-start">
                         <span className="mr-2 text-slate-900 w-5 shrink-0">2.</span>
                         <a href="#how-to-buy" className="text-blue-600 hover:underline font-medium">
-                            {"分割乗車券の買い方"}
+                            {"分割きっぷの買い方"}
                         </a>
                     </li>
                     <li className="flex items-start">
                         <span className="mr-2 text-slate-900 w-5 shrink-0">3.</span>
                         <a href="#how-to-use" className="text-blue-600 hover:underline font-medium">
-                            {"分割乗車券の使い方"}
+                            {"分割きっぷの使い方"}
                         </a>
                     </li>
                     <li className="flex items-start">
@@ -124,7 +124,8 @@ export default function GuidePage() {
                         <div>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">そもそもなぜ分割するのか</h3>
                             <p>
-                                基本的には<strong>安くなるから</strong>{"です。"}
+                                <strong>安くなるから</strong>
+                                {"です。"}
                                 {"当サイトでは、発着駅間の最安解を求めるための"}
                                 <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                     {"分割きっぷ計算機"}
@@ -146,10 +147,10 @@ export default function GuidePage() {
                         <div>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">計算結果画面について</h3>
                             <p>
-                                {"計算が完了すると、通常通りに購入した場合（通し購入）と、乗車券を分割して購入した場合（分割購入）の運賃の比較が表示されます。"}
+                                {"計算が完了すると、通常通りに購入した場合（通し購入）と、きっぷを分割して購入した場合（分割購入）の運賃の比較が表示されます。"}
                             </p>
                             <ul className="list-disc list-inside space-y-1.5 ml-2 mt-2 text-sm">
-                                <li><strong>分割駅の表示：</strong> どの駅で乗車券を分割すれば最も安くなるかが視覚的に示されます。</li>
+                                <li><strong>分割駅の表示：</strong> どの駅できっぷを分割すれば最も安くなるかが視覚的に示されます。</li>
                                 <li><strong>運賃の比較：</strong> 分割することでいくら安くなるかの差額（オトク額）がひと目で分かります。</li>
                                 <li><strong>経路の確認：</strong> 経由する路線や経由駅のリストを確認できます。</li>
                                 <li><strong>パターンについて：</strong> 複数のパターンが表示された場合お好きなものを選んでください。</li>
@@ -158,20 +159,20 @@ export default function GuidePage() {
                     </div>
                 </section>
 
-                {/* 2. 分割乗車券の買い方 */}
+                {/* 2. 分割きっぷの買い方 */}
                 <section id="how-to-buy" className="scroll-mt-20">
                     <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
-                        {"2. 分割乗車券の買い方"}
+                        {"2. 分割きっぷの買い方"}
                     </h2>
                     <div className="space-y-6 text-slate-800 leading-relaxed">
                         <p>
                             <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                 {"分割きっぷ計算機"}
                             </Link>
-                            {"で出力された複数枚の乗車券を購入する手順です。"}
+                            {"で出力された複数枚のきっぷを購入する手順です。"}
                         </p>
                         <p>
-                            原則として、<strong className="underline">分割乗車券は発駅で乗車する際に、着駅までに利用する全ての乗車券を所持している必要があります。</strong>
+                            原則として、<strong className="underline">分割きっぷは発駅で乗車する際に、着駅までに利用する全てのきっぷを所持している必要があります。</strong>
                         </p>
                         <p>
                             {"ここで前提知識として、以下に記載する"}
@@ -231,7 +232,7 @@ export default function GuidePage() {
                                     <div>
                                         <p className="font-bold text-slate-800">【磁気定期券】</p>
                                         <p>
-                                            {"駅の券売機やみどりの窓口で購入をしてください。購入後は有人改札へ行き「入場記録が無くても出場できる設定」をしてもらうことが多いです。"}
+                                            {"駅の券売機やみどりの窓口（きっぷうりば）で購入をしてください。購入後は有人改札へ行き「入場記録が無くても出場できる設定」をしてもらうことが多いです。"}
                                             {"発売を断られたら、分割駅まで移動して購入するか諦めてください。"}
                                         </p>
                                     </div>
@@ -270,17 +271,17 @@ export default function GuidePage() {
                     </div>
                 </section>
 
-                {/* 3. 分割乗車券の使い方 */}
+                {/* 3. 分割きっぷの使い方 */}
                 <section id="how-to-use" className="scroll-mt-20">
                     <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b pb-2 flex items-center">
-                        {"3. 分割乗車券の使い方"}
+                        {"3. 分割きっぷの使い方"}
                     </h2>
                     <div className="space-y-6 text-slate-800 leading-relaxed">
                         <p>
                             <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                 {"分割きっぷ計算機"}
                             </Link>
-                            {"で出力された複数枚の乗車券を利用する手順です。"}
+                            {"で出力された複数枚のきっぷを利用する手順です。"}
                         </p>
 
                         <AccordionItem title="分割乗車券の利用方法">
@@ -336,13 +337,13 @@ export default function GuidePage() {
                     <div className="space-y-4">
                         <h3 className="text-lg font-bold text-slate-900 mb-2">【全般】</h3>
 
-                        <FaqItem question="分割乗車券は違法ではありませんか？">
+                        <FaqItem question="分割きっぷは違法ではありませんか？">
                             <p>
                                 {"いいえ、全く問題ありません。"}
                                 <Link href="https://www.jreast.co.jp/ryokaku/02_hen/04_syo/02_setsu/03.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                     {"旅客営業規則 第157条"}
                                 </Link>
-                                {"にも、2枚以上の乗車券を併用して使用することが想定された条文が存在します。"}
+                                {"にも、2枚以上のきっぷを併用して使用することが想定された条文が存在します。"}
                             </p>
                         </FaqItem>
 
@@ -350,7 +351,7 @@ export default function GuidePage() {
                             <p>はい、あります。主に以下の2点です。</p>
                             <ul className="list-disc list-outside ml-5 mt-2 space-y-1">
                                 <li>
-                                    {"払い戻しの際に、乗車券の枚数分"}
+                                    {"払い戻しの際に、きっぷの枚数分"}
                                     <Link href="https://www.jreast.co.jp/kippu/22.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                         {"手数料"}
                                     </Link>
@@ -360,7 +361,7 @@ export default function GuidePage() {
                                     <Link href="https://www.jreast.co.jp/ryokaku/02_hen/07_syo/03_setsu/10.html" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                         {"列車の運行不能・遅延等の場合の取扱方"}
                                     </Link>
-                                    {"が通しの乗車券と異なる場合がある。"}
+                                    {"が通しのきっぷと異なる場合がある。"}
                                 </li>
                             </ul>
                         </FaqItem>
@@ -444,7 +445,7 @@ export default function GuidePage() {
                                 </li>
                                 <li>
                                     <strong>通学定期券：</strong>
-                                    {"分割して購入することはできません。"}
+                                    {"分割して購入することができないため、対応する予定はありません。"}
                                     {"詳しくは"}
                                     <Link href="https://www.jreast.co.jp/railway/teiki/school.html/#basic_03" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                         {"こちら"}
@@ -453,7 +454,7 @@ export default function GuidePage() {
                                 </li>
                                 <li>
                                     <strong>オフピーク定期券：</strong>
-                                    {"分割して購入することはできません。"}
+                                    {"分割して購入することができないため、対応する予定はありません。"}
                                     {"詳しくは"}
                                     <Link href="https://jreastfaq.jreast.co.jp/faq/show/2956" target="_blank" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                         {"こちら"}
