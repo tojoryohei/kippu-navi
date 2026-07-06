@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.3...kippu-navi-v2.11.4) (2026-07-06)
+
+
+### Bug Fixes
+
+* 各分割計算機ページのヘッダー説明文修正とレイアウト調整 ([#433](https://github.com/tojoryohei/kippu-navi/issues/433)) ([d8c747a](https://github.com/tojoryohei/kippu-navi/commit/d8c747a5a472542f641499de62e824f37c5a62f0))
+
 ## [2.11.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.2...kippu-navi-v2.11.3) (2026-07-04)
 
 
