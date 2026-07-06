@@ -193,7 +193,7 @@ export default function GuidePage() {
                             </cite>
                         </blockquote>
                         <p>
-                            つまり、<strong className="underline">必ずしも駅の券売機やみどりの窓口（きっぷうりば）で分割乗車券を購入できるとは限りません。</strong>
+                            つまり、<strong className="underline">必ずしも駅の券売機やみどりの窓口（きっぷうりば）で分割きっぷを購入できるとは限りません。</strong>
                         </p>
 
                         <div className="space-y-4">
