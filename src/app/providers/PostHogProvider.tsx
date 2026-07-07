@@ -11,6 +11,7 @@ if (typeof window !== 'undefined') {
   if (posthogKey && posthogHost) {
     posthog.init(posthogKey, {
       api_host: posthogHost,
+      ui_host: 'https://us.posthog.com',
       person_profiles: 'never',
       capture_pageview: false,
       disable_session_recording: true,
