@@ -45,21 +45,28 @@ steps:
       - 'push'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
 
-  # 4. 本番の Cloud Run へデプロイし、トラフィックを100%向ける
+  # 4. 本番の Cloud Run へデプロイする
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # ① 新しいイメージをデプロイ
         gcloud run deploy kippu-navi \
           --image asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA \
           --region asia-northeast1
-        
-        # ② 強制的にトラフィックを最新リビジョン(100%)に切り替える
-        gcloud run services update-traffic kippu-navi \
-          --to-latest \
-          --region asia-northeast1
+
+  # 5. Cloud Runデプロイ成功後にCloudflareのキャッシュをパージする
+  - name: 'gcr.io/cloud-builders/curl'
+    entrypoint: 'bash'
+    args:
+    - '-c'
+    - |
+      echo "Purging Cloudflare cache..."
+      curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$$ZONE_ID/purge_cache" \
+      -H "Authorization: Bearer $$API_TOKEN" \
+      -H "Content-Type: application/json" \
+      --data '{"purge_everything":true}'
+    secretEnv: ['ZONE_ID', 'API_TOKEN']
 
 # 正常終了の条件として、指定したイメージが正しくビルド・プッシュされたか検証する
 images:
@@ -67,3 +74,11 @@ images:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+
+# Secret Managerから環境変数として値を読み込む設定
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_ID/secrets/CLOUDFLARE_ZONE_ID/versions/latest
+    env: 'ZONE_ID'
+  - versionName: projects/$PROJECT_ID/secrets/CLOUDFLARE_API_TOKEN/versions/latest
+    env: 'API_TOKEN'
