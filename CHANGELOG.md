@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.4...kippu-navi-v2.11.5) (2026-07-07)
+
+
+### Bug Fixes
+
+* PostHogの広告ブロッカー回避用プロキシ設定の適用 ([#448](https://github.com/tojoryohei/kippu-navi/issues/448)) ([ed2c256](https://github.com/tojoryohei/kippu-navi/commit/ed2c25651c7a435fb9129763d96e84920b706f92))
+
 ## [2.11.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.3...kippu-navi-v2.11.4) (2026-07-06)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "kippu-navi",
-  "version": "2.11.4",
+  "version": "2.11.5",
   "private": true,
   "engines": {
     "node": ">=24.0.0"
