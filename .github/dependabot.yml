@@ -3,21 +3,53 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+      time: "05:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
       - "dependabot"
     groups:
+      # 1. フロントエンドとUIフレームワークのグループ
       frontend-framework:
         patterns:
           - "next"
           - "@next/*"
-          - "eslint-config-next"
           - "react"
           - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
+          - "@types/react*"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "react-icons"
+          - "react-select"
+          - "react-hook-form"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # 2. 開発ツール・Linter・テストのグループ
+      development-tools:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint/*"
+          - "typescript"
+          - "vitest"
+          - "tsx"
+          - "knip"
+          - "vite-tsconfig-paths"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # 3. バックエンド・インフラ関連のグループ
+      backend-and-core:
+        patterns:
+          - "better-sqlite3"
+          - "@types/better-sqlite3"
+          - "firebase-admin"
+          - "posthog-js"
+          - "@types/node"
         update-types:
           - "minor"
           - "patch"
