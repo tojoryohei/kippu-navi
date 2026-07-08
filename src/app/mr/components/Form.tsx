@@ -116,6 +116,52 @@ export default function Form() {
     const currentType = formValues.searchType;
     const isPeriodDisabled = currentType === "ticket";
 
+    // クライアント側での経路展開 (重複チェック用)
+    const getClientFullPath = (start: Station | null, segments: typeof formValues.segments): string[] => {
+        if (!start) return [];
+        const fullPath: string[] = [start.name];
+
+        for (let i = 0; i < segments.length; i++) {
+            const segment = segments[i];
+            const prevStationName = fullPath[fullPath.length - 1];
+            const destStation = segment.destinationStation;
+            const line = segment.viaLine;
+
+            if (!destStation || !line) {
+                break;
+            }
+
+            const matchLine = lineData.find(l => l.name === line.name);
+            if (!matchLine) {
+                break;
+            }
+
+            const stationsOnLine = matchLine.stations;
+            const startIdx = stationsOnLine.indexOf(prevStationName);
+            const endIdx = stationsOnLine.indexOf(destStation.name);
+
+            if (startIdx === -1 || endIdx === -1) {
+                fullPath.push(destStation.name);
+                continue;
+            }
+
+            let segmentStations: string[];
+            if (startIdx < endIdx) {
+                segmentStations = stationsOnLine.slice(startIdx + 1, endIdx + 1);
+            } else {
+                segmentStations = stationsOnLine.slice(endIdx, startIdx).reverse();
+            }
+
+            fullPath.push(...segmentStations);
+        }
+        return fullPath;
+    };
+
+    // リアルタイムバリデーション: 重複経路チェック (最後の一駅を除く)
+    const clientFullPath = getClientFullPath(formValues.startStation, formValues.segments || []);
+    const firstPart = clientFullPath.slice(0, -1);
+    const isDuplicateRoute = firstPart.some((name, index) => firstPart.indexOf(name) !== index);
+
     const handleTabChange = (tab: "ticket" | "pass") => {
         setResult(null);
         setResultPass(null);
@@ -164,7 +210,7 @@ export default function Form() {
     const lastSegment = formValues.segments?.[formValues.segments?.length - 1];
     const lastDestination = lastSegment?.destinationStation;
 
-    const isUnderPathLimit = (formValues.segments?.length ?? 0) < 99;
+    const isUnderPathLimit = (formValues.segments?.length ?? 0) < 300;
 
     const canAddTransfer = (lastDestination ? (lastDestination.lines?.length ?? 0) > 1 : false) && isUnderPathLimit;
 
@@ -525,14 +571,20 @@ export default function Form() {
                         );
                     })}
 
+                    {isDuplicateRoute && (
+                        <p className="text-red-500 text-sm">
+                            経路が重複しています
+                        </p>
+                    )}
+
                     {/* 経路追加 ＆ 経路逆転 ボタン群 */}
                     <div className="flex items-center flex-wrap gap-3 my-2 w-full">
                         <button
                             type="button"
                             onClick={addSegment}
-                            disabled={!canAddTransfer}
+                            disabled={!canAddTransfer || isDuplicateRoute}
                             className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm whitespace-nowrap"
-                            title={!isUnderPathLimit ? "経路数の上限（99件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
+                            title={!isUnderPathLimit ? "経路数の上限（300件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
                         >
                             {"経由路線を追加"}
                         </button>
@@ -595,7 +647,7 @@ export default function Form() {
                     <button
                         type="submit"
                         className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2 cursor-pointer disabled:cursor-not-allowed"
-                        disabled={!isValid || isLoading || (currentType !== "ticket" && !isWasmReady)}
+                        disabled={!isValid || isDuplicateRoute || isLoading || (currentType !== "ticket" && !isWasmReady)}
                     >
                         {isLoading
                             ? "計算中..."
