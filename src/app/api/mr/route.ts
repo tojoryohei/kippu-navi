@@ -8,12 +8,12 @@ export async function POST(request: Request) {
     try {
         const body: RouteRequest = await request.json();
 
-        if (100 < body.path.length) {
+        if (300 <= body.path.length) {
             const endTime = performance.now();
             const calculationTimeMs = endTime - startTime;
             return NextResponse.json(
                 {
-                    error: '経由路線の上限は99です。',
+                    error: '経由路線の上限は300です。',
                     time: calculationTimeMs
                 },
                 { status: 400 }
@@ -112,13 +112,14 @@ export async function POST(request: Request) {
         const calculationTimeMs = endTime - startTime;
 
         const errorMessage = (error instanceof Error) ? error.message : '予期せぬエラーが起きました';
+        const status = errorMessage === '経路が重複しています。' ? 400 : 500;
 
         return NextResponse.json(
             {
                 error: errorMessage,
                 time: calculationTimeMs
             },
-            { status: 500 }
+            { status }
         );
     }
 }
