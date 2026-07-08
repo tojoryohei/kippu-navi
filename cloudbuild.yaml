@@ -62,10 +62,15 @@ steps:
     - '-c'
     - |
       echo "Purging Cloudflare cache..."
-      curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$$ZONE_ID/purge_cache" \
-      -H "Authorization: Bearer $$API_TOKEN" \
-      -H "Content-Type: application/json" \
-      --data '{"purge_everything":true}'
+      response=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$$ZONE_ID/purge_cache" \
+        -H "Authorization: Bearer $$API_TOKEN" \
+        -H "Content-Type: application/json" \
+        --data '{"purge_everything":true}')
+      echo "$response"
+      if ! echo "$response" | grep -q '"success":true'; then
+        echo "Cloudflare cache purge failed!"
+        exit 1
+      fi
     secretEnv: ['ZONE_ID', 'API_TOKEN']
 
 # 正常終了の条件として、指定したイメージが正しくビルド・プッシュされたか検証する

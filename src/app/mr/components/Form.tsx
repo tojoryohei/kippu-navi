@@ -287,8 +287,8 @@ export default function Form() {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error);
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || "サーバーエラーが発生しました。");
             }
 
             const responseData = await response.json();
