@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.5...kippu-navi-v2.11.6) (2026-07-08)
+
+
+### Bug Fixes
+
+* クライアントのAPIコールおよびCloud Buildのキャッシュパージの堅牢化 ([#457](https://github.com/tojoryohei/kippu-navi/issues/457)) ([282c8a0](https://github.com/tojoryohei/kippu-navi/commit/282c8a03c7c5a739d91179415b01f3f6b4f2e207))
+
 ## [2.11.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.4...kippu-navi-v2.11.5) (2026-07-07)
 
 
