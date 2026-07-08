@@ -54,6 +54,9 @@ steps:
         gcloud run deploy kippu-navi \
           --image asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA \
           --region asia-northeast1
+        gcloud run services update-traffic kippu-navi \
+          --to-latest \
+          --region asia-northeast1
 
   # 5. Cloud Runデプロイ成功後にCloudflareのキャッシュをパージする
   - name: 'gcr.io/cloud-builders/curl'

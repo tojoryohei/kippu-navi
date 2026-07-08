@@ -25,7 +25,7 @@ function getBaseOrigin(): string {
 }
 
 const baseOrigin = getBaseOrigin();
-importScripts(`${baseOrigin}/wasm_exec.js`);
+importScripts(`${baseOrigin}/engine/wasm_exec.js`);
 
 interface GoInstance {
   importObject: WebAssembly.Imports;
