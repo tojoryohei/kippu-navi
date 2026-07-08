@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.6...kippu-navi-v2.12.0) (2026-07-08)
+
+
+### Features
+
+* 経路の重複バリデーション追加および経由路線上限の300件への緩和 ([#460](https://github.com/tojoryohei/kippu-navi/issues/460)) ([9c5a4d1](https://github.com/tojoryohei/kippu-navi/commit/9c5a4d10af69d2901886fe18ba08d555dceabda7))
+
 ## [2.11.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.5...kippu-navi-v2.11.6) (2026-07-08)
 
 
