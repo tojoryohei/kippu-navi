@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.12.0...kippu-navi-v2.13.0) (2026-07-09)
+
+
+### Features
+
+* エージェント発見用 Link ヘッダー追加と .well-known エラー対策の空設定設置 ([#469](https://github.com/tojoryohei/kippu-navi/issues/469)) ([0505504](https://github.com/tojoryohei/kippu-navi/commit/05055047ad9853082ddddce90002e84871583d66))
+
 ## [2.12.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.11.6...kippu-navi-v2.12.0) (2026-07-08)
 
 
