@@ -17,6 +17,8 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'build'
+      - '--secret'
+      - 'id=NEXT_SERVER_ACTIONS_ENCRYPTION_KEY,env=NEXT_SERVER_ACTIONS_ENCRYPTION_KEY'
       - '-t'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
       - '--build-arg'
@@ -38,6 +40,9 @@ steps:
       - '--build-arg'
       - 'NEXT_PUBLIC_POSTHOG_HOST=${_NEXT_PUBLIC_POSTHOG_HOST}'
       - '.'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+    secretEnv: ['NEXT_SERVER_ACTIONS_ENCRYPTION_KEY']
 
   # 3. ビルドしたイメージを Artifact Registry に Push
   - name: 'gcr.io/cloud-builders/docker'
@@ -90,3 +95,5 @@ availableSecrets:
     env: 'ZONE_ID'
   - versionName: projects/$PROJECT_ID/secrets/CLOUDFLARE_API_TOKEN/versions/latest
     env: 'API_TOKEN'
+  - versionName: projects/$PROJECT_ID/secrets/NEXT_SERVER_ACTIONS_ENCRYPTION_KEY/versions/latest
+    env: 'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY'
