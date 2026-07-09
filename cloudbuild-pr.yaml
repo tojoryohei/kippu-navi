@@ -17,8 +17,9 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'build'
+      - '--secret'
+      - 'id=NEXT_SERVER_ACTIONS_ENCRYPTION_KEY,env=NEXT_SERVER_ACTIONS_ENCRYPTION_KEY'
       - '-t'
-      # $SHORT_SHA の代わりに、組み込み変数 $_PR_NUMBER を使用してイメージを識別します
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:pr-$_PR_NUMBER'
       - '--build-arg'
       - 'NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=${_NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}'
@@ -39,6 +40,9 @@ steps:
       - '--build-arg'
       - 'NEXT_PUBLIC_POSTHOG_HOST=${_NEXT_PUBLIC_POSTHOG_HOST}'
       - '.'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+    secretEnv: ['NEXT_SERVER_ACTIONS_ENCRYPTION_KEY']
 
   # 3. ビルドしたプレビュー用イメージを Artifact Registry に Push
   - name: 'gcr.io/cloud-builders/docker'
@@ -68,3 +72,9 @@ images:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+
+# Secret Managerから環境変数として値を読み込む設定
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_ID/secrets/NEXT_SERVER_ACTIONS_ENCRYPTION_KEY/versions/latest
+    env: 'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY'
