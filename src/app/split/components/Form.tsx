@@ -348,6 +348,12 @@ export default function SplitForm({
         const exists = stations.has(value.name);
         if (!exists) return "正しい駅名を選択または入力してください";
 
+        const startVal = getValues("startStation");
+        const endVal = getValues("endStation");
+        if (startVal?.name && endVal?.name && startVal.name === endVal.name) {
+            return "発駅と着駅には異なる駅を指定してください";
+        }
+
         const currentSearchType = getValues("searchType");
         const isPassOption = isIcPass || isPass || (currentSearchType !== "ticket");
         if (isPassOption && TEMPORARY_STATIONS.includes(value.name)) {
@@ -648,7 +654,7 @@ export default function SplitForm({
                                 />
                             </div>
                         </div>
-                        <div className="min-h-2 ml-17">
+                        <div className="min-h-5 ml-17">
                             {errors.startStation && (
                                 <p className="text-red-500 text-xs">
                                     {errors.startStation.message}
@@ -688,7 +694,7 @@ export default function SplitForm({
                                 />
                             </div>
                         </div>
-                        <div className="min-h-2 ml-17">
+                        <div className="min-h-5 ml-17">
                             {errors.endStation && (
                                 <p className="text-red-500 text-xs">
                                     {errors.endStation.message}
