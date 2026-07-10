@@ -138,6 +138,11 @@ export default function SplitForm({
             : (isIcPass || isPass ? "pass6" : "ticket")
     );
 
+    const [versionSkewError, setVersionSkewError] = useState<Error | null>(null);
+    if (versionSkewError) {
+        throw versionSkewError;
+    }
+
     const lastTrackedSearch = useRef<string>("");
 
     const workerRef = useRef<Worker | null>(null);
@@ -523,12 +528,20 @@ export default function SplitForm({
                 setIsCalculating(false);
             }
         } catch (err: unknown) {
-            if (err instanceof Error) {
-                setError(err.message);
+            const errorInstance = err instanceof Error ? err : new Error(String(err));
+            const isVersionSkew =
+                errorInstance.name === 'ChunkLoadError' ||
+                /Loading chunk .* failed/.test(errorInstance.message) ||
+                errorInstance.message?.includes('Load failed') ||
+                errorInstance.message?.includes('Server Action') ||
+                errorInstance.message?.includes('was not found on the server');
+
+            if (isVersionSkew) {
+                setVersionSkewError(errorInstance);
             } else {
-                setError(String(err));
+                setError(errorInstance.message);
+                setIsCalculating(false);
             }
-            setIsCalculating(false);
         }
     };
 
