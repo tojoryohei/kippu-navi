@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.13.1...kippu-navi-v2.13.2) (2026-07-10)
+
+
+### Bug Fixes
+
+* 同一の駅名が入力された場合の検索ボタンの非活性化 ([#476](https://github.com/tojoryohei/kippu-navi/issues/476)) ([dd3c78f](https://github.com/tojoryohei/kippu-navi/commit/dd3c78f8826ff8f1cd2bb579a197620d0c331372))
+
 ## [2.13.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.13.0...kippu-navi-v2.13.1) (2026-07-10)
 
 
