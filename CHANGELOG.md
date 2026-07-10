@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.13.0...kippu-navi-v2.13.1) (2026-07-10)
+
+
+### Bug Fixes
+
+* バージョン乖離エラー（静的ファイル欠損・Server Action未検出）発生時に再読み込みを促すエラー境界を追加 ([#473](https://github.com/tojoryohei/kippu-navi/issues/473)) ([7a9403f](https://github.com/tojoryohei/kippu-navi/commit/7a9403f4fa925c150cfebed5d0429658bd8c08ff))
+
 ## [2.13.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.12.0...kippu-navi-v2.13.0) (2026-07-09)
 
 
