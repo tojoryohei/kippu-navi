@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.13.2...kippu-navi-v2.13.3) (2026-07-12)
+
+
+### Bug Fixes
+
+* 経路判定およびキャッシュ生成ロジックの条件式タイポの修正 ([#479](https://github.com/tojoryohei/kippu-navi/issues/479)) ([8a7e1d8](https://github.com/tojoryohei/kippu-navi/commit/8a7e1d88282f8eebbc098b36290a4dd0ba1a9b8b))
+
 ## [2.13.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.13.1...kippu-navi-v2.13.2) (2026-07-10)
 
 
