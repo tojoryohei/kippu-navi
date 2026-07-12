@@ -16,7 +16,7 @@ export function calculateFareFromPath(fullPath: PathStep[]): number {
     // 第79条 東京附近等の特定区間等における大人普通旅客運賃の特定
     const specificFare = load.getSpecificFares(fullPath);
     if (specificFare !== null) {
-        fare += specificFare
+        fare += specificFare;
         return fare;
     }
 

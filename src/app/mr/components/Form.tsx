@@ -367,7 +367,7 @@ export default function Form() {
 
         } catch (err) {
             if (err instanceof Error) {
-                setError(err.message)
+                setError(err.message);
             } else {
                 setError("計算に失敗しました。");
             }

@@ -60,7 +60,7 @@ class PriorityQueue {
 class trainSpecificRoute {
     private trainSpecificStations: Set<string> = new Set();
     private adjacentTrainSpecificStationsList: Map<string, string[]> = new Map();
-    constructor () {
+    constructor() {
         this.loadTrainSpecificRoutes();
     }
 
@@ -150,7 +150,7 @@ class majorCitySuburbanSection {
         仙台近郊区間: new Map()
     };
 
-    constructor () {
+    constructor() {
         this.loadMajorCitySuburbanSection();
     }
 
@@ -433,8 +433,8 @@ class SuburbanCacheGenerator {
                 if (representativeSegment.station0 === "西船橋" && representativeSegment.station1 === "南船橋") weight += 1;
                 if (representativeSegment.station0 === "千葉みなと" && representativeSegment.station1 === "蘇我") weight += 1;
                 if (representativeSegment.station0 === "蘇我" && representativeSegment.station1 === "千葉みなと") weight += 1;
-                if (representativeSegment.station0 === "京終", representativeSegment.station1 === "奈良") weight += 1;
-                if (representativeSegment.station0 === "奈良", representativeSegment.station1 === "京終") weight += 1;
+                if (representativeSegment.station0 === "京終" && representativeSegment.station1 === "奈良") weight += 1;
+                if (representativeSegment.station0 === "奈良" && representativeSegment.station1 === "京終") weight += 1;
 
                 const newCost = currentCost + weight;
 

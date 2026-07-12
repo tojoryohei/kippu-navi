@@ -341,7 +341,7 @@ export default function SplitForm({
         setValue("endStation", currentStart, { shouldValidate: true });
     };
 
-    const stations = new Set((stationDatas as Station[]).map((s) => s.name))
+    const stations = new Set((stationDatas as Station[]).map((s) => s.name));
 
     const validateStation = (value: Station | null, fieldName: "startStation" | "endStation") => {
         if (!value || !value.name) return false;
