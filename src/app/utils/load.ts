@@ -21,7 +21,7 @@ class Load {
     private specificSections: OuterSection[] = [];
     private selectionSections: OuterSection[] = [];
     private yamanote!: City;
-    constructor () {
+    constructor() {
         this.loadData();
     }
 
@@ -63,7 +63,7 @@ class Load {
                     const segments = rawMajorCitySuburbanSectionsData[key];
                     const routeKeys = segments.map(segment =>
                         createRouteKey(segment.line, segment.station0, segment.station1)
-                    )
+                    );
                     transformedMajorCitySuburbanSections[key] = new Set(routeKeys);
                 }
             }

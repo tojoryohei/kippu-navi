@@ -5728,7 +5728,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 宇部新川方面→小野田
                 if (0 < idx &&
                     fullPath[idx - 1].stationName === "宇部新川" &&
-                    fullPath[idx - 1].lineName === "ウヘ",
+                    fullPath[idx - 1].lineName === "ウヘ" &&
                     idx + 8 < fullPath.length &&
                     fullPath[idx + 8].lineName === null
                 ) {
@@ -5745,7 +5745,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 // 宇部新川方面→厚狭方面
                 if (0 < idx &&
                     fullPath[idx - 1].stationName === "宇部新川" &&
-                    fullPath[idx - 1].lineName === "ウヘ",
+                    fullPath[idx - 1].lineName === "ウヘ" &&
                     idx + 9 < fullPath.length &&
                     fullPath[idx + 8].lineName === "サンヨ" &&
                     fullPath[idx + 9].stationName === "厚狭"
