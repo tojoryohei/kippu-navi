@@ -17,9 +17,9 @@
   "dependencies": {
     "@next/third-parties": "^16.2.10",
     "better-sqlite3": "^12.11.1",
-    "firebase-admin": "^14.1.0",
+    "firebase-admin": "^14.2.0",
     "next": "^16.2.10",
-    "posthog-js": "^1.402.2",
+    "posthog-js": "^1.403.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.81.0",
