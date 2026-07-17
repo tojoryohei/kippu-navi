@@ -38,11 +38,11 @@ const Header = () => {
 
             <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-40" />
 
-            <h1>
+            <div>
                 <Link href="/" className="text-2xl font-bold tracking-tight text-blue-600 hover:opacity-80 transition-opacity font-logo relative z-50">
                     {"きっぷナビ"}
                 </Link>
-            </h1>
+            </div>
 
             <button
                 onClick={handleMenuToggle}

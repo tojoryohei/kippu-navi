@@ -4,7 +4,7 @@ import { getChangelogs } from '@/app/lib/changelog';
 
 export const metadata = {
   title: "きっぷナビ",
-  description: "発着駅を指定するだけで、最も安い分割きっぷの組み合わせを計算する最安分割きっぷ計算機を公開しています。",
+  description: "JR在来線の分割きっぷ（乗車券・定期券・IC定期券）の最安組み合わせを自動計算。発駅と着駅を入力するだけで、交通費の節約額がすぐにわかる無料Webツールです。",
 };
 
 export default async function Home() {
@@ -101,11 +101,11 @@ export default async function Home() {
           </h2>
           <div className="space-y-4 text-slate-600 leading-relaxed">
             <p>
-              {"当サイトの計算アルゴリズムは、2026年3～4月にユーザーが実行した1,625通りの計算データによると、高い節約効果が実証されています。"}
+              {"当サイトの計算アルゴリズムでは、2026年6月18日～2026年7月17日にユーザーが実行した約一万通りの計算データにより、分割きっぷには高い節約効果があることが実証されています。"}
             </p>
             <ul className="list-disc list-inside bg-slate-50 p-4 rounded-lg space-y-2 mt-4 text-slate-700">
-              <li><strong>一般的な経路：</strong> 本システムを利用することで<strong>平均して約123円（中央値：70円）の運賃削減</strong>を確認しました。</li>
-              <li><strong>最大割引額：</strong> 長距離や複雑な境界線を跨ぐ経路において、1回の乗車で1,000円以上の差額が発生した事例も存在します。</li>
+              <li><strong>分割乗車券の平均節約額：</strong> 本システムを利用することで<strong>平均して125円（中央値：80円）の運賃削減</strong>を確認しました。</li>
+              <li><strong>分割乗車券の最大節約額：</strong> 長距離や特例を跨ぐ経路において、大幅な節約ができた事例が存在します。現地点で分かっている最大節約額は井原市～伯耆大山の1,210円です。</li>
             </ul>
             <p className="text-sm mt-4">
               {"※実際の割引額や分割枚数は、利用する区間やJRの運賃改定によって変動します。"}

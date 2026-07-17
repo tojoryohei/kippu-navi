@@ -4,6 +4,9 @@ import { ReactNode } from "react";
 export const metadata = {
     title: "はじめての方へ（使い方ガイド）",
     description: "きっぷナビの使い方、駅の券売機やみどりの窓口（きっぷうりば）での分割きっぷの買い方、よくある質問について解説します。",
+    alternates: {
+        canonical: "/guide",
+    },
 };
 
 // 汎用アコーディオン項目
@@ -216,15 +219,6 @@ export default function GuidePage() {
                                     {"ただ、出場時に発駅から分割駅までの運賃と一致しているかの確認に時間を要する可能性があります。"}
                                     {"指定席券売機（みどりの券売機）やみどりの窓口（きっぷうりば）があれば、駅名→駅名となる乗車券（マルス券）の購入がおすすめです。"}
                                 </p>
-                                <div className="mt-4 p-3 bg-white border border-slate-200 rounded-lg space-y-1">
-                                    <p className="font-bold text-slate-800">【例】東京駅から横浜駅まで</p>
-                                    <p>
-                                        {"東京→横浜は530円ですが、東京→蒲田と蒲田→横浜はそれぞれ260円です。"}
-                                        {"よって、分割することで10円安く移動することができます。"}
-                                        {"このとき、東京駅の自動券売機で東京→蒲田の乗車券を購入することはできますが、蒲田→横浜の乗車券を購入することはできません。"}
-                                        {"そのため、えきねっと等を利用して蒲田→横浜の乗車券を事前に購入し、東京駅で受け取る必要があります。"}
-                                    </p>
-                                </div>
                             </AccordionItem>
 
                             <AccordionItem title="分割定期券の購入方法">

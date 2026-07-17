@@ -126,13 +126,39 @@ export default function AboutPage() {
                         {"運営者情報"}
                     </h2>
                     <ul className="text-slate-600 leading-relaxed space-y-3">
-                        <li className="flex items-center">
-                            <span className="w-28 font-medium text-slate-500">運営者</span>
+                        <li className="flex items-start">
+                            <span className="w-28 font-medium text-slate-500 shrink-0">運営者</span>
                             <span className="font-medium text-slate-800">とある大学院生（情報工学専攻）</span>
                         </li>
-                        <li className="flex items-center">
-                            <span className="w-28 font-medium text-slate-500">運営開始日</span>
+                        <li className="flex items-start">
+                            <span className="w-28 font-medium text-slate-500 shrink-0">専門分野</span>
+                            <span className="font-medium text-slate-800">情報工学（経路探索アルゴリズム・グラフ理論）</span>
+                        </li>
+                        <li className="flex items-start">
+                            <span className="w-28 font-medium text-slate-500 shrink-0">開発経緯</span>
+                            <span className="text-slate-800">大学の卒業研究において、JR旅客営業規則に基づく運賃計算アルゴリズムを開発。その成果を一般に公開するためにこのサイトを立ち上げました。</span>
+                        </li>
+                        <li className="flex items-start">
+                            <span className="w-28 font-medium text-slate-500 shrink-0">運営開始日</span>
                             <span className="font-medium text-slate-800">2025年9月</span>
+                        </li>
+                        <li className="flex items-start">
+                            <span className="w-28 font-medium text-slate-500 shrink-0">お問い合わせ</span>
+                            <span className="text-slate-800">
+                                <Link href="/contact" className="text-blue-600 font-bold hover:underline underline-offset-2">
+                                    {"お問い合わせフォーム"}
+                                </Link>
+                                {"よりご連絡ください。"}
+                            </span>
+                        </li>
+                        <li className="flex items-start">
+                            <span className="w-28 font-medium text-slate-500 shrink-0">ソースコード</span>
+                            <span className="text-slate-800">
+                                <a href="https://github.com/tojoryohei/kippu-navi" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-bold hover:underline underline-offset-2">
+                                    {"GitHub"}
+                                </a>
+                                {"にてソースコードを公開しています。"}
+                            </span>
                         </li>
                     </ul>
                 </section>

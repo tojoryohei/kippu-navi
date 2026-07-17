@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     default: "きっぷナビ",
     template: "%s | きっぷナビ",
   },
-  description: "JRの最安分割運賃計算をするサイトです。",
+  description: "JR在来線の分割きっぷ（乗車券・定期券・IC定期券）の最安組み合わせを自動計算。発駅と着駅を入力するだけで、交通費の節約額がすぐにわかる無料Webツールです。",
   icons: {
     icon: "https://kippu-navi.com/favicon.ico",
     apple: [
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "きっぷナビ",
-    description: "JRの最安分割運賃計算をするサイトです。",
+    description: "JR在来線の分割きっぷ（乗車券・定期券・IC定期券）の最安組み合わせを自動計算。発駅と着駅を入力するだけで、交通費の節約額がすぐにわかる無料Webツールです。",
     url: "https://kippu-navi.com/",
     siteName: "きっぷナビ",
     locale: "ja_JP",
