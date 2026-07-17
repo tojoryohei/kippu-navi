@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.14.0...kippu-navi-v2.15.0) (2026-07-17)
+
+
+### Features
+
+* DFS経路の擬制キロ順ソートと遠回りルートの除外処理の追加 ([#497](https://github.com/tojoryohei/kippu-navi/issues/497)) ([9014127](https://github.com/tojoryohei/kippu-navi/commit/9014127bac1ef88d529092e421091e84674c99b0))
+
 ## [2.14.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.13.3...kippu-navi-v2.14.0) (2026-07-17)
 
 
