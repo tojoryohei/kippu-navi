@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.15.0...kippu-navi-v2.15.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* WASM側の定期券補正における日暮里〜赤羽間の経路ルール逆転バグを修正 ([#500](https://github.com/tojoryohei/kippu-navi/issues/500)) ([9703038](https://github.com/tojoryohei/kippu-navi/commit/9703038afb25b3cb9e0487a2f78b237b45b1d204))
+
 ## [2.15.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.14.0...kippu-navi-v2.15.0) (2026-07-17)
 
 
