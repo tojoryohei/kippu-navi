@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.14.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.13.3...kippu-navi-v2.14.0) (2026-07-17)
+
+
+### Features
+
+* 新規解説記事の追加および各計算ツールのSEO・UIマークアップ改善 ([#492](https://github.com/tojoryohei/kippu-navi/issues/492)) ([ff59b28](https://github.com/tojoryohei/kippu-navi/commit/ff59b282c17afc7f3b6137dfc85889c1f84144ec)), closes [#491](https://github.com/tojoryohei/kippu-navi/issues/491)
+
 ## [2.13.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.13.2...kippu-navi-v2.13.3) (2026-07-12)
 
 
