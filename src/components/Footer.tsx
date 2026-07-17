@@ -7,6 +7,9 @@ const Footer = () => {
 
                 {/* フッターナビゲーションリンク */}
                 <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-6 text-sm text-slate-600 font-medium">
+                    <Link href="/articles" className="hover:text-blue-600 transition-colors">
+                        {"記事一覧"}
+                    </Link>
                     <Link href="/changelog" className="hover:text-blue-600 transition-colors">
                         {"更新履歴"}
                     </Link>
