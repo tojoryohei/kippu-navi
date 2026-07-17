@@ -1,6 +1,6 @@
 import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Noto_Sans_JP, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
 import AdSense from "@/components/AdSense";
 import Header from '@/components/Header';
@@ -9,9 +9,10 @@ import ScrollToTopButton from '@/components/ScrollToTopButton';
 import { PHProvider } from "@/app/providers/PostHogProvider";
 import PostHogPageView from "@/app/providers/PostHogPageView";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const notoSansJP = Noto_Sans_JP({
+  variable: "--font-noto-sans-jp",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -74,7 +75,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`flex flex-col min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden ${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`flex flex-col min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden ${notoSansJP.variable} ${geistMono.variable} font-sans antialiased`}>
         <PHProvider>
           <PostHogPageView />
           {gaId && <GoogleAnalytics gaId={gaId} />}
