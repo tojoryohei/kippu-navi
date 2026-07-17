@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 	"strconv"
@@ -551,6 +552,26 @@ func (u *SearchOptimalSplit) GetCheapestNoSplitSegments(start, end, months int) 
 	maxGisei := shortest.GiseiKilo + 50
 
 	dfsPaths := u.dfsFindPaths(start, end, maxGisei)
+
+	// 擬制キロが短い順にソート
+	type pathWithKilo struct {
+		path  []int
+		gisei domain.DeciKilo
+	}
+	pathsWithKilo := make([]pathWithKilo, len(dfsPaths))
+	for i, path := range dfsPaths {
+		pathsWithKilo[i] = pathWithKilo{
+			path:  path,
+			gisei: u.getPathGiseiKilo(path),
+		}
+	}
+	sort.Slice(pathsWithKilo, func(i, j int) bool {
+		return pathsWithKilo[i].gisei < pathsWithKilo[j].gisei
+	})
+	for i, p := range pathsWithKilo {
+		dfsPaths[i] = p.path
+	}
+
 	bypassPaths := u.getBypassCandidates(start, end)
 
 	allPaths := append(dfsPaths, bypassPaths...)
@@ -558,6 +579,9 @@ func (u *SearchOptimalSplit) GetCheapestNoSplitSegments(start, end, months int) 
 	var validPaths [][]int
 	for _, path := range allPaths {
 		if !u.checkMixedRouteConflict(path) {
+			continue
+		}
+		if u.isPureDetourPath(path) {
 			continue
 		}
 		if !containsPath(validPaths, path) {
@@ -643,6 +667,71 @@ func (u *SearchOptimalSplit) checkMixedRouteConflict(path []int) bool {
 	}
 	return true
 }
+
+func (u *SearchOptimalSplit) getPathGiseiKilo(path []int) domain.DeciKilo {
+	var gisei domain.DeciKilo
+	for i := 0; i < len(path)-1; i++ {
+		edges := u.graph.GetEdges(path[i])
+		for _, edge := range edges {
+			if edge.ToID == path[i+1] {
+				gisei += edge.GiseiKilo
+				break
+			}
+		}
+	}
+	return gisei
+}
+
+func containsSubslice(slice []int, target []int) bool {
+	n := len(slice)
+	m := len(target)
+	if m == 0 || n < m {
+		return false
+	}
+	for i := 0; i <= n-m; i++ {
+		match := true
+		for j := 0; j < m; j++ {
+			if slice[i+j] != target[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+func (u *SearchOptimalSplit) isPureDetourPath(path []int) bool {
+	for _, rule := range u.rules {
+		hasInnerShortcut := false
+		if len(rule.ShortcutPath) > 2 {
+			inner := rule.ShortcutPath[1 : len(rule.ShortcutPath)-1]
+			for _, sID := range inner {
+				for _, pID := range path {
+					if sID == pID {
+						hasInnerShortcut = true
+						break
+					}
+				}
+				if hasInnerShortcut {
+					break
+				}
+			}
+		}
+
+		if hasInnerShortcut {
+			continue
+		}
+
+		if containsSubslice(path, rule.DetourPath) || containsSubslice(path, reverseSlice(rule.DetourPath)) {
+			return true
+		}
+	}
+	return false
+}
+
 
 func (u *SearchOptimalSplit) dfsFindPaths(start, end int, maxGisei domain.DeciKilo) [][]int {
 	var paths [][]int

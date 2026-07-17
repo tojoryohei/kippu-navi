@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"sort"
 	"syscall/js"
 	"unsafe"
 
@@ -427,6 +428,26 @@ func getCheapestNoSplitSegmentsWasm(start, end, months int) ([]SplitSegment, err
 
 	maxGisei := shortest.GiseiKilo + 50
 	dfsPaths := dfsFindPathsWasm(start, end, maxGisei)
+
+	// 擬制キロが短い順にソート
+	type pathWithKilo struct {
+		path  []int
+		gisei domain.DeciKilo
+	}
+	pathsWithKilo := make([]pathWithKilo, len(dfsPaths))
+	for i, path := range dfsPaths {
+		pathsWithKilo[i] = pathWithKilo{
+			path:  path,
+			gisei: getPathGiseiKiloWasm(path),
+		}
+	}
+	sort.Slice(pathsWithKilo, func(i, j int) bool {
+		return pathsWithKilo[i].gisei < pathsWithKilo[j].gisei
+	})
+	for i, p := range pathsWithKilo {
+		dfsPaths[i] = p.path
+	}
+
 	bypassPaths := getBypassCandidatesWasm(start, end)
 
 	allPaths := append(dfsPaths, bypassPaths...)
@@ -434,6 +455,9 @@ func getCheapestNoSplitSegmentsWasm(start, end, months int) ([]SplitSegment, err
 	var validPaths [][]int
 	for _, path := range allPaths {
 		if !checkMixedRouteConflictWasm(path) {
+			continue
+		}
+		if isPureDetourPathWasm(path) {
 			continue
 		}
 		if !containsPath(validPaths, path) {
@@ -481,6 +505,70 @@ func getCheapestNoSplitSegmentsWasm(start, end, months int) ([]SplitSegment, err
 		})
 	}
 	return segs, nil
+}
+
+func getPathGiseiKiloWasm(path []int) domain.DeciKilo {
+	var gisei domain.DeciKilo
+	for i := 0; i < len(path)-1; i++ {
+		edges := wasmGraph.GetEdges(path[i])
+		for _, edge := range edges {
+			if edge.ToID == path[i+1] {
+				gisei += edge.GiseiKilo
+				break
+			}
+		}
+	}
+	return gisei
+}
+
+func containsSubsliceWasm(slice []int, target []int) bool {
+	n := len(slice)
+	m := len(target)
+	if m == 0 || n < m {
+		return false
+	}
+	for i := 0; i <= n-m; i++ {
+		match := true
+		for j := 0; j < m; j++ {
+			if slice[i+j] != target[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+func isPureDetourPathWasm(path []int) bool {
+	for _, rule := range bypassRules {
+		hasInnerShortcut := false
+		if len(rule.ShortcutPath) > 2 {
+			inner := rule.ShortcutPath[1 : len(rule.ShortcutPath)-1]
+			for _, sID := range inner {
+				for _, pID := range path {
+					if sID == pID {
+						hasInnerShortcut = true
+						break
+					}
+				}
+				if hasInnerShortcut {
+					break
+				}
+			}
+		}
+
+		if hasInnerShortcut {
+			continue
+		}
+
+		if containsSubsliceWasm(path, rule.DetourPath) || containsSubsliceWasm(path, reverseSlice(rule.DetourPath)) {
+			return true
+		}
+	}
+	return false
 }
 
 // Bitset 訪問フラグを使用した高速 DFS (逆ダイクストラによる枝刈り付き)
