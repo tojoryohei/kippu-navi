@@ -405,6 +405,134 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			t.Errorf("特例ルート混在排除ルールに違反する経路 (B-A-D-C) が除外されませんでした")
 		}
 	})
+
+	t.Run("DFS結果の擬制キロ順ソートの検証", func(t *testing.T) {
+		g6 := graph.NewGraph(10)
+		id6 := func(name string) int { return g6.GetOrAddID(name) }
+
+		// A --(5km)--> E --(5km)--> D (10km = 100 DeciKilo) [最短]
+		// A --(6km)--> B --(6km)--> D (12km = 120 DeciKilo) [迂回1]
+		// A --(7km)--> C --(7km)--> D (14km = 140 DeciKilo) [迂回2]
+		g6.AddEdge(domain.Edge{FromID: id6("A"), ToID: id6("E"), EigyoKilo: 50, GiseiKilo: 50, Company: domain.JREast})
+		g6.AddEdge(domain.Edge{FromID: id6("E"), ToID: id6("A"), EigyoKilo: 50, GiseiKilo: 50, Company: domain.JREast})
+		g6.AddEdge(domain.Edge{FromID: id6("E"), ToID: id6("D"), EigyoKilo: 50, GiseiKilo: 50, Company: domain.JREast})
+		g6.AddEdge(domain.Edge{FromID: id6("D"), ToID: id6("E"), EigyoKilo: 50, GiseiKilo: 50, Company: domain.JREast})
+
+		g6.AddEdge(domain.Edge{FromID: id6("A"), ToID: id6("B"), EigyoKilo: 60, GiseiKilo: 60, Company: domain.JREast})
+		g6.AddEdge(domain.Edge{FromID: id6("B"), ToID: id6("A"), EigyoKilo: 60, GiseiKilo: 60, Company: domain.JREast})
+		g6.AddEdge(domain.Edge{FromID: id6("B"), ToID: id6("D"), EigyoKilo: 60, GiseiKilo: 60, Company: domain.JREast})
+		g6.AddEdge(domain.Edge{FromID: id6("D"), ToID: id6("B"), EigyoKilo: 60, GiseiKilo: 60, Company: domain.JREast})
+
+		g6.AddEdge(domain.Edge{FromID: id6("A"), ToID: id6("C"), EigyoKilo: 70, GiseiKilo: 70, Company: domain.JREast})
+		g6.AddEdge(domain.Edge{FromID: id6("C"), ToID: id6("A"), EigyoKilo: 70, GiseiKilo: 70, Company: domain.JREast})
+		g6.AddEdge(domain.Edge{FromID: id6("C"), ToID: id6("D"), EigyoKilo: 70, GiseiKilo: 70, Company: domain.JREast})
+		g6.AddEdge(domain.Edge{FromID: id6("D"), ToID: id6("C"), EigyoKilo: 70, GiseiKilo: 70, Company: domain.JREast})
+
+		// どの区間距離でも一律のダミー運賃にする
+		reg6 := fare.NewRegistry()
+		var dummyTable6 [101]domain.PassPrice
+		for i := range dummyTable6 {
+			dummyTable6[i] = domain.PassPrice{OneMonth: 1000}
+		}
+		reg6.Register(domain.JREast, fare.NewEastCalculator(dummyTable6, dummyTable6))
+		reg6.Register(domain.JRCentral, fare.NewStandardCalculator(dummyTable6, dummyTable6))
+
+		calcAmount6 := usecase.NewCalculateAmount(
+			g6, reg6, domain.NewAddonRegistry(), domain.NewAddonRegistry(),
+			fare.NewTrainSpecificSectionCalculator(dummyTable6),
+			fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+		)
+		split6 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount6), calcAmount6)
+		fares6 := precomputeFaresForTest(g6, calcAmount6, nil)
+
+		search := usecase.NewSearchOptimalSplit(g6, split6, nil, 0, fares6, int32(g6.NumStations()))
+
+		segs, err := search.GetCheapestNoSplitSegments(id6("A"), id6("D"), 1)
+		if err != nil {
+			t.Fatalf("GetCheapestNoSplitSegments が失敗しました: %v", err)
+		}
+
+		// 期待される順番：A-E-D (100) -> A-B-D (120) -> A-C-D (140)
+		expectedPaths := [][]int{
+			{id6("A"), id6("E"), id6("D")},
+			{id6("A"), id6("B"), id6("D")},
+			{id6("A"), id6("C"), id6("D")},
+		}
+
+		if len(segs) != len(expectedPaths) {
+			t.Fatalf("期待される経路数と異なります: got %d, want %d", len(segs), len(expectedPaths))
+		}
+
+		for i, seg := range segs {
+			if !isMatch(seg.Path, expectedPaths[i]) {
+				t.Errorf("インデックス %d の経路が一致しません: got %v, want %v", i, seg.Path, expectedPaths[i])
+			}
+		}
+	})
+
+	t.Run("遠回りルートが運賃計算から除外されることの検証", func(t *testing.T) {
+		g7 := graph.NewGraph(10)
+		id7 := func(name string) int { return g7.GetOrAddID(name) }
+
+		// A - B - C (近道: A-B-C 20km)
+		// A - D - C (遠回り: A-D-C 20km)
+		g7.AddEdge(domain.Edge{FromID: id7("A"), ToID: id7("B"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g7.AddEdge(domain.Edge{FromID: id7("B"), ToID: id7("A"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g7.AddEdge(domain.Edge{FromID: id7("B"), ToID: id7("C"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g7.AddEdge(domain.Edge{FromID: id7("C"), ToID: id7("B"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+
+		g7.AddEdge(domain.Edge{FromID: id7("A"), ToID: id7("D"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g7.AddEdge(domain.Edge{FromID: id7("D"), ToID: id7("A"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g7.AddEdge(domain.Edge{FromID: id7("D"), ToID: id7("C"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+		g7.AddEdge(domain.Edge{FromID: id7("C"), ToID: id7("D"), EigyoKilo: 100, GiseiKilo: 100, Company: domain.JREast})
+
+		rules := []domain.ResolvedBypassRule{
+			{
+				ShortcutPath: []int{id7("A"), id7("B"), id7("C")},
+				DetourPath:   []int{id7("A"), id7("D"), id7("C")},
+			},
+		}
+
+		reg7 := fare.NewRegistry()
+		var dummyTable7 [101]domain.PassPrice
+		for i := range dummyTable7 {
+			dummyTable7[i] = domain.PassPrice{OneMonth: 1000}
+		}
+		reg7.Register(domain.JREast, fare.NewEastCalculator(dummyTable7, dummyTable7))
+		reg7.Register(domain.JRCentral, fare.NewStandardCalculator(dummyTable7, dummyTable7))
+
+		calcAmount7 := usecase.NewCalculateAmount(
+			g7, reg7, domain.NewAddonRegistry(), domain.NewAddonRegistry(),
+			fare.NewTrainSpecificSectionCalculator(dummyTable7),
+			fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+		)
+		split7 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount7), calcAmount7)
+		fares7 := precomputeFaresForTest(g7, calcAmount7, rules)
+
+		search := usecase.NewSearchOptimalSplit(g7, split7, rules, 0, fares7, int32(g7.NumStations()))
+
+		segs, err := search.GetCheapestNoSplitSegments(id7("A"), id7("C"), 1)
+		if err != nil {
+			t.Fatalf("GetCheapestNoSplitSegments が失敗しました: %v", err)
+		}
+
+		// 遠回り A-D-C は除外され、近道 A-B-C のみが出力されるはず
+		for _, seg := range segs {
+			if isMatch(seg.Path, []int{id7("A"), id7("D"), id7("C")}) {
+				t.Errorf("本来除外されるべき遠回り経路 A-D-C が結果に含まれています")
+			}
+		}
+
+		hasABC := false
+		for _, seg := range segs {
+			if isMatch(seg.Path, []int{id7("A"), id7("B"), id7("C")}) {
+				hasABC = true
+			}
+		}
+		if !hasABC {
+			t.Errorf("期待される近道経路 A-B-C が結果に含まれていません")
+		}
+	})
 }
 
 // テスト用運賃事前計算ヘルパー
