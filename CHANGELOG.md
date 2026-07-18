@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.15.1...kippu-navi-v2.16.0) (2026-07-18)
+
+
+### Features
+
+* WASMおよびグラフデータのロードにキャッシュバスターを導入 ([#503](https://github.com/tojoryohei/kippu-navi/issues/503)) ([cda02cb](https://github.com/tojoryohei/kippu-navi/commit/cda02cbf0be0aaa3c0d16e4b0302b3a5673e057e))
+
 ## [2.15.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.15.0...kippu-navi-v2.15.1) (2026-07-17)
 
 
