@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.16.0...kippu-navi-v2.16.1) (2026-07-18)
+
+
+### Bug Fixes
+
+* 運賃計算機の駅名入力ボックスの幅を分割計算機と統一 ([#506](https://github.com/tojoryohei/kippu-navi/issues/506)) ([1d3cda4](https://github.com/tojoryohei/kippu-navi/commit/1d3cda4d4af57e17891667634de8feb3c6d3f483))
+
 ## [2.16.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.15.1...kippu-navi-v2.16.0) (2026-07-18)
 
 
