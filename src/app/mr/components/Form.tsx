@@ -447,7 +447,7 @@ export default function Form() {
             </div>
 
             {/* eslint-disable-next-line react-hooks/refs */}
-            <form onSubmit={handleSubmit(onSubmit)} className="p-8 w-full">
+            <form onSubmit={handleSubmit(onSubmit)} className="w-full">
                 <div className="flex flex-col gap-4 w-full">
 
                     {/* 発駅 */}
@@ -470,7 +470,7 @@ export default function Form() {
                                 }
                             }}
                             render={({ field, fieldState }) => (
-                                <div className="flex-1 min-w-0">
+                                <div className="flex-1 w-full min-w-0">
                                     <SelectStation
                                         instanceId="start-station"
                                         value={field.value}
@@ -554,7 +554,7 @@ export default function Form() {
                                             }
                                         }}
                                         render={({ field, fieldState }) => (
-                                            <div className="flex-1 min-w-0">
+                                            <div className="flex-1 w-full min-w-0">
                                                 <SelectStation
                                                     instanceId={`dest-station-${index}`}
                                                     options={stationsOnLine}
