@@ -1,11 +1,11 @@
 /// <reference lib="webworker" />
 
-// Blob Worker環境でも正しいオリジン（http://...）を抽出するヘルパー関数
+// Blob Worker環境でも正しいオリジンを抽出するヘルパー関数
 function getBaseOrigin(): string {
   if (typeof self === 'undefined' || !self.location) return '';
   const href = self.location.href || '';
   let origin = (self.location.origin && self.location.origin !== 'null') ? self.location.origin : '';
-  
+
   if (href.startsWith('blob:')) {
     const rawUrl = href.replace('blob:', '');
     try {
@@ -15,8 +15,6 @@ function getBaseOrigin(): string {
     }
   }
 
-  // Cloud RunのダイレクトURL (*.a.run.app) などCloudflareプロキシを経由しない環境の場合、
-  // /engine/ アセット（WASM/Graphデータ）が提供されている本番オリジンへフォールバックする
   if (origin.includes('.a.run.app')) {
     return 'https://kippu-navi.com';
   }
@@ -25,7 +23,8 @@ function getBaseOrigin(): string {
 }
 
 const baseOrigin = getBaseOrigin();
-importScripts(`${baseOrigin}/engine/wasm_exec.js`);
+const WASM_VERSION = "20260718";
+importScripts(`${baseOrigin}/engine/wasm_exec.js?v=${WASM_VERSION}`);
 
 interface GoInstance {
   importObject: WebAssembly.Imports;
@@ -66,8 +65,8 @@ const go = new Go();
 let wasmInstance: WebAssembly.Instance | null = null;
 let graphInitialized = false;
 
-const WASM_URL = `${baseOrigin}/engine/split_pass.wasm`;
-const GRAPH_URL = `${baseOrigin}/engine/graph_data.bin`;
+const WASM_URL = `${baseOrigin}/engine/split_pass.wasm?v=${WASM_VERSION}`;
+const GRAPH_URL = `${baseOrigin}/engine/graph_data.bin?v=${WASM_VERSION}`;
 
 async function initWasm() {
   if (wasmInstance) return;
