@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.16.1...kippu-navi-v2.16.2) (2026-07-19)
+
+
+### Bug Fixes
+
+* 運賃計算機の駅名入力幅を統一し、エラー時のレイアウト崩れと余白を微調整 ([#509](https://github.com/tojoryohei/kippu-navi/issues/509)) ([2ed168f](https://github.com/tojoryohei/kippu-navi/commit/2ed168f6179b7c0e0e34e91a7b79f924724ad74d))
+
 ## [2.16.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.16.0...kippu-navi-v2.16.1) (2026-07-18)
 
 
