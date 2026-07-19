@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.17.1...kippu-navi-v2.18.0) (2026-07-19)
+
+
+### Features
+
+* 新幹線の経由印字対応および経路補正パターンの追加・修正 ([#520](https://github.com/tojoryohei/kippu-navi/issues/520)) ([8ef3d7f](https://github.com/tojoryohei/kippu-navi/commit/8ef3d7ff8f6668b9f342c8edda4200a5ccc53a9b))
+
 ## [2.17.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.17.0...kippu-navi-v2.17.1) (2026-07-19)
 
 
