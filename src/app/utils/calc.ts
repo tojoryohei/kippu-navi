@@ -261,16 +261,10 @@ export function generatePrintedViaStrings(fullPath: PathStep[]): string[] {
             viaLines.push(line);
             printedViaLines.push(printing);
         }
-        else if (station === "京橋" &&
-            line === "オオサ１"
-        ) {
-            printedViaLines.push("京橋")
-        }
-        else if (station === "西九条" &&
-            line === "オオサ２"
-        ) {
-            printedViaLines.push("西九条")
-        }
+        else if (station === "京橋" && line === "オオサ１")
+            printedViaLines.push("京橋");
+        else if (station === "西九条" && line === "オオサ２")
+            printedViaLines.push("西九条");
         else if (prevLine === null) {
             if (SHINKANSEN_LINES.has(line) && SHINKANSEN_STATIONS.has(station))
                 if (station === "仙台市内")
