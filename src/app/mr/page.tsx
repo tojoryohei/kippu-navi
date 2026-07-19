@@ -57,15 +57,15 @@ export default function MrPage() {
               {"きっぷの運賃を計算します。"}
             </p>
 
-            {/* 注意点 */}
+            {/* 現在開発中の機能 */}
             <div className="inline-block text-left bg-slate-50 border border-slate-200 rounded-lg p-4 max-w-xl mx-auto">
               <p className="font-semibold text-xs sm:text-sm text-slate-600 mb-2">
-                {"【注意点】"}
+                {"【現在開発中の機能】"}
               </p>
               <ul className="text-xs sm:text-sm text-slate-500 list-disc list-inside space-y-1">
-                <li>新幹線を経由する場合の運賃計算は現在開発中の機能です。</li>
-                <li>経路重複エラーは経路補正を考慮しておりません。</li>
-                <li>出力される経由印字は実際と異なることがあります。</li>
+                <li>新幹線を経由する場合の運賃計算</li>
+                <li>経路補正を考慮した経路重複エラー</li>
+                <li>特殊経由線を考慮した経由印字</li>
               </ul>
             </div>
           </div>
