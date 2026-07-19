@@ -229,7 +229,7 @@ export function generatePrintedViaStrings(fullPath: PathStep[]): string[] {
         if (station === null) continue;
         const prevLine = 0 < viaLines.length ? viaLines[viaLines.length - 1] : null;
         const line = fullPath[i].lineName;
-        if (line === null) {
+        if (line === null || i === fullPath.length - 1) {
             if (prevLine !== null && SHINKANSEN_LINES.has(prevLine) && SHINKANSEN_STATIONS.has(station))
                 if (station === "仙台市内")
                     printedViaLines.push("仙台");
@@ -258,6 +258,9 @@ export function generatePrintedViaStrings(fullPath: PathStep[]): string[] {
             if ((SHINKANSEN_LINES.has(line) || SHINKANSEN_LINES.has(prevLine)) && SHINKANSEN_STATIONS.has(station))
                 printedViaLines.push(station);
             if (printing === null) continue;
+            const nextStation = fullPath[i + 1].stationName;
+            if (station === "鴫野" && nextStation === "放出" || station === "放出" && nextStation === "鴫野") continue;
+            if (prevLine === "オサヒ" && line === "オサヒ２" || prevLine === "オサヒ２" && line === "オサヒ") continue;
             viaLines.push(line);
             printedViaLines.push(printing);
         }
@@ -288,6 +291,10 @@ export function generatePrintedViaStrings(fullPath: PathStep[]): string[] {
                 else
                     printedViaLines.push(station); //最初の駅が新幹線駅
             if (printing === null) continue;
+            const nextStation = fullPath[i + 1].stationName;
+            const nextLine = fullPath[i + 1].lineName;
+            if ((station === "鴫野" && nextStation === "放出" || station === "放出" && nextStation === "鴫野") &&
+                (nextLine === "オサヒ" || nextLine === "オサヒ２")) continue;
             viaLines.push(line);
             printedViaLines.push(printing);
         }
