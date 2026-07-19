@@ -448,40 +448,48 @@ export default function Form() {
 
             {/* eslint-disable-next-line react-hooks/refs */}
             <form onSubmit={handleSubmit(onSubmit)} className="w-full">
-                <div className="flex flex-col gap-4 w-full">
+                <div className="flex flex-col w-full">
 
                     {/* 発駅 */}
-                    <div className="flex items-center gap-5 w-full whitespace-nowrap">
-                        <p className="w-12 shrink-0">発駅</p>
-                        <Controller
-                            name="startStation"
-                            control={control}
-                            rules={{
-                                required: "発駅を入力してください",
-                                validate: (selected) => {
-                                    if (!selected) return "発駅を入力してください";
-                                    const exists = stationData.some(s => s.name === selected.name);
-                                    if (!exists) return "該当する駅が存在しません";
-                                    const currentSearchType = getValues("searchType");
-                                    if (currentSearchType !== "ticket" && TEMPORARY_STATIONS.includes(selected.name)) {
-                                        return "臨時駅発着の定期券は計算できません";
-                                    }
-                                    return true;
+                    <Controller
+                        name="startStation"
+                        control={control}
+                        rules={{
+                            required: "発駅を入力してください",
+                            validate: (selected) => {
+                                if (!selected) return "発駅を入力してください";
+                                const exists = stationData.some(s => s.name === selected.name);
+                                if (!exists) return "該当する駅が存在しません";
+                                const currentSearchType = getValues("searchType");
+                                if (currentSearchType !== "ticket" && TEMPORARY_STATIONS.includes(selected.name)) {
+                                    return "臨時駅発着の定期券は計算できません";
                                 }
-                            }}
-                            render={({ field, fieldState }) => (
-                                <div className="flex-1 w-full min-w-0">
-                                    <SelectStation
-                                        instanceId="start-station"
-                                        value={field.value}
-                                        onChange={(value) => handleFieldChange(value, field.onChange, resetOnStartStationChange)}
-                                        hideMenuWhenEmpty={true}
-                                    />
-                                    {fieldState.error && <p className="text-red-500 text-xs mt-1">{fieldState.error.message}</p>}
+                                return true;
+                            }
+                        }}
+                        render={({ field, fieldState }) => (
+                            <div className="flex flex-col w-full">
+                                <div className="flex items-center gap-5 w-full whitespace-nowrap">
+                                    <p className="w-12 shrink-0">発駅</p>
+                                    <div className="flex-1 w-full min-w-0">
+                                        <SelectStation
+                                            instanceId="start-station"
+                                            value={field.value}
+                                            onChange={(value) => handleFieldChange(value, field.onChange, resetOnStartStationChange)}
+                                            hideMenuWhenEmpty={true}
+                                        />
+                                    </div>
                                 </div>
-                            )}
-                        />
-                    </div>
+                                <div className="min-h-4 ml-17">
+                                    {fieldState.error && (
+                                        <p className="text-red-500 text-xs">
+                                            {fieldState.error.message}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    />
 
                     {/* 経由路線と着駅 */}
                     {fields.map((item, index) => {
@@ -534,39 +542,47 @@ export default function Form() {
                                 </div>
 
                                 {/* 駅 */}
-                                <div className="flex items-center gap-5 w-full whitespace-nowrap">
-                                    <p className="w-12 shrink-0">{stationLabel}</p>
-                                    <Controller
-                                        name={`segments.${index}.destinationStation`}
-                                        control={control}
-                                        rules={{
-                                            required: `${stationLabel}を入力してください`,
-                                            validate: (selected) => {
-                                                if (!selected) return `${stationLabel}を入力してください`;
-                                                const exists = stationsOnLine.some(s => s.name === selected.name);
-                                                if (!exists) return "選択された路線にこの駅は存在しません";
+                                <Controller
+                                    name={`segments.${index}.destinationStation`}
+                                    control={control}
+                                    rules={{
+                                        required: `${stationLabel}を入力してください`,
+                                        validate: (selected) => {
+                                            if (!selected) return `${stationLabel}を入力してください`;
+                                            const exists = stationsOnLine.some(s => s.name === selected.name);
+                                            if (!exists) return "選択された路線にこの駅は存在しません";
 
-                                                const currentSearchType = getValues("searchType");
-                                                if (currentSearchType !== "ticket" && isLastStation && TEMPORARY_STATIONS.includes(selected.name)) {
-                                                    return "臨時駅発着の定期券は計算できません";
-                                                }
-                                                return true;
+                                            const currentSearchType = getValues("searchType");
+                                            if (currentSearchType !== "ticket" && isLastStation && TEMPORARY_STATIONS.includes(selected.name)) {
+                                                return "臨時駅発着の定期券は計算できません";
                                             }
-                                        }}
-                                        render={({ field, fieldState }) => (
-                                            <div className="flex-1 w-full min-w-0">
-                                                <SelectStation
-                                                    instanceId={`dest-station-${index}`}
-                                                    options={stationsOnLine}
-                                                    isDisabled={!selectedLine}
-                                                    value={field.value}
-                                                    onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnDestinationStationChange(index))}
-                                                />
-                                                {fieldState.error && <p className="text-red-500 text-xs mt-1">{fieldState.error.message}</p>}
+                                            return true;
+                                        }
+                                    }}
+                                    render={({ field, fieldState }) => (
+                                        <div className="flex flex-col w-full">
+                                            <div className="flex items-center gap-5 w-full whitespace-nowrap">
+                                                <p className="w-12 shrink-0">{stationLabel}</p>
+                                                <div className="flex-1 w-full min-w-0">
+                                                    <SelectStation
+                                                        instanceId={`dest-station-${index}`}
+                                                        options={stationsOnLine}
+                                                        isDisabled={!selectedLine}
+                                                        value={field.value}
+                                                        onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnDestinationStationChange(index))}
+                                                    />
+                                                </div>
                                             </div>
-                                        )}
-                                    />
-                                </div>
+                                            <div className="min-h-4 ml-17">
+                                                {fieldState.error && (
+                                                    <p className="text-red-500 text-xs">
+                                                        {fieldState.error.message}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                />
                             </div>
                         );
                     })}
