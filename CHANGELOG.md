@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.17.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.17.0...kippu-navi-v2.17.1) (2026-07-19)
+
+
+### Performance Improvements
+
+* DP探索のCSR構造を廃止し、密行列（Dense Matrix）方式への変更によるキャッシュ・プリフェッチ最適化 ([#517](https://github.com/tojoryohei/kippu-navi/issues/517)) ([f11b0d1](https://github.com/tojoryohei/kippu-navi/commit/f11b0d1f589ebb561a65eff15999da03a3a60e6c))
+
 ## [2.17.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.16.2...kippu-navi-v2.17.0) (2026-07-19)
 
 
