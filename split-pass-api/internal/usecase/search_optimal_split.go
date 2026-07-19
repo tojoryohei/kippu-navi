@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"sort"
 	"split-pass-api/internal/domain"
 	"split-pass-api/internal/graph"
 	"strconv"
@@ -551,25 +550,14 @@ func (u *SearchOptimalSplit) GetCheapestNoSplitSegments(start, end, months int) 
 	}
 	maxGisei := shortest.GiseiKilo + 50
 
-	dfsPaths := u.dfsFindPaths(start, end, maxGisei)
+	pathsResult, err := u.graph.FindKShortestPathsGisei(start, end, 10, maxGisei)
+	if err != nil {
+		return nil, domain.ErrInvalidPath
+	}
 
-	// 擬制キロが短い順にソート
-	type pathWithKilo struct {
-		path  []int
-		gisei domain.DeciKilo
-	}
-	pathsWithKilo := make([]pathWithKilo, len(dfsPaths))
-	for i, path := range dfsPaths {
-		pathsWithKilo[i] = pathWithKilo{
-			path:  path,
-			gisei: u.getPathGiseiKilo(path),
-		}
-	}
-	sort.Slice(pathsWithKilo, func(i, j int) bool {
-		return pathsWithKilo[i].gisei < pathsWithKilo[j].gisei
-	})
-	for i, p := range pathsWithKilo {
-		dfsPaths[i] = p.path
+	dfsPaths := make([][]int, len(pathsResult))
+	for i, pr := range pathsResult {
+		dfsPaths[i] = pr.StationIDs
 	}
 
 	bypassPaths := u.getBypassCandidates(start, end)
@@ -668,20 +656,6 @@ func (u *SearchOptimalSplit) checkMixedRouteConflict(path []int) bool {
 	return true
 }
 
-func (u *SearchOptimalSplit) getPathGiseiKilo(path []int) domain.DeciKilo {
-	var gisei domain.DeciKilo
-	for i := 0; i < len(path)-1; i++ {
-		edges := u.graph.GetEdges(path[i])
-		for _, edge := range edges {
-			if edge.ToID == path[i+1] {
-				gisei += edge.GiseiKilo
-				break
-			}
-		}
-	}
-	return gisei
-}
-
 func containsSubslice(slice []int, target []int) bool {
 	n := len(slice)
 	m := len(target)
@@ -732,62 +706,6 @@ func (u *SearchOptimalSplit) isPureDetourPath(path []int) bool {
 	return false
 }
 
-
-func (u *SearchOptimalSplit) dfsFindPaths(start, end int, maxGisei domain.DeciKilo) [][]int {
-	var paths [][]int
-	numStations := int(u.numStations)
-	visited := make([]bool, numStations)
-	currentPath := make([]int, 0, 64)
-
-	currentPath = append(currentPath, start)
-	visited[start] = true
-
-	const maxPathsLimit = 5000
-
-	var dfs func(curr int, currentGisei domain.DeciKilo) bool
-	dfs = func(curr int, currentGisei domain.DeciKilo) bool {
-		if len(paths) >= maxPathsLimit {
-			return false
-		}
-
-		if curr == end {
-			pathCopy := make([]int, len(currentPath))
-			copy(pathCopy, currentPath)
-			paths = append(paths, pathCopy)
-			return true
-		}
-
-		edges := u.graph.GetEdges(curr)
-		for _, edge := range edges {
-			next := edge.ToID
-			if next < 0 || next >= numStations {
-				continue
-			}
-			if visited[next] {
-				continue
-			}
-
-			nextGisei := currentGisei + edge.GiseiKilo
-			if nextGisei > maxGisei {
-				continue
-			}
-
-			visited[next] = true
-			currentPath = append(currentPath, next)
-
-			if !dfs(next, nextGisei) {
-				return false
-			}
-
-			currentPath = currentPath[:len(currentPath)-1]
-			visited[next] = false
-		}
-		return true
-	}
-
-	dfs(start, 0)
-	return paths
-}
 
 func (u *SearchOptimalSplit) getBypassCandidates(start, end int) [][]int {
 	rg := u.graph
