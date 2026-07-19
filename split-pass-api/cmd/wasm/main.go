@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"sort"
 	"syscall/js"
 	"unsafe"
 
@@ -313,7 +312,7 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 
 	var allSegCandidates [][]SplitSegment
 	for i := 0; i < len(splitIDs)-1; i++ {
-		segs, err := getCheapestNoSplitSegmentsWasm(splitIDs[i], splitIDs[i+1], months)
+		segs, err := getCheapestNoSplitSegmentsWasm(splitIDs[i], splitIDs[i+1], months, true)
 		if err != nil {
 			return js.ValueOf(fmt.Sprintf(`{"error":"failed to get segments: %v"}`, err))
 		}
@@ -374,7 +373,7 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 	}
 
 	// 通常経路（分割なし）の算出
-	normalSegs, err := getCheapestNoSplitSegmentsWasm(splitIDs[0], splitIDs[len(splitIDs)-1], months)
+	normalSegs, err := getCheapestNoSplitSegmentsWasm(splitIDs[0], splitIDs[len(splitIDs)-1], months, false)
 	var normalResult ResultResponse
 	if err == nil && len(normalSegs) > 0 {
 		seg := normalSegs[0]
@@ -419,36 +418,25 @@ type SplitSegment struct {
 	Result         *usecase.CalculationResult
 }
 
-func getCheapestNoSplitSegmentsWasm(start, end, months int) ([]SplitSegment, error) {
+func getCheapestNoSplitSegmentsWasm(start, end, months int, allowOvershoot bool) ([]SplitSegment, error) {
 	// 最短経路を検索
 	shortest, err := activeGraph.FindShortestPathGisei(start, end)
 	if err != nil {
-		return nil, fmt.Errorf("wasm: FindShortestPathGisei failed: %w", err)
+		return nil, fmt.Errorf("wasm: FindShortestPathGisei に失敗しました: %w", err)
 	}
 
 	maxGisei := shortest.GiseiKilo + 50
-	dfsPaths := dfsFindPathsWasm(start, end, maxGisei)
-
-	// 擬制キロが短い順にソート
-	type pathWithKilo struct {
-		path  []int
-		gisei domain.DeciKilo
-	}
-	pathsWithKilo := make([]pathWithKilo, len(dfsPaths))
-	for i, path := range dfsPaths {
-		pathsWithKilo[i] = pathWithKilo{
-			path:  path,
-			gisei: getPathGiseiKiloWasm(path),
-		}
-	}
-	sort.Slice(pathsWithKilo, func(i, j int) bool {
-		return pathsWithKilo[i].gisei < pathsWithKilo[j].gisei
-	})
-	for i, p := range pathsWithKilo {
-		dfsPaths[i] = p.path
+	pathsResult, err := activeGraph.FindKShortestPathsGisei(start, end, 10, maxGisei)
+	if err != nil {
+		return nil, fmt.Errorf("wasm: FindKShortestPathsGisei に失敗しました: %w", err)
 	}
 
-	bypassPaths := getBypassCandidatesWasm(start, end)
+	dfsPaths := make([][]int, len(pathsResult))
+	for i, pr := range pathsResult {
+		dfsPaths[i] = pr.StationIDs
+	}
+
+	bypassPaths := getBypassCandidatesWasm(start, end, allowOvershoot)
 
 	allPaths := append(dfsPaths, bypassPaths...)
 
@@ -466,7 +454,7 @@ func getCheapestNoSplitSegmentsWasm(start, end, months int) ([]SplitSegment, err
 	}
 
 	if len(validPaths) == 0 {
-		return nil, fmt.Errorf("wasm: no valid paths found")
+		return nil, fmt.Errorf("wasm: 有効な経路が見つかりませんでした")
 	}
 
 	minFare := math.MaxInt
@@ -492,7 +480,7 @@ func getCheapestNoSplitSegmentsWasm(start, end, months int) ([]SplitSegment, err
 	}
 
 	if minFare == math.MaxInt {
-		return nil, fmt.Errorf("wasm: calculation failed for all paths")
+		return nil, fmt.Errorf("wasm: すべての経路で運賃計算に失敗しました")
 	}
 
 	var segs []SplitSegment
@@ -505,20 +493,6 @@ func getCheapestNoSplitSegmentsWasm(start, end, months int) ([]SplitSegment, err
 		})
 	}
 	return segs, nil
-}
-
-func getPathGiseiKiloWasm(path []int) domain.DeciKilo {
-	var gisei domain.DeciKilo
-	for i := 0; i < len(path)-1; i++ {
-		edges := wasmGraph.GetEdges(path[i])
-		for _, edge := range edges {
-			if edge.ToID == path[i+1] {
-				gisei += edge.GiseiKilo
-				break
-			}
-		}
-	}
-	return gisei
 }
 
 func containsSubsliceWasm(slice []int, target []int) bool {
@@ -571,68 +545,7 @@ func isPureDetourPathWasm(path []int) bool {
 	return false
 }
 
-// Bitset 訪問フラグを使用した高速 DFS (逆ダイクストラによる枝刈り付き)
-func dfsFindPathsWasm(start, end int, maxGisei domain.DeciKilo) [][]int {
-	var paths [][]int
-	numStations := wasmGraph.NumStations()
-	visited := NewBitset(numStations)
-	currentPath := make([]int, 0, 64)
-
-	// ゴール（end）から全駅への最短擬制キロを一瞬で計算
-	distToEnd, _ := activeGraph.FindAllShortestPathsGisei(end)
-
-	currentPath = append(currentPath, start)
-	visited.Set(start)
-
-	const maxPathsLimit = 5000
-
-	var dfs func(curr int, currentGisei domain.DeciKilo) bool
-	dfs = func(curr int, currentGisei domain.DeciKilo) bool {
-		if len(paths) >= maxPathsLimit {
-			return false
-		}
-
-		if curr == end {
-			pathCopy := make([]int, len(currentPath))
-			copy(pathCopy, currentPath)
-			paths = append(paths, pathCopy)
-			return true
-		}
-
-		edges := wasmGraph.GetEdges(curr)
-		for _, edge := range edges {
-			next := edge.ToID
-			if next < 0 || next >= numStations {
-				continue
-			}
-			if visited.Get(next) {
-				continue
-			}
-
-			nextGisei := currentGisei + edge.GiseiKilo
-			// 「これまでの擬制キロ」＋「今回の辺」＋「次の駅からゴールまでの残り最小擬制キロ」が制限を超える場合は枝刈り
-			if nextGisei+distToEnd[next] > maxGisei {
-				continue
-			}
-
-			visited.Set(next)
-			currentPath = append(currentPath, next)
-
-			if !dfs(next, nextGisei) {
-				return false
-			}
-
-			currentPath = currentPath[:len(currentPath)-1]
-			visited.Clear(next)
-		}
-		return true
-	}
-
-	dfs(start, 0)
-	return paths
-}
-
-func getBypassCandidatesWasm(start, end int) [][]int {
+func getBypassCandidatesWasm(start, end int, allowOvershoot bool) [][]int {
 	var cands [][]int
 	for _, rule := range bypassRules {
 		aOnRule := containsStation(rule.ShortcutPath, start) || containsStation(rule.DetourPath, start)
@@ -647,6 +560,11 @@ func getBypassCandidatesWasm(start, end int) [][]int {
 			}
 		}
 	}
+
+	if !allowOvershoot {
+		return cands
+	}
+
 	// オーバーシュート経路
 	for _, rule := range bypassRules {
 		startOnDetour := isOnDetourMiddle(start, rule)

@@ -263,5 +263,242 @@ func (g *RailwayGraph) FindAllShortestPathsEigyo(startID int) ([]domain.DeciKilo
 	return dist, prev
 }
 
+// FindShortestPathGiseiWithForbidden は、指定されたノードとエッジを避けて startID から endID までの最短擬制キロ経路を探索します。
+// メモリアロケーションを避けるため、事前に確保された dist、eigyoDist、prev スライスを再利用します。
+// また、A*的な枝刈りのため、rootGisei, maxGisei, およびゴールからの距離マップ distToEnd を使用します。
+func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
+	startID, endID int,
+	blockedNodes []bool,
+	blockedEdges map[uint64]bool,
+	dist []domain.DeciKilo,
+	eigyoDist []domain.DeciKilo,
+	prev []int,
+	rootGisei domain.DeciKilo,
+	maxGisei domain.DeciKilo,
+	distToEnd []domain.DeciKilo,
+) (*PathResult, error) {
+	if startID < 0 || startID >= len(g.IDToName) {
+		return nil, fmt.Errorf("FindShortestPathGiseiWithForbidden: %w: ID %d", domain.ErrStationNotFound, startID)
+	}
+	if endID < 0 || endID >= len(g.IDToName) {
+		return nil, fmt.Errorf("FindShortestPathGiseiWithForbidden: %w: ID %d", domain.ErrStationNotFound, endID)
+	}
 
+	if blockedNodes[startID] || blockedNodes[endID] {
+		return nil, ErrPathNotFound
+	}
 
+	// 開始時点で、どう頑張っても制限（maxGisei）を超える場合は即座にリターン
+	if rootGisei+distToEnd[startID] > maxGisei {
+		return nil, ErrPathNotFound
+	}
+
+	numStations := len(g.IDToName)
+	for i := 0; i < numStations; i++ {
+		dist[i] = domain.DeciKilo(65535)
+		prev[i] = -1
+		eigyoDist[i] = 0
+	}
+
+	dist[startID] = 0
+	pq := &priorityQueue{}
+	heap.Init(pq)
+	heap.Push(pq, &node{stationID: startID, giseiKilo: 0})
+
+	for pq.Len() > 0 {
+		curr := heap.Pop(pq).(*node)
+
+		if curr.stationID == endID {
+			break
+		}
+		if curr.giseiKilo > dist[curr.stationID] {
+			continue
+		}
+
+		for _, edge := range g.Edges[curr.stationID] {
+			next := edge.ToID
+			if next < 0 || next >= numStations {
+				continue
+			}
+			if blockedNodes[next] {
+				continue
+			}
+			edgeKey := (uint64(curr.stationID) << 32) | uint64(next)
+			if blockedEdges[edgeKey] {
+				continue
+			}
+
+			newDist := dist[curr.stationID] + edge.GiseiKilo
+			if newDist < dist[next] {
+				// A* 枝刈り：rootGisei + ここまでの距離 + ここからゴールまでの最小予測距離 が maxGisei を超えるならキューに追加しない
+				if rootGisei+newDist+distToEnd[next] <= maxGisei {
+					dist[next] = newDist
+					eigyoDist[next] = eigyoDist[curr.stationID] + edge.EigyoKilo
+					prev[next] = curr.stationID
+					heap.Push(pq, &node{stationID: next, giseiKilo: newDist})
+				}
+			}
+		}
+	}
+
+	if prev[endID] == -1 && startID != endID {
+		return nil, ErrPathNotFound
+	}
+
+	// 経路の復元
+	path := []int{}
+	for i := endID; i != -1; i = prev[i] {
+		path = append([]int{i}, path...)
+	}
+
+	return &PathResult{
+		StationIDs: path,
+		GiseiKilo:  dist[endID],
+		EigyoKilo:  eigyoDist[endID],
+	}, nil
+}
+
+// FindKShortestPathsGisei は、Yen's Algorithm を用いて、合計擬制キロが maxGisei 以下の最短経路を最大 K 本探索します。
+func (g *RailwayGraph) FindKShortestPathsGisei(startID, endID int, k int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
+	// 最初の最短経路
+	firstPath, err := g.FindShortestPathGisei(startID, endID)
+	if err != nil {
+		return nil, err
+	}
+	if firstPath.GiseiKilo > maxGisei {
+		return nil, ErrPathNotFound
+	}
+
+	A := []*PathResult{firstPath}
+	var B []*PathResult
+
+	// 経路が A または B にすでに存在するかチェックするヘルパー
+	isPathEqual := func(p1, p2 []int) bool {
+		if len(p1) != len(p2) {
+			return false
+		}
+		for i := range p1 {
+			if p1[i] != p2[i] {
+				return false
+			}
+		}
+		return true
+	}
+	containsPathResult := func(list []*PathResult, path []int) bool {
+		for _, pr := range list {
+			if isPathEqual(pr.StationIDs, path) {
+				return true
+			}
+		}
+		return false
+	}
+
+	numStations := len(g.IDToName)
+	blockedNodes := make([]bool, numStations)
+	blockedEdges := make(map[uint64]bool)
+
+	// FindShortestPathGiseiWithForbidden 用の再利用スライス
+	dist := make([]domain.DeciKilo, numStations)
+	eigyoDist := make([]domain.DeciKilo, numStations)
+	prev := make([]int, numStations)
+
+	// ゴール（endID）から全ノードへの最短距離を事前計算して枝刈りに使用
+	distToEnd, _ := g.FindAllShortestPathsGisei(endID)
+
+	for ki := 1; ki < k; ki++ {
+		prevPath := A[ki-1].StationIDs
+		// 分岐ノード（spurNode）のループ：最初のノードから最後から2番目のノードまで
+		for i := 0; i < len(prevPath)-1; i++ {
+			spurNode := prevPath[i]
+			rootPath := prevPath[0 : i+1]
+
+			// ブロックリストの初期化
+			for idx := range blockedNodes {
+				blockedNodes[idx] = false
+			}
+			for edgeKey := range blockedEdges {
+				delete(blockedEdges, edgeKey)
+			}
+
+			// 同じルートパスを共有する A 内の他の経路の一部であるエッジをブロックする
+			for _, pathA := range A {
+				p := pathA.StationIDs
+				if len(p) > i+1 && isPathEqual(rootPath, p[0:i+1]) {
+					edgeKey := (uint64(p[i]) << 32) | uint64(p[i+1])
+					blockedEdges[edgeKey] = true
+				}
+			}
+
+			// 分岐ノードを除くルートパス上のすべてのノードをブロックする
+			for j := 0; j < len(rootPath)-1; j++ {
+				blockedNodes[rootPath[j]] = true
+			}
+
+			// ルートパスの擬制キロを計算
+			rootGiseiVal, _ := g.getPathKilos(rootPath)
+
+			// 修正されたグラフ上で spurNode から endID への最短経路を探索
+			spurPathResult, err := g.FindShortestPathGiseiWithForbidden(
+				spurNode, endID, blockedNodes, blockedEdges, dist, eigyoDist, prev,
+				rootGiseiVal, maxGisei, distToEnd,
+			)
+			if err == nil {
+				// ルートパスと分岐パスの結合
+				combinedIDs := make([]int, len(rootPath)+len(spurPathResult.StationIDs)-1)
+				copy(combinedIDs, rootPath)
+				copy(combinedIDs[len(rootPath):], spurPathResult.StationIDs[1:])
+
+				// 経路の擬制キロと営業キロの計算
+				giseiVal, eigyoVal := g.getPathKilos(combinedIDs)
+
+				if giseiVal <= maxGisei {
+					if !containsPathResult(A, combinedIDs) && !containsPathResult(B, combinedIDs) {
+						B = append(B, &PathResult{
+							StationIDs: combinedIDs,
+							GiseiKilo:  giseiVal,
+							EigyoKilo:  eigyoVal,
+						})
+					}
+				}
+			}
+		}
+
+		if len(B) == 0 {
+			break
+		}
+
+		// 最小の擬制キロを持つ経路のインデックスを探索
+		bestIdx := 0
+		for i := 1; i < len(B); i++ {
+			if B[i].GiseiKilo < B[bestIdx].GiseiKilo {
+				bestIdx = i
+			}
+		}
+
+		nextPath := B[bestIdx]
+		if nextPath.GiseiKilo > maxGisei {
+			break
+		}
+
+		A = append(A, nextPath)
+		B = append(B[:bestIdx], B[bestIdx+1:]...)
+	}
+
+	return A, nil
+}
+
+// getPathKilos は指定された経路の擬制キロと営業キロを計算します。
+func (g *RailwayGraph) getPathKilos(path []int) (domain.DeciKilo, domain.DeciKilo) {
+	var gisei, eigyo domain.DeciKilo
+	for i := 0; i < len(path)-1; i++ {
+		edges := g.Edges[path[i]]
+		for _, edge := range edges {
+			if edge.ToID == path[i+1] {
+				gisei += edge.GiseiKilo
+				eigyo += edge.EigyoKilo
+				break
+			}
+		}
+	}
+	return gisei, eigyo
+}

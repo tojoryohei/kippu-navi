@@ -23,7 +23,7 @@ function getBaseOrigin(): string {
 }
 
 const baseOrigin = getBaseOrigin();
-const WASM_VERSION = "20260718";
+const WASM_VERSION = "20260719";
 importScripts(`${baseOrigin}/engine/wasm_exec.js?v=${WASM_VERSION}`);
 
 interface GoInstance {
