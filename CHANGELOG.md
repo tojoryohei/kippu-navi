@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.17.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.16.2...kippu-navi-v2.17.0) (2026-07-19)
+
+
+### Features
+
+* 候補経路探索をYen's Algorithmに移行し通常運賃のオーバーシュートを除外 ([#514](https://github.com/tojoryohei/kippu-navi/issues/514)) ([8b14bae](https://github.com/tojoryohei/kippu-navi/commit/8b14bae3f5126c36bb9f7d6e43759015388f1549)), closes [#513](https://github.com/tojoryohei/kippu-navi/issues/513)
+
 ## [2.16.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.16.1...kippu-navi-v2.16.2) (2026-07-19)
 
 
