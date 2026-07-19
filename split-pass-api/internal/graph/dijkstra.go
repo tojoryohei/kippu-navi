@@ -265,7 +265,7 @@ func (g *RailwayGraph) FindAllShortestPathsEigyo(startID int) ([]domain.DeciKilo
 
 // FindShortestPathGiseiWithForbidden は、指定されたノードとエッジを避けて startID から endID までの最短擬制キロ経路を探索します。
 // メモリアロケーションを避けるため、事前に確保された dist、eigyoDist、prev スライスを再利用します。
-// また、A*的な枝刈りのため、rootGisei, maxGisei, およびゴールからの距離マップ distToEnd を使用します。
+// また、A*的な枝刈りのため、rootGisei, maxGisei, およびバイナリから直接参照する distGisei と endDistOffset を使用します。
 func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 	startID, endID int,
 	blockedNodes []bool,
@@ -275,7 +275,8 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 	prev []int,
 	rootGisei domain.DeciKilo,
 	maxGisei domain.DeciKilo,
-	distToEnd []domain.DeciKilo,
+	distGisei []uint16,
+	endDistOffset int,
 ) (*PathResult, error) {
 	if startID < 0 || startID >= len(g.IDToName) {
 		return nil, fmt.Errorf("FindShortestPathGiseiWithForbidden: %w: ID %d", domain.ErrStationNotFound, startID)
@@ -288,8 +289,7 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 		return nil, ErrPathNotFound
 	}
 
-	// 開始時点で、どう頑張っても制限（maxGisei）を超える場合は即座にリターン
-	if rootGisei+distToEnd[startID] > maxGisei {
+	if len(distGisei) > 0 && rootGisei+domain.DeciKilo(distGisei[endDistOffset+startID]) > maxGisei {
 		return nil, ErrPathNotFound
 	}
 
@@ -331,7 +331,8 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 			newDist := dist[curr.stationID] + edge.GiseiKilo
 			if newDist < dist[next] {
 				// A* 枝刈り：rootGisei + ここまでの距離 + ここからゴールまでの最小予測距離 が maxGisei を超えるならキューに追加しない
-				if rootGisei+newDist+distToEnd[next] <= maxGisei {
+				ok := len(distGisei) == 0 || rootGisei+newDist+domain.DeciKilo(distGisei[endDistOffset+next]) <= maxGisei
+				if ok {
 					dist[next] = newDist
 					eigyoDist[next] = eigyoDist[curr.stationID] + edge.EigyoKilo
 					prev[next] = curr.stationID
@@ -402,8 +403,8 @@ func (g *RailwayGraph) FindKShortestPathsGisei(startID, endID int, k int, maxGis
 	eigyoDist := make([]domain.DeciKilo, numStations)
 	prev := make([]int, numStations)
 
-	// ゴール（endID）から全ノードへの最短距離を事前計算して枝刈りに使用
-	distToEnd, _ := g.FindAllShortestPathsGisei(endID)
+	// ゴールからの距離をアロケーションゼロでバイナリから直接参照する
+	endDistOffset := endID * numStations
 
 	for ki := 1; ki < k; ki++ {
 		prevPath := A[ki-1].StationIDs
@@ -440,7 +441,7 @@ func (g *RailwayGraph) FindKShortestPathsGisei(startID, endID int, k int, maxGis
 			// 修正されたグラフ上で spurNode から endID への最短経路を探索
 			spurPathResult, err := g.FindShortestPathGiseiWithForbidden(
 				spurNode, endID, blockedNodes, blockedEdges, dist, eigyoDist, prev,
-				rootGiseiVal, maxGisei, distToEnd,
+				rootGiseiVal, maxGisei, g.DistGisei, endDistOffset,
 			)
 			if err == nil {
 				// ルートパスと分岐パスの結合
