@@ -1681,7 +1681,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
         }
     }
 
-    // （4）品川以遠（高輪ゲートウェイ又は大崎方面）の各駅と、鶴見以遠（新子安、国道又は羽沢横浜国大方面）の各駅との相互間
+    // （4）品川以遠（東京、高輪ゲートウェイ又は大崎方面）の各駅と、鶴見以遠（新子安、国道又は羽沢横浜国大方面）の各駅との相互間
     if (stationsOnFullPath.has("新川崎") === true &&
         stationsOnFullPath.has("大井町") === false &&
         stationsOnFullPath.has("大森") === false &&
@@ -1764,6 +1764,85 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                         { stationName: "蒲田", lineName: "ホセイ" },
                         { stationName: "川崎", lineName: "ホセイ" },
                         ...fullPath.slice(4)
+                    ]
+                    break;
+                }
+
+                // 東京方面→鶴見
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "東京" &&
+                    (fullPath[idx - 1].lineName === "シンカ") &&
+                    idx + 4 < fullPath.length &&
+                    fullPath[idx + 4].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "品川", lineName: "ホセイ" },
+                        { stationName: "大井町", lineName: "ホセイ" },
+                        { stationName: "大森", lineName: "ホセイ" },
+                        { stationName: "蒲田", lineName: "ホセイ" },
+                        { stationName: "川崎", lineName: "ホセイ" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+
+                // 東京方面→新子安方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "東京" &&
+                    (fullPath[idx - 1].lineName === "シンカ") &&
+                    idx + 5 < fullPath.length &&
+                    fullPath[idx + 4].lineName === "トウカ" &&
+                    fullPath[idx + 5].stationName === "新子安"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "品川", lineName: "ホセイ" },
+                        { stationName: "大井町", lineName: "ホセイ" },
+                        { stationName: "大森", lineName: "ホセイ" },
+                        { stationName: "蒲田", lineName: "ホセイ" },
+                        { stationName: "川崎", lineName: "ホセイ" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+
+                // 東京方面→国道方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "東京" &&
+                    (fullPath[idx - 1].lineName === "シンカ") &&
+                    idx + 5 < fullPath.length &&
+                    fullPath[idx + 4].lineName === "ツルミ" &&
+                    fullPath[idx + 5].stationName === "国道"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "品川", lineName: "ホセイ" },
+                        { stationName: "大井町", lineName: "ホセイ" },
+                        { stationName: "大森", lineName: "ホセイ" },
+                        { stationName: "蒲田", lineName: "ホセイ" },
+                        { stationName: "川崎", lineName: "ホセイ" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+
+                // 東京方面→羽沢横浜国大方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "東京" &&
+                    (fullPath[idx - 1].lineName === "シンカ") &&
+                    idx + 5 < fullPath.length &&
+                    fullPath[idx + 4].lineName === "トウカ３" &&
+                    fullPath[idx + 5].stationName === "羽沢横浜国大"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "品川", lineName: "ホセイ" },
+                        { stationName: "大井町", lineName: "ホセイ" },
+                        { stationName: "大森", lineName: "ホセイ" },
+                        { stationName: "蒲田", lineName: "ホセイ" },
+                        { stationName: "川崎", lineName: "ホセイ" },
+                        ...fullPath.slice(idx + 4)
                     ]
                     break;
                 }
@@ -1957,6 +2036,23 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     break;
                 }
 
+                // 鶴見→東京方面
+                if (idx === 0 &&
+                    5 < fullPath.length &&
+                    (fullPath[4].lineName === "シンカ") &&
+                    fullPath[5].stationName === "東京"
+                ) {
+                    fullPath = [
+                        { stationName: "鶴見", lineName: "ホセイ" },
+                        { stationName: "川崎", lineName: "ホセイ" },
+                        { stationName: "蒲田", lineName: "ホセイ" },
+                        { stationName: "大森", lineName: "ホセイ" },
+                        { stationName: "大井町", lineName: "ホセイ" },
+                        ...fullPath.slice(4)
+                    ]
+                    break;
+                }
+
                 // 鶴見→高輪ゲートウェイ方面
                 if (idx === 0 &&
                     5 < fullPath.length &&
@@ -1997,6 +2093,26 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].lineName === "トウカ" &&
                     idx + 4 < fullPath.length &&
                     fullPath[idx + 4].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "鶴見", lineName: "ホセイ" },
+                        { stationName: "川崎", lineName: "ホセイ" },
+                        { stationName: "蒲田", lineName: "ホセイ" },
+                        { stationName: "大森", lineName: "ホセイ" },
+                        { stationName: "大井町", lineName: "ホセイ" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+
+                // 新子安方面→東京方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "新子安" &&
+                    fullPath[idx - 1].lineName === "トウカ" &&
+                    idx + 5 < fullPath.length &&
+                    (fullPath[idx + 4].lineName === "シンカ") &&
+                    fullPath[idx + 5].stationName === "東京"
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -2056,6 +2172,26 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     fullPath[idx - 1].lineName === "ツルミ" &&
                     idx + 4 < fullPath.length &&
                     fullPath[idx + 4].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "鶴見", lineName: "ホセイ" },
+                        { stationName: "川崎", lineName: "ホセイ" },
+                        { stationName: "蒲田", lineName: "ホセイ" },
+                        { stationName: "大森", lineName: "ホセイ" },
+                        { stationName: "大井町", lineName: "ホセイ" },
+                        ...fullPath.slice(idx + 4)
+                    ]
+                    break;
+                }
+
+                // 国道方面→東京方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "国道" &&
+                    fullPath[idx - 1].lineName === "ツルミ" &&
+                    idx + 5 < fullPath.length &&
+                    (fullPath[idx + 4].lineName === "シンカ") &&
+                    fullPath[idx + 5].stationName === "東京"
                 ) {
                     fullPath = [
                         ...fullPath.slice(0, idx),
@@ -2171,7 +2307,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
         }
     }
 
-    // （5）東京以遠（有楽町又は神田方面）の各駅と、蘇我以遠（鎌取又は浜野方面）の各駅との相互間
+    // （5）東京以遠（品川、有楽町又は神田方面）の各駅と、蘇我以遠（鎌取又は浜野方面）の各駅との相互間
     if (stationsOnFullPath.has("二俣新町") === true &&
         stationsOnFullPath.has("新日本橋") === false &&
         stationsOnFullPath.has("馬喰町") === false &&
@@ -2335,10 +2471,122 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     break;
                 }
 
+                // 品川方面→蘇我
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "品川" &&
+                    fullPath[idx - 1].lineName === "シンカ" &&
+                    idx + 17 < fullPath.length &&
+                    fullPath[idx + 17].lineName === null
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "東京", lineName: "ソウフ" },
+                        { stationName: "新日本橋", lineName: "ソウフ" },
+                        { stationName: "馬喰町", lineName: "ソウフ" },
+                        { stationName: "錦糸町", lineName: "ソウフ" },
+                        { stationName: "亀戸", lineName: "ソウフ" },
+                        { stationName: "平井", lineName: "ソウフ" },
+                        { stationName: "新小岩", lineName: "ソウフ" },
+                        { stationName: "小岩", lineName: "ソウフ" },
+                        { stationName: "市川", lineName: "ソウフ" },
+                        { stationName: "本八幡", lineName: "ソウフ" },
+                        { stationName: "下総中山", lineName: "ソウフ" },
+                        { stationName: "西船橋", lineName: "ソウフ" },
+                        { stationName: "船橋", lineName: "ソウフ" },
+                        { stationName: "東船橋", lineName: "ソウフ" },
+                        { stationName: "津田沼", lineName: "ソウフ" },
+                        { stationName: "幕張本郷", lineName: "ソウフ" },
+                        { stationName: "幕張", lineName: "ソウフ" },
+                        { stationName: "新検見川", lineName: "ソウフ" },
+                        { stationName: "稲毛", lineName: "ソウフ" },
+                        { stationName: "西千葉", lineName: "ソウフ" },
+                        { stationName: "千葉", lineName: "ソトホ" },
+                        { stationName: "本千葉", lineName: "ソトホ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+
+                // 品川方面→鎌取方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "品川" &&
+                    fullPath[idx - 1].lineName === "シンカ" &&
+                    idx + 18 < fullPath.length &&
+                    fullPath[idx + 17].lineName === "ソトホ" &&
+                    fullPath[idx + 18].stationName === "鎌取"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "東京", lineName: "ソウフ" },
+                        { stationName: "新日本橋", lineName: "ソウフ" },
+                        { stationName: "馬喰町", lineName: "ソウフ" },
+                        { stationName: "錦糸町", lineName: "ソウフ" },
+                        { stationName: "亀戸", lineName: "ソウフ" },
+                        { stationName: "平井", lineName: "ソウフ" },
+                        { stationName: "新小岩", lineName: "ソウフ" },
+                        { stationName: "小岩", lineName: "ソウフ" },
+                        { stationName: "市川", lineName: "ソウフ" },
+                        { stationName: "本八幡", lineName: "ソウフ" },
+                        { stationName: "下総中山", lineName: "ソウフ" },
+                        { stationName: "西船橋", lineName: "ソウフ" },
+                        { stationName: "船橋", lineName: "ソウフ" },
+                        { stationName: "東船橋", lineName: "ソウフ" },
+                        { stationName: "津田沼", lineName: "ソウフ" },
+                        { stationName: "幕張本郷", lineName: "ソウフ" },
+                        { stationName: "幕張", lineName: "ソウフ" },
+                        { stationName: "新検見川", lineName: "ソウフ" },
+                        { stationName: "稲毛", lineName: "ソウフ" },
+                        { stationName: "西千葉", lineName: "ソウフ" },
+                        { stationName: "千葉", lineName: "ソトホ" },
+                        { stationName: "本千葉", lineName: "ソトホ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+
+                // 品川方面→浜野方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "品川" &&
+                    fullPath[idx - 1].lineName === "シンカ" &&
+                    idx + 18 < fullPath.length &&
+                    (fullPath[idx + 17].lineName === "ウチホ" || fullPath[idx + 17].lineName === "ウチホソ") &&
+                    fullPath[idx + 18].stationName === "浜野"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "東京", lineName: "ソウフ" },
+                        { stationName: "新日本橋", lineName: "ソウフ" },
+                        { stationName: "馬喰町", lineName: "ソウフ" },
+                        { stationName: "錦糸町", lineName: "ソウフ" },
+                        { stationName: "亀戸", lineName: "ソウフ" },
+                        { stationName: "平井", lineName: "ソウフ" },
+                        { stationName: "新小岩", lineName: "ソウフ" },
+                        { stationName: "小岩", lineName: "ソウフ" },
+                        { stationName: "市川", lineName: "ソウフ" },
+                        { stationName: "本八幡", lineName: "ソウフ" },
+                        { stationName: "下総中山", lineName: "ソウフ" },
+                        { stationName: "西船橋", lineName: "ソウフ" },
+                        { stationName: "船橋", lineName: "ソウフ" },
+                        { stationName: "東船橋", lineName: "ソウフ" },
+                        { stationName: "津田沼", lineName: "ソウフ" },
+                        { stationName: "幕張本郷", lineName: "ソウフ" },
+                        { stationName: "幕張", lineName: "ソウフ" },
+                        { stationName: "新検見川", lineName: "ソウフ" },
+                        { stationName: "稲毛", lineName: "ソウフ" },
+                        { stationName: "西千葉", lineName: "ソウフ" },
+                        { stationName: "千葉", lineName: "ソトホ" },
+                        { stationName: "本千葉", lineName: "ソトホ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+
                 // 有楽町方面→蘇我
                 if (0 < idx &&
-                    fullPath[idx - 1].stationName === "有楽町" &&
-                    (fullPath[idx - 1].lineName === "トウカ" || fullPath[idx - 1].lineName === "ツウカ") &&
+                    (
+                        (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "トウカ") ||
+                        (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "ツウカ")
+                    ) &&
                     idx + 17 < fullPath.length &&
                     fullPath[idx + 17].lineName === null
                 ) {
@@ -2375,8 +2623,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 if (0 < idx &&
                     (
                         (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "トウカ") ||
-                        (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "ツウカ") ||
-                        (fullPath[idx - 1].stationName === "品川" && fullPath[idx - 1].lineName === "シンカ")
+                        (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "ツウカ")
                     ) &&
                     idx + 18 < fullPath.length &&
                     fullPath[idx + 17].lineName === "ソトホ" &&
@@ -2415,8 +2662,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                 if (0 < idx &&
                     (
                         (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "トウカ") ||
-                        (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "ツウカ") ||
-                        (fullPath[idx - 1].stationName === "品川" && fullPath[idx - 1].lineName === "シンカ")
+                        (fullPath[idx - 1].stationName === "有楽町" && fullPath[idx - 1].lineName === "ツウカ")
                     ) &&
                     idx + 18 < fullPath.length &&
                     (fullPath[idx + 17].lineName === "ウチホ" || fullPath[idx + 17].lineName === "ウチホソ") &&
@@ -2653,13 +2899,46 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     break;
                 }
 
+                // 蘇我→品川方面
+                if (idx === 0 &&
+                    18 < fullPath.length &&
+                    fullPath[17].lineName === "シンカ" &&
+                    fullPath[18].stationName === "品川"
+                ) {
+                    fullPath = [
+                        { stationName: "蘇我", lineName: "ソトホ" },
+                        { stationName: "本千葉", lineName: "ソトホ" },
+                        { stationName: "千葉", lineName: "ソウフ" },
+                        { stationName: "西千葉", lineName: "ソウフ" },
+                        { stationName: "稲毛", lineName: "ソウフ" },
+                        { stationName: "新検見川", lineName: "ソウフ" },
+                        { stationName: "幕張", lineName: "ソウフ" },
+                        { stationName: "幕張本郷", lineName: "ソウフ" },
+                        { stationName: "津田沼", lineName: "ソウフ" },
+                        { stationName: "東船橋", lineName: "ソウフ" },
+                        { stationName: "船橋", lineName: "ソウフ" },
+                        { stationName: "西船橋", lineName: "ソウフ" },
+                        { stationName: "下総中山", lineName: "ソウフ" },
+                        { stationName: "本八幡", lineName: "ソウフ" },
+                        { stationName: "市川", lineName: "ソウフ" },
+                        { stationName: "小岩", lineName: "ソウフ" },
+                        { stationName: "新小岩", lineName: "ソウフ" },
+                        { stationName: "平井", lineName: "ソウフ" },
+                        { stationName: "亀戸", lineName: "ソウフ" },
+                        { stationName: "錦糸町", lineName: "ソウフ" },
+                        { stationName: "馬喰町", lineName: "ソウフ" },
+                        { stationName: "新日本橋", lineName: "ソウフ" },
+                        ...fullPath.slice(17)
+                    ]
+                    break;
+                }
+
                 // 蘇我→有楽町方面
                 if (idx === 0 &&
                     18 < fullPath.length &&
                     (
                         (fullPath[17].lineName === "トウカ" && fullPath[18].stationName === "有楽町") ||
-                        (fullPath[17].lineName === "ツウカ" && fullPath[18].stationName === "有楽町") ||
-                        (fullPath[17].lineName === "シンカ" && fullPath[18].stationName === "品川")
+                        (fullPath[17].lineName === "ツウカ" && fullPath[18].stationName === "有楽町")
                     )
                 ) {
                     fullPath = [
@@ -2766,6 +3045,43 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     break;
                 }
 
+                // 鎌取方面→品川方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "鎌取" &&
+                    fullPath[idx - 1].lineName === "ソトホ" &&
+                    idx + 18 < fullPath.length &&
+                    fullPath[idx + 17].lineName === "シンカ" &&
+                    fullPath[idx + 18].stationName === "品川"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "蘇我", lineName: "ソトホ" },
+                        { stationName: "本千葉", lineName: "ソトホ" },
+                        { stationName: "千葉", lineName: "ソウフ" },
+                        { stationName: "西千葉", lineName: "ソウフ" },
+                        { stationName: "稲毛", lineName: "ソウフ" },
+                        { stationName: "新検見川", lineName: "ソウフ" },
+                        { stationName: "幕張", lineName: "ソウフ" },
+                        { stationName: "幕張本郷", lineName: "ソウフ" },
+                        { stationName: "津田沼", lineName: "ソウフ" },
+                        { stationName: "東船橋", lineName: "ソウフ" },
+                        { stationName: "船橋", lineName: "ソウフ" },
+                        { stationName: "西船橋", lineName: "ソウフ" },
+                        { stationName: "下総中山", lineName: "ソウフ" },
+                        { stationName: "本八幡", lineName: "ソウフ" },
+                        { stationName: "市川", lineName: "ソウフ" },
+                        { stationName: "小岩", lineName: "ソウフ" },
+                        { stationName: "新小岩", lineName: "ソウフ" },
+                        { stationName: "平井", lineName: "ソウフ" },
+                        { stationName: "亀戸", lineName: "ソウフ" },
+                        { stationName: "錦糸町", lineName: "ソウフ" },
+                        { stationName: "馬喰町", lineName: "ソウフ" },
+                        { stationName: "新日本橋", lineName: "ソウフ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+
                 // 鎌取方面→有楽町方面
                 if (0 < idx &&
                     fullPath[idx - 1].stationName === "鎌取" &&
@@ -2773,8 +3089,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     idx + 18 < fullPath.length &&
                     (
                         (fullPath[idx + 17].lineName === "トウカ" && fullPath[idx + 18].stationName === "有楽町") ||
-                        (fullPath[idx + 17].lineName === "ツウカ" && fullPath[idx + 18].stationName === "有楽町") ||
-                        (fullPath[idx + 17].lineName === "シンカ" && fullPath[idx + 18].stationName === "品川")
+                        (fullPath[idx + 17].lineName === "ツウカ" && fullPath[idx + 18].stationName === "有楽町")
                     )
                 ) {
                     fullPath = [
@@ -2885,6 +3200,43 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     break;
                 }
 
+                // 浜野方面→品川方面
+                if (0 < idx &&
+                    fullPath[idx - 1].stationName === "浜野" &&
+                    (fullPath[idx - 1].lineName === "ウチホ" || fullPath[idx - 1].lineName === "ウチホソ") &&
+                    idx + 18 < fullPath.length &&
+                    fullPath[idx + 17].lineName === "シンカ" &&
+                    fullPath[idx + 18].stationName === "品川"
+                ) {
+                    fullPath = [
+                        ...fullPath.slice(0, idx),
+                        { stationName: "蘇我", lineName: "ソトホ" },
+                        { stationName: "本千葉", lineName: "ソトホ" },
+                        { stationName: "千葉", lineName: "ソウフ" },
+                        { stationName: "西千葉", lineName: "ソウフ" },
+                        { stationName: "稲毛", lineName: "ソウフ" },
+                        { stationName: "新検見川", lineName: "ソウフ" },
+                        { stationName: "幕張", lineName: "ソウフ" },
+                        { stationName: "幕張本郷", lineName: "ソウフ" },
+                        { stationName: "津田沼", lineName: "ソウフ" },
+                        { stationName: "東船橋", lineName: "ソウフ" },
+                        { stationName: "船橋", lineName: "ソウフ" },
+                        { stationName: "西船橋", lineName: "ソウフ" },
+                        { stationName: "下総中山", lineName: "ソウフ" },
+                        { stationName: "本八幡", lineName: "ソウフ" },
+                        { stationName: "市川", lineName: "ソウフ" },
+                        { stationName: "小岩", lineName: "ソウフ" },
+                        { stationName: "新小岩", lineName: "ソウフ" },
+                        { stationName: "平井", lineName: "ソウフ" },
+                        { stationName: "亀戸", lineName: "ソウフ" },
+                        { stationName: "錦糸町", lineName: "ソウフ" },
+                        { stationName: "馬喰町", lineName: "ソウフ" },
+                        { stationName: "新日本橋", lineName: "ソウフ" },
+                        ...fullPath.slice(idx + 17)
+                    ]
+                    break;
+                }
+
                 // 浜野方面→有楽町方面
                 if (0 < idx &&
                     fullPath[idx - 1].stationName === "浜野" &&
@@ -2892,8 +3244,7 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
                     idx + 18 < fullPath.length &&
                     (
                         (fullPath[idx + 17].lineName === "トウカ" && fullPath[idx + 18].stationName === "有楽町") ||
-                        (fullPath[idx + 17].lineName === "ツウカ" && fullPath[idx + 18].stationName === "有楽町") ||
-                        (fullPath[idx + 17].lineName === "シンカ" && fullPath[idx + 18].stationName === "品川")
+                        (fullPath[idx + 17].lineName === "ツウカ" && fullPath[idx + 18].stationName === "有楽町")
                     )
                 ) {
                     fullPath = [
