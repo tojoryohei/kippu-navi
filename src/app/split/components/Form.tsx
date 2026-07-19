@@ -634,7 +634,7 @@ export default function SplitForm({
 
             {/* eslint-disable-next-line react-hooks/refs */}
             <form onSubmit={handleSubmit(onSubmit)} className="w-full">
-                <div className="flex flex-col gap-4 w-full">
+                <div className="flex flex-col gap-3 w-full">
 
                     <div className="flex flex-col w-full">
                         <div className="flex items-center gap-5 w-full">
@@ -654,7 +654,7 @@ export default function SplitForm({
                                 />
                             </div>
                         </div>
-                        <div className="min-h-5 ml-17">
+                        <div className="min-h-8 ml-17">
                             {errors.startStation && (
                                 <p className="text-red-500 text-xs">
                                     {errors.startStation.message}
@@ -663,7 +663,7 @@ export default function SplitForm({
                         </div>
                     </div>
 
-                    <div className="flex justify-center w-full -my-3 relative z-0 mb-1">
+                    <div className="flex justify-center w-full -my-3 relative z-0 mb-4">
                         <button
                             type="button"
                             onClick={handleSwapStations}
@@ -694,7 +694,7 @@ export default function SplitForm({
                                 />
                             </div>
                         </div>
-                        <div className="min-h-5 ml-17">
+                        <div className="min-h-8 ml-17">
                             {errors.endStation && (
                                 <p className="text-red-500 text-xs">
                                     {errors.endStation.message}
@@ -703,7 +703,7 @@ export default function SplitForm({
                         </div>
                     </div>
 
-                    <div className="mt-2 w-full">
+                    <div className="w-full">
                         <button
                             type="submit"
                             className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors cursor-pointer disabled:cursor-not-allowed"
