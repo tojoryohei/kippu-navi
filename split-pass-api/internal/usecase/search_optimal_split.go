@@ -232,17 +232,18 @@ func (s *dpScratch) ensureSize(numStations int, maxK int, numCandidates int) {
 
 var dpScratchPool = sync.Pool{
 	New: func() interface{} {
+		const maxN = 2500
 		return &dpScratch{
 			stationToIndex:  make([]int, 5000),
-			distTable:       make([]int, 101*500),
-			headTable:       make([]int, 101*500),
-			nodes:           make([]staticListNode, 101*500*4),
+			distTable:       make([]int, 101*maxN),
+			headTable:       make([]int, 101*maxN),
+			nodes:           make([]staticListNode, 101*maxN*4),
 			pathBuf:         make([]int, 105),
 			candFlags:       make([]bool, 5000),
 			candStationsBuf: make([]int, 5000),
-			localFares:      make([]int, 500*500),
-			adjEdges:        make([]int32, 500*500),
-			adjHead:         make([]int32, 501),
+			localFares:      make([]int, maxN*maxN),
+			adjEdges:        make([]int32, maxN*maxN),
+			adjHead:         make([]int32, maxN+1),
 		}
 	},
 }
@@ -302,154 +303,91 @@ func (u *SearchOptimalSplit) searchOptimalSplitDP(startID, endID, months, maxSec
 	// 初期状態の設定
 	scratch.distTable[0*N+startIdx] = 0
 
-	if N <= 500 {
-		// CSR と Local Matrix の構築 (アロケーションフリー)
-		edgeCount := 0
-		scratch.adjHead[0] = 0
+	// CSR と Local Matrix の構築 (アロケーションフリー)
+	edgeCount := 0
+	scratch.adjHead[0] = 0
 
+	for uIdx := 0; uIdx < N; uIdx++ {
+		currID := candStations[uIdx]
+		baseIdx := int32(mIdx)*u.numStations*u.numStations + int32(currID)*u.numStations
+		uOffset := uIdx * N
+
+		for vIdx := 0; vIdx < N; vIdx++ {
+			if uIdx == vIdx {
+				scratch.localFares[uOffset+vIdx] = 0
+				continue
+			}
+
+			nextID := candStations[vIdx]
+			fareVal := int(u.fares[baseIdx+int32(nextID)])
+			scratch.localFares[uOffset+vIdx] = fareVal
+
+			if fareVal > 0 {
+				scratch.adjEdges[edgeCount] = int32(vIdx)
+				edgeCount++
+			}
+		}
+		scratch.adjHead[uIdx+1] = int32(edgeCount)
+	}
+
+	// BCE (Bounds Check Elimination) 用ダミーアクセス
+	_ = scratch.distTable[maxK*N+N-1]
+	_ = scratch.headTable[maxK*N+N-1]
+	_ = scratch.localFares[N*N-1]
+	_ = scratch.adjHead[N]
+	if edgeCount > 0 {
+		_ = scratch.adjEdges[edgeCount-1]
+	}
+
+	// 多ステージ DP 遷移 (CSR + Local Matrix 形式)
+	for s := 0; s < maxK; s++ {
 		for uIdx := 0; uIdx < N; uIdx++ {
-			currID := candStations[uIdx]
-			baseIdx := int32(mIdx)*u.numStations*u.numStations + int32(currID)*u.numStations
+			currCost := scratch.distTable[s*N+uIdx]
+			if currCost == INF {
+				continue
+			}
+
+			startEdgeIdx := int(scratch.adjHead[uIdx])
+			endEdgeIdx := int(scratch.adjHead[uIdx+1])
 			uOffset := uIdx * N
 
-			for vIdx := 0; vIdx < N; vIdx++ {
-				if uIdx == vIdx {
-					scratch.localFares[uOffset+vIdx] = 0
-					continue
-				}
+			for e := startEdgeIdx; e < endEdgeIdx; e++ {
+				vIdx := int(scratch.adjEdges[e])
+				fareVal := scratch.localFares[uOffset+vIdx]
 
-				nextID := candStations[vIdx]
-				fareVal := int(u.fares[baseIdx+int32(nextID)])
-				scratch.localFares[uOffset+vIdx] = fareVal
+				newCost := currCost + fareVal
+				targetIdx := (s+1)*N + vIdx
 
-				if fareVal > 0 {
-					scratch.adjEdges[edgeCount] = int32(vIdx)
-					edgeCount++
-				}
-			}
-			scratch.adjHead[uIdx+1] = int32(edgeCount)
-		}
+				if newCost < scratch.distTable[targetIdx] {
+					scratch.distTable[targetIdx] = newCost
 
-		// BCE (Bounds Check Elimination) 用ダミーアクセス
-		_ = scratch.distTable[maxK*N+N-1]
-		_ = scratch.headTable[maxK*N+N-1]
-		_ = scratch.localFares[N*N-1]
-		_ = scratch.adjHead[N]
-		if edgeCount > 0 {
-			_ = scratch.adjEdges[edgeCount-1]
-		}
-
-		// 多ステージ DP 遷移 (CSR + Local Matrix 形式)
-		for s := 0; s < maxK; s++ {
-			for uIdx := 0; uIdx < N; uIdx++ {
-				currCost := scratch.distTable[s*N+uIdx]
-				if currCost == INF {
-					continue
-				}
-
-				startEdgeIdx := int(scratch.adjHead[uIdx])
-				endEdgeIdx := int(scratch.adjHead[uIdx+1])
-				uOffset := uIdx * N
-
-				for e := startEdgeIdx; e < endEdgeIdx; e++ {
-					vIdx := int(scratch.adjEdges[e])
-					fareVal := scratch.localFares[uOffset+vIdx]
-
-					newCost := currCost + fareVal
-					targetIdx := (s+1)*N + vIdx
-
-					if newCost < scratch.distTable[targetIdx] {
-						scratch.distTable[targetIdx] = newCost
-
-						if scratch.nodeCount >= len(scratch.nodes) {
-							newNodes := make([]staticListNode, len(scratch.nodes)*2)
-							copy(newNodes, scratch.nodes)
-							scratch.nodes = newNodes
-						}
-
-						scratch.nodes[scratch.nodeCount] = staticListNode{
-							parentIdx: uIdx,
-							sections:  s,
-							next:      -1,
-						}
-						scratch.headTable[targetIdx] = scratch.nodeCount
-						scratch.nodeCount++
-					} else if newCost == scratch.distTable[targetIdx] {
-						if scratch.nodeCount >= len(scratch.nodes) {
-							newNodes := make([]staticListNode, len(scratch.nodes)*2)
-							copy(newNodes, scratch.nodes)
-							scratch.nodes = newNodes
-						}
-
-						scratch.nodes[scratch.nodeCount] = staticListNode{
-							parentIdx: uIdx,
-							sections:  s,
-							next:      scratch.headTable[targetIdx],
-						}
-						scratch.headTable[targetIdx] = scratch.nodeCount
-						scratch.nodeCount++
-					}
-				}
-			}
-		}
-	} else {
-		// フォールバック: N > 500 の場合の直接参照方式
-		for s := 0; s < maxK; s++ {
-			for uIdx := 0; uIdx < N; uIdx++ {
-				currCost := scratch.distTable[s*N+uIdx]
-				if currCost == INF {
-					continue
-				}
-
-				currID := candStations[uIdx]
-				baseIdx := int32(mIdx)*u.numStations*u.numStations + int32(currID)*u.numStations
-
-				for vIdx := 0; vIdx < N; vIdx++ {
-					if uIdx == vIdx {
-						continue
+					if scratch.nodeCount >= len(scratch.nodes) {
+						newNodes := make([]staticListNode, len(scratch.nodes)*2)
+						copy(newNodes, scratch.nodes)
+						scratch.nodes = newNodes
 					}
 
-					nextID := candStations[vIdx]
-					idx := baseIdx + int32(nextID)
-					fareVal := int(u.fares[idx])
-					if fareVal <= 0 {
-						continue
+					scratch.nodes[scratch.nodeCount] = staticListNode{
+						parentIdx: uIdx,
+						sections:  s,
+						next:      -1,
+					}
+					scratch.headTable[targetIdx] = scratch.nodeCount
+					scratch.nodeCount++
+				} else if newCost == scratch.distTable[targetIdx] {
+					if scratch.nodeCount >= len(scratch.nodes) {
+						newNodes := make([]staticListNode, len(scratch.nodes)*2)
+						copy(newNodes, scratch.nodes)
+						scratch.nodes = newNodes
 					}
 
-					newCost := currCost + fareVal
-					targetIdx := (s+1)*N + vIdx
-
-					if newCost < scratch.distTable[targetIdx] {
-						scratch.distTable[targetIdx] = newCost
-
-						if scratch.nodeCount >= len(scratch.nodes) {
-							newNodes := make([]staticListNode, len(scratch.nodes)*2)
-							copy(newNodes, scratch.nodes)
-							scratch.nodes = newNodes
-						}
-
-						scratch.nodes[scratch.nodeCount] = staticListNode{
-							parentIdx: uIdx,
-							sections:  s,
-							next:      -1,
-						}
-						scratch.headTable[targetIdx] = scratch.nodeCount
-						scratch.nodeCount++
-					} else if newCost == scratch.distTable[targetIdx] {
-						if scratch.nodeCount >= len(scratch.nodes) {
-							newNodes := make([]staticListNode, len(scratch.nodes)*2)
-							copy(newNodes, scratch.nodes)
-							scratch.nodes = newNodes
-						}
-
-						scratch.nodes[scratch.nodeCount] = staticListNode{
-							parentIdx: uIdx,
-							sections:  s,
-							next:      scratch.headTable[targetIdx],
-						}
-						scratch.headTable[targetIdx] = scratch.nodeCount
-						scratch.nodeCount++
+					scratch.nodes[scratch.nodeCount] = staticListNode{
+						parentIdx: uIdx,
+						sections:  s,
+						next:      scratch.headTable[targetIdx],
 					}
+					scratch.headTable[targetIdx] = scratch.nodeCount
+					scratch.nodeCount++
 				}
 			}
 		}
@@ -705,7 +643,6 @@ func (u *SearchOptimalSplit) isPureDetourPath(path []int) bool {
 	}
 	return false
 }
-
 
 func (u *SearchOptimalSplit) getBypassCandidates(start, end int) [][]int {
 	rg := u.graph
