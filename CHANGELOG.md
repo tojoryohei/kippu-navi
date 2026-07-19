@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.18.0...kippu-navi-v2.18.1) (2026-07-19)
+
+
+### Bug Fixes
+
+* おおさか東線の経由印字重複の防止 ([#525](https://github.com/tojoryohei/kippu-navi/issues/525)) ([2b53272](https://github.com/tojoryohei/kippu-navi/commit/2b53272af07c4b37c52bfb4d3eed710d00505bde))
+
 ## [2.18.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.17.1...kippu-navi-v2.18.0) (2026-07-19)
 
 
