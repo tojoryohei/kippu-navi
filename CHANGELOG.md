@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.18.1...kippu-navi-v2.19.0) (2026-07-21)
+
+
+### Features
+
+* ローダーの集約によるビルドエラー解消、定期券計算のクライアント移行、重複・新幹線バリデーションの追加 ([#531](https://github.com/tojoryohei/kippu-navi/issues/531)) ([3da8779](https://github.com/tojoryohei/kippu-navi/commit/3da8779c0d5342f361e5440635a2ae1e2d0f0ada))
+
 ## [2.18.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.18.0...kippu-navi-v2.18.1) (2026-07-19)
 
 
