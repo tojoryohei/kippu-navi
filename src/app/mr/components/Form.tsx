@@ -7,12 +7,14 @@ import { RiArrowUpDownLine } from "react-icons/ri";
 
 import stationData from "@/app/mr/data/stations.json";
 import lineData from "@/app/mr/data/lines.json";
+import { getLineByName, getKana } from '@/app/mr/lib/loadData';
 import SelectStation from "@/app/mr/components/SelectStation";
 import SelectLine from "@/app/mr/components/SelectLine";
 
 import { Station, Line, KippuData, IFormInput, PathStep, CalculationMode } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
+const SHINKANSEN_LINES: Set<string> = new Set(["山形新幹線", "北海道新幹線", "九州新幹線", "上越新幹線", "新幹線", "東北新幹線", "西九州新幹線", "北陸新幹線"]);
 const TEMPORARY_STATIONS = [
     "原生花園",
     "ラベンダー畑",
@@ -117,13 +119,16 @@ export default function Form() {
     const isPeriodDisabled = currentType === "ticket";
 
     // クライアント側での経路展開 (重複チェック用)
-    const getClientFullPath = (start: Station | null, segments: typeof formValues.segments): string[] => {
+    const getAllStations = (start: Station | null, segments: typeof formValues.segments): string[] => {
         if (!start) return [];
-        const fullPath: string[] = [start.name];
+        const stations: string[] = [];
+        if (start.name !== "大阪" || 0 < segments.length && segments[0].viaLine !== null && segments[0].viaLine.name !== "新幹線") {
+            stations.push(start.name);
+        }
 
         for (let i = 0; i < segments.length; i++) {
             const segment = segments[i];
-            const prevStationName = fullPath[fullPath.length - 1];
+            const prevStationName = stations[stations.length - 1];
             const destStation = segment.destinationStation;
             const line = segment.viaLine;
 
@@ -141,7 +146,7 @@ export default function Form() {
             const endIdx = stationsOnLine.indexOf(destStation.name);
 
             if (startIdx === -1 || endIdx === -1) {
-                fullPath.push(destStation.name);
+                stations.push(destStation.name);
                 continue;
             }
 
@@ -151,16 +156,20 @@ export default function Form() {
             } else {
                 segmentStations = stationsOnLine.slice(endIdx, startIdx).reverse();
             }
-
-            fullPath.push(...segmentStations);
+            if (line.name === "新幹線" && segmentStations.indexOf("大阪") !== -1) {
+                segmentStations = segmentStations.filter((station) => station !== "大阪");
+            }
+            stations.push(...segmentStations);
         }
-        return fullPath;
+        return stations;
     };
 
     // リアルタイムバリデーション: 重複経路チェック (最後の一駅を除く)
-    const clientFullPath = getClientFullPath(formValues.startStation, formValues.segments || []);
-    const firstPart = clientFullPath.slice(0, -1);
-    const isDuplicateRoute = firstPart.some((name, index) => firstPart.indexOf(name) !== index);
+    const allStations = getAllStations(formValues.startStation, formValues.segments || []);
+    const isDuplicateRoute = allStations.length > 1 && new Set(allStations.slice(0, -1)).size !== allStations.length - 1;
+
+    const isPass = currentType && currentType !== "ticket";
+    const hasShinkansen = isPass && (formValues.segments || []).some(seg => seg.viaLine && SHINKANSEN_LINES.has(seg.viaLine.name));
 
     const handleTabChange = (tab: "ticket" | "pass") => {
         setResult(null);
@@ -291,8 +300,34 @@ export default function Form() {
             }
         });
 
+        const fullPath: PathStep[] = [];
+        for (let i = 0; i < path.length - 1; i++) {
+            const startStep = path[i];
+            const endStep = path[i + 1];
+            const lineName = startStep.lineName!;
+            const line = getLineByName(lineName);
+            const stationsOnLine = line.stations;
+            const startIdx = stationsOnLine.indexOf(startStep.stationName);
+            const endIdx = stationsOnLine.indexOf(endStep.stationName);
+            let segmentStations: string[];
+            if (startIdx < endIdx) {
+                segmentStations = stationsOnLine.slice(startIdx, endIdx);
+            } else {
+                segmentStations = stationsOnLine.slice(endIdx + 1, startIdx + 1).reverse();
+            }
+            for (const stationName of segmentStations) {
+                fullPath.push({ stationName: stationName, lineName: lineName });
+            }
+        }
+        fullPath.push(path[path.length - 1]);
+        for (let i = 0; i < fullPath.length - 1; i++) {
+            fullPath[i].lineName = getKana(fullPath[i].lineName!, fullPath[i].stationName, fullPath[i + 1].stationName);
+        }
+
+
+
         return {
-            path,
+            fullPath,
             calculationMode: data.calculationMode,
             searchType: data.searchType
         };
@@ -316,12 +351,54 @@ export default function Form() {
         }
 
         let stations = new Set<string>();
-        for (let i = 0; i < apiRequestBody.path.length; i++) {
-            stations.add(apiRequestBody.path[i].stationName);
+        for (let i = 0; i < apiRequestBody.fullPath.length; i++) {
+            stations.add(apiRequestBody.fullPath[i].stationName);
         }
-        if (!apiRequestBody || apiRequestBody.path.length < 2 || stations.size === 1) {
+        if (!apiRequestBody || apiRequestBody.fullPath.length < 2 || stations.size === 1) {
             setError('不正な経路です');
             setIsLoading(false);
+            return;
+        }
+
+        const isPass = data.searchType && data.searchType !== "ticket";
+        if (isPass) {
+            const startName = apiRequestBody.fullPath[0].stationName;
+            const endName = apiRequestBody.fullPath[apiRequestBody.fullPath.length - 1].stationName;
+            if (TEMPORARY_STATIONS.includes(startName) || TEMPORARY_STATIONS.includes(endName)) {
+                setError('臨時駅発着の定期券は計算できません');
+                setIsLoading(false);
+                return;
+            }
+
+            const stationNames = apiRequestBody.fullPath
+                .map(p => p.stationName)
+                .filter(name => !TEMPORARY_STATIONS.includes(name));
+            const firstPart = stationNames.slice(0, -1);
+            const hasDuplicateInFirstPart = firstPart.some((name, index) => firstPart.indexOf(name) !== index);
+            if (hasDuplicateInFirstPart) {
+                setError('経路が重複しています。');
+                setIsLoading(false);
+                return;
+            }
+
+            if (!workerRef.current || !isWasmReady) {
+                setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
+                setIsLoading(false);
+                return;
+            }
+
+            const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
+            const months = monthsMap[data.searchType] || 1;
+
+            workerRef.current.postMessage({
+                type: "calculateRoutePass",
+                payload: {
+                    stationNames,
+                    calculationMode: data.calculationMode,
+                    months,
+                    isIc: false
+                }
+            });
             return;
         }
 
@@ -338,26 +415,7 @@ export default function Form() {
             }
 
             const responseData = await response.json();
-            if (responseData.data && "correctedPath" in responseData.data) {
-                if (!workerRef.current || !isWasmReady) {
-                    throw new Error("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
-                }
-                const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
-                const months = monthsMap[data.searchType] || 1;
-
-                const cPath: string[] = responseData.data.correctedPath;
-
-                workerRef.current.postMessage({
-                    type: "calculateRoutePass",
-                    payload: {
-                        stationNames: cPath,
-                        calculationMode: data.calculationMode,
-                        months,
-                        isIc: false
-                    }
-                });
-                setServerTime(responseData.time);
-            } else if (responseData.data) {
+            if (responseData.data) {
                 setResult(responseData.data);
                 setServerTime(responseData.time);
                 setIsLoading(false);
@@ -593,14 +651,20 @@ export default function Form() {
                         </p>
                     )}
 
+                    {hasShinkansen && (
+                        <p className="text-red-500 text-sm">
+                            定期券では新幹線を経由することができません
+                        </p>
+                    )}
+
                     {/* 経路追加 ＆ 経路逆転 ボタン群 */}
                     <div className="flex items-center flex-wrap gap-3 my-2 w-full">
                         <button
                             type="button"
                             onClick={addSegment}
-                            disabled={!canAddTransfer || isDuplicateRoute}
+                            disabled={!canAddTransfer || isDuplicateRoute || hasShinkansen}
                             className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm whitespace-nowrap"
-                            title={!isUnderPathLimit ? "経路数の上限（3000件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
+                            title={hasShinkansen ? "定期券では新幹線を経由するがことはできません" : !isUnderPathLimit ? "経路数の上限（3000件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
                         >
                             {"経由路線を追加"}
                         </button>
@@ -663,7 +727,7 @@ export default function Form() {
                     <button
                         type="submit"
                         className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2 cursor-pointer disabled:cursor-not-allowed"
-                        disabled={!isValid || isDuplicateRoute || isLoading || (currentType !== "ticket" && !isWasmReady)}
+                        disabled={!isValid || isDuplicateRoute || isLoading || (currentType !== "ticket" && !isWasmReady) || hasShinkansen}
                     >
                         {isLoading
                             ? "計算中..."
