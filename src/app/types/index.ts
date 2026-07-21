@@ -54,7 +54,7 @@ export interface PathStep {
 }
 
 export interface RouteRequest {
-    path: PathStep[];
+    fullPath: PathStep[];
     calculationMode: CalculationMode;
     searchType?: SearchType;
 }
