@@ -8,12 +8,12 @@ export async function POST(request: Request) {
     try {
         const body: RouteRequest = await request.json();
 
-        if (300 <= body.path.length) {
+        if (3000 <= body.path.length) {
             const endTime = performance.now();
             const calculationTimeMs = endTime - startTime;
             return NextResponse.json(
                 {
-                    error: '経由路線の上限は300です。',
+                    error: '経由路線の上限は3000です。',
                     time: calculationTimeMs
                 },
                 { status: 400 }
