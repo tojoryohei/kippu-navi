@@ -19,8 +19,6 @@ const TEMPORARY_STATIONS = [
   "バルーンさが",
 ];
 
-
-
 export async function calculateAction(from: string, to: string, searchType: string, isIc: boolean) {
   if (from === to) {
     return { error: "出発駅と到着駅が同じです。" };

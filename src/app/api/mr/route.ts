@@ -29,7 +29,7 @@ export async function POST(request: Request) {
             const calculationTimeMs = endTime - startTime;
             return NextResponse.json(
                 {
-                    error: '不正な経路です。',
+                    error: '経路がありません。',
                     time: calculationTimeMs
                 },
                 { status: 400 }

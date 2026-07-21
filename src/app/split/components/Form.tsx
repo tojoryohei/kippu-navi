@@ -526,7 +526,7 @@ export default function SplitForm({
                     }
                 });
 
-                // APIの応答時間をサーバー時間として設定 (Wasm復元は極めて高速なため、大半がAPI通信時間)
+                // APIの応答時間をサーバー時間として設定
                 setServerTime(res.serverTime || null);
             } else {
                 setResult(res.result || null);

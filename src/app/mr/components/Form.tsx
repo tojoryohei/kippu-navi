@@ -128,12 +128,12 @@ export default function Form() {
             const line = segment.viaLine;
 
             if (!destStation || !line) {
-                break;
+                continue;
             }
 
             const matchLine = lineData.find(l => l.name === line.name);
             if (!matchLine) {
-                break;
+                continue;
             }
 
             const stationsOnLine = matchLine.stations;
@@ -246,7 +246,7 @@ export default function Form() {
         append({ viaLine: null, destinationStation: null });
     };
 
-    // フォームの入力値のみを逆転させる処理（計算やResultの操作は行わない）
+    // フォームの入力値のみを逆転させる処理
     const handleReverseRoute = () => {
         if (!canReverse) return;
 

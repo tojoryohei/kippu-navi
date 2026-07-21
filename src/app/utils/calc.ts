@@ -218,46 +218,45 @@ export function applyOneSideYamanoteRule(fullPath: PathStep[], direction: string
 
 export function generatePrintedViaStrings(fullPath: PathStep[]): string[] {
     if (fullPath.length < 2) return [];
-
     const viaLines: string[] = [];
     const printedViaLines: string[] = [];
     const SHINKANSEN_LINES: Set<string> = new Set(["カタシ", "キタシ", "キユシ", "シヨシ", "シンカ", "トホシ", "ニキシ", "ホクシ"]);
-    const SHINKANSEN_STATIONS: Set<string> = new Set(["仙台市内", "横浜市内", "名古屋市内", "京都市内", "大阪市内", "神戸市内", "広島市内", "北九州市内", "福岡市内", "（北）福島", "米沢", "高畠", "赤湯", "かみのやま温泉", "山形", "北山形", "羽前千歳", "天童", "さくらんぼ東根", "村山", "大石田", "新庄", "新青森", "奥津軽いまべつ", "木古内", "新函館北斗", "博多", "新鳥栖", "久留米", "筑後船小屋", "新大牟田", "新玉名", "熊本", "新八代", "新水俣", "出水", "（鹿）川内", "鹿児島中央", "東京", "上野", "大宮", "熊谷", "本庄早稲田", "高崎", "上毛高原", "越後湯沢", "浦佐", "長岡", "燕三条", "新潟", "東京", "品川", "新横浜", "小田原", "熱海", "三島", "（東）新富士", "静岡", "掛川", "浜松", "豊橋", "三河安城", "名古屋", "岐阜羽島", "米原", "京都", "新大阪", "新神戸", "西明石", "姫路", "相生", "岡山", "新倉敷", "福山", "新尾道", "三原", "東広島", "広島", "新岩国", "徳山", "新山口", "厚狭", "新下関", "小倉", "博多", "東京", "上野", "大宮", "小山", "宇都宮", "那須塩原", "新白河", "（北）郡山", "（北）福島", "白石蔵王", "仙台", "古川", "くりこま高原", "一ノ関", "水沢江刺", "北上", "新花巻", "盛岡", "いわて沼宮内", "二戸", "八戸", "七戸十和田", "新青森", "武雄温泉", "嬉野温泉", "新大村", "諫早", "長崎", "東京", "上野", "大宮", "熊谷", "本庄早稲田", "高崎", "安中榛名", "軽井沢", "佐久平", "上田", "長野", "飯山", "上越妙高", "糸魚川", "黒部宇奈月温泉", "富山", "新高岡", "金沢", "小松", "加賀温泉", "芦原温泉", "福井", "越前たけふ", "敦賀"]);
-
+    const SHINKANSEN_STATIONS: Set<string> = new Set(["（北）福島", "米沢", "高畠", "赤湯", "かみのやま温泉", "山形", "北山形", "羽前千歳", "天童", "さくらんぼ東根", "村山", "大石田", "新庄", "新青森", "奥津軽いまべつ", "木古内", "新函館北斗", "博多", "新鳥栖", "久留米", "筑後船小屋", "新大牟田", "新玉名", "熊本", "新八代", "新水俣", "出水", "（鹿）川内", "鹿児島中央", "東京", "上野", "大宮", "熊谷", "本庄早稲田", "高崎", "上毛高原", "越後湯沢", "浦佐", "長岡", "燕三条", "新潟", "東京", "品川", "新横浜", "小田原", "熱海", "三島", "（東）新富士", "静岡", "掛川", "浜松", "豊橋", "三河安城", "名古屋", "岐阜羽島", "米原", "京都", "新大阪", "新神戸", "西明石", "姫路", "相生", "岡山", "新倉敷", "福山", "新尾道", "三原", "東広島", "広島", "新岩国", "徳山", "新山口", "厚狭", "新下関", "小倉", "博多", "東京", "上野", "大宮", "小山", "宇都宮", "那須塩原", "新白河", "（北）郡山", "（北）福島", "白石蔵王", "仙台", "古川", "くりこま高原", "一ノ関", "水沢江刺", "北上", "新花巻", "盛岡", "いわて沼宮内", "二戸", "八戸", "七戸十和田", "新青森", "武雄温泉", "嬉野温泉", "新大村", "諫早", "長崎", "東京", "上野", "大宮", "熊谷", "本庄早稲田", "高崎", "安中榛名", "軽井沢", "佐久平", "上田", "長野", "飯山", "上越妙高", "糸魚川", "黒部宇奈月温泉", "富山", "新高岡", "金沢", "小松", "加賀温泉", "芦原温泉", "福井", "越前たけふ", "敦賀"]);
+    const CITY_NAME_TO_SHINKANSEN_STATION: Map<string, string> = new Map([
+        ["仙台市内", "仙台"],
+        ["横浜市内", "新横浜"],
+        ["名古屋市内", "名古屋"],
+        ["京都市内", "京都"],
+        ["大阪市内", "新大阪"],
+        ["神戸市内", "新神戸"],
+        ["広島市内", "広島"],
+        ["北九州市内", "小倉"],
+        ["福岡市内", "博多"]
+    ]);
     for (let i = 0; i < fullPath.length; i++) {
         const station = fullPath[i].stationName;
         if (station === null) continue;
         const prevLine = 0 < viaLines.length ? viaLines[viaLines.length - 1] : null;
         const line = fullPath[i].lineName;
         if (line === null || i === fullPath.length - 1) {
-            if (prevLine !== null && SHINKANSEN_LINES.has(prevLine) && SHINKANSEN_STATIONS.has(station))
-                if (station === "仙台市内")
-                    printedViaLines.push("仙台");
-                else if (station === "横浜市内")
-                    printedViaLines.push("新横浜");
-                else if (station === "名古屋市内")
-                    printedViaLines.push("名古屋");
-                else if (station === "京都市内")
-                    printedViaLines.push("京都");
-                else if (station === "大阪市内")
-                    printedViaLines.push("新大阪");
-                else if (station === "神戸市内")
-                    printedViaLines.push("新神戸");
-                else if (station === "広島市内")
-                    printedViaLines.push("広島");
-                else if (station === "北九州市内")
-                    printedViaLines.push("小倉");
-                else if (station === "福岡市内")
-                    printedViaLines.push("博多");
-                else
-                    printedViaLines.push(station); //最後の駅が新幹線駅
+            if (prevLine !== null && SHINKANSEN_LINES.has(prevLine)) {
+                if (SHINKANSEN_STATIONS.has(station))
+                    printedViaLines.push(station);
+                else if (CITY_NAME_TO_SHINKANSEN_STATION.has(station) === true)
+                    printedViaLines.push(CITY_NAME_TO_SHINKANSEN_STATION.get(station)!);
+            }
             break;
         }
         const printing = load.getPrinting(line);
         if (prevLine !== null && prevLine !== line) {
-            if ((SHINKANSEN_LINES.has(line) || SHINKANSEN_LINES.has(prevLine)) && SHINKANSEN_STATIONS.has(station))
+            if ((SHINKANSEN_LINES.has(line) || SHINKANSEN_LINES.has(prevLine)) && SHINKANSEN_STATIONS.has(station)) {
                 printedViaLines.push(station);
-            if (printing === null) continue;
+            }
+            if (printing === null) {
+                if (line === "ツウカ")
+                    viaLines.push(line);
+                continue;
+            }
             const nextStation = fullPath[i + 1].stationName;
             if (station === "鴫野" && nextStation === "放出" || station === "放出" && nextStation === "鴫野") continue;
             if (prevLine === "オサヒ" && line === "オサヒ２" || prevLine === "オサヒ２" && line === "オサヒ") continue;
@@ -269,28 +268,16 @@ export function generatePrintedViaStrings(fullPath: PathStep[]): string[] {
         else if (station === "西九条" && line === "オオサ２")
             printedViaLines.push("西九条");
         else if (prevLine === null) {
-            if (SHINKANSEN_LINES.has(line) && SHINKANSEN_STATIONS.has(station))
-                if (station === "仙台市内")
-                    printedViaLines.push("仙台");
-                else if (station === "横浜市内")
-                    printedViaLines.push("新横浜");
-                else if (station === "名古屋市内")
-                    printedViaLines.push("名古屋");
-                else if (station === "京都市内")
-                    printedViaLines.push("京都");
-                else if (station === "大阪市内")
-                    printedViaLines.push("新大阪");
-                else if (station === "神戸市内")
-                    printedViaLines.push("新神戸");
-                else if (station === "広島市内")
-                    printedViaLines.push("広島");
-                else if (station === "北九州市内")
-                    printedViaLines.push("小倉");
-                else if (station === "福岡市内")
-                    printedViaLines.push("博多");
-                else
-                    printedViaLines.push(station); //最初の駅が新幹線駅
-            if (printing === null) continue;
+            if (SHINKANSEN_LINES.has(line))
+                if (SHINKANSEN_STATIONS.has(station))
+                    printedViaLines.push(station);
+                else if (CITY_NAME_TO_SHINKANSEN_STATION.has(station) === true)
+                    printedViaLines.push(CITY_NAME_TO_SHINKANSEN_STATION.get(station)!);
+            if (printing === null) {
+                if (line === "ツウカ")
+                    viaLines.push(line);
+                continue;
+            }
             const nextStation = fullPath[i + 1].stationName;
             const nextLine = fullPath[i + 1].lineName;
             if ((station === "鴫野" && nextStation === "放出" || station === "放出" && nextStation === "鴫野") &&
