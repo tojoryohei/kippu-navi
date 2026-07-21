@@ -128,12 +128,12 @@ export default function Form() {
             const line = segment.viaLine;
 
             if (!destStation || !line) {
-                break;
+                continue;
             }
 
             const matchLine = lineData.find(l => l.name === line.name);
             if (!matchLine) {
-                break;
+                continue;
             }
 
             const stationsOnLine = matchLine.stations;
@@ -210,7 +210,7 @@ export default function Form() {
     const lastSegment = formValues.segments?.[formValues.segments?.length - 1];
     const lastDestination = lastSegment?.destinationStation;
 
-    const isUnderPathLimit = (formValues.segments?.length ?? 0) < 300;
+    const isUnderPathLimit = (formValues.segments?.length ?? 0) < 3000;
 
     const canAddTransfer = (lastDestination ? (lastDestination.lines?.length ?? 0) > 1 : false) && isUnderPathLimit;
 
@@ -246,7 +246,7 @@ export default function Form() {
         append({ viaLine: null, destinationStation: null });
     };
 
-    // フォームの入力値のみを逆転させる処理（計算やResultの操作は行わない）
+    // フォームの入力値のみを逆転させる処理
     const handleReverseRoute = () => {
         if (!canReverse) return;
 
@@ -600,7 +600,7 @@ export default function Form() {
                             onClick={addSegment}
                             disabled={!canAddTransfer || isDuplicateRoute}
                             className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm whitespace-nowrap"
-                            title={!isUnderPathLimit ? "経路数の上限（300件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
+                            title={!isUnderPathLimit ? "経路数の上限（3000件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
                         >
                             {"経由路線を追加"}
                         </button>

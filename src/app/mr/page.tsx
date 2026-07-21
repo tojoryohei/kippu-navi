@@ -51,23 +51,15 @@ export default function MrPage() {
               {"JR運賃計算機"}
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
-              {"発着駅および経由路線を入力してください。"}
-              <br className="hidden sm:block" />
-              {"きっぷの運賃を計算します。"}
-            </p>
-
-            {/* 現在開発中の機能 */}
-            <div className="inline-block text-left bg-slate-50 border border-slate-200 rounded-lg p-4 max-w-xl mx-auto">
-              <p className="font-semibold text-xs sm:text-sm text-slate-600 mb-2">
-                {"【現在開発中の機能】"}
+            <div className="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
+              <p>
+                {"発着駅および経由路線を入力してください。"}
               </p>
-              <ul className="text-xs sm:text-sm text-slate-500 list-disc list-inside space-y-1">
-                <li>新幹線を経由する場合の運賃計算</li>
-                <li>経路補正を考慮した経路重複エラー</li>
-                <li>特殊経由線を考慮した経由印字</li>
-              </ul>
+              <p>
+                {"きっぷの運賃を計算します。"}
+              </p>
             </div>
+
           </div>
 
           {/* フォーム領域（カードスタイル） */}
@@ -96,7 +88,16 @@ export default function MrPage() {
                   <li>特定区間運賃・加算運賃の自動適用</li>
                   <li>大都市近郊区間内完結時の最安経路への自動補正</li>
                 </ul>
+                <p className="text-slate-700 leading-relaxed space-y-3 text-sm mt-2 font-semibold">
+                  {"今後実装予定の機能"}
+                </p>
+                <ul className="list-disc list-inside space-y-1.5 ml-2 text-slate-600">
+                  <li>新幹線を経由する場合の経路補正</li>
+                  <li>経路補正を考慮した経路重複エラー</li>
+                  <li>特殊経由線を考慮した経由印字</li>
+                </ul>
               </div>
+
             </section>
 
             {/* 使い方 */}
