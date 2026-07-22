@@ -4,6 +4,7 @@ import { useForm, Controller, SubmitHandler, useFieldArray, useWatch } from "rea
 import type { SingleValue } from "react-select";
 import { useState, useRef, useEffect } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
+import { usePostHog } from "posthog-js/react";
 
 import stationData from "@/app/mr/data/stations.json";
 import lineData from "@/app/mr/data/lines.json";
@@ -33,6 +34,9 @@ interface FormValues extends IFormInput {
 }
 
 export default function Form() {
+    const posthog = usePostHog();
+    const lastTrackedSearch = useRef<string | null>(null);
+
     const { register, handleSubmit, control, setValue, getValues, trigger, formState: { isValid } } = useForm<FormValues>({
         mode: 'onChange',
         defaultValues: {
@@ -114,6 +118,103 @@ export default function Form() {
             }
         };
     }, []);
+
+    // PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const startStation = getValues("startStation");
+        const segments = getValues("segments");
+        const currentSearchType = getValues("searchType") || "ticket";
+        const currentFrom = startStation?.name;
+        const lastSegment = segments?.[segments.length - 1];
+        const currentTo = lastSegment?.destinationStation?.name;
+
+        if (currentFrom && currentTo) {
+            // 経路文字列を生成
+            let route = currentFrom;
+            for (const seg of (segments || [])) {
+                if (seg.viaLine?.name) {
+                    route += `(${seg.viaLine.name})`;
+                }
+                if (seg.destinationStation?.name) {
+                    route += seg.destinationStation.name;
+                }
+            }
+            const currentSearchKey = `${route}_${currentSearchType}`;
+
+            // 同じ検索条件での重複送信を防止
+            if (lastTrackedSearch.current !== currentSearchKey) {
+                // 1. 乗車券の計算結果が返ってきた場合
+                if (result) {
+                    const eventParams = {
+                        search_type: currentSearchType,
+                        route,
+                        fare: result.fare,
+                    };
+
+                    const runTracking = () => {
+                        if (posthog) {
+                            posthog.capture("search_fare", eventParams);
+                        }
+                    };
+
+                    if (typeof window.requestIdleCallback === "function") {
+                        window.requestIdleCallback(runTracking);
+                    } else {
+                        setTimeout(runTracking, 50);
+                    }
+
+                    lastTrackedSearch.current = currentSearchKey;
+                }
+                // 2. 定期券の計算結果が返ってきた場合
+                else if (resultPass) {
+                    const eventParams = {
+                        search_type: currentSearchType,
+                        route,
+                        fare: resultPass.fare,
+                    };
+
+                    const runTracking = () => {
+                        if (posthog) {
+                            posthog.capture("search_fare", eventParams);
+                        }
+                    };
+
+                    if (typeof window.requestIdleCallback === "function") {
+                        window.requestIdleCallback(runTracking);
+                    } else {
+                        setTimeout(runTracking, 50);
+                    }
+
+                    lastTrackedSearch.current = currentSearchKey;
+                }
+                // 3. エラーが返ってきた場合
+                else if (error) {
+                    const errorParams = {
+                        search_type: currentSearchType,
+                        route,
+                        error_type: "calculation_error",
+                        error_message: error,
+                    };
+
+                    const runTrackingError = () => {
+                        if (posthog) {
+                            posthog.capture("search_error", errorParams);
+                        }
+                    };
+
+                    if (typeof window.requestIdleCallback === "function") {
+                        window.requestIdleCallback(runTrackingError);
+                    } else {
+                        setTimeout(runTrackingError, 50);
+                    }
+
+                    lastTrackedSearch.current = currentSearchKey;
+                }
+            }
+        }
+    }, [result, resultPass, error, posthog, getValues]);
 
     const currentType = formValues.searchType;
     const isPeriodDisabled = currentType === "ticket";
