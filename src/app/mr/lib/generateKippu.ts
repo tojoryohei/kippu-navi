@@ -126,10 +126,6 @@ function getAllStations(path: PathStep[]): string[] {
     for (let i = 0; i < path.length - 1; i++) {
         if (path[i].stationName === "大阪" && path[i].lineName === "シンカ")
             continue;
-        if (path[i].stationName === "西小倉" && path[i].lineName === "シンカ")
-            continue;
-        if (path[i].stationName === "吉塚" && path[i].lineName === "シンカ")
-            continue;
         stations.push(path[i].stationName);
 
         const current = path[i];
