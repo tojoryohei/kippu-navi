@@ -266,9 +266,6 @@ export default function SplitForm({
                     };
 
                     const runTracking = () => {
-                        if (typeof window.gtag === "function") {
-                            window.gtag("event", "search_split", eventParams);
-                        }
                         if (posthog) {
                             posthog.capture("search_split", eventParams);
                         }
@@ -293,9 +290,6 @@ export default function SplitForm({
                     };
 
                     const runTrackingError = () => {
-                        if (typeof window.gtag === "function") {
-                            window.gtag("event", "search_error", errorParams);
-                        }
                         if (posthog) {
                             posthog.capture("search_error", errorParams);
                         }
