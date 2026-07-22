@@ -20,10 +20,7 @@ export async function POST(request: Request) {
             );
         }
 
-        let stations = new Set<string>();
-        for (let i = 0; i < body.fullPath.length; i++) {
-            stations.add(body.fullPath[i].stationName);
-        }
+        const stations = new Set(body.fullPath.map((path) => path.stationName));
         if (!body.fullPath || body.fullPath.length < 2 || stations.size === 1) {
             const endTime = performance.now();
             const calculationTimeMs = endTime - startTime;

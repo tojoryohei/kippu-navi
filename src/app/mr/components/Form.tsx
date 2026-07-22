@@ -278,6 +278,7 @@ export default function Form() {
     // リアルタイムバリデーション: 重複経路チェック (最後の一駅を除く)
     const allStations = getAllStations(formValues.startStation, formValues.segments || []);
     const isDuplicateRoute = allStations.length > 1 && new Set(allStations.slice(0, -1)).size !== allStations.length - 1;
+    const isInvalidRoute = allStations.length < 2 || new Set(allStations).size === 1;
 
     const isPass = currentType && currentType !== "ticket";
     const hasShinkansen = isPass && (formValues.segments || []).some(seg => seg.viaLine && SHINKANSEN_LINES.has(seg.viaLine.name));
@@ -838,7 +839,7 @@ export default function Form() {
                     <button
                         type="submit"
                         className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2 cursor-pointer disabled:cursor-not-allowed"
-                        disabled={!isValid || isDuplicateRoute || isLoading || (currentType !== "ticket" && !isWasmReady) || hasShinkansen}
+                        disabled={!isValid || isInvalidRoute || isDuplicateRoute || isLoading || (currentType !== "ticket" && !isWasmReady) || hasShinkansen}
                     >
                         {isLoading
                             ? "計算中..."
