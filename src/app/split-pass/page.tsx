@@ -55,9 +55,9 @@ export default async function SplitPassPage({ searchParams }: { searchParams: Pr
               {"JR分割定期券計算機"}
             </h1>
             <p className="text-sm sm:text-base text-slate-600 min-h-20">
-              {"乗車する区間の「発駅」と「着駅」、および「定期の期間」を入力してください。"}
+              {"乗車する区間の「発駅」と「着駅」、および「定期の期間」を入力・選択してください。"}
               <br className="hidden sm:block" />
-              {"JRの在来線において最もお得な分割ルートを計算します。"}
+              {"最安となるパターンを自動で導出します。"}
             </p>
           </div>
           <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">

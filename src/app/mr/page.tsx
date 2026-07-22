@@ -86,7 +86,7 @@ export default function MrPage() {
                   <li>発着駅と経由路線を指定した<strong>正確な運賃計算</strong></li>
                   <li>運賃計算経路の<strong>営業キロ</strong>の表示</li>
                   <li>特定区間運賃・加算運賃の自動適用</li>
-                  <li>大都市近郊区間内完結時の最安経路への自動補正</li>
+                  <li>大都市近郊区間内完結時の最安経路への補正</li>
                 </ul>
                 <p className="text-slate-700 leading-relaxed space-y-3 text-sm mt-2 font-semibold">
                   {"今後実装予定の機能"}

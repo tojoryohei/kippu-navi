@@ -3,8 +3,8 @@ import { RiScissorsFill, RiGuideLine, RiBookOpenFill } from "react-icons/ri";
 import { getChangelogs } from '@/app/lib/changelog';
 
 export const metadata = {
-  title: "きっぷナビ",
-  description: "JR在来線の分割きっぷ（乗車券・定期券・IC定期券）の最安組み合わせを自動計算。発駅と着駅を入力するだけで、交通費の節約額がすぐにわかる無料Webツールです。",
+  title: "きっぷナビ - JR分割きっぷと運賃計算",
+  description: "JR線の分割きっぷ（乗車券・定期券・IC定期券）の最安組み合わせを自動計算。発着駅を入力するだけで交通費の節約額がわかる無料のWebツールです。旅客営業規則の特例や新幹線の経由印字にも完全対応した高精度な運賃計算も備えています。",
 };
 
 export default async function Home() {
@@ -105,7 +105,7 @@ export default async function Home() {
             </p>
             <ul className="list-disc list-inside bg-slate-50 p-4 rounded-lg space-y-2 mt-4 text-slate-700">
               <li><strong>分割乗車券の平均節約額：</strong> 本システムを利用することで<strong>平均して125円（中央値：80円）の運賃削減</strong>を確認しました。</li>
-              <li><strong>分割乗車券の最大節約額：</strong> 長距離や特例を跨ぐ経路において、大幅な節約ができた事例が存在します。現地点で分かっている最大節約額は井原市～伯耆大山の1,210円です。</li>
+              <li><strong>分割乗車券の最大節約額：</strong> 長距離や特例を跨ぐ経路において、大幅な節約ができた事例が存在します。現在判明している最大節約額は井原市～伯耆大山の1,210円です。</li>
             </ul>
             <p className="text-sm mt-4">
               {"※実際の割引額や分割枚数は、利用する区間やJRの運賃改定によって変動します。"}
@@ -135,8 +135,8 @@ export default async function Home() {
                       {item.date}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-bold w-fit
-                      ${item.tag === 'アップデート' ? 'bg-blue-100 text-blue-700' :
-                        item.tag === '修正' ? 'bg-emerald-100 text-emerald-700' :
+                      ${item.tag === '新機能' ? 'bg-blue-100 text-blue-700' :
+                        item.tag === 'バグ修正' ? 'bg-emerald-100 text-emerald-700' :
                           'bg-slate-200 text-slate-700'}`}
                     >
                       {item.tag}
