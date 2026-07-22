@@ -5,7 +5,7 @@ export interface ChangelogItem {
     date: string;
     version: string;
     url?: string;
-    tag: '新機能' | 'バグ修正' | '性能向上';
+    tag: '新機能' | 'バグ修正' | '最適化';
     contents: string[];
 }
 
@@ -36,7 +36,7 @@ export async function getChangelogs(limit?: number): Promise<ChangelogItem[]> {
             const url = urlMatch ? urlMatch[1] : undefined;
             const date = dateMatch ? dateMatch[1].replace(/-/g, '.') : '';
 
-            let tag: '新機能' | 'バグ修正' | '性能向上' = '性能向上';
+            let tag: '新機能' | 'バグ修正' | '最適化' = '最適化';
             if (section.includes('### Features')) {
                 tag = '新機能';
             } else if (section.includes('### Bug Fixes')) {

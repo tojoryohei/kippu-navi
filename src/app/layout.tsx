@@ -2,7 +2,6 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_JP, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
-import Script from "next/script";
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ScrollToTopButton from '@/components/ScrollToTopButton';
@@ -71,6 +70,11 @@ export default function RootLayout({
     <html lang="ja" suppressHydrationWarning>
       <head>
         <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1214458177768834"
+          crossOrigin="anonymous"
+        />
+        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
@@ -79,12 +83,6 @@ export default function RootLayout({
         <PHProvider>
           <PostHogPageView />
           {gaId && <GoogleAnalytics gaId={gaId} />}
-          <Script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1214458177768834"
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
           <Header />
           <main className="grow">{children}</main>
           <Footer />
