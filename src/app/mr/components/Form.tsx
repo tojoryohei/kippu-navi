@@ -126,6 +126,7 @@ export default function Form() {
         const startStation = getValues("startStation");
         const segments = getValues("segments");
         const currentSearchType = getValues("searchType") || "ticket";
+        const calculationMode = getValues("calculationMode") || "normal";
         const currentFrom = startStation?.name;
         const lastSegment = segments?.[segments.length - 1];
         const currentTo = lastSegment?.destinationStation?.name;
@@ -149,6 +150,7 @@ export default function Form() {
                 if (result) {
                     const eventParams = {
                         search_type: currentSearchType,
+                        calculation_mode: calculationMode,
                         route,
                         fare: result.fare,
                     };
@@ -171,6 +173,7 @@ export default function Form() {
                 else if (resultPass) {
                     const eventParams = {
                         search_type: currentSearchType,
+                        calculation_mode: calculationMode,
                         route,
                         fare: resultPass.fare,
                     };
@@ -193,6 +196,7 @@ export default function Form() {
                 else if (error) {
                     const errorParams = {
                         search_type: currentSearchType,
+                        calculation_mode: calculationMode,
                         route,
                         error_type: "calculation_error",
                         error_message: error,
