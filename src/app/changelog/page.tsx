@@ -49,8 +49,8 @@ export default async function ChangelogPage() {
                                 <div className="flex sm:flex-col items-center sm:items-start gap-3 sm:gap-2 sm:w-40 shrink-0 mb-3 sm:mb-0">
                                     <time className="font-mono text-slate-600 font-medium">{item.date}</time>
                                     <span className={`text-xs px-2.5 py-1 rounded-full font-bold w-fit
-                      ${item.tag === 'アップデート' ? 'bg-blue-100 text-blue-700' :
-                                            item.tag === '修正' ? 'bg-emerald-100 text-emerald-700' :
+                                        ${item.tag === '新機能' ? 'bg-blue-100 text-blue-700' :
+                                            item.tag === 'バグ修正' ? 'bg-emerald-100 text-emerald-700' :
                                                 'bg-slate-100 text-slate-700'}`}
                                     >
                                         {item.tag}

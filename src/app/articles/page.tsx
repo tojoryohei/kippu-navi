@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { RiArticleLine, RiArrowRightSLine } from "react-icons/ri";
 
 export const metadata: Metadata = {
-  title: "記事一覧",
+  title: "解説記事",
   description: "JRの分割きっぷに関する解説記事や、運賃制度の仕組み、節約テクニックなど、鉄道利用に役立つ情報を発信しています。",
   alternates: {
     canonical: "/articles",
@@ -80,7 +80,7 @@ export default function ArticlesPage() {
           <RiArticleLine className="w-8 h-8 text-blue-600" />
         </div>
         <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">
-          {"記事一覧"}
+          {"解説記事"}
         </h1>
         <p className="mt-4 text-slate-500 max-w-2xl mx-auto">
           {"JRの分割きっぷに関する解説記事や、運賃制度の仕組み、節約テクニックなど、鉄道利用に役立つ情報を発信しています。"}
