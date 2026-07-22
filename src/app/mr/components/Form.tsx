@@ -264,6 +264,12 @@ export default function Form() {
             if (line.name === "新幹線" && segmentStations.indexOf("大阪") !== -1) {
                 segmentStations = segmentStations.filter((station) => station !== "大阪");
             }
+            if (line.name === "新幹線" && segmentStations.indexOf("西小倉") !== -1) {
+                segmentStations = segmentStations.filter((station) => station !== "西小倉");
+            }
+            if (line.name === "新幹線" && segmentStations.indexOf("吉塚") !== -1) {
+                segmentStations = segmentStations.filter((station) => station !== "吉塚");
+            }
             stations.push(...segmentStations);
         }
         return stations;
