@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.1...kippu-navi-v2.19.2) (2026-07-22)
+
+
+### Reverts
+
+* 新幹線利用時の重複駅判定からの西小倉・吉塚の除外処理を撤回 ([#551](https://github.com/tojoryohei/kippu-navi/issues/551)) ([86f5efe](https://github.com/tojoryohei/kippu-navi/commit/86f5efebccdfa17e53fdba5099bbca2049f98acd))
+
 ## [2.19.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.0...kippu-navi-v2.19.1) (2026-07-22)
 
 
