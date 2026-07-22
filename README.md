@@ -57,5 +57,4 @@ GitHubのRulesetで `main` ブランチを保護し、Pull RequestごとにCloud
 ---
 
 ## ライセンス / 著作権
-
-Copyright © 2025-2026 TOJO Ryohei. All Rights Reserved.
+Copyright © 2025-2026 きっぷナビ. All Rights Reserved.
