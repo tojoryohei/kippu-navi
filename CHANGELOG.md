@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.2...kippu-navi-v2.19.3) (2026-07-25)
+
+
+### Bug Fixes
+
+* リアルタイム重複経路チェックに新幹線区間を反映 ([#558](https://github.com/tojoryohei/kippu-navi/issues/558)) ([62f847e](https://github.com/tojoryohei/kippu-navi/commit/62f847e8865d93e5a0c40c0d9aa70cef51aed777))
+
 ## [2.19.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.1...kippu-navi-v2.19.2) (2026-07-22)
 
 
