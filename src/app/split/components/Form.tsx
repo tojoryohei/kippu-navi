@@ -255,13 +255,11 @@ export default function SplitForm({
                         : normalFare;
 
                     const savedAmount = Math.max(0, normalFare - bestFare);
-                    const isSaving = savedAmount > 0;
 
                     const eventParams = {
                         search_type: currentSearchType,
                         from_station: currentFrom,
                         to_station: currentTo,
-                        is_saving: isSaving,
                         saved_amount: savedAmount
                     };
 
