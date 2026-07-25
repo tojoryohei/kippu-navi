@@ -187,7 +187,7 @@ export default function Form() {
             let route = currentFrom;
             for (const seg of (segments || [])) {
                 if (seg.viaLine?.name) {
-                    route += `(${seg.viaLine.name})`;
+                    route += `[${seg.viaLine.name}]`;
                 }
                 if (seg.destinationStation?.name) {
                     route += seg.destinationStation.name;
