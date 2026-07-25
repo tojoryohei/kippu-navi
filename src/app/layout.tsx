@@ -70,13 +70,15 @@ export default function RootLayout({
     <html lang="ja" suppressHydrationWarning>
       <head>
         <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          suppressHydrationWarning
+        />
+        <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1214458177768834"
           crossOrigin="anonymous"
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          suppressHydrationWarning
         />
       </head>
       <body className={`flex flex-col min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden ${notoSansJP.variable} ${geistMono.variable} font-sans antialiased`}>
