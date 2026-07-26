@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.3...kippu-navi-v2.19.4) (2026-07-26)
+
+
+### Bug Fixes
+
+* 山手線・大阪環状線の経路逆転時に内外回りを自動反転するように修正 ([#565](https://github.com/tojoryohei/kippu-navi/issues/565)) ([70c1a07](https://github.com/tojoryohei/kippu-navi/commit/70c1a07d028388f6b068a3225a9b085f7f4201da))
+
 ## [2.19.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.2...kippu-navi-v2.19.3) (2026-07-25)
 
 
