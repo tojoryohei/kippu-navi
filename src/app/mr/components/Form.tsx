@@ -352,7 +352,8 @@ export default function Form() {
 
     // リアルタイムバリデーション: 重複経路チェック (最後の一駅を除く)
     const allStations = getAllStations(formValues.startStation, formValues.segments || []);
-    const isDuplicateRoute = allStations.length > 1 && new Set(allStations.slice(0, -1)).size !== allStations.length - 1;
+    const isDuplicateRoute = (allStations.length > 1 && new Set(allStations.slice(0, -1)).size !== allStations.length - 1) ||
+        (allStations.length >= 3 && allStations[allStations.length - 3] === allStations[allStations.length - 1]);
     const isInvalidRoute = allStations.length < 2 || new Set(allStations).size === 1;
 
     const isPass = currentType && currentType !== "ticket";
