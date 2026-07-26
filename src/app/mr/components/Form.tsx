@@ -456,7 +456,35 @@ export default function Form() {
 
         for (let i = currentSegments.length - 1; i >= 0; i--) {
             const dest = i === 0 ? currentStart : currentSegments[i - 1].destinationStation;
-            const line = currentSegments[i].viaLine;
+            const startStationOfSeg = currentSegments[i].destinationStation;
+            let line = currentSegments[i].viaLine;
+
+            if (line && startStationOfSeg) {
+                const lineName = line.name;
+                const isYamanote = lineName.includes("山手線");
+                const isKanjosen = lineName.includes("環状線");
+
+                if (isYamanote || isKanjosen) {
+                    const prefix = isYamanote ? "山手線" : "環状線";
+                    const isOuter = lineName.includes("外");
+                    const isInner = lineName.includes("内");
+                    const targetDirection = isOuter ? "内" : isInner ? "外" : null;
+
+                    if (targetDirection) {
+                        const fullStation = stationMap.get(startStationOfSeg.name) || startStationOfSeg;
+                        const matchedLineName = fullStation.lines?.find(
+                            l => l.includes(prefix) && l.includes(targetDirection)
+                        );
+                        if (matchedLineName) {
+                            const newLine = lineData.find(l => l.name === matchedLineName);
+                            if (newLine) {
+                                line = newLine;
+                            }
+                        }
+                    }
+                }
+            }
+
             reversedSegments.push({ viaLine: line, destinationStation: dest });
         }
 
