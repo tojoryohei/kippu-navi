@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.4...kippu-navi-v2.19.5) (2026-07-26)
+
+
+### Bug Fixes
+
+* 経路入力フォームにおける折り返し経路の重複検知ロジックを追加 ([#568](https://github.com/tojoryohei/kippu-navi/issues/568)) ([0f79dbb](https://github.com/tojoryohei/kippu-navi/commit/0f79dbbf46b9fdd115954d99ecccc129eeb9fcc8)), closes [#567](https://github.com/tojoryohei/kippu-navi/issues/567)
+
 ## [2.19.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.3...kippu-navi-v2.19.4) (2026-07-26)
 
 
