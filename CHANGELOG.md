@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.5...kippu-navi-v2.19.6) (2026-07-27)
+
+
+### Bug Fixes
+
+* 大阪環状線およびおおさか東線の経由印字ロジックを修正 ([#572](https://github.com/tojoryohei/kippu-navi/issues/572)) ([ea01f9d](https://github.com/tojoryohei/kippu-navi/commit/ea01f9d78781a6a2182539d7849d2b79c246d64b))
+
 ## [2.19.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.4...kippu-navi-v2.19.5) (2026-07-26)
 
 
