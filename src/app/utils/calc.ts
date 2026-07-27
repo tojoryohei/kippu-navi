@@ -259,13 +259,22 @@ export function generatePrintedViaStrings(fullPath: PathStep[]): string[] {
             }
             const nextStation = fullPath[i + 1].stationName;
             if (station === "鴫野" && nextStation === "放出" || station === "放出" && nextStation === "鴫野") continue;
-            if (prevLine === "オサヒ" && line === "オサヒ２" || prevLine === "オサヒ２" && line === "オサヒ") continue;
+            if (prevLine === "オサヒ" && line === "オサヒ２" || prevLine === "オサヒ２" && line === "オサヒ") {
+                viaLines.push(line);
+                continue;
+            }
             viaLines.push(line);
+            if (0 < printedViaLines.length &&
+                (line === "オオサ１" && printedViaLines[printedViaLines.length - 1] === load.getPrinting("オオサ２")) ||
+                (line === "オオサ２" && printedViaLines[printedViaLines.length - 1] === load.getPrinting("オオサ１"))
+            ) {
+                continue;
+            }
             printedViaLines.push(printing);
         }
-        else if (station === "京橋" && line === "オオサ１")
+        else if (prevLine === "オオサ１" && station === "京橋" && line === "オオサ１")
             printedViaLines.push("京橋");
-        else if (station === "西九条" && line === "オオサ２")
+        else if (prevLine === "オオサ２" && station === "西九条" && line === "オオサ２")
             printedViaLines.push("西九条");
         else if (prevLine === null) {
             if (SHINKANSEN_LINES.has(line))
