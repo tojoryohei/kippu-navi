@@ -350,11 +350,11 @@ export default function Form() {
         return stations;
     };
 
-    // リアルタイムバリデーション: 重複経路チェック (最後の一駅を除く)
+    // リアルタイムバリデーション: 重複経路チェック
     const allStations = getAllStations(formValues.startStation, formValues.segments || []);
+    const hasConsecutiveSameStation = allStations.some((st, i) => i > 0 && st === allStations[i - 1]);
     const isDuplicateRoute = (allStations.length > 1 && new Set(allStations.slice(0, -1)).size !== allStations.length - 1) ||
         (allStations.length >= 3 && allStations[allStations.length - 3] === allStations[allStations.length - 1]);
-    const isInvalidRoute = allStations.length < 2 || new Set(allStations).size === 1;
 
     const isPass = currentType && currentType !== "ticket";
     const hasShinkansen = isPass && (formValues.segments || []).some(seg => seg.viaLine && SHINKANSEN_LINES.has(seg.viaLine.name));
@@ -823,6 +823,9 @@ export default function Form() {
                                         required: `${stationLabel}を入力してください`,
                                         validate: (selected) => {
                                             if (!selected) return `${stationLabel}を入力してください`;
+                                            if (previousStation && previousStation.name === selected.name) {
+                                                return "路線の前後で同じ駅を選択することはできません";
+                                            }
                                             const exists = stationsOnLine.some(s => s.name === selected.name);
                                             if (!exists) return "選択された路線にこの駅は存在しません";
 
@@ -878,7 +881,7 @@ export default function Form() {
                         <button
                             type="button"
                             onClick={addSegment}
-                            disabled={!canAddTransfer || isDuplicateRoute || hasShinkansen}
+                            disabled={!canAddTransfer || isDuplicateRoute || hasConsecutiveSameStation || hasShinkansen}
                             className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm whitespace-nowrap"
                             title={hasShinkansen ? "定期券では新幹線を経由するがことはできません" : !isUnderPathLimit ? "経路数の上限（3000件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
                         >
@@ -943,7 +946,7 @@ export default function Form() {
                     <button
                         type="submit"
                         className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2 cursor-pointer disabled:cursor-not-allowed"
-                        disabled={!isValid || isInvalidRoute || isDuplicateRoute || isLoading || (currentType !== "ticket" && !isWasmReady) || hasShinkansen}
+                        disabled={!isValid || isDuplicateRoute || hasConsecutiveSameStation || isLoading || (currentType !== "ticket" && !isWasmReady) || hasShinkansen}
                     >
                         {isLoading
                             ? "計算中..."
