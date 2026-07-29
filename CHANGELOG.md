@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.6...kippu-navi-v2.19.7) (2026-07-29)
+
+
+### Bug Fixes
+
+* 経由路線の前後で同一駅が選択された場合のバリデーション処理を追加 ([#577](https://github.com/tojoryohei/kippu-navi/issues/577)) ([6c19c74](https://github.com/tojoryohei/kippu-navi/commit/6c19c7481461eb46a058eb47390f50d45b43a6b1))
+
 ## [2.19.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.5...kippu-navi-v2.19.6) (2026-07-27)
 
 
