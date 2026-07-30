@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.7...kippu-navi-v2.19.8) (2026-07-30)
+
+
+### Bug Fixes
+
+* 電車特定区間の運賃計算バグを修正 ([#581](https://github.com/tojoryohei/kippu-navi/issues/581)) ([644a6c0](https://github.com/tojoryohei/kippu-navi/commit/644a6c0d08abb79d59f00260060d8e8e85f76ff7))
+
 ## [2.19.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.6...kippu-navi-v2.19.7) (2026-07-29)
 
 
