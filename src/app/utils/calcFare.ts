@@ -233,17 +233,17 @@ function calculateFare(routeSegments: RouteSegment[]): number {
 }
 
 function calculateFareInTrainSpecificSection(routeSegments: RouteSegment[]): number {
-    const totalEigyoKilo: number = Math.ceil(calculateTotalEigyoKilo(routeSegments) / 10);
+    const totalGiseiKilo: number = Math.ceil(calculateTotalGiseiKilo(routeSegments) / 10);
 
     // 第84条 営業キロが10キロメートルまでの普通旅客運賃
-    if (totalEigyoKilo <= 3) return 140;
-    if (totalEigyoKilo <= 6) return 170;
-    if (totalEigyoKilo <= 10) return 190;
+    if (totalGiseiKilo <= 3) return 140;
+    if (totalGiseiKilo <= 6) return 170;
+    if (totalGiseiKilo <= 10) return 190;
 
-    const splitKilo: number = calculateSplitKiloOfKansen(totalEigyoKilo);
-    if (totalEigyoKilo <= 100) return round1000(ceil1000(1550 * splitKilo) * 11 / 10) / 100;
-    if (totalEigyoKilo <= 300) return round1000(round10000(1550 * splitKilo) * 11 / 10) / 100;
-    if (totalEigyoKilo <= 600) return round1000(round10000(1550 * 300 + 1230 * (splitKilo - 300)) * 11 / 10) / 100;
+    const splitKilo: number = calculateSplitKiloOfKansen(totalGiseiKilo);
+    if (totalGiseiKilo <= 100) return round1000(ceil1000(1550 * splitKilo) * 11 / 10) / 100;
+    if (totalGiseiKilo <= 300) return round1000(round10000(1550 * splitKilo) * 11 / 10) / 100;
+    if (totalGiseiKilo <= 600) return round1000(round10000(1550 * 300 + 1230 * (splitKilo - 300)) * 11 / 10) / 100;
 
     throw new Error(`calculateFareInTrainSpecificSectionで範囲外アクセスが発生しました。`);
 }
