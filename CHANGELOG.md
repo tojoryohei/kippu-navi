@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.8...kippu-navi-v2.19.9) (2026-07-31)
+
+
+### Bug Fixes
+
+* 不正な路線・駅選択時の経路逆転ボタン非活性化および経路展開ロジックの修正 ([#584](https://github.com/tojoryohei/kippu-navi/issues/584)) ([c53e946](https://github.com/tojoryohei/kippu-navi/commit/c53e946d48a25dc58b995f38fee3d9b54501d9ee))
+
 ## [2.19.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.7...kippu-navi-v2.19.8) (2026-07-30)
 
 
