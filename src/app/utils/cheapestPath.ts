@@ -61,8 +61,7 @@ function extendFromCity(originalPath: PathStep[]): PathStep[] {
 
     // 発着駅が山手線内にあるか確認して足切りラインを決定
     // 山手線内駅が含まれる場合は100km(1000)、それ以外は200km(2000)
-    const yamanote = load.getYamanote();
-    const stationsInYamanote = new Set(yamanote.stations);
+    const stationsInYamanote = load.getYamanote();
     const startInYamanote = stationsInYamanote.has(originalPath[0].stationName);
     const endInYamanote = stationsInYamanote.has(originalPath[originalPath.length - 1].stationName);
 

@@ -528,6 +528,7 @@ export default function Form() {
         });
 
         const fullPath: PathStep[] = [];
+
         for (let i = 0; i < path.length - 1; i++) {
             const startStep = path[i];
             const endStep = path[i + 1];
@@ -546,12 +547,12 @@ export default function Form() {
                 fullPath.push({ stationName: stationName, lineName: lineName });
             }
         }
+
         fullPath.push(path[path.length - 1]);
+        
         for (let i = 0; i < fullPath.length - 1; i++) {
             fullPath[i].lineName = getKana(fullPath[i].lineName!, fullPath[i].stationName, fullPath[i + 1].stationName);
         }
-
-
 
         return {
             fullPath,
@@ -835,7 +836,7 @@ export default function Form() {
                                         validate: (selected) => {
                                             if (!selected) return `${stationLabel}を入力してください`;
                                             if (previousStation && previousStation.name === selected.name) {
-                                                return "路線の前後で同じ駅を選択することはできません";
+                                                return "路線の前後で同じ駅は選択できません";
                                             }
                                             const exists = stationsOnLine.some(s => s.name === selected.name);
                                             if (!exists) return "選択された路線にこの駅は存在しません";

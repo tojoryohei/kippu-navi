@@ -7740,21 +7740,21 @@ export function applyCityRule(fullPath: PathStep[]): PathStep[] {
 
 // 第87条 東京山手線内にある駅に関連する片道普通旅客運賃の計算方
 export function applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
-    const yamanote = load.getYamanote();
-    const stationsInYamanote = new Set(yamanote.stations);
+    const stationsInYamanote = load.getYamanote();
+    const stationsInArea70 = load.getArea70();
     const threshold: number = 1000;
 
     // 着駅適用
     if (stationsInYamanote.has(fullPath[fullPath.length - 1].stationName)) {
         const changingIdx: number[] = [];
         for (let i = 0; i < fullPath.length - 1; i++) {
-            if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
+            if (stationsInArea70.has(fullPath[i].stationName) !== stationsInArea70.has(fullPath[i + 1].stationName))
                 changingIdx.push(i);
         }
         if (changingIdx.length === 1 || changingIdx.length === 2) {
             const applyCityRulePath = [
                 ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
-                { "stationName": yamanote.name, "lineName": null }
+                { "stationName": "東京山手線内", "lineName": null }
             ];
             const routeSegments: RouteSegment[] = convertPathStepsToRouteSegments(applyCityRulePath);
             if (calculateTotalEigyoKilo(routeSegments) > threshold)
@@ -7766,12 +7766,12 @@ export function applyYamanoteRule(fullPath: PathStep[]): PathStep[] {
     if (stationsInYamanote.has(fullPath[0].stationName)) {
         const changingIdx: number[] = [];
         for (let i = 0; i < fullPath.length - 1; i++) {
-            if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
+            if (stationsInArea70.has(fullPath[i].stationName) !== stationsInArea70.has(fullPath[i + 1].stationName))
                 changingIdx.push(i);
         }
         if (changingIdx.length === 1 || changingIdx.length === 2) {
             const applyCityRulePath = [
-                { "stationName": yamanote.name, "lineName": fullPath[changingIdx[0]].lineName },
+                { "stationName": "東京山手線内", "lineName": fullPath[changingIdx[0]].lineName },
                 ...fullPath.slice(changingIdx[0] + 1)
             ];
             const routeSegments: RouteSegment[] = convertPathStepsToRouteSegments(applyCityRulePath);
