@@ -420,7 +420,11 @@ export default function Form() {
 
     const canReverse = !!formValues.startStation &&
         (formValues.segments?.length ?? 0) > 0 &&
-        formValues.segments.every((seg: { viaLine: Line | null, destinationStation: Station | null }) => seg.viaLine && seg.destinationStation);
+        formValues.segments.every((seg: { viaLine: Line | null, destinationStation: Station | null }) =>
+            seg.viaLine &&
+            seg.destinationStation &&
+            seg.viaLine.stations?.includes(seg.destinationStation.name)
+        );
 
     const handleFieldChange = (
         value: SingleValue<Station | Line>,
