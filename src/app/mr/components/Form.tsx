@@ -277,14 +277,13 @@ export default function Form() {
     // クライアント側での経路展開 (重複チェック用)
     const getAllStations = (start: Station | null, segments: typeof formValues.segments): string[] => {
         if (!start) return [];
+        if (segments.length === 0) return [start.name];
+
         const rawStations: string[] = [];
-        if (start.name !== "大阪" || 0 < segments.length && segments[0].viaLine !== null && segments[0].viaLine.name !== "新幹線") {
-            rawStations.push(start.name);
-        }
+        let prevStationName = start.name;
 
         for (let i = 0; i < segments.length; i++) {
             const segment = segments[i];
-            const prevStationName = rawStations[rawStations.length - 1];
             const destStation = segment.destinationStation;
             const line = segment.viaLine;
 
@@ -303,19 +302,27 @@ export default function Form() {
 
             if (startIdx === -1 || endIdx === -1) {
                 rawStations.push(destStation.name);
+                prevStationName = destStation.name;
                 continue;
             }
 
             let segmentStations: string[];
             if (startIdx < endIdx) {
-                segmentStations = stationsOnLine.slice(startIdx + 1, endIdx + 1);
+                segmentStations = stationsOnLine.slice(startIdx, endIdx + 1);
             } else {
-                segmentStations = stationsOnLine.slice(endIdx, startIdx).reverse();
+                segmentStations = stationsOnLine.slice(endIdx, startIdx + 1).reverse();
             }
-            if (line.name === "新幹線" && segmentStations.indexOf("大阪") !== -1) {
+
+            if (line.name === "新幹線") {
                 segmentStations = segmentStations.filter((station) => station !== "大阪");
             }
+
+            if (rawStations.length > 0 && segmentStations.length > 0 && rawStations[rawStations.length - 1] === segmentStations[0]) {
+                segmentStations.shift();
+            }
+
             rawStations.push(...segmentStations);
+            prevStationName = destStation.name;
         }
 
         const stations: string[] = [];
@@ -413,7 +420,11 @@ export default function Form() {
 
     const canReverse = !!formValues.startStation &&
         (formValues.segments?.length ?? 0) > 0 &&
-        formValues.segments.every((seg: { viaLine: Line | null, destinationStation: Station | null }) => seg.viaLine && seg.destinationStation);
+        formValues.segments.every((seg: { viaLine: Line | null, destinationStation: Station | null }) =>
+            seg.viaLine &&
+            seg.destinationStation &&
+            seg.viaLine.stations?.includes(seg.destinationStation.name)
+        );
 
     const handleFieldChange = (
         value: SingleValue<Station | Line>,
