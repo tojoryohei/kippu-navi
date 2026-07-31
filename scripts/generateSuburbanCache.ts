@@ -232,8 +232,7 @@ class SuburbanCacheGenerator {
         const totalStations = stations.length;
         let processedCount = 0;
         const cities = load.getCities();
-        const yamanote = load.getYamanote();
-        const stationsInYamanote = new Set(yamanote.stations);
+        const stationsInYamanote = load.getYamanote();
 
         for (let i = 0; i < totalStations; i++) {
             const startStation = stations[i];

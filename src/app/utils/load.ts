@@ -20,7 +20,8 @@ class Load {
     private trainSpecificSections!: TrainSpecificSection;
     private specificSections: OuterSection[] = [];
     private selectionSections: OuterSection[] = [];
-    private yamanote!: City;
+    private yamanoteStations: Set<string> = new Set();
+    private area70Stations: Set<string> = new Set();
     constructor() {
         this.loadData();
     }
@@ -102,8 +103,8 @@ class Load {
             }
 
             // selectionSections.jsonの読み込み
-            const selectionSectionsList = path.join(process.cwd(), 'src', 'data', 'selectionSections.json');
-            this.selectionSections = JSON.parse(fs.readFileSync(selectionSectionsList, 'utf-8'));
+            const selectionSectionsData = path.join(process.cwd(), 'src', 'data', 'selectionSections.json');
+            this.selectionSections = JSON.parse(fs.readFileSync(selectionSectionsData, 'utf-8'));
 
             // specificFares.jsonの読み込み
             const specificFaresData = path.join(process.cwd(), 'src', 'data', 'specificFares.json');
@@ -134,8 +135,10 @@ class Load {
             this.trainSpecificSections = transformedTrainSpecificSections;
 
             // yamanote.jsonの読み込み
-            const yamanotePath = path.join(process.cwd(), 'src', 'data', 'yamanote.json');
-            this.yamanote = JSON.parse(fs.readFileSync(yamanotePath, 'utf-8'));
+            const yamanoteData = path.join(process.cwd(), 'src', 'data', 'yamanote.json');
+            const rawDataYamanoteData: City[] = JSON.parse(fs.readFileSync(yamanoteData, 'utf-8'));
+            this.yamanoteStations = new Set(rawDataYamanoteData.find(city => city.name === '東京山手線内')?.stations || []);
+            this.area70Stations = new Set(rawDataYamanoteData.find(city => city.name === '電車大環状線')?.stations || []);
 
         } catch (error) {
             console.error('データ読み込みエラー：', error);
@@ -233,8 +236,12 @@ class Load {
         return this.selectionSections;
     }
 
-    public getYamanote(): City {
-        return this.yamanote;
+    public getYamanote(): Set<string> {
+        return this.yamanoteStations;
+    }
+
+    public getArea70(): Set<string> {
+        return this.area70Stations;
     }
 }
 

@@ -176,20 +176,20 @@ export function applyOneSideCityRule(fullPath: PathStep[], direction: string): P
 }
 
 export function applyOneSideYamanoteRule(fullPath: PathStep[], direction: string): PathStep[] | null {
-    const yamanote = load.getYamanote();
-    const stationsInYamanote = new Set(yamanote.stations);
+    const stationsInYamanote = load.getYamanote();
+    const stationsInArea70 = load.getArea70();
 
     if (direction === "forward") {
         // 発駅適用
         if (stationsInYamanote.has(fullPath[0].stationName)) {
             const changingIdx: number[] = [];
             for (let i = 0; i < fullPath.length - 1; i++) {
-                if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
+                if (stationsInArea70.has(fullPath[i].stationName) !== stationsInArea70.has(fullPath[i + 1].stationName))
                     changingIdx.push(i);
             }
             if (changingIdx.length === 1 || changingIdx.length === 2) {
                 const applyCityRulePath = [
-                    { "stationName": yamanote.name, "lineName": fullPath[changingIdx[0]].lineName },
+                    { "stationName": "東京山手線内", "lineName": fullPath[changingIdx[0]].lineName },
                     ...fullPath.slice(changingIdx[0] + 1)
                 ];
                 return applyCityRulePath;
@@ -201,13 +201,13 @@ export function applyOneSideYamanoteRule(fullPath: PathStep[], direction: string
         if (stationsInYamanote.has(fullPath[fullPath.length - 1].stationName)) {
             const changingIdx: number[] = [];
             for (let i = 0; i < fullPath.length - 1; i++) {
-                if (stationsInYamanote.has(fullPath[i].stationName) !== stationsInYamanote.has(fullPath[i + 1].stationName))
+                if (stationsInArea70.has(fullPath[i].stationName) !== stationsInArea70.has(fullPath[i + 1].stationName))
                     changingIdx.push(i);
             }
             if (changingIdx.length === 1 || changingIdx.length === 2) {
                 const applyCityRulePath = [
                     ...fullPath.slice(0, changingIdx[changingIdx.length - 1] + 1),
-                    { "stationName": yamanote.name, "lineName": null }
+                    { "stationName": "東京山手線内", "lineName": null }
                 ];
                 return applyCityRulePath;
             }
