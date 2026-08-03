@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.20.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.10...kippu-navi-v2.20.0) (2026-08-03)
+
+
+### Features
+
+* 運賃計算ページのルーティング再構成とクエリパラメータ復元機能の実装 ([#593](https://github.com/tojoryohei/kippu-navi/issues/593)) ([49a8fbd](https://github.com/tojoryohei/kippu-navi/commit/49a8fbd8b04f1e453046e6882f8907c7f4ee5527))
+
 ## [2.19.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.9...kippu-navi-v2.19.10) (2026-08-03)
 
 
