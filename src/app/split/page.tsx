@@ -88,7 +88,7 @@ export default async function SplitPage({ searchParams }: { searchParams: Promis
               {"JR分割乗車券計算機"}
             </h1>
             <p className="text-sm sm:text-base text-slate-600 min-h-20">
-              {"乗車する区間の「発駅」と「着駅」を入力してください。"}
+              {"計算したい区間の発着駅を入力してください。"}
               <br className="hidden sm:block" />
               {"最安となるパターンを自動で導出します。"}
             </p>

@@ -59,7 +59,9 @@ export function parseRoute(
 
     const stationMap = new Map<string, Station>(stationData.map(s => [s.name, s]));
     const startStationName = parts[0];
-    const startStation = stationMap.get(startStationName) || { name: startStationName, kana: "" };
+    const startStation = (startStationName && startStationName.trim() !== "")
+        ? (stationMap.get(startStationName) || { name: startStationName, kana: "" })
+        : null;
 
     const segments: FormSegmentInput[] = [];
     let currentStationName = startStationName;
@@ -67,29 +69,38 @@ export function parseRoute(
     for (let i = 1; i < parts.length; i += 2) {
         const rawLineName = parts[i];
         const destStationName = parts[i + 1];
-        const destStation = stationMap.get(destStationName) || { name: destStationName, kana: "" };
+        const destStation = (destStationName && destStationName.trim() !== "")
+            ? (stationMap.get(destStationName) || { name: destStationName, kana: "" })
+            : null;
 
-        let matchedLine = lineData.find(l => l.name === rawLineName);
+        let matchedLine: Line | null = null;
 
-        if (!matchedLine) {
-            const candidates = lineData.filter(l => l.name.split('_')[0] === rawLineName || l.name.startsWith(rawLineName));
-            if (candidates.length === 1) {
-                matchedLine = candidates[0];
-            } else if (candidates.length > 1) {
-                const bothIncluded = candidates.find(l =>
-                    l.stations?.includes(currentStationName) && l.stations?.includes(destStationName)
-                );
-                if (bothIncluded) {
-                    matchedLine = bothIncluded;
-                } else {
-                    const prevIncluded = candidates.find(l => l.stations?.includes(currentStationName));
-                    matchedLine = prevIncluded || candidates[0];
+        if (rawLineName && rawLineName.trim() !== "") {
+            matchedLine = lineData.find(l => l.name === rawLineName) || null;
+
+            if (!matchedLine) {
+                const candidates = lineData.filter(l => l.name.split('_')[0] === rawLineName || l.name.startsWith(rawLineName));
+                if (candidates.length === 1) {
+                    matchedLine = candidates[0];
+                } else if (candidates.length > 1) {
+                    const prevStationObj = stationMap.get(currentStationName);
+                    const prevLines = prevStationObj?.lines || [];
+                    const exactStationLine = candidates.find(l => prevLines.includes(l.name));
+                    if (exactStationLine) {
+                        matchedLine = exactStationLine;
+                    } else {
+                        const bothIncluded = candidates.find(l =>
+                            l.stations?.includes(currentStationName) && (destStationName ? l.stations?.includes(destStationName) : true)
+                        );
+                        if (bothIncluded) {
+                            matchedLine = bothIncluded;
+                        } else {
+                            const prevIncluded = candidates.find(l => l.stations?.includes(currentStationName));
+                            matchedLine = prevIncluded || candidates[0];
+                        }
+                    }
                 }
             }
-        }
-
-        if (!matchedLine) {
-            matchedLine = { name: rawLineName, stations: [currentStationName, destStationName] };
         }
 
         segments.push({
