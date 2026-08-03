@@ -8,8 +8,8 @@ steps:
         mkdir -p src/data
         gcloud storage cp gs://kippu-navi-build-secrets/data/*.db ./src/data/
         gcloud storage cp gs://kippu-navi-build-secrets/data/*.json ./src/data/
-        mkdir -p src/app/mr/data
-        gcloud storage cp gs://kippu-navi-build-secrets/mr/data/*.json ./src/app/mr/data/
+        mkdir -p src/app/fare/data
+        gcloud storage cp gs://kippu-navi-build-secrets/fare/data/*.json ./src/app/fare/data/
         mkdir -p src/app/split/data
         gcloud storage cp gs://kippu-navi-build-secrets/split/data/*.json ./src/app/split/data/
 

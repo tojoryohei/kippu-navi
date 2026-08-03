@@ -1,4 +1,4 @@
-import { generateKippu } from '@/app/mr/lib/generateKippu';
+import { generateKippu } from '@/app/fare/lib/generateKippu';
 import { NextResponse } from 'next/server';
 
 import { RouteRequest } from '@/app/types';

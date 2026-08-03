@@ -2,7 +2,7 @@
 
 import Select, { components, OptionProps, FilterOptionOption, InputProps } from "react-select";
 import { useState, useId, FocusEvent, CSSProperties } from "react";
-import stationData from "@/app/mr/data/stations.json";
+import stationData from "@/app/fare/data/stations.json";
 
 import { Station, SelectStationProps } from '@/app/types';
 

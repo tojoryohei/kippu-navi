@@ -1,5 +1,5 @@
-import kanaData from '@/app/mr/data/kanas.json';
-import linesData from '@/app/mr/data/lines.json';
+import kanaData from '@/app/fare/data/kanas.json';
+import linesData from '@/app/fare/data/lines.json';
 import { Kana, Line } from '@/app/types';
 
 function createRouteKey(line: string, station0: string, station1: string): string {
