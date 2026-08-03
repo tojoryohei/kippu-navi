@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.9...kippu-navi-v2.19.10) (2026-08-03)
+
+
+### Bug Fixes
+
+* 経由印字用の新幹線駅リストから北山形・羽前千歳を除外 ([#590](https://github.com/tojoryohei/kippu-navi/issues/590)) ([ad833cd](https://github.com/tojoryohei/kippu-navi/commit/ad833cd4ec0c969e0156365143722feb9ccd2101))
+
 ## [2.19.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.8...kippu-navi-v2.19.9) (2026-07-31)
 
 
@@ -215,7 +222,7 @@
 
 ### Bug Fixes
 
-* **config:** Server ActionsのallowedOriginsにカスタムドメインを追加 ([#414](https://github.com/tojoryohei/kippu-navi/issues/414)) ([4834615](https://github.com/tojoryohei/kippu-navi/commit/4834615dee44dbcf1cb2aaaee64a51734d4e3e59))
+* Server ActionsのallowedOriginsにカスタムドメインを追加 ([#414](https://github.com/tojoryohei/kippu-navi/issues/414)) ([4834615](https://github.com/tojoryohei/kippu-navi/commit/4834615dee44dbcf1cb2aaaee64a51734d4e3e59))
 
 ## [2.11.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.10.1...kippu-navi-v2.11.0) (2026-07-03)
 
