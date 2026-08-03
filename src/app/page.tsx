@@ -57,7 +57,7 @@ export default async function Home() {
           </Link>
 
           {/* JR運賃計算機 */}
-          <Link href="/mr" className="group bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-slate-400 transition-all duration-300 flex flex-col h-full">
+          <Link href="/fare/ticket" className="group bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-slate-400 transition-all duration-300 flex flex-col h-full">
             <div className="flex items-center space-x-4 mb-4">
               <div className="bg-slate-100 p-3 rounded-xl group-hover:bg-slate-700 transition-colors duration-300">
                 <RiGuideLine className="w-7 h-7 text-slate-600 group-hover:text-white transition-colors duration-300" />

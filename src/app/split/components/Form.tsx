@@ -137,6 +137,7 @@ export default function SplitForm({
             ? initialSearchType
             : (isIcPass || isPass ? "pass6" : "ticket")
     );
+    const [showAllPatterns, setShowAllPatterns] = useState(false);
 
     const [versionSkewError, setVersionSkewError] = useState<Error | null>(null);
     if (versionSkewError) {
@@ -202,7 +203,7 @@ export default function SplitForm({
         ? initialSearchType
         : (isIcPass || isPass ? "pass6" : "ticket");
 
-    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, reset, trigger } = useForm<ExtendedSplitFormInput>({
+    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, trigger } = useForm<ExtendedSplitFormInput>({
         mode: "onChange",
         defaultValues: {
             startStation: initialStartStation,
@@ -212,27 +213,40 @@ export default function SplitForm({
     });
 
     useEffect(() => {
-        const startStation = initialFrom ? stationDatas.find(s => s.name === initialFrom) || { name: initialFrom, kana: "" } : null;
-        const endStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
-        const currentSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
-            ? initialSearchType
-            : (isIcPass || isPass ? "pass6" : "ticket");
+        const fromVal = searchParams.get("from");
+        const toVal = searchParams.get("to");
+        const monthVal = searchParams.get("month");
 
-        reset({
-            startStation,
-            endStation,
-            searchType: currentSearchType,
-        });
+        const startStation = fromVal ? stationDatas.find(s => s.name === fromVal) || { name: fromVal, kana: "" } : null;
+        const endStation = toVal ? stationDatas.find(s => s.name === toVal) || { name: toVal, kana: "" } : null;
 
-        // ページ遷移後にバリデーションを再実行する（例: 定期券→IC定期券切替時のエリアチェック）
-        // reset() はバリデーションをトリガーしないため、明示的に trigger() を呼ぶ
+        let currentSearchType: SearchType = (isIcPass || isPass ? "pass6" : "ticket");
+        if (monthVal === "1") currentSearchType = "pass1";
+        else if (monthVal === "3") currentSearchType = "pass3";
+        else if (monthVal === "6") currentSearchType = "pass6";
+        else if (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6") {
+            currentSearchType = initialSearchType;
+        }
+
+        setValue("startStation", startStation);
+        setValue("endStation", endStation);
+        setValue("searchType", currentSearchType);
+
+        if (!fromVal && !toVal) {
+            setTimeout(() => {
+                setResult(null);
+                setError(null);
+                setShowAllPatterns(false);
+                setServerTime(null);
+            }, 0);
+        }
+
         if (startStation || endStation) {
-            // reset後にreact-hook-formの内部状態が更新されるのを待ってからtriggerする
             setTimeout(() => {
                 trigger(["startStation", "endStation"]);
             }, 0);
         }
-    }, [initialFrom, initialTo, initialSearchType, isIcPass, isPass, reset, trigger]);
+    }, [searchParams, initialSearchType, isIcPass, isPass, setValue, trigger]);
 
     // GA4 & PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
@@ -309,8 +323,6 @@ export default function SplitForm({
         o => o.value === searchedType
     )?.label || "運賃";
     const searchedTypeLabel = (searchedType !== "ticket" && isIcPass) ? `IC${baseLabel}` : baseLabel;
-
-    const [showAllPatterns, setShowAllPatterns] = useState(false);
 
     const startStationVal = useWatch({ control, name: "startStation" });
     const endStationVal = useWatch({ control, name: "endStation" });

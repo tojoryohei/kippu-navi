@@ -1,24 +1,39 @@
-import Form from "@/app/mr/components/Form";
+import Form from "@/app/fare/components/Form";
 import type { Metadata } from "next";
 import { RiGuideLine } from "react-icons/ri";
 import Link from "next/link";
 
+import { CalculationMode } from "@/app/types";
+
 export const metadata: Metadata = {
-  title: "JR運賃計算機",
-  description: "JR全線の運賃と営業キロを正確に計算。経路を入力して、特定区間運賃や大都市近郊区間の最安経路補正にも対応した運賃計算プログラムを無料で公開しています。",
+  title: "JR乗車券運賃計算機",
+  description: "JR全線の乗車券の運賃と営業キロを正確に計算。発着駅と経由路線を入力して、特定区間運賃や大都市近郊区間の最安経路補正に対応して計算します。",
   alternates: {
-    canonical: "/mr",
+    canonical: "/fare/ticket",
   },
 };
 
-export default function MrPage() {
+export default async function FareTicketPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const routeParam = typeof params.route === "string" ? params.route : undefined;
+  const fromParam = typeof params.from === "string" ? params.from : undefined;
+  const toParam = typeof params.to === "string" ? params.to : undefined;
+
+  const modeRaw = typeof params.mode === "string" ? params.mode : typeof params.calculationMode === "string" ? params.calculationMode : undefined;
+  const modeParam: CalculationMode = modeRaw && ["normal", "cheapest", "uncorrect"].includes(modeRaw)
+    ? (modeRaw as CalculationMode)
+    : "normal";
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
-    name: 'JR運賃計算機',
-    description: 'JR全線の運賃と営業キロを正確に計算するプログラムです。',
-    url: 'https://kippu-navi.com/mr',
+    name: 'JR乗車券運賃計算機',
+    description: 'JR全線の乗車券の運賃と営業キロを正確に計算するプログラムです。',
+    url: 'https://kippu-navi.com/fare/ticket',
     applicationCategory: 'UtilityApplication',
     operatingSystem: 'All',
     offers: {
@@ -48,7 +63,7 @@ export default function MrPage() {
               <RiGuideLine className="w-8 h-8 text-slate-700" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-3">
-              {"JR運賃計算機"}
+              {"JR乗車券運賃計算機"}
             </h1>
 
             <div className="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
@@ -56,7 +71,7 @@ export default function MrPage() {
                 {"発着駅および経由路線を入力してください。"}
               </p>
               <p>
-                {"きっぷの運賃を計算します。"}
+                {"乗車券の運賃を計算します。"}
               </p>
             </div>
 
@@ -64,7 +79,13 @@ export default function MrPage() {
 
           {/* フォーム領域（カードスタイル） */}
           <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200">
-            <Form />
+            <Form
+              initialRoute={routeParam}
+              initialFrom={fromParam}
+              initialTo={toParam}
+              initialSearchType="ticket"
+              initialCalculationMode={modeParam}
+            />
           </div>
 
           {/* ツール説明セクション */}
@@ -77,7 +98,7 @@ export default function MrPage() {
               </h2>
               <div className="text-slate-700 leading-relaxed space-y-3 text-sm">
                 <p>
-                  {"JR運賃計算機は、JR全線の運賃と営業キロを正確に計算するプログラムです。分割きっぷ計算機の基盤となるエンジンを、そのままお試しいただけます。"}
+                  {"JR乗車券運賃計算機は、JR全線の運賃と営業キロを正確に計算するプログラムです。分割乗車券計算機の基盤となるエンジンを、そのままお試しいただけます。"}
                 </p>
                 <p>
                   {"旅客営業規則に基づき、特定区間運賃、大都市近郊区間内の最安経路補正、幹線・地方交通線の運賃表の適用区分などを考慮して計算します。"}
@@ -88,16 +109,7 @@ export default function MrPage() {
                   <li>特定区間運賃・加算運賃の自動適用</li>
                   <li>大都市近郊区間内完結時の最安経路への補正</li>
                 </ul>
-                <p className="text-slate-700 leading-relaxed space-y-3 text-sm mt-2 font-semibold">
-                  {"今後実装予定の機能"}
-                </p>
-                <ul className="list-disc list-inside space-y-1.5 ml-2 text-slate-600">
-                  <li>新幹線を経由する場合の経路補正</li>
-                  <li>経路補正を考慮した経路重複エラー</li>
-                  <li>特殊経由線を考慮した経由印字</li>
-                </ul>
               </div>
-
             </section>
 
             {/* 使い方 */}

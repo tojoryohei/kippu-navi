@@ -6,13 +6,16 @@ import { useState, useRef, useEffect } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { usePostHog } from "posthog-js/react";
 
-import stationData from "@/app/mr/data/stations.json";
-import lineData from "@/app/mr/data/lines.json";
-import { getLineByName, getKana } from '@/app/mr/lib/loadData';
-import SelectStation from "@/app/mr/components/SelectStation";
-import SelectLine from "@/app/mr/components/SelectLine";
+import stationData from "@/app/fare/data/stations.json";
+import lineData from "@/app/fare/data/lines.json";
+import { getLineByName, getKana } from '@/app/fare/lib/loadData';
+import SelectStation from "@/app/fare/components/SelectStation";
+import SelectLine from "@/app/fare/components/SelectLine";
 
-import { Station, Line, KippuData, IFormInput, PathStep, CalculationMode } from "@/app/types";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { stringifyRoute, parseRoute } from "@/app/fare/lib/routeParser";
+
+import { Station, Line, KippuData, IFormInput, PathStep, CalculationMode, SearchType } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 const SHINKANSEN_LINES: Set<string> = new Set(["山形新幹線", "北海道新幹線", "九州新幹線", "上越新幹線", "新幹線", "東北新幹線", "西九州新幹線", "北陸新幹線"]);
@@ -81,10 +84,27 @@ const SKIP_SECTION_RULES: string[][] = [
 ];
 interface FormValues extends IFormInput {
     calculationMode: CalculationMode;
-    searchType: "ticket" | "pass1" | "pass3" | "pass6";
+    searchType: SearchType;
 }
 
-export default function Form() {
+interface FormProps {
+    initialRoute?: string;
+    initialFrom?: string;
+    initialTo?: string;
+    initialSearchType?: SearchType;
+    initialCalculationMode?: CalculationMode;
+}
+
+export default function Form({
+    initialRoute,
+    initialFrom,
+    initialTo,
+    initialSearchType = "ticket",
+    initialCalculationMode = "normal",
+}: FormProps) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const posthog = usePostHog();
     const lastTrackedSearch = useRef<string | null>(null);
 
@@ -170,6 +190,70 @@ export default function Form() {
         };
     }, []);
 
+    // 初期ルート/パラメータによるフォーム状態の復元
+    useEffect(() => {
+        const routeParam = searchParams.get("route") ?? initialRoute;
+        const fromParam = searchParams.get("from") ?? initialFrom;
+        const toParam = searchParams.get("to") ?? initialTo;
+        const modeParam = searchParams.get("mode") as CalculationMode | null;
+
+        let startStation: Station | null = null;
+        let initialSegments: { viaLine: Line | null; destinationStation: Station | null }[] = [{ viaLine: null, destinationStation: null }];
+
+        if (routeParam) {
+            const parsed = parseRoute(routeParam, stationData as Station[], lineData as Line[]);
+            if (parsed?.startStation) {
+                startStation = parsed.startStation;
+                if (parsed.segments.length > 0) {
+                    initialSegments = parsed.segments;
+                }
+            }
+        } else {
+            if (fromParam) {
+                const matchedFrom = stationMap.get(fromParam) || stationData.find(s => s.name === fromParam);
+                if (matchedFrom) startStation = matchedFrom;
+            }
+            if (toParam) {
+                const matchedTo = stationMap.get(toParam) || stationData.find(s => s.name === toParam);
+                if (matchedTo) {
+                    initialSegments = [{ viaLine: null, destinationStation: matchedTo }];
+                }
+            }
+        }
+
+        if (startStation) {
+            setValue("startStation", startStation);
+        } else {
+            setValue("startStation", null as unknown as Station);
+        }
+
+        if (initialSegments.length > 0 && initialSegments[0].destinationStation !== null) {
+            replace(initialSegments);
+        } else {
+            replace([{ viaLine: null, destinationStation: null }]);
+            setTimeout(() => {
+                setResult(null);
+                setResultPass(null);
+                setError(null);
+                setServerTime(null);
+            }, 0);
+        }
+
+        if (initialSearchType) {
+            setValue("searchType", initialSearchType);
+        }
+        if (modeParam && ["normal", "cheapest", "uncorrect"].includes(modeParam)) {
+            setValue("calculationMode", modeParam);
+        } else if (initialCalculationMode) {
+            setValue("calculationMode", initialCalculationMode);
+        }
+        if (startStation && initialSegments[0].destinationStation) {
+            setTimeout(() => {
+                trigger();
+            }, 100);
+        }
+    }, [searchParams, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger]);
+
     // PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -184,15 +268,7 @@ export default function Form() {
 
         if (currentFrom && currentTo) {
             // 経路文字列を生成
-            let route = currentFrom;
-            for (const seg of (segments || [])) {
-                if (seg.viaLine?.name) {
-                    route += `[${seg.viaLine.name}]`;
-                }
-                if (seg.destinationStation?.name) {
-                    route += seg.destinationStation.name;
-                }
-            }
+            const route = stringifyRoute(startStation, segments || []);
             const currentSearchKey = `${route}_${currentSearchType}`;
 
             // 同じ検索条件での重複送信を防止
@@ -366,6 +442,38 @@ export default function Form() {
     const isPass = currentType && currentType !== "ticket";
     const hasShinkansen = isPass && (formValues.segments || []).some(seg => seg.viaLine && SHINKANSEN_LINES.has(seg.viaLine.name));
 
+    const updateUrlAndState = (nextPath: string, nextSearchType: SearchType) => {
+        setValue("searchType", nextSearchType, { shouldValidate: true });
+
+        const currentStart = getValues("startStation");
+        const currentSegs = getValues("segments");
+
+        const routeStr = stringifyRoute(currentStart, currentSegs);
+        const newParams = new URLSearchParams();
+
+        if (routeStr) {
+            newParams.set("route", routeStr);
+        }
+
+        const calcMode = getValues("calculationMode") || initialCalculationMode || "normal";
+        newParams.set("mode", calcMode);
+
+        if (nextSearchType !== "ticket") {
+            const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
+            const mVal = monthsMap[nextSearchType] || "6";
+            newParams.set("month", mVal);
+        }
+
+        const queryString = decodeURIComponent(newParams.toString());
+        const newUrl = queryString ? `${nextPath}?${queryString}` : nextPath;
+
+        if (nextPath !== pathname) {
+        router.push(newUrl, { scroll: false });
+        } else {
+            window.history.replaceState(null, "", newUrl);
+        }
+    };
+
     const handleTabChange = (tab: "ticket" | "pass") => {
         setResult(null);
         setResultPass(null);
@@ -374,19 +482,10 @@ export default function Form() {
         setError(null);
         setServerTime(null);
 
-        const nextSearchType = tab === "ticket" ? "ticket" : "pass6";
-        setValue("searchType", nextSearchType, { shouldValidate: true });
+        const nextPath = tab === "ticket" ? "/fare/ticket" : "/fare/pass";
+        const nextSearchType: SearchType = tab === "ticket" ? "ticket" : "pass6";
 
-        // 即時バリデーション
-        setTimeout(() => {
-            if (!getValues("startStation")) return;
-            const fieldsCount = getValues("segments").length;
-            const fieldsToTrigger = ["startStation"];
-            if (fieldsCount > 0) {
-                fieldsToTrigger.push(`segments.${fieldsCount - 1}.destinationStation`);
-            }
-            trigger(fieldsToTrigger as Parameters<typeof trigger>[0]);
-        }, 0);
+        updateUrlAndState(nextPath, nextSearchType);
     };
 
     const handlePeriodChange = (period: "pass1" | "pass3" | "pass6") => {
@@ -397,18 +496,7 @@ export default function Form() {
         setError(null);
         setServerTime(null);
 
-        setValue("searchType", period, { shouldValidate: true });
-
-        // 即時バリデーション
-        setTimeout(() => {
-            if (!getValues("startStation")) return;
-            const fieldsCount = getValues("segments").length;
-            const fieldsToTrigger = ["startStation"];
-            if (fieldsCount > 0) {
-                fieldsToTrigger.push(`segments.${fieldsCount - 1}.destinationStation`);
-            }
-            trigger(fieldsToTrigger as Parameters<typeof trigger>[0]);
-        }, 0);
+        updateUrlAndState(pathname, period);
     };
 
     const lastSegment = formValues.segments?.[formValues.segments?.length - 1];
@@ -532,11 +620,14 @@ export default function Form() {
         for (let i = 0; i < path.length - 1; i++) {
             const startStep = path[i];
             const endStep = path[i + 1];
-            const lineName = startStep.lineName!;
+            const lineName = startStep.lineName;
+            if (!lineName) return null;
             const line = getLineByName(lineName);
+            if (!line || !line.stations) return null;
             const stationsOnLine = line.stations;
             const startIdx = stationsOnLine.indexOf(startStep.stationName);
             const endIdx = stationsOnLine.indexOf(endStep.stationName);
+            if (startIdx === -1 || endIdx === -1) return null;
             let segmentStations: string[];
             if (startIdx < endIdx) {
                 segmentStations = stationsOnLine.slice(startIdx, endIdx);
@@ -569,6 +660,9 @@ export default function Form() {
         setCorrectedStartPass("");
         setCorrectedEndPass("");
         setServerTime(null);
+
+        // 検索実行時に URL にクエリパラメータ route / month を付与・更新
+        updateUrlAndState(pathname, data.searchType);
 
         const apiRequestBody = createApiRequestBody(data);
 
@@ -631,7 +725,7 @@ export default function Form() {
         }
 
         try {
-            const response = await fetch('/api/mr', {
+            const response = await fetch('/api/fare', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(apiRequestBody),
@@ -743,7 +837,7 @@ export default function Form() {
                         rules={{
                             required: "発駅を入力してください",
                             validate: (selected) => {
-                                if (!selected) return "発駅を入力してください";
+                                if (!selected || !selected.name || selected.name.trim() === "") return "発駅を入力してください";
                                 const exists = stationData.some(s => s.name === selected.name);
                                 if (!exists) return "該当する駅が存在しません";
                                 const currentSearchType = getValues("searchType");
@@ -781,9 +875,9 @@ export default function Form() {
                     {fields.map((item, index) => {
                         const previousStation = index === 0
                             ? formValues.startStation
-                            : formValues.segments[index - 1].destinationStation;
+                            : formValues.segments?.[index - 1]?.destinationStation;
 
-                        const previousLine = index > 0 ? formValues.segments[index - 1]?.viaLine : null;
+                        const previousLine = index > 0 ? formValues.segments?.[index - 1]?.viaLine : null;
 
                         const availableLineNames = new Set(previousStation?.lines || []);
 
@@ -793,13 +887,17 @@ export default function Form() {
                                 .filter(line => !previousLine || line.name !== previousLine.name)
                             : [];
 
-                        const selectedLine = formValues.segments[index]?.viaLine;
+                        const selectedLine = formValues.segments?.[index]?.viaLine;
 
                         const stationsOnLine = selectedLine
                             ? (selectedLine.stations
                                 .map(name => stationMap.get(name))
                                 .filter(station => station !== undefined) as Station[])
                             : [];
+
+                        const lineOptions = selectedLine && !availableLines.some(l => l.name === selectedLine.name)
+                            ? [selectedLine, ...availableLines]
+                            : availableLines;
 
                         const isLastStation = index === fields.length - 1;
                         const stationLabel = isLastStation ? "着駅" : "経由";
@@ -811,12 +909,26 @@ export default function Form() {
                                     <Controller
                                         name={`segments.${index}.viaLine`}
                                         control={control}
-                                        rules={{ required: "経由路線を選択してください" }}
+                                        rules={{
+                                            required: "経由路線を選択してください",
+                                            validate: (value) => {
+                                                if (!value || !value.name || value.name.trim() === "") return "経由路線を選択してください";
+                                                if (previousStation) {
+                                                    const prevLines = previousStation.lines || [];
+                                                    const targetBaseName = value.name.split('_')[0];
+                                                    const hasLine = prevLines.some(l => l === value.name || l.split('_')[0] === targetBaseName || l === targetBaseName);
+                                                    if (!hasLine) {
+                                                        return "この路線は選択できません";
+                                                    }
+                                                }
+                                                return true;
+                                            }
+                                        }}
                                         render={({ field, fieldState }) => (
                                             <div className="w-full">
                                                 <SelectLine
                                                     instanceId={`via-line-${index}`}
-                                                    options={availableLines}
+                                                    options={lineOptions}
                                                     isDisabled={!previousStation}
                                                     value={field.value}
                                                     onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnViaLineChange(index))}
@@ -834,12 +946,16 @@ export default function Form() {
                                     rules={{
                                         required: `${stationLabel}を入力してください`,
                                         validate: (selected) => {
-                                            if (!selected) return `${stationLabel}を入力してください`;
+                                            if (!selected || !selected.name || selected.name.trim() === "") return `${stationLabel}を入力してください`;
                                             if (previousStation && previousStation.name === selected.name) {
                                                 return "路線の前後で同じ駅は選択できません";
                                             }
-                                            const exists = stationsOnLine.some(s => s.name === selected.name);
-                                            if (!exists) return "選択された路線にこの駅は存在しません";
+                                            if (selectedLine && stationsOnLine.length > 0) {
+                                                const exists = stationsOnLine.some(s => s.name === selected.name);
+                                                if (!exists) {
+                                                    return "選択された路線にこの駅は存在しません";
+                                                }
+                                            }
 
                                             const currentSearchType = getValues("searchType");
                                             if (currentSearchType !== "ticket" && isLastStation && TEMPORARY_STATIONS.includes(selected.name)) {
@@ -922,7 +1038,9 @@ export default function Form() {
                                     type="radio"
                                     value="normal"
                                     className="w-4 h-4 text-blue-600 bg-white border-gray-300 focus:ring-blue-500"
-                                    {...register("calculationMode")}
+                                    {...register("calculationMode", {
+                                        onChange: () => updateUrlAndState(pathname, currentType)
+                                    })}
                                 />
                                 <span className="ms-3 text-base font-medium text-slate-700">
                                     通常 <span className="text-sm text-slate-500 font-normal">（発売可能なルートに自動補正）</span>
@@ -934,7 +1052,9 @@ export default function Form() {
                                     type="radio"
                                     value="cheapest"
                                     className="w-4 h-4 text-blue-600 bg-white border-gray-300 focus:ring-blue-500"
-                                    {...register("calculationMode")}
+                                    {...register("calculationMode", {
+                                        onChange: () => updateUrlAndState(pathname, currentType)
+                                    })}
                                 />
                                 <span className="ms-3 text-base font-medium text-slate-700">
                                     最安 <span className="text-sm text-slate-500 font-normal">（経路を延長して安くなる場合は適用）</span>
@@ -946,7 +1066,9 @@ export default function Form() {
                                     type="radio"
                                     value="uncorrect"
                                     className="w-4 h-4 text-blue-600 bg-white border-gray-300 focus:ring-blue-500"
-                                    {...register("calculationMode")}
+                                    {...register("calculationMode", {
+                                        onChange: () => updateUrlAndState(pathname, currentType)
+                                    })}
                                 />
                                 <span className="ms-3 text-base font-medium text-slate-700">
                                     補正禁止 <span className="text-sm text-red-500 font-normal">※上級者向け</span><span className="text-sm text-slate-500 font-normal">（入力経路のまま計算）</span>
