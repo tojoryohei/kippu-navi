@@ -8,7 +8,7 @@ import (
 type viaBypassRule struct {
 	Pattern     []string // 特例としてマッチさせる駅の並び
 	Vias        []string // 追加する経由名
-	EvaluateEnd bool     // 💡 true: 終端駅を次のループで評価(第69条), false: 終端駅もスキップ(東京近郊)
+	EvaluateEnd bool     // true: 終端駅を次のループで評価(第69条), false: 終端駅もスキップ(東京近郊)
 
 	// 前の駅の条件
 	AnyPrev     bool     // trueなら前の駅を問わない
@@ -24,15 +24,7 @@ var viaRules = []viaBypassRule{
 	// ==========================================
 	// 第69条 経路特定区間 (EvaluateEnd = true)
 	// ==========================================
-	// (1) 大沼〜森
-	{
-		Pattern: []string{"大沼", "大沼公園", "赤井川", "駒ケ岳", "森"}, Vias: []string{"函館線"}, EvaluateEnd: true,
-		PrevAllowed: []string{"新函館北斗"}, NextAllowed: []string{"石倉"},
-	},
-	{
-		Pattern: []string{"森", "駒ケ岳", "赤井川", "大沼公園", "大沼"}, Vias: []string{"函館線"}, EvaluateEnd: true,
-		PrevAllowed: []string{"石倉"}, NextAllowed: []string{"新函館北斗"},
-	},
+
 	// (2) 日暮里〜赤羽
 	{
 		Pattern: []string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"}, Vias: []string{"王子", "尾久"}, EvaluateEnd: true,

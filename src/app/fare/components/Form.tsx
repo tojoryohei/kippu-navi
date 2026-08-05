@@ -598,8 +598,7 @@ export default function Form({
         if (data.searchType !== "ticket" || pathname.startsWith("/fare/pass")) {
             for (const seg of data.segments) {
                 if (seg.viaLine?.name) {
-                    const baseName = seg.viaLine.name.split('_')[0];
-                    if (SHINKANSEN_LINES.has(baseName)) {
+                    if (SHINKANSEN_LINES.has(seg.viaLine.name)) {
                         return null;
                     }
                 }
@@ -924,7 +923,7 @@ export default function Form({
                                                 const currentSearchType = getValues("searchType");
                                                 const isPass = currentSearchType !== "ticket" || pathname.startsWith("/fare/pass");
                                                 const targetBaseName = value.name.split('_')[0];
-                                                if (isPass && SHINKANSEN_LINES.has(targetBaseName)) return "定期券の計算で新幹線は選択できません";
+                                                if (isPass && SHINKANSEN_LINES.has(value.name)) return "定期券の計算で新幹線は選択できません";
                                                 if (previousStation) {
                                                     const prevLines = previousStation.lines || [];
                                                     const hasLine = prevLines.some(l => l === value.name || l.split('_')[0] === targetBaseName || l === targetBaseName);
