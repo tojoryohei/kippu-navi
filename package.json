@@ -46,5 +46,13 @@
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.10"
+  },
+  "allowScripts": {
+    "@firebase/util@1.15.2": true,
+    "better-sqlite3@13.0.3": true,
+    "core-js@3.50.0": true,
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true,
+    "protobufjs@7.6.5": true
   }
 }
