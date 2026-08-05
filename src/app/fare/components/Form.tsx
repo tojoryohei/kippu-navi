@@ -18,7 +18,7 @@ import { stringifyRoute, parseRoute } from "@/app/fare/lib/routeParser";
 import { Station, Line, KippuData, IFormInput, PathStep, CalculationMode, SearchType } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
-const SHINKANSEN_LINES: Set<string> = new Set(["山形新幹線", "北海道新幹線", "九州新幹線", "上越新幹線", "新幹線", "東北新幹線", "西九州新幹線", "北陸新幹線"]);
+const SHINKANSEN_LINES: Set<string> = new Set(["山形新幹線", "北海道新幹", "九州新幹線", "上越新幹線", "新幹線", "東北新幹線", "西九州新幹", "北陸新幹線"]);
 const TEMPORARY_STATIONS = [
     "原生花園",
     "ラベンダー畑",
@@ -227,7 +227,7 @@ export default function Form({
             setValue("startStation", null as unknown as Station);
         }
 
-        if (initialSegments.length > 0 && initialSegments[0].destinationStation !== null) {
+        if (initialSegments.length > 0 && (initialSegments[0].viaLine !== null || initialSegments[0].destinationStation !== null)) {
             replace(initialSegments);
         } else {
             replace([{ viaLine: null, destinationStation: null }]);
@@ -439,9 +439,6 @@ export default function Form({
     const isDuplicateRoute = (allStations.length > 1 && new Set(allStations.slice(0, -1)).size !== allStations.length - 1) ||
         (allStations.length >= 3 && allStations[allStations.length - 3] === allStations[allStations.length - 1]);
 
-    const isPass = currentType && currentType !== "ticket";
-    const hasShinkansen = isPass && (formValues.segments || []).some(seg => seg.viaLine && SHINKANSEN_LINES.has(seg.viaLine.name));
-
     const updateUrlAndState = (nextPath: string, nextSearchType: SearchType) => {
         setValue("searchType", nextSearchType, { shouldValidate: true });
 
@@ -596,6 +593,17 @@ export default function Form({
     const createApiRequestBody = (data: FormValues) => {
         if (data.startStation == null) {
             return null;
+        }
+
+        if (data.searchType !== "ticket" || pathname.startsWith("/fare/pass")) {
+            for (const seg of data.segments) {
+                if (seg.viaLine?.name) {
+                    const baseName = seg.viaLine.name.split('_')[0];
+                    if (SHINKANSEN_LINES.has(baseName)) {
+                        return null;
+                    }
+                }
+            }
         }
 
         const path: PathStep[] = [];
@@ -860,7 +868,7 @@ export default function Form({
                                         />
                                     </div>
                                 </div>
-                                <div className="min-h-4 ml-17">
+                                <div className="min-h-4 ml-18">
                                     {fieldState.error && (
                                         <p className="text-red-500 text-xs">
                                             {fieldState.error.message}
@@ -903,7 +911,7 @@ export default function Form({
                         const stationLabel = isLastStation ? "着駅" : "経由";
 
                         return (
-                            <div key={item.id} className="flex flex-col gap-4 w-full">
+                            <div key={item.id} className="flex flex-col w-full">
                                 {/* 路線（ラベルなしで、コンテナ幅いっぱいに広げる） */}
                                 <div className="w-full">
                                     <Controller
@@ -913,13 +921,14 @@ export default function Form({
                                             required: "経由路線を選択してください",
                                             validate: (value) => {
                                                 if (!value || !value.name || value.name.trim() === "") return "経由路線を選択してください";
+                                                const currentSearchType = getValues("searchType");
+                                                const isPass = currentSearchType !== "ticket" || pathname.startsWith("/fare/pass");
+                                                const targetBaseName = value.name.split('_')[0];
+                                                if (isPass && SHINKANSEN_LINES.has(targetBaseName)) return "定期券の計算で新幹線は選択できません";
                                                 if (previousStation) {
                                                     const prevLines = previousStation.lines || [];
-                                                    const targetBaseName = value.name.split('_')[0];
                                                     const hasLine = prevLines.some(l => l === value.name || l.split('_')[0] === targetBaseName || l === targetBaseName);
-                                                    if (!hasLine) {
-                                                        return "この路線は選択できません";
-                                                    }
+                                                    if (!hasLine) return "この路線は選択できません";
                                                 }
                                                 return true;
                                             }
@@ -933,7 +942,9 @@ export default function Form({
                                                     value={field.value}
                                                     onChange={(value) => handleFieldChange(value, field.onChange, () => resetOnViaLineChange(index))}
                                                 />
-                                                {fieldState.error && <p className="text-red-500 text-xs mt-1">{fieldState.error.message}</p>}
+                                                <div className="min-h-4 ml-1">
+                                                    {fieldState.error && <p className="text-red-500 text-xs mt-1">{fieldState.error.message}</p>}
+                                                </div>
                                             </div>
                                         )}
                                     />
@@ -978,7 +989,7 @@ export default function Form({
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="min-h-4 ml-17">
+                                            <div className="min-h-4 ml-18">
                                                 {fieldState.error && (
                                                     <p className="text-red-500 text-xs">
                                                         {fieldState.error.message}
@@ -998,20 +1009,14 @@ export default function Form({
                         </p>
                     )}
 
-                    {hasShinkansen && (
-                        <p className="text-red-500 text-sm">
-                            定期券では新幹線を経由することができません
-                        </p>
-                    )}
-
                     {/* 経路追加 ＆ 経路逆転 ボタン群 */}
                     <div className="flex items-center flex-wrap gap-3 my-2 w-full">
                         <button
                             type="button"
                             onClick={addSegment}
-                            disabled={!canAddTransfer || isDuplicateRoute || hasConsecutiveSameStation || hasShinkansen}
+                            disabled={!canAddTransfer || isDuplicateRoute || hasConsecutiveSameStation}
                             className="px-4 py-2 bg-slate-500 text-white rounded hover:bg-slate-600 disabled:bg-slate-300 transition-colors shadow-sm whitespace-nowrap"
-                            title={hasShinkansen ? "定期券では新幹線を経由するがことはできません" : !isUnderPathLimit ? "経路数の上限（3000件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
+                            title={!isUnderPathLimit ? "経路数の上限（3000件）に達しました" : "前の駅で乗り換え可能な路線がある場合に追加できます"}
                         >
                             {"経由路線を追加"}
                         </button>
@@ -1080,7 +1085,7 @@ export default function Form({
                     <button
                         type="submit"
                         className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2 cursor-pointer disabled:cursor-not-allowed"
-                        disabled={!isValid || isDuplicateRoute || hasConsecutiveSameStation || isLoading || (currentType !== "ticket" && !isWasmReady) || hasShinkansen}
+                        disabled={!isValid || isDuplicateRoute || hasConsecutiveSameStation || isLoading || (currentType !== "ticket" && !isWasmReady)}
                     >
                         {isLoading
                             ? "計算中..."
