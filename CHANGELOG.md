@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.20.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.20.0...kippu-navi-v2.20.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* URLクエリからの復元ロジック改善・定期券新幹線バリデーション追加 ([#598](https://github.com/tojoryohei/kippu-navi/issues/598)) ([db621c7](https://github.com/tojoryohei/kippu-navi/commit/db621c794cc6c65e1681e3674f8c684b6c9f70a0)), closes [#597](https://github.com/tojoryohei/kippu-navi/issues/597)
+
 ## [2.20.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.19.10...kippu-navi-v2.20.0) (2026-08-03)
 
 

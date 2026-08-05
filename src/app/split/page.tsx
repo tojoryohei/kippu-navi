@@ -90,7 +90,7 @@ export default async function SplitPage({ searchParams }: { searchParams: Promis
             <p className="text-sm sm:text-base text-slate-600 min-h-20">
               {"計算したい区間の発着駅を入力してください。"}
               <br className="hidden sm:block" />
-              {"最安となるパターンを自動で導出します。"}
+              {"最安となる分割パターンを自動で導出します。"}
             </p>
           </div>
           <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">

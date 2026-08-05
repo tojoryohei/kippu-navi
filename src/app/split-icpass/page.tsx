@@ -57,7 +57,7 @@ export default async function SplitIcPassPage({ searchParams }: { searchParams: 
             <p className="text-sm sm:text-base text-slate-600 min-h-20">
               {"計算したい区間の発着駅と期間を入力・選択してください。"}
               <br className="hidden sm:block" />
-              {"Kitaca・Suica・ICOCAエリアにおいて最安となるパターンを自動で導出します。"}
+              {"Kitaca・Suica・ICOCAエリアにおいて最安となる分割パターンを自動で導出します。"}
             </p>
           </div>
           <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
