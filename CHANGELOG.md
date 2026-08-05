@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.20.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.20.1...kippu-navi-v2.20.2) (2026-08-05)
+
+
+### Bug Fixes
+
+* 大沼〜森間における定期券の経由印字ルールを削除 ([#601](https://github.com/tojoryohei/kippu-navi/issues/601)) ([d84f7ae](https://github.com/tojoryohei/kippu-navi/commit/d84f7ae0d1265b6df4cfb9ab7b31391ec59c646a)), closes [#600](https://github.com/tojoryohei/kippu-navi/issues/600)
+
 ## [2.20.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.20.0...kippu-navi-v2.20.1) (2026-08-05)
 
 
