@@ -131,6 +131,8 @@ export default function Form({
     const workerRef = useRef<Worker | null>(null);
     const [isWasmReady, setIsWasmReady] = useState(false);
     const calculationCountRef = useRef<number>(0);
+    const latestCalcIdRef = useRef<number>(0);
+    const [selectedPeriod, setSelectedPeriod] = useState<SearchType>(initialSearchType);
 
     const [resultPass, setResultPass] = useState<{
         fare: number;
@@ -157,14 +159,16 @@ export default function Form({
             calculationCountRef.current = 0;
 
             worker.onmessage = (e) => {
-                const { type, result: wResult, error: wError } = e.data;
+                const { type, result: wResult, error: wError, requestId } = e.data;
                 if (type === "ready") {
                     setIsWasmReady(true);
                 } else if (type === "success_route_pass") {
-                    setResultPass(wResult);
-                    if (wResult.correctedPath) {
-                        setCorrectedStartPass(wResult.correctedPath[0] || "");
-                        setCorrectedEndPass(wResult.correctedPath[wResult.correctedPath.length - 1] || "");
+                    if (requestId === latestCalcIdRef.current) {
+                        setResultPass(wResult);
+                        if (wResult.correctedPath) {
+                            setCorrectedStartPass(wResult.correctedPath[0] || "");
+                            setCorrectedEndPass(wResult.correctedPath[wResult.correctedPath.length - 1] || "");
+                        }
                     }
                     setIsLoading(false);
 
@@ -241,6 +245,7 @@ export default function Form({
 
         if (initialSearchType) {
             setValue("searchType", initialSearchType);
+            setTimeout(() => { setSelectedPeriod(initialSearchType); }, 0);
         }
         if (modeParam && ["normal", "cheapest", "uncorrect"].includes(modeParam)) {
             setValue("calculationMode", modeParam);
@@ -347,7 +352,7 @@ export default function Form({
         }
     }, [result, resultPass, error, posthog, getValues]);
 
-    const currentType = formValues.searchType;
+    const currentType = selectedPeriod;
     const isPeriodDisabled = currentType === "ticket";
 
     // クライアント側での経路展開 (重複チェック用)
@@ -480,20 +485,21 @@ export default function Form({
         setServerTime(null);
 
         const nextPath = tab === "ticket" ? "/fare/ticket" : "/fare/pass";
-        const nextSearchType: SearchType = tab === "ticket" ? "ticket" : "pass6";
+        const nextSearchType: SearchType = tab === "ticket" ? "ticket" : (selectedPeriod === "ticket" ? "pass6" : selectedPeriod);
 
+        setSelectedPeriod(nextSearchType);
         updateUrlAndState(nextPath, nextSearchType);
     };
 
     const handlePeriodChange = (period: "pass1" | "pass3" | "pass6") => {
+        setSelectedPeriod(period);
+        setValue("searchType", period);
         setResult(null);
         setResultPass(null);
         setCorrectedStartPass("");
         setCorrectedEndPass("");
         setError(null);
         setServerTime(null);
-
-        updateUrlAndState(pathname, period);
     };
 
     const lastSegment = formValues.segments?.[formValues.segments?.length - 1];
@@ -719,13 +725,15 @@ export default function Form({
             const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
             const months = monthsMap[data.searchType] || 1;
 
+            const calcId = ++latestCalcIdRef.current;
             workerRef.current.postMessage({
                 type: "calculateRoutePass",
                 payload: {
                     stationNames,
                     calculationMode: data.calculationMode,
                     months,
-                    isIc: false
+                    isIc: false,
+                    requestId: calcId
                 }
             });
             return;
