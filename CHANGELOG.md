@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.20.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.20.2...kippu-navi-v2.20.3) (2026-08-09)
+
+
+### Bug Fixes
+
+* 定期券の期間変更時のUI状態リセットとWorkerの競合状態を修正 ([#605](https://github.com/tojoryohei/kippu-navi/issues/605)) ([cfec879](https://github.com/tojoryohei/kippu-navi/commit/cfec8790c97b9cffe23f94b1e96b67828908dbcb))
+
 ## [2.20.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.20.1...kippu-navi-v2.20.2) (2026-08-05)
 
 
