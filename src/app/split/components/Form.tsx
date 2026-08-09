@@ -137,6 +137,12 @@ export default function SplitForm({
             ? initialSearchType
             : (isIcPass || isPass ? "pass6" : "ticket")
     );
+    // 期間ボタンの表示状態を管理するState（useWatchは未登録フィールドで不安定なため独立管理）
+    const [selectedPeriod, setSelectedPeriod] = useState<SearchType>(
+        (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
+            ? initialSearchType
+            : (isIcPass || isPass ? "pass6" : "ticket")
+    );
     const [showAllPatterns, setShowAllPatterns] = useState(false);
 
     const [versionSkewError, setVersionSkewError] = useState<Error | null>(null);
@@ -149,6 +155,8 @@ export default function SplitForm({
     const workerRef = useRef<Worker | null>(null);
     const [isWasmReady, setIsWasmReady] = useState(false);
     const calculationCountRef = useRef<number>(0);
+    // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
+    const latestCalcIdRef = useRef<number>(0);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -165,12 +173,15 @@ export default function SplitForm({
             calculationCountRef.current = 0;
 
             worker.onmessage = (e) => {
-                const { type, result, error } = e.data;
+                const { type, result, error, requestId } = e.data;
                 if (type === "ready") {
                     setIsWasmReady(true);
                 } else if (type === "success") {
-                    const adaptedResult = adaptWasmResponseToSplitApiResponse(result);
-                    setResult(adaptedResult);
+                    // 最新のリクエストIDと一致する場合のみ結果を反映（古い計算結果を破棄）
+                    if (requestId === latestCalcIdRef.current) {
+                        const adaptedResult = adaptWasmResponseToSplitApiResponse(result);
+                        setResult(adaptedResult);
+                    }
                     setIsCalculating(false);
 
                     calculationCountRef.current += 1;
@@ -231,6 +242,7 @@ export default function SplitForm({
         setValue("startStation", startStation);
         setValue("endStation", endStation);
         setValue("searchType", currentSearchType);
+        setTimeout(() => { setSelectedPeriod(currentSearchType); }, 0);
 
         if (!fromVal && !toVal) {
             setTimeout(() => {
@@ -326,7 +338,7 @@ export default function SplitForm({
 
     const startStationVal = useWatch({ control, name: "startStation" });
     const endStationVal = useWatch({ control, name: "endStation" });
-    const currentType = useWatch({ control, name: "searchType" });
+    const currentType = useWatch({ control, name: "searchType" }) ?? selectedPeriod;
 
     const canSwap = !!startStationVal || !!endStationVal;
     const isPeriodDisabled = pathname === "/split";
@@ -399,26 +411,27 @@ export default function SplitForm({
         let nextSearchType: SearchType = "ticket";
 
         if (tab === "pass") {
-            nextSearchType = (currentType === "pass1" || currentType === "pass3" || currentType === "pass6")
-                ? currentType
+            nextSearchType = (selectedPeriod === "pass1" || selectedPeriod === "pass3" || selectedPeriod === "pass6")
+                ? selectedPeriod
                 : "pass6";
             nextPath = "/split-pass";
         } else if (tab === "icpass") {
-            nextSearchType = (currentType === "pass1" || currentType === "pass3" || currentType === "pass6")
-                ? currentType
+            nextSearchType = (selectedPeriod === "pass1" || selectedPeriod === "pass3" || selectedPeriod === "pass6")
+                ? selectedPeriod
                 : "pass6";
             nextPath = "/split-icpass";
         }
 
+        setSelectedPeriod(nextSearchType);
         updateUrlAndState(nextPath, nextSearchType);
     };
 
     const handlePeriodChange = (period: "pass1" | "pass3" | "pass6") => {
+        setSelectedPeriod(period);
+        setValue("searchType", period);
         setResult(null);
         setError(null);
         setServerTime(null);
-
-        updateUrlAndState(pathname, period);
     };
 
     const updateUrlAndState = (nextPath: string, nextSearchType: SearchType) => {
@@ -521,12 +534,14 @@ export default function SplitForm({
                     ? passStations.splitPatterns
                     : [passStations.normal];
 
+                const calcId = ++latestCalcIdRef.current;
                 workerRef.current.postMessage({
                     type: "calculate",
                     payload: {
                         splitPaths,
                         months,
-                        isIc: isIcPass
+                        isIc: isIcPass,
+                        requestId: calcId,
                     }
                 });
 
@@ -598,7 +613,7 @@ export default function SplitForm({
                         type="button"
                         onClick={() => handlePeriodChange("pass1")}
                         disabled={isPeriodDisabled}
-                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && currentType === "pass1"
+                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && selectedPeriod === "pass1"
                             ? "bg-white text-blue-600 shadow-sm font-bold cursor-pointer"
                             : isPeriodDisabled
                                 ? "text-slate-400 cursor-not-allowed opacity-50"
@@ -611,7 +626,7 @@ export default function SplitForm({
                         type="button"
                         onClick={() => handlePeriodChange("pass3")}
                         disabled={isPeriodDisabled}
-                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && currentType === "pass3"
+                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && selectedPeriod === "pass3"
                             ? "bg-white text-blue-600 shadow-sm font-bold cursor-pointer"
                             : isPeriodDisabled
                                 ? "text-slate-400 cursor-not-allowed opacity-50"
@@ -624,7 +639,7 @@ export default function SplitForm({
                         type="button"
                         onClick={() => handlePeriodChange("pass6")}
                         disabled={isPeriodDisabled}
-                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && currentType === "pass6"
+                        className={`py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all text-center ${!isPeriodDisabled && selectedPeriod === "pass6"
                             ? "bg-white text-blue-600 shadow-sm font-bold cursor-pointer"
                             : isPeriodDisabled
                                 ? "text-slate-400 cursor-not-allowed opacity-50"

@@ -125,7 +125,7 @@ onmessage = async (e: MessageEvent) => {
       return;
     }
 
-    const { stationNames, months, isIc, calculationMode } = payload;
+    const { stationNames, months, isIc, calculationMode, requestId } = payload;
     try {
       const stationNamesJson = JSON.stringify(stationNames);
       const resultJsonStr = workerSelf.calculateRoutePass(stationNamesJson, months, isIc, calculationMode || 'normal');
@@ -134,7 +134,7 @@ onmessage = async (e: MessageEvent) => {
         postMessage({ type: 'error', error: result.error });
         return;
       }
-      postMessage({ type: 'success_route_pass', result });
+      postMessage({ type: 'success_route_pass', requestId, result });
     } catch (err) {
       postMessage({ type: 'error', error: String(err) });
     }
@@ -144,7 +144,7 @@ onmessage = async (e: MessageEvent) => {
       return;
     }
 
-    const { splitPaths, months, isIc } = payload;
+    const { splitPaths, months, isIc, requestId } = payload;
     try {
       const combinedResults: WasmResultResponse[] = [];
       let normalResult: WasmResultResponse | null = null;
@@ -183,7 +183,7 @@ onmessage = async (e: MessageEvent) => {
 
       uniqueResults.sort((a, b) => a.totalAmount - b.totalAmount);
 
-      postMessage({ type: 'success', result: { normal: normalResult, results: uniqueResults } });
+      postMessage({ type: 'success', requestId, result: { normal: normalResult, results: uniqueResults } });
     } catch (err) {
       postMessage({ type: 'error', error: String(err) });
     }
