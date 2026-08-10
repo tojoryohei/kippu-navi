@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "分割きっぷのメリット・デメリット完全まとめ",
+  title: "分割きっぷのメリット・デメリットまとめ",
   description: "分割きっぷの節約効果だけでなく、払い戻し手数料や運行不能時の取扱いなど、知っておくべきデメリットも整理して解説します。",
   alternates: {
     canonical: "/articles/merit-demerit",
@@ -13,7 +13,7 @@ export default function MeritDemeritPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
-    headline: '分割きっぷのメリット・デメリット完全まとめ',
+    headline: '分割きっぷのメリット・デメリットまとめ',
     description: '分割きっぷの節約効果と注意すべきデメリットを整理して解説します。',
     url: 'https://kippu-navi.com/articles/merit-demerit',
     author: { '@type': 'Person', name: 'きっぷナビ運営者', url: 'https://kippu-navi.com/about' },
@@ -36,7 +36,7 @@ export default function MeritDemeritPage() {
           <header className="mb-8">
             <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-blue-100 text-blue-700">基礎知識</span>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-4 leading-tight">
-              {"分割きっぷのメリット・デメリット完全まとめ"}
+              {"分割きっぷのメリット・デメリットまとめ"}
             </h1>
             <p className="mt-4 text-slate-500 text-sm">最終更新: 2026年7月18日</p>
           </header>
@@ -112,7 +112,7 @@ export default function MeritDemeritPage() {
             <h2 className="text-lg font-bold text-slate-800 mb-4">関連記事</h2>
             <ul className="space-y-2 text-sm">
               <li><Link href="/articles/what-is-split-ticket" className="text-blue-600 hover:underline">→ 分割きっぷとは？仕組みをわかりやすく解説</Link></li>
-              <li><Link href="/articles/how-to-buy-split-ticket" className="text-blue-600 hover:underline">→ 分割きっぷの買い方完全ガイド</Link></li>
+              <li><Link href="/articles/how-to-buy-split-ticket" className="text-blue-600 hover:underline">→ 分割きっぷの買い方ガイド</Link></li>
             </ul>
           </div>
         </article>

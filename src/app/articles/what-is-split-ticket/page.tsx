@@ -87,7 +87,7 @@ export default function WhatIsSplitTicketPage() {
             <section>
               <h2 className="text-xl font-bold text-slate-800 mb-4 border-b pb-2">分割きっぷの合法性</h2>
               <p>
-                {"分割きっぷは完全に合法です。旅客営業規則第157条には2枚以上のきっぷを併用して使用することが想定された条文が存在しており、JRも公式に認めている利用方法です。"}
+                {"分割きっぷは合法です。旅客営業規則第157条には2枚以上のきっぷを併用して使用することが想定された条文が存在しており、JRも想定している利用方法です。"}
               </p>
             </section>
 
@@ -108,12 +108,12 @@ export default function WhatIsSplitTicketPage() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/articles/how-to-buy-split-ticket" className="text-blue-600 hover:underline">
-                  → 分割きっぷの買い方完全ガイド
+                  → 分割きっぷの買い方ガイド
                 </Link>
               </li>
               <li>
                 <Link href="/articles/merit-demerit" className="text-blue-600 hover:underline">
-                  → 分割きっぷのメリット・デメリット完全まとめ
+                  → 分割きっぷのメリット・デメリットまとめ
                 </Link>
               </li>
               <li>
