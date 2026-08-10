@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.20.3...kippu-navi-v2.21.0) (2026-08-10)
+
+
+### Features
+
+* 記事タイトルの表現調整・購入ガイド画像/カルーセル追加・不要記事削除 ([#613](https://github.com/tojoryohei/kippu-navi/issues/613)) ([1a2e088](https://github.com/tojoryohei/kippu-navi/commit/1a2e088621b674f1ee3fc724ef68c9f2460fbef1))
+
 ## [2.20.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.20.2...kippu-navi-v2.20.3) (2026-08-09)
 
 
