@@ -2,7 +2,7 @@
 
 import { useForm, Controller, SubmitHandler, useFieldArray, useWatch } from "react-hook-form";
 import type { SingleValue } from "react-select";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { usePostHog } from "posthog-js/react";
 
@@ -95,6 +95,75 @@ interface FormProps {
     initialCalculationMode?: CalculationMode;
 }
 
+const createApiRequestBody = (data: FormValues, pathname: string) => {
+    if (data.startStation == null) {
+        return null;
+    }
+
+    if (data.searchType !== "ticket" || pathname.startsWith("/fare/pass")) {
+        for (const seg of data.segments) {
+            if (seg.viaLine?.name) {
+                if (SHINKANSEN_LINES.has(seg.viaLine.name)) {
+                    return null;
+                }
+            }
+        }
+    }
+
+    const path: PathStep[] = [];
+
+    path.push({
+        stationName: data.startStation.name,
+        lineName: data.segments[0]?.viaLine?.name ?? null,
+    });
+
+    data.segments.forEach((segment, index) => {
+        if (segment.destinationStation) {
+            const nextLine = data.segments[index + 1]?.viaLine?.name ?? null;
+            path.push({
+                stationName: segment.destinationStation.name,
+                lineName: nextLine
+            });
+        }
+    });
+
+    const fullPath: PathStep[] = [];
+
+    for (let i = 0; i < path.length - 1; i++) {
+        const startStep = path[i];
+        const endStep = path[i + 1];
+        const lineName = startStep.lineName;
+        if (!lineName) return null;
+        const line = getLineByName(lineName);
+        if (!line || !line.stations) return null;
+        const stationsOnLine = line.stations;
+        const startIdx = stationsOnLine.indexOf(startStep.stationName);
+        const endIdx = stationsOnLine.indexOf(endStep.stationName);
+        if (startIdx === -1 || endIdx === -1) return null;
+        let segmentStations: string[];
+        if (startIdx < endIdx) {
+            segmentStations = stationsOnLine.slice(startIdx, endIdx);
+        } else {
+            segmentStations = stationsOnLine.slice(endIdx + 1, startIdx + 1).reverse();
+        }
+        for (const stationName of segmentStations) {
+            fullPath.push({ stationName: stationName, lineName: lineName });
+        }
+    }
+
+    fullPath.push(path[path.length - 1]);
+    
+    for (let i = 0; i < fullPath.length - 1; i++) {
+        fullPath[i].lineName = getKana(fullPath[i].lineName!, fullPath[i].stationName, fullPath[i + 1].stationName);
+    }
+
+    return {
+        fullPath,
+        calculationMode: data.calculationMode,
+        searchType: data.searchType
+    };
+};
+
 export default function Form({
     initialRoute,
     initialFrom,
@@ -132,7 +201,9 @@ export default function Form({
     const [isWasmReady, setIsWasmReady] = useState(false);
     const calculationCountRef = useRef<number>(0);
     const latestCalcIdRef = useRef<number>(0);
-    const [selectedPeriod, setSelectedPeriod] = useState<SearchType>(initialSearchType);
+    const isPassPage = pathname === "/fare/pass";
+    const defaultSearchType = isPassPage ? "pass6" : (initialSearchType || "ticket");
+    const [selectedPeriod, setSelectedPeriod] = useState<SearchType>(defaultSearchType);
 
     const [resultPass, setResultPass] = useState<{
         fare: number;
@@ -143,6 +214,143 @@ export default function Form({
     } | null>(null);
     const [correctedStartPass, setCorrectedStartPass] = useState<string>("");
     const [correctedEndPass, setCorrectedEndPass] = useState<string>("");
+
+    const updateUrlAndState = useCallback((nextPath: string, nextSearchType: SearchType) => {
+        setValue("searchType", nextSearchType, { shouldValidate: true });
+
+        const currentStart = getValues("startStation");
+        const currentSegs = getValues("segments");
+
+        const routeStr = stringifyRoute(currentStart, currentSegs);
+        const newParams = new URLSearchParams();
+
+        if (routeStr) {
+            newParams.set("route", routeStr);
+        }
+
+        const calcMode = getValues("calculationMode") || initialCalculationMode || "normal";
+        newParams.set("mode", calcMode);
+
+        if (nextSearchType !== "ticket") {
+            const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
+            const mVal = monthsMap[nextSearchType] || "6";
+            newParams.set("month", mVal);
+        }
+
+        const queryString = decodeURIComponent(newParams.toString());
+        const newUrl = queryString ? `${nextPath}?${queryString}` : nextPath;
+
+        if (nextPath !== pathname) {
+            router.push(newUrl, { scroll: false });
+        } else {
+            window.history.replaceState(null, "", newUrl);
+        }
+    }, [setValue, getValues, initialCalculationMode, pathname, router]);
+
+    const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
+        setIsLoading(true);
+        setError(null);
+        setResult(null);
+        setResultPass(null);
+        setCorrectedStartPass("");
+        setCorrectedEndPass("");
+        setServerTime(null);
+
+        // 検索実行時に URL にクエリパラメータ route / month を付与・更新
+        updateUrlAndState(pathname, data.searchType);
+
+        const apiRequestBody = createApiRequestBody(data, pathname);
+
+        if (!apiRequestBody) {
+            setError("経路が不完全です。");
+            setIsLoading(false);
+            return;
+        }
+
+        let stations = new Set<string>();
+        for (let i = 0; i < apiRequestBody.fullPath.length; i++) {
+            stations.add(apiRequestBody.fullPath[i].stationName);
+        }
+        if (!apiRequestBody || apiRequestBody.fullPath.length < 2 || stations.size === 1) {
+            setError('不正な経路です');
+            setIsLoading(false);
+            return;
+        }
+
+        const isPass = data.searchType && data.searchType !== "ticket";
+        if (isPass) {
+            const startName = apiRequestBody.fullPath[0].stationName;
+            const endName = apiRequestBody.fullPath[apiRequestBody.fullPath.length - 1].stationName;
+            if (TEMPORARY_STATIONS.includes(startName) || TEMPORARY_STATIONS.includes(endName)) {
+                setError('臨時駅発着の定期券は計算できません');
+                setIsLoading(false);
+                return;
+            }
+
+            const stationNames = apiRequestBody.fullPath
+                .map(p => p.stationName)
+                .filter(name => !TEMPORARY_STATIONS.includes(name));
+            const firstPart = stationNames.slice(0, -1);
+            const hasDuplicateInFirstPart = firstPart.some((name, index) => firstPart.indexOf(name) !== index);
+            if (hasDuplicateInFirstPart) {
+                setError('経路が重複しています。');
+                setIsLoading(false);
+                return;
+            }
+
+            if (!workerRef.current || !isWasmReady) {
+                let waited = 0;
+                while ((!workerRef.current || !isWasmReady) && waited < 5000) {
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                    waited += 50;
+                }
+            }
+
+            if (!workerRef.current || !isWasmReady) {
+                setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
+                setIsLoading(false);
+                return;
+            }
+
+            const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
+            const months = monthsMap[data.searchType] || 1;
+
+            const calcId = ++latestCalcIdRef.current;
+            workerRef.current.postMessage({
+                type: "calculateRoutePass",
+                payload: {
+                    stationNames,
+                    calculationMode: data.calculationMode,
+                    months,
+                    isIc: false,
+                    requestId: calcId
+                }
+            });
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/fare', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(apiRequestBody),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || "サーバーエラーが発生しました。");
+            }
+
+            const responseData = await response.json();
+            setResult(responseData.result || null);
+            setServerTime(responseData.serverTime || null);
+            setIsLoading(false);
+        } catch (err: unknown) {
+            const errorInstance = err instanceof Error ? err : new Error(String(err));
+            setError(errorInstance.message);
+            setIsLoading(false);
+        }
+    }, [pathname, updateUrlAndState, isWasmReady]);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -194,12 +402,21 @@ export default function Form({
         };
     }, []);
 
+    const initialAutoExecutedRef = useRef(false);
+
     // 初期ルート/パラメータによるフォーム状態の復元
     useEffect(() => {
         const routeParam = searchParams.get("route") ?? initialRoute;
         const fromParam = searchParams.get("from") ?? initialFrom;
         const toParam = searchParams.get("to") ?? initialTo;
         const modeParam = searchParams.get("mode") as CalculationMode | null;
+        const monthParam = searchParams.get("month");
+
+        let currentSearchType: SearchType = isPassPage ? "pass6" : "ticket";
+        if (monthParam === "1") currentSearchType = "pass1";
+        else if (monthParam === "3") currentSearchType = "pass3";
+        else if (monthParam === "6") currentSearchType = "pass6";
+        else if (initialSearchType) currentSearchType = initialSearchType;
 
         let startStation: Station | null = null;
         let initialSegments: { viaLine: Line | null; destinationStation: Station | null }[] = [{ viaLine: null, destinationStation: null }];
@@ -243,10 +460,9 @@ export default function Form({
             }, 0);
         }
 
-        if (initialSearchType) {
-            setValue("searchType", initialSearchType);
-            setTimeout(() => { setSelectedPeriod(initialSearchType); }, 0);
-        }
+        setValue("searchType", currentSearchType);
+        setTimeout(() => { setSelectedPeriod(currentSearchType); }, 0);
+
         if (modeParam && ["normal", "cheapest", "uncorrect"].includes(modeParam)) {
             setValue("calculationMode", modeParam);
         } else if (initialCalculationMode) {
@@ -256,8 +472,28 @@ export default function Form({
             setTimeout(() => {
                 trigger();
             }, 100);
+            if (!initialAutoExecutedRef.current) {
+                initialAutoExecutedRef.current = true;
+                if (currentSearchType === "ticket" || isWasmReady) {
+                    setTimeout(() => {
+                        handleSubmit(onSubmit)();
+                    }, 150);
+                }
+            }
         }
-    }, [searchParams, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger]);
+    }, [searchParams, pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, onSubmit, isWasmReady]);
+
+    // WASMが後から初期化完了(isWasmReady=true)したタイミングで、初期アクセス時自動計算をフォールバック実行
+    useEffect(() => {
+        if (isWasmReady && initialAutoExecutedRef.current) {
+            const startVal = getValues("startStation");
+            const segs = getValues("segments");
+            const type = getValues("searchType");
+            if (startVal && segs?.[0]?.destinationStation && type !== "ticket" && !resultPass && !isLoading && !error) {
+                handleSubmit(onSubmit)();
+            }
+        }
+    }, [isWasmReady, getValues, resultPass, isLoading, error, handleSubmit, onSubmit]);
 
     // PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
@@ -444,37 +680,7 @@ export default function Form({
     const isDuplicateRoute = (allStations.length > 1 && new Set(allStations.slice(0, -1)).size !== allStations.length - 1) ||
         (allStations.length >= 3 && allStations[allStations.length - 3] === allStations[allStations.length - 1]);
 
-    const updateUrlAndState = (nextPath: string, nextSearchType: SearchType) => {
-        setValue("searchType", nextSearchType, { shouldValidate: true });
 
-        const currentStart = getValues("startStation");
-        const currentSegs = getValues("segments");
-
-        const routeStr = stringifyRoute(currentStart, currentSegs);
-        const newParams = new URLSearchParams();
-
-        if (routeStr) {
-            newParams.set("route", routeStr);
-        }
-
-        const calcMode = getValues("calculationMode") || initialCalculationMode || "normal";
-        newParams.set("mode", calcMode);
-
-        if (nextSearchType !== "ticket") {
-            const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
-            const mVal = monthsMap[nextSearchType] || "6";
-            newParams.set("month", mVal);
-        }
-
-        const queryString = decodeURIComponent(newParams.toString());
-        const newUrl = queryString ? `${nextPath}?${queryString}` : nextPath;
-
-        if (nextPath !== pathname) {
-        router.push(newUrl, { scroll: false });
-        } else {
-            window.history.replaceState(null, "", newUrl);
-        }
-    };
 
     const handleTabChange = (tab: "ticket" | "pass") => {
         setResult(null);
@@ -596,179 +802,7 @@ export default function Form({
         trigger();
     };
 
-    const createApiRequestBody = (data: FormValues) => {
-        if (data.startStation == null) {
-            return null;
-        }
 
-        if (data.searchType !== "ticket" || pathname.startsWith("/fare/pass")) {
-            for (const seg of data.segments) {
-                if (seg.viaLine?.name) {
-                    if (SHINKANSEN_LINES.has(seg.viaLine.name)) {
-                        return null;
-                    }
-                }
-            }
-        }
-
-        const path: PathStep[] = [];
-
-        path.push({
-            stationName: data.startStation.name,
-            lineName: data.segments[0]?.viaLine?.name ?? null,
-        });
-
-        data.segments.forEach((segment, index) => {
-            if (segment.destinationStation) {
-                const nextLine = data.segments[index + 1]?.viaLine?.name ?? null;
-                path.push({
-                    stationName: segment.destinationStation.name,
-                    lineName: nextLine
-                });
-            }
-        });
-
-        const fullPath: PathStep[] = [];
-
-        for (let i = 0; i < path.length - 1; i++) {
-            const startStep = path[i];
-            const endStep = path[i + 1];
-            const lineName = startStep.lineName;
-            if (!lineName) return null;
-            const line = getLineByName(lineName);
-            if (!line || !line.stations) return null;
-            const stationsOnLine = line.stations;
-            const startIdx = stationsOnLine.indexOf(startStep.stationName);
-            const endIdx = stationsOnLine.indexOf(endStep.stationName);
-            if (startIdx === -1 || endIdx === -1) return null;
-            let segmentStations: string[];
-            if (startIdx < endIdx) {
-                segmentStations = stationsOnLine.slice(startIdx, endIdx);
-            } else {
-                segmentStations = stationsOnLine.slice(endIdx + 1, startIdx + 1).reverse();
-            }
-            for (const stationName of segmentStations) {
-                fullPath.push({ stationName: stationName, lineName: lineName });
-            }
-        }
-
-        fullPath.push(path[path.length - 1]);
-        
-        for (let i = 0; i < fullPath.length - 1; i++) {
-            fullPath[i].lineName = getKana(fullPath[i].lineName!, fullPath[i].stationName, fullPath[i + 1].stationName);
-        }
-
-        return {
-            fullPath,
-            calculationMode: data.calculationMode,
-            searchType: data.searchType
-        };
-    };
-
-    const onSubmit: SubmitHandler<FormValues> = async (data) => {
-        setIsLoading(true);
-        setError(null);
-        setResult(null);
-        setResultPass(null);
-        setCorrectedStartPass("");
-        setCorrectedEndPass("");
-        setServerTime(null);
-
-        // 検索実行時に URL にクエリパラメータ route / month を付与・更新
-        updateUrlAndState(pathname, data.searchType);
-
-        const apiRequestBody = createApiRequestBody(data);
-
-        if (!apiRequestBody) {
-            setError("経路が不完全です。");
-            setIsLoading(false);
-            return;
-        }
-
-        let stations = new Set<string>();
-        for (let i = 0; i < apiRequestBody.fullPath.length; i++) {
-            stations.add(apiRequestBody.fullPath[i].stationName);
-        }
-        if (!apiRequestBody || apiRequestBody.fullPath.length < 2 || stations.size === 1) {
-            setError('不正な経路です');
-            setIsLoading(false);
-            return;
-        }
-
-        const isPass = data.searchType && data.searchType !== "ticket";
-        if (isPass) {
-            const startName = apiRequestBody.fullPath[0].stationName;
-            const endName = apiRequestBody.fullPath[apiRequestBody.fullPath.length - 1].stationName;
-            if (TEMPORARY_STATIONS.includes(startName) || TEMPORARY_STATIONS.includes(endName)) {
-                setError('臨時駅発着の定期券は計算できません');
-                setIsLoading(false);
-                return;
-            }
-
-            const stationNames = apiRequestBody.fullPath
-                .map(p => p.stationName)
-                .filter(name => !TEMPORARY_STATIONS.includes(name));
-            const firstPart = stationNames.slice(0, -1);
-            const hasDuplicateInFirstPart = firstPart.some((name, index) => firstPart.indexOf(name) !== index);
-            if (hasDuplicateInFirstPart) {
-                setError('経路が重複しています。');
-                setIsLoading(false);
-                return;
-            }
-
-            if (!workerRef.current || !isWasmReady) {
-                setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
-                setIsLoading(false);
-                return;
-            }
-
-            const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
-            const months = monthsMap[data.searchType] || 1;
-
-            const calcId = ++latestCalcIdRef.current;
-            workerRef.current.postMessage({
-                type: "calculateRoutePass",
-                payload: {
-                    stationNames,
-                    calculationMode: data.calculationMode,
-                    months,
-                    isIc: false,
-                    requestId: calcId
-                }
-            });
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/fare', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(apiRequestBody),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || "サーバーエラーが発生しました。");
-            }
-
-            const responseData = await response.json();
-            if (responseData.data) {
-                setResult(responseData.data);
-                setServerTime(responseData.time);
-                setIsLoading(false);
-            } else {
-                throw new Error("サーバーからのレスポンス形式が不正です。");
-            }
-
-        } catch (err) {
-            if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError("計算に失敗しました。");
-            }
-            setIsLoading(false);
-        }
-    };
 
     return (
         <>

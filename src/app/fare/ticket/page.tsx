@@ -2,8 +2,7 @@ import Form from "@/app/fare/components/Form";
 import type { Metadata } from "next";
 import { RiGuideLine } from "react-icons/ri";
 import Link from "next/link";
-
-import { CalculationMode } from "@/app/types";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "JR乗車券運賃計算機",
@@ -13,21 +12,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function FareTicketPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const params = await searchParams;
-  const routeParam = typeof params.route === "string" ? params.route : undefined;
-  const fromParam = typeof params.from === "string" ? params.from : undefined;
-  const toParam = typeof params.to === "string" ? params.to : undefined;
+function FormFallback() {
+  return (
+    <div className="animate-pulse space-y-4 py-4">
+      <div className="h-10 bg-slate-200 rounded-xl w-full"></div>
+      <div className="h-10 bg-slate-200 rounded-xl w-full"></div>
+      <div className="h-12 bg-slate-300 rounded-xl w-full"></div>
+    </div>
+  );
+}
 
-  const modeRaw = typeof params.mode === "string" ? params.mode : typeof params.calculationMode === "string" ? params.calculationMode : undefined;
-  const modeParam: CalculationMode = modeRaw && ["normal", "cheapest", "uncorrect"].includes(modeRaw)
-    ? (modeRaw as CalculationMode)
-    : "normal";
-
+export default function FareTicketPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
@@ -79,13 +74,9 @@ export default async function FareTicketPage({
 
           {/* フォーム領域（カードスタイル） */}
           <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200">
-            <Form
-              initialRoute={routeParam}
-              initialFrom={fromParam}
-              initialTo={toParam}
-              initialSearchType="ticket"
-              initialCalculationMode={modeParam}
-            />
+            <Suspense fallback={<FormFallback />}>
+              <Form />
+            </Suspense>
           </div>
 
           {/* ツール説明セクション */}

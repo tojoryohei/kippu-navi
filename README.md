@@ -31,9 +31,9 @@ JRの運賃計算において、特定の駅で切符を分割して購入する
 
 | 領域 | 技術・ツール | 選定理由・アーキテクチャの意図 |
 | :--- | :--- | :--- |
-| **Frontend** | Next.js (App Router), TypeScript | サーバーコンポーネントを活用した初期ロードの高速化と、複雑な運賃計算ドメインにおける型安全性の担保。 |
+| **Frontend** | Next.js (App Router), TypeScript | 静的サイト生成（SSG）による 0ms の初期ロードと、クライアントサイドフェッチ（CSR）によるスムーズなUI体験の両立。 |
 | **Styling** | Tailwind CSS | コンポーネント単位での迅速なスタイリングと、保守性の高いCSS管理のため。 |
-| **Backend / API** | Next.js Route Handlers | フロントエンドと同一のリポジトリ（モノレポ構成）で型を共有し、開発効率を最大化するため。 |
+| **Backend / API** | Next.js Route Handlers, Go (WASM) | フロントエンドと同一のリポジトリ（モノレポ構成）での型共有、および Go による超高速計算処理。 |
 | **Database** | Firebase Firestore | 計算コストの重い経路探索結果を非同期でキャッシュし、2回目以降のリクエストを数十ミリ秒で返すためのKVSとして採用。 |
 | **Infrastructure**| Google Cloud Run | スパイクアクセスに対するゼロスケールからのオートスケール機能と、コンテナベースのステートレスな安定稼働のため。 |
 | **CI/CD/DevSecOps**| GitHub Actions, Vitest, Takumi Guard, Cloud Build | ユニットテスト・Strict Lintの自動化、OIDC認証を用いたサプライチェーン攻撃対策、およびプレビュー環境の動的発行を統合した品質保証パイプライン。 |
@@ -53,6 +53,12 @@ Firestoreへの計算結果の保存時、クライアントへのレスポン�
 
 ### 4. プレビュー環境を用いた安全なデプロイメント
 GitHubのRulesetで `main` ブランチを保護し、Pull RequestごとにCloud Buildがコンテナビルドを実行。さらにCloud Runのタグ付きデプロイを利用して**PR専用のプレビューURLを動的に発行**する仕組みを構築し、本番環境の安全性を担保しています。
+
+### 5. UIの完全静的化（SSG）とクライアントフェッチ（CSR）の役割分離
+全計算ツール画面（`/split`, `/fare` 等）のUI枠組み（入力フォームやスケルトン表示）をビルド時にたった1つの静的HTMLとして事前生成（SSG）し、CDNから0msで配信。ユーザーアクセス後にパラメータ検出およびAPI/Workerでの非同期計算（CSR）を行う役割分離設計により、初期表示速度と快適な操作性を両立させています。
+
+### 6. Go + WebAssembly (WASM) / Web Worker によるバックグラウンド高速計算
+複雑な定期券運賃計算やグラフデータ解析処理において、Goで実装された計算ロジックを WebAssembly (WASM) にコンパイルし、Web Worker 上で非同期実行。メインスレッド（UI描画）を一切ブロックしないレスポンシブな動作を実現しています。
 
 ---
 

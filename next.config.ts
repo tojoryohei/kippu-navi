@@ -3,11 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   poweredByHeader: false,
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['kippu-navi.com'],
-    },
-  },
   async headers() {
     return [
       {
@@ -40,4 +35,5 @@ const nextConfig: NextConfig = {
     ];
   },
 };
+
 export default nextConfig;

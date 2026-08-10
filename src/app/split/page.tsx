@@ -2,6 +2,7 @@ import Form from "@/app/split/components/Form";
 import type { Metadata } from "next";
 import { RiScissorsFill, RiErrorWarningLine } from "react-icons/ri";
 import Link from "next/link";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "JR分割乗車券計算機",
@@ -11,12 +12,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function SplitPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const params = await searchParams;
-  const from = typeof params.from === "string" ? params.from : undefined;
-  const to = typeof params.to === "string" ? params.to : undefined;
-  const searchType = "ticket";
+function FormFallback() {
+  return (
+    <div className="animate-pulse space-y-4 py-4">
+      <div className="h-10 bg-slate-200 rounded-xl w-full"></div>
+      <div className="h-10 bg-slate-200 rounded-xl w-full"></div>
+      <div className="h-12 bg-slate-300 rounded-xl w-full"></div>
+    </div>
+  );
+}
 
+export default function SplitPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
@@ -104,11 +110,9 @@ export default async function SplitPage({ searchParams }: { searchParams: Promis
           </div>
 
           <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200">
-            <Form
-              initialFrom={from}
-              initialTo={to}
-              initialSearchType={searchType}
-            />
+            <Suspense fallback={<FormFallback />}>
+              <Form />
+            </Suspense>
           </div>
 
           {/* ツール説明セクション */}
