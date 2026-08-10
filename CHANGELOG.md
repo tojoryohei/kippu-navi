@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.0...kippu-navi-v2.21.1) (2026-08-10)
+
+
+### Performance Improvements
+
+* 全計算ツールの完全静的化（SSG）とWASMロード連動による初期自動計算の実装 ([#616](https://github.com/tojoryohei/kippu-navi/issues/616)) ([c2cbea9](https://github.com/tojoryohei/kippu-navi/commit/c2cbea99b6c2aabbe3d104e524dbd1c59a92c74a))
+
 ## [2.21.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.20.3...kippu-navi-v2.21.0) (2026-08-10)
 
 
