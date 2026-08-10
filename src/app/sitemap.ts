@@ -80,11 +80,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.7,
         },
         {
-            url: `${baseUrl}/articles/commuter-pass-savings`,
-            changeFrequency: 'monthly',
-            priority: 0.7,
-        },
-        {
             url: `${baseUrl}/articles/jr-fare-system`,
             changeFrequency: 'monthly',
             priority: 0.7,
