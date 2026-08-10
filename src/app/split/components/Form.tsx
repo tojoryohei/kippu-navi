@@ -207,9 +207,6 @@ export default function SplitForm({
         };
     }, []);
 
-    const initialStartStation = initialFrom ? stationDatas.find(s => s.name === initialFrom) || { name: initialFrom, kana: "" } : null;
-    const initialEndStation = initialTo ? stationDatas.find(s => s.name === initialTo) || { name: initialTo, kana: "" } : null;
-
     const defaultSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
         ? initialSearchType
         : (isIcPass || isPass ? "pass6" : "ticket");
@@ -217,11 +214,13 @@ export default function SplitForm({
     const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, trigger } = useForm<ExtendedSplitFormInput>({
         mode: "onChange",
         defaultValues: {
-            startStation: initialStartStation,
-            endStation: initialEndStation,
+            startStation: null,
+            endStation: null,
             searchType: defaultSearchType,
         },
     });
+
+    const initialAutoExecutedRef = useRef(false);
 
     useEffect(() => {
         const fromVal = searchParams.get("from");
@@ -251,9 +250,20 @@ export default function SplitForm({
                 setShowAllPatterns(false);
                 setServerTime(null);
             }, 0);
-        }
-
-        if (startStation || endStation) {
+        } else if (startStation && endStation && !initialAutoExecutedRef.current) {
+            initialAutoExecutedRef.current = true;
+            setTimeout(() => {
+                trigger(["startStation", "endStation"]).then((valid) => {
+                    if (valid) {
+                        onSubmit({
+                            startStation,
+                            endStation,
+                            searchType: currentSearchType,
+                        });
+                    }
+                });
+            }, 50);
+        } else if (startStation || endStation) {
             setTimeout(() => {
                 trigger(["startStation", "endStation"]);
             }, 0);

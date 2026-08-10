@@ -132,7 +132,9 @@ export default function Form({
     const [isWasmReady, setIsWasmReady] = useState(false);
     const calculationCountRef = useRef<number>(0);
     const latestCalcIdRef = useRef<number>(0);
-    const [selectedPeriod, setSelectedPeriod] = useState<SearchType>(initialSearchType);
+    const isPassPage = pathname === "/fare/pass";
+    const defaultSearchType = isPassPage ? "pass6" : (initialSearchType || "ticket");
+    const [selectedPeriod, setSelectedPeriod] = useState<SearchType>(defaultSearchType);
 
     const [resultPass, setResultPass] = useState<{
         fare: number;
@@ -194,12 +196,21 @@ export default function Form({
         };
     }, []);
 
+    const initialAutoExecutedRef = useRef(false);
+
     // 初期ルート/パラメータによるフォーム状態の復元
     useEffect(() => {
         const routeParam = searchParams.get("route") ?? initialRoute;
         const fromParam = searchParams.get("from") ?? initialFrom;
         const toParam = searchParams.get("to") ?? initialTo;
         const modeParam = searchParams.get("mode") as CalculationMode | null;
+        const monthParam = searchParams.get("month");
+
+        let currentSearchType: SearchType = isPassPage ? "pass6" : "ticket";
+        if (monthParam === "1") currentSearchType = "pass1";
+        else if (monthParam === "3") currentSearchType = "pass3";
+        else if (monthParam === "6") currentSearchType = "pass6";
+        else if (initialSearchType) currentSearchType = initialSearchType;
 
         let startStation: Station | null = null;
         let initialSegments: { viaLine: Line | null; destinationStation: Station | null }[] = [{ viaLine: null, destinationStation: null }];
@@ -243,10 +254,9 @@ export default function Form({
             }, 0);
         }
 
-        if (initialSearchType) {
-            setValue("searchType", initialSearchType);
-            setTimeout(() => { setSelectedPeriod(initialSearchType); }, 0);
-        }
+        setValue("searchType", currentSearchType);
+        setTimeout(() => { setSelectedPeriod(currentSearchType); }, 0);
+
         if (modeParam && ["normal", "cheapest", "uncorrect"].includes(modeParam)) {
             setValue("calculationMode", modeParam);
         } else if (initialCalculationMode) {
@@ -256,8 +266,28 @@ export default function Form({
             setTimeout(() => {
                 trigger();
             }, 100);
+            if (!initialAutoExecutedRef.current) {
+                initialAutoExecutedRef.current = true;
+                if (currentSearchType === "ticket" || isWasmReady) {
+                    setTimeout(() => {
+                        handleSubmit(onSubmit)();
+                    }, 150);
+                }
+            }
         }
-    }, [searchParams, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger]);
+    }, [searchParams, pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, isWasmReady]);
+
+    // WASMが後から初期化完了(isWasmReady=true)したタイミングで、初期アクセス時自動計算をフォールバック実行
+    useEffect(() => {
+        if (isWasmReady && initialAutoExecutedRef.current) {
+            const startVal = getValues("startStation");
+            const segs = getValues("segments");
+            const type = getValues("searchType");
+            if (startVal && segs?.[0]?.destinationStation && type !== "ticket" && !resultPass && !isLoading && !error) {
+                handleSubmit(onSubmit)();
+            }
+        }
+    }, [isWasmReady, getValues, resultPass, isLoading, error, handleSubmit]);
 
     // PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
@@ -714,6 +744,14 @@ export default function Form({
                 setError('経路が重複しています。');
                 setIsLoading(false);
                 return;
+            }
+
+            if (!workerRef.current || !isWasmReady) {
+                let waited = 0;
+                while ((!workerRef.current || !isWasmReady) && waited < 5000) {
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                    waited += 50;
+                }
             }
 
             if (!workerRef.current || !isWasmReady) {
