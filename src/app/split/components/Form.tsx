@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
@@ -111,8 +111,8 @@ function adaptWasmResponseToSplitApiResponse(wasmRes: WasmClientResponse): Split
 }
 
 export default function SplitForm({
-    initialFrom,
-    initialTo,
+    initialFrom: _initialFrom,
+    initialTo: _initialTo,
     initialSearchType,
     result: initialResult,
     error: initialError,
@@ -157,6 +157,116 @@ export default function SplitForm({
     const calculationCountRef = useRef<number>(0);
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
     const latestCalcIdRef = useRef<number>(0);
+
+    const defaultSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
+        ? initialSearchType
+        : (isIcPass || isPass ? "pass6" : "ticket");
+
+    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, trigger } = useForm<ExtendedSplitFormInput>({
+        mode: "onChange",
+        defaultValues: {
+            startStation: null,
+            endStation: null,
+            searchType: defaultSearchType,
+        },
+    });
+
+    const onSubmit: SubmitHandler<ExtendedSplitFormInput> = useCallback(async (data) => {
+        if (!data.startStation?.name || !data.endStation?.name) return;
+
+        setShowAllPatterns(false);
+        setError(null);
+        setResult(null);
+        setServerTime(null);
+        setIsCalculating(true);
+
+        const newParams = new URLSearchParams();
+        if (data.startStation.name) {
+            newParams.set("from", data.startStation.name);
+        }
+        if (data.endStation.name) {
+            newParams.set("to", data.endStation.name);
+        }
+        if (data.searchType && data.searchType !== "ticket") {
+            const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
+            const mVal = monthsMap[data.searchType] || "6";
+            newParams.set("month", mVal);
+        }
+        searchParams.forEach((val, key) => {
+            if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType") {
+                newParams.set(key, val);
+            }
+        });
+
+        const nextPath = pathname;
+        const newUrl = `${nextPath}?${newParams.toString()}`;
+        // URLバーだけ更新
+        window.history.replaceState(null, "", newUrl);
+
+        // 検索タイプの確定
+        setSearchedType(data.searchType);
+
+        try {
+            const res = await calculateAction(
+                data.startStation.name,
+                data.endStation.name,
+                data.searchType,
+                isIcPass
+            );
+            if (res.error) {
+                setError(res.error);
+                setIsCalculating(false);
+            } else if (res.result && "passStations" in res.result) {
+                const { passStations } = res.result as SplitPassResult;
+
+                if (!workerRef.current) {
+                    setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
+                    setIsCalculating(false);
+                    return;
+                }
+
+                const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
+                const months = monthsMap[data.searchType] || 1;
+
+                const splitPaths = (passStations.splitPatterns && passStations.splitPatterns.length > 0)
+                    ? passStations.splitPatterns
+                    : [passStations.normal];
+
+                const calcId = ++latestCalcIdRef.current;
+                workerRef.current.postMessage({
+                    type: "calculate",
+                    payload: {
+                        splitPaths,
+                        months,
+                        isIc: isIcPass,
+                        requestId: calcId,
+                    }
+                });
+
+                // APIの応答時間をサーバー時間として設定
+                setServerTime(res.serverTime || null);
+            } else {
+                setResult(res.result || null);
+                setServerTime(res.serverTime || null);
+                setIsCalculating(false);
+            }
+        } catch (err: unknown) {
+            const errorInstance = err instanceof Error ? err : new Error(String(err));
+            const isVersionSkew =
+                errorInstance.name === 'ChunkLoadError' ||
+                /Loading chunk .* failed/.test(errorInstance.message) ||
+                errorInstance.message?.includes('Load failed') ||
+                errorInstance.message?.includes('Server Action') ||
+                errorInstance.message?.includes('was not found on the server');
+
+            if (isVersionSkew) {
+                setVersionSkewError(errorInstance);
+            } else {
+                setError(errorInstance.message);
+                setIsCalculating(false);
+            }
+        }
+    }, [searchParams, pathname, isIcPass]);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -207,19 +317,6 @@ export default function SplitForm({
         };
     }, []);
 
-    const defaultSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
-        ? initialSearchType
-        : (isIcPass || isPass ? "pass6" : "ticket");
-
-    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, trigger } = useForm<ExtendedSplitFormInput>({
-        mode: "onChange",
-        defaultValues: {
-            startStation: null,
-            endStation: null,
-            searchType: defaultSearchType,
-        },
-    });
-
     const initialAutoExecutedRef = useRef(false);
 
     useEffect(() => {
@@ -268,7 +365,7 @@ export default function SplitForm({
                 trigger(["startStation", "endStation"]);
             }, 0);
         }
-    }, [searchParams, initialSearchType, isIcPass, isPass, setValue, trigger]);
+    }, [searchParams, initialSearchType, isIcPass, isPass, setValue, trigger, onSubmit]);
 
     // GA4 & PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
@@ -480,103 +577,6 @@ export default function SplitForm({
         } else {
             // 同じページ内ならURLバーだけ更新
             window.history.replaceState(null, "", newUrl);
-        }
-    };
-
-    const onSubmit: SubmitHandler<ExtendedSplitFormInput> = async (data) => {
-        if (!data.startStation?.name || !data.endStation?.name) return;
-
-        setShowAllPatterns(false);
-        setError(null);
-        setResult(null);
-        setServerTime(null);
-        setIsCalculating(true);
-
-        const newParams = new URLSearchParams();
-        if (data.startStation.name) {
-            newParams.set("from", data.startStation.name);
-        }
-        if (data.endStation.name) {
-            newParams.set("to", data.endStation.name);
-        }
-        if (data.searchType && data.searchType !== "ticket") {
-            const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
-            const mVal = monthsMap[data.searchType] || "6";
-            newParams.set("month", mVal);
-        }
-        searchParams.forEach((val, key) => {
-            if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType") {
-                newParams.set(key, val);
-            }
-        });
-
-        const nextPath = pathname;
-        const newUrl = `${nextPath}?${newParams.toString()}`;
-        // URLバーだけ更新
-        window.history.replaceState(null, "", newUrl);
-
-        // 検索タイプの確定
-        setSearchedType(data.searchType);
-
-        try {
-            const res = await calculateAction(
-                data.startStation.name,
-                data.endStation.name,
-                data.searchType,
-                isIcPass
-            );
-            if (res.error) {
-                setError(res.error);
-                setIsCalculating(false);
-            } else if (res.result && "passStations" in res.result) {
-                const { passStations } = res.result as SplitPassResult;
-
-                if (!workerRef.current) {
-                    setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
-                    setIsCalculating(false);
-                    return;
-                }
-
-                const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
-                const months = monthsMap[data.searchType] || 1;
-
-                const splitPaths = (passStations.splitPatterns && passStations.splitPatterns.length > 0)
-                    ? passStations.splitPatterns
-                    : [passStations.normal];
-
-                const calcId = ++latestCalcIdRef.current;
-                workerRef.current.postMessage({
-                    type: "calculate",
-                    payload: {
-                        splitPaths,
-                        months,
-                        isIc: isIcPass,
-                        requestId: calcId,
-                    }
-                });
-
-                // APIの応答時間をサーバー時間として設定
-                setServerTime(res.serverTime || null);
-            } else {
-                setResult(res.result || null);
-                setServerTime(res.serverTime || null);
-                setIsCalculating(false);
-            }
-        } catch (err: unknown) {
-            const errorInstance = err instanceof Error ? err : new Error(String(err));
-            const isVersionSkew =
-                errorInstance.name === 'ChunkLoadError' ||
-                /Loading chunk .* failed/.test(errorInstance.message) ||
-                errorInstance.message?.includes('Load failed') ||
-                errorInstance.message?.includes('Server Action') ||
-                errorInstance.message?.includes('was not found on the server');
-
-            if (isVersionSkew) {
-                setVersionSkewError(errorInstance);
-            } else {
-                setError(errorInstance.message);
-                setIsCalculating(false);
-            }
         }
     };
 
