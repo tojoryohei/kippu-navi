@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.2...kippu-navi-v2.21.3) (2026-08-11)
+
+
+### Bug Fixes
+
+* 運賃計算の結果未表示バグの修復 ([#622](https://github.com/tojoryohei/kippu-navi/issues/622)) ([ffb5445](https://github.com/tojoryohei/kippu-navi/commit/ffb544570b5689125e9ad87e54bb627d63cda20c))
+
 ## [2.21.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.1...kippu-navi-v2.21.2) (2026-08-11)
 
 
@@ -624,7 +631,7 @@
 
 ### Features
 
-* **ui:** 長い計算結果一覧のナビゲーション改善（トップへ戻るボタンの追加） ([#85](https://github.com/tojoryohei/kippu-navi/issues/85)) ([e2bd1f1](https://github.com/tojoryohei/kippu-navi/commit/e2bd1f130bc4f20fcafc0964b9809c4987b72ca9))
+* 長い計算結果一覧のナビゲーション改善（トップへ戻るボタンの追加） ([#85](https://github.com/tojoryohei/kippu-navi/issues/85)) ([e2bd1f1](https://github.com/tojoryohei/kippu-navi/commit/e2bd1f130bc4f20fcafc0964b9809c4987b72ca9))
 
 ## [1.10.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v1.9.3...kippu-navi-v1.10.0) (2026-05-16)
 
