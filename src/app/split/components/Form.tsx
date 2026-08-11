@@ -10,7 +10,6 @@ import { usePostHog } from "posthog-js/react";
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
 import { SearchOption, SearchType, SplitApiResponse, SplitPassResult, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
-import { calculateAction } from "@/app/split/actions";
 
 interface ExtendedSplitFormInput {
     startStation: Station | null;
@@ -207,12 +206,14 @@ export default function SplitForm({
         setSearchedType(data.searchType);
 
         try {
-            const res = await calculateAction(
-                data.startStation.name,
-                data.endStation.name,
-                data.searchType,
-                isIcPass
-            );
+            const query = new URLSearchParams({
+                from: data.startStation.name,
+                to: data.endStation.name,
+                searchType: data.searchType,
+                isIc: isIcPass ? "true" : "false",
+            });
+            const apiRes = await fetch(`/api/split?${query.toString()}`);
+            const res = await apiRes.json();
             if (res.error) {
                 setError(res.error);
                 setIsCalculating(false);
