@@ -342,8 +342,8 @@ export default function Form({
             }
 
             const responseData = await response.json();
-            setResult(responseData.result || null);
-            setServerTime(responseData.serverTime || null);
+            setResult(responseData.data || null);
+            setServerTime(responseData.time || null);
             setIsLoading(false);
         } catch (err: unknown) {
             const errorInstance = err instanceof Error ? err : new Error(String(err));
