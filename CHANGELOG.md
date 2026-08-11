@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.1...kippu-navi-v2.21.2) (2026-08-11)
+
+
+### Bug Fixes
+
+* 分割乗車券の計算処理を Server Action から Route Handler へ移行 ([#619](https://github.com/tojoryohei/kippu-navi/issues/619)) ([c3a0b1f](https://github.com/tojoryohei/kippu-navi/commit/c3a0b1f3da8b407acb076fd6f6fae54d9035b223))
+
 ## [2.21.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.0...kippu-navi-v2.21.1) (2026-08-10)
 
 
