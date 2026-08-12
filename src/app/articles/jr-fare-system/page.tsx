@@ -79,7 +79,7 @@ export default function JrFareSystemPage() {
                 {"当サイトの"}
                 <Link href="/fare/ticket" className="text-blue-600 hover:underline underline-offset-2 mx-1">JR運賃計算機</Link>
                 {"を使えば、上記の複雑なルールを自動的に適用して正確な運賃を計算できます。分割による節約を検討する場合は"}
-                <Link href="/split" className="text-blue-600 hover:underline underline-offset-2 mx-1">JR分割乗車券計算機</Link>
+                <Link href="/split/ticket" className="text-blue-600 hover:underline underline-offset-2 mx-1">JR分割乗車券計算機</Link>
                 {"もご活用ください。"}
               </p>
             </section>

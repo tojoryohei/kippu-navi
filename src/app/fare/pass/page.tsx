@@ -112,7 +112,7 @@ export default function FarePassPage() {
                 </ol>
                 <p className="text-slate-500 text-xs mt-2">
                   {"※分割定期券の最安パターンを計算したい場合は"}
-                  <Link href="/split-pass" className="text-blue-600 hover:underline underline-offset-2 mx-1">
+                  <Link href="/split/pass" className="text-blue-600 hover:underline underline-offset-2 mx-1">
                     {"JR分割定期券計算機"}
                   </Link>
                   {"をご利用ください。"}

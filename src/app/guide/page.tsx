@@ -71,7 +71,7 @@ export default function GuidePage() {
                     <p>（使い方ガイド）</p>
                 </h1>
                 <p className="mt-8 text-slate-500">
-                    <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
+                    <Link href="/split/ticket" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                         {"分割きっぷ計算機"}
                     </Link>
                     {"の操作方法から、購入手順や利用方法まで分かりやすく解説します。"}
@@ -130,7 +130,7 @@ export default function GuidePage() {
                                 <strong>安くなるから</strong>
                                 {"です。"}
                                 {"当サイトでは、発着駅間の最安解を求めるための"}
-                                <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
+                                <Link href="/split/ticket" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                     {"分割きっぷ計算機"}
                                 </Link>
                                 {"を公開しています。"}
@@ -169,7 +169,7 @@ export default function GuidePage() {
                     </h2>
                     <div className="space-y-6 text-slate-800 leading-relaxed">
                         <p>
-                            <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
+                            <Link href="/split/ticket" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                 {"分割きっぷ計算機"}
                             </Link>
                             {"で出力された複数枚のきっぷを購入する手順です。"}
@@ -272,7 +272,7 @@ export default function GuidePage() {
                     </h2>
                     <div className="space-y-6 text-slate-800 leading-relaxed">
                         <p>
-                            <Link href="/split" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
+                            <Link href="/split/ticket" className="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1">
                                 {"分割きっぷ計算機"}
                             </Link>
                             {"で出力された複数枚のきっぷを利用する手順です。"}
