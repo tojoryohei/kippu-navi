@@ -117,7 +117,7 @@ export default function FareTicketPage() {
                 </ol>
                 <p className="text-slate-500 text-xs mt-2">
                   {"※分割きっぷの最安パターンを計算したい場合は"}
-                  <Link href="/split" className="text-blue-600 hover:underline underline-offset-2 mx-1">
+                  <Link href="/split/ticket" className="text-blue-600 hover:underline underline-offset-2 mx-1">
                     {"JR分割乗車券計算機"}
                   </Link>
                   {"をご利用ください。"}

@@ -101,7 +101,7 @@ export default function MeritDemeritPage() {
               <h2 className="text-xl font-bold text-slate-800 mb-4 border-b pb-2">まとめ</h2>
               <p>
                 {"分割きっぷは正当な節約手段ですが、デメリットも存在します。節約額とデメリットを比較して、ご自身の利用状況に合った選択をすることが大切です。まずは"}
-                <Link href="/split" className="text-blue-600 hover:underline underline-offset-2 mx-1">JR分割乗車券計算機</Link>
+                <Link href="/split/ticket" className="text-blue-600 hover:underline underline-offset-2 mx-1">JR分割乗車券計算機</Link>
                 {"で節約額を確認してみてください。"}
               </p>
             </section>

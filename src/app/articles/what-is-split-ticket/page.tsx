@@ -95,7 +95,7 @@ export default function WhatIsSplitTicketPage() {
               <h2 className="text-xl font-bold text-slate-800 mb-4 border-b pb-2">分割きっぷの探し方</h2>
               <p>
                 {"最も安くなる分割パターンを手動で見つけるのは非常に困難です。当サイトの"}
-                <Link href="/split" className="text-blue-600 hover:underline underline-offset-2 mx-1">JR分割乗車券計算機</Link>
+                <Link href="/split/ticket" className="text-blue-600 hover:underline underline-offset-2 mx-1">JR分割乗車券計算機</Link>
                 {"を使えば、発駅と着駅を入力するだけで最安の分割パターンを自動的に計算できます。"}
               </p>
             </section>

@@ -123,8 +123,8 @@ export default function SplitForm({
     const posthog = usePostHog();
     const [isPending, startTransition] = useTransition();
 
-    const isIcPass = pathname === "/split-icpass";
-    const isPass = pathname === "/split-pass";
+    const isIcPass = pathname === "/split/ic-pass";
+    const isPass = pathname === "/split/pass";
 
     // ローカルでの計算結果・エラー・計測時間および検索タイプの管理State
     const [isCalculating, setIsCalculating] = useState(false);
@@ -449,7 +449,7 @@ export default function SplitForm({
     const currentType = useWatch({ control, name: "searchType" }) ?? selectedPeriod;
 
     const canSwap = !!startStationVal || !!endStationVal;
-    const isPeriodDisabled = pathname === "/split";
+    const isPeriodDisabled = pathname === "/split/ticket";
 
     // 駅名が変更された際に、相互のバリデーションを再評価する
     useEffect(() => {
@@ -515,19 +515,19 @@ export default function SplitForm({
         setError(null);
         setServerTime(null);
 
-        let nextPath = "/split";
+        let nextPath = "/split/ticket";
         let nextSearchType: SearchType = "ticket";
 
         if (tab === "pass") {
             nextSearchType = (selectedPeriod === "pass1" || selectedPeriod === "pass3" || selectedPeriod === "pass6")
                 ? selectedPeriod
                 : "pass6";
-            nextPath = "/split-pass";
+            nextPath = "/split/pass";
         } else if (tab === "icpass") {
             nextSearchType = (selectedPeriod === "pass1" || selectedPeriod === "pass3" || selectedPeriod === "pass6")
                 ? selectedPeriod
                 : "pass6";
-            nextPath = "/split-icpass";
+            nextPath = "/split/ic-pass";
         }
 
         setSelectedPeriod(nextSearchType);
