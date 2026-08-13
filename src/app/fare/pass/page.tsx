@@ -1,4 +1,5 @@
 import Form from "@/app/fare/components/Form";
+import FormWithSearchParams from "@/app/fare/components/FormWithSearchParams";
 import type { Metadata } from "next";
 import { RiGuideLine } from "react-icons/ri";
 import Link from "next/link";
@@ -12,15 +13,6 @@ export const metadata: Metadata = {
   },
 };
 
-function FormFallback() {
-  return (
-    <div className="animate-pulse space-y-4 py-4">
-      <div className="h-10 bg-slate-200 rounded-xl w-full"></div>
-      <div className="h-10 bg-slate-200 rounded-xl w-full"></div>
-      <div className="h-12 bg-slate-300 rounded-xl w-full"></div>
-    </div>
-  );
-}
 
 export default function FarePassPage() {
   const jsonLd = {
@@ -74,8 +66,8 @@ export default function FarePassPage() {
 
           {/* フォーム領域（カードスタイル） */}
           <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200">
-            <Suspense fallback={<FormFallback />}>
-              <Form />
+            <Suspense fallback={<div className="pointer-events-none opacity-50"><Form /></div>}>
+              <FormWithSearchParams />
             </Suspense>
           </div>
 

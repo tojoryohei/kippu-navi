@@ -12,7 +12,7 @@ import { getLineByName, getKana } from '@/app/fare/lib/loadData';
 import SelectStation from "@/app/fare/components/SelectStation";
 import SelectLine from "@/app/fare/components/SelectLine";
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { stringifyRoute, parseRoute } from "@/app/fare/lib/routeParser";
 
 import { Station, Line, KippuData, IFormInput, PathStep, CalculationMode, SearchType } from "@/app/types";
@@ -173,7 +173,6 @@ export default function Form({
 }: FormProps) {
     const router = useRouter();
     const pathname = usePathname();
-    const searchParams = useSearchParams();
     const posthog = usePostHog();
     const lastTrackedSearch = useRef<string | null>(null);
 
@@ -406,17 +405,13 @@ export default function Form({
 
     // 初期ルート/パラメータによるフォーム状態の復元
     useEffect(() => {
-        const routeParam = searchParams.get("route") ?? initialRoute;
-        const fromParam = searchParams.get("from") ?? initialFrom;
-        const toParam = searchParams.get("to") ?? initialTo;
-        const modeParam = searchParams.get("mode") as CalculationMode | null;
-        const monthParam = searchParams.get("month");
+        const routeParam = initialRoute;
+        const fromParam = initialFrom;
+        const toParam = initialTo;
+        const modeParam = initialCalculationMode;
 
         let currentSearchType: SearchType = isPassPage ? "pass6" : "ticket";
-        if (monthParam === "1") currentSearchType = "pass1";
-        else if (monthParam === "3") currentSearchType = "pass3";
-        else if (monthParam === "6") currentSearchType = "pass6";
-        else if (initialSearchType) currentSearchType = initialSearchType;
+        if (initialSearchType) currentSearchType = initialSearchType;
 
         let startStation: Station | null = null;
         let initialSegments: { viaLine: Line | null; destinationStation: Station | null }[] = [{ viaLine: null, destinationStation: null }];
@@ -481,7 +476,7 @@ export default function Form({
                 }
             }
         }
-    }, [searchParams, pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, onSubmit, isWasmReady]);
+    }, [pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, onSubmit, isWasmReady]);
 
     // WASMが後から初期化完了(isWasmReady=true)したタイミングで、初期アクセス時自動計算をフォールバック実行
     useEffect(() => {
