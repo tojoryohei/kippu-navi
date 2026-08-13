@@ -13,7 +13,6 @@ export const metadata: Metadata = {
   },
 };
 
-
 export default function FarePassPage() {
   const jsonLd = {
     '@context': 'https://schema.org',

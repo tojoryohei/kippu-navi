@@ -13,7 +13,6 @@ export const metadata: Metadata = {
   },
 };
 
-
 export default function SplitIcPassPage() {
   const jsonLd = {
     '@context': 'https://schema.org',

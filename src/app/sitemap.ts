@@ -70,12 +70,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         },
         {
-            url: `${baseUrl}/articles/what-is-split-ticket`,
+            url: `${baseUrl}/articles/how-to-buy-split-ticket`,
             changeFrequency: 'monthly',
             priority: 0.7,
         },
         {
-            url: `${baseUrl}/articles/how-to-buy-split-ticket`,
+            url: `${baseUrl}/articles/how-to-buy-split-pass`,
             changeFrequency: 'monthly',
             priority: 0.7,
         },
@@ -91,6 +91,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
         {
             url: `${baseUrl}/articles/popular-routes`,
+            changeFrequency: 'monthly',
+            priority: 0.7,
+        },
+        {
+            url: `${baseUrl}/articles/what-is-split-ticket`,
             changeFrequency: 'monthly',
             priority: 0.7,
         },
