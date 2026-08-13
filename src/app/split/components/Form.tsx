@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
@@ -110,8 +110,8 @@ function adaptWasmResponseToSplitApiResponse(wasmRes: WasmClientResponse): Split
 }
 
 export default function SplitForm({
-    initialFrom: _initialFrom,
-    initialTo: _initialTo,
+    initialFrom,
+    initialTo,
     initialSearchType,
     result: initialResult,
     error: initialError,
@@ -119,7 +119,6 @@ export default function SplitForm({
 }: SplitFormProps) {
     const router = useRouter();
     const pathname = usePathname();
-    const searchParams = useSearchParams();
     const posthog = usePostHog();
     const [isPending, startTransition] = useTransition();
 
@@ -191,7 +190,7 @@ export default function SplitForm({
             const mVal = monthsMap[data.searchType] || "6";
             newParams.set("month", mVal);
         }
-        searchParams.forEach((val, key) => {
+        new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").forEach((val, key) => {
             if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType") {
                 newParams.set(key, val);
             }
@@ -267,7 +266,7 @@ export default function SplitForm({
                 setIsCalculating(false);
             }
         }
-    }, [searchParams, pathname, isIcPass]);
+    }, [pathname, isIcPass]);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -321,18 +320,14 @@ export default function SplitForm({
     const initialAutoExecutedRef = useRef(false);
 
     useEffect(() => {
-        const fromVal = searchParams.get("from");
-        const toVal = searchParams.get("to");
-        const monthVal = searchParams.get("month");
+        const fromVal = initialFrom ?? null;
+        const toVal = initialTo ?? null;
 
         const startStation = fromVal ? stationDatas.find(s => s.name === fromVal) || { name: fromVal, kana: "" } : null;
         const endStation = toVal ? stationDatas.find(s => s.name === toVal) || { name: toVal, kana: "" } : null;
 
         let currentSearchType: SearchType = (isIcPass || isPass ? "pass6" : "ticket");
-        if (monthVal === "1") currentSearchType = "pass1";
-        else if (monthVal === "3") currentSearchType = "pass3";
-        else if (monthVal === "6") currentSearchType = "pass6";
-        else if (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6") {
+        if (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6") {
             currentSearchType = initialSearchType;
         }
 
@@ -366,7 +361,7 @@ export default function SplitForm({
                 trigger(["startStation", "endStation"]);
             }, 0);
         }
-    }, [searchParams, initialSearchType, isIcPass, isPass, setValue, trigger, onSubmit]);
+    }, [initialFrom, initialTo, initialSearchType, isIcPass, isPass, setValue, trigger, onSubmit]);
 
     // GA4 & PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
@@ -562,7 +557,7 @@ export default function SplitForm({
             const mVal = monthsMap[nextSearchType] || "6";
             newParams.set("month", mVal);
         }
-        searchParams.forEach((val, key) => {
+        new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").forEach((val, key) => {
             if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType") {
                 newParams.set(key, val);
             }
