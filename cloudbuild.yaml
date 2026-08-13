@@ -63,24 +63,6 @@ steps:
           --to-latest \
           --region asia-northeast1
 
-  # 5. Cloud Runデプロイ成功後にCloudflareのキャッシュをパージする
-  - name: 'gcr.io/cloud-builders/curl'
-    entrypoint: 'bash'
-    args:
-    - '-c'
-    - |
-      echo "Purging Cloudflare cache..."
-      response=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$$ZONE_ID/purge_cache" \
-        -H "Authorization: Bearer $$API_TOKEN" \
-        -H "Content-Type: application/json" \
-        --data '{"purge_everything":true}')
-      echo "$response"
-      if ! echo "$response" | grep -q '"success":true'; then
-        echo "Cloudflare cache purge failed!"
-        exit 1
-      fi
-    secretEnv: ['ZONE_ID', 'API_TOKEN']
-
 # 正常終了の条件として、指定したイメージが正しくビルド・プッシュされたか検証する
 images:
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/kippu-navi/kippu-navi:$SHORT_SHA'
@@ -91,9 +73,5 @@ options:
 # Secret Managerから環境変数として値を読み込む設定
 availableSecrets:
   secretManager:
-  - versionName: projects/$PROJECT_ID/secrets/CLOUDFLARE_ZONE_ID/versions/latest
-    env: 'ZONE_ID'
-  - versionName: projects/$PROJECT_ID/secrets/CLOUDFLARE_API_TOKEN/versions/latest
-    env: 'API_TOKEN'
   - versionName: projects/$PROJECT_ID/secrets/NEXT_SERVER_ACTIONS_ENCRYPTION_KEY/versions/latest
     env: 'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY'
