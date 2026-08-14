@@ -152,6 +152,7 @@ export default function SplitForm({
 
     const workerRef = useRef<Worker | null>(null);
     const [isWasmReady, setIsWasmReady] = useState(false);
+    const isWasmReadyRef = useRef<boolean>(false);
     const calculationCountRef = useRef<number>(0);
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
     const latestCalcIdRef = useRef<number>(0);
@@ -219,7 +220,15 @@ export default function SplitForm({
             } else if (res.result && "passStations" in res.result) {
                 const { passStations } = res.result as SplitPassResult;
 
-                if (!workerRef.current) {
+                if (!workerRef.current || !isWasmReadyRef.current) {
+                    let waited = 0;
+                    while ((!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
+                        await new Promise((resolve) => setTimeout(resolve, 50));
+                        waited += 50;
+                    }
+                }
+
+                if (!workerRef.current || !isWasmReadyRef.current) {
                     setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
                     setIsCalculating(false);
                     return;
@@ -277,6 +286,7 @@ export default function SplitForm({
                 workerRef.current = null;
             }
             setIsWasmReady(false);
+            isWasmReadyRef.current = false;
 
             const worker = new Worker(new URL("../split-pass.worker.ts", import.meta.url));
             workerRef.current = worker;
@@ -286,6 +296,7 @@ export default function SplitForm({
                 const { type, result, error, requestId } = e.data;
                 if (type === "ready") {
                     setIsWasmReady(true);
+                    isWasmReadyRef.current = true;
                 } else if (type === "success") {
                     // 最新のリクエストIDと一致する場合のみ結果を反映（古い計算結果を破棄）
                     if (requestId === latestCalcIdRef.current) {
@@ -314,6 +325,7 @@ export default function SplitForm({
                 workerRef.current.terminate();
                 workerRef.current = null;
             }
+            isWasmReadyRef.current = false;
         };
     }, []);
 
