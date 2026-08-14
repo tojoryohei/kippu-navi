@@ -168,7 +168,7 @@ export default function Form({
     initialRoute,
     initialFrom,
     initialTo,
-    initialSearchType = "ticket",
+    initialSearchType,
     initialCalculationMode = "normal",
 }: FormProps) {
     const router = useRouter();
@@ -202,7 +202,7 @@ export default function Form({
     const calculationCountRef = useRef<number>(0);
     const latestCalcIdRef = useRef<number>(0);
     const isPassPage = pathname === "/fare/pass";
-    const defaultSearchType = isPassPage ? "pass6" : (initialSearchType || "ticket");
+    const defaultSearchType = initialSearchType || (isPassPage ? "pass6" : "ticket");
     const [selectedPeriod, setSelectedPeriod] = useState<SearchType>(defaultSearchType);
 
     const [resultPass, setResultPass] = useState<{
@@ -498,8 +498,7 @@ export default function Form({
         const toParam = initialTo;
         const modeParam = initialCalculationMode;
 
-        let currentSearchType: SearchType = isPassPage ? "pass6" : "ticket";
-        if (initialSearchType) currentSearchType = initialSearchType;
+        let currentSearchType: SearchType = initialSearchType || (isPassPage ? "pass6" : "ticket");
 
         let startStation: Station | null = null;
         let initialSegments: { viaLine: Line | null; destinationStation: Station | null }[] = [{ viaLine: null, destinationStation: null }];
