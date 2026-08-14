@@ -247,6 +247,89 @@ export default function Form({
         }
     }, [setValue, getValues, initialCalculationMode, pathname, router]);
 
+    // クライアント側での経路展開 (重複チェック用)
+    const getAllStations = useCallback((start: Station | null, segments: typeof formValues.segments): string[] => {
+        if (!start) return [];
+        if (!segments || segments.length === 0) return [start.name];
+
+        const rawStations: string[] = [];
+        let prevStationName = start.name;
+
+        for (let i = 0; i < segments.length; i++) {
+            const segment = segments[i];
+            const destStation = segment.destinationStation;
+            const line = segment.viaLine;
+
+            if (!destStation || !line) {
+                continue;
+            }
+
+            const matchLine = lineData.find(l => l.name === line.name);
+            if (!matchLine) {
+                continue;
+            }
+
+            const stationsOnLine = matchLine.stations;
+            const startIdx = stationsOnLine.indexOf(prevStationName);
+            const endIdx = stationsOnLine.indexOf(destStation.name);
+
+            if (startIdx === -1 || endIdx === -1) {
+                rawStations.push(destStation.name);
+                prevStationName = destStation.name;
+                continue;
+            }
+
+            let segmentStations: string[];
+            if (startIdx < endIdx) {
+                segmentStations = stationsOnLine.slice(startIdx, endIdx + 1);
+            } else {
+                segmentStations = stationsOnLine.slice(endIdx, startIdx + 1).reverse();
+            }
+
+            if (line.name === "新幹線") {
+                segmentStations = segmentStations.filter((station) => station !== "大阪");
+            }
+
+            if (rawStations.length > 0 && segmentStations.length > 0 && rawStations[rawStations.length - 1] === segmentStations[0]) {
+                segmentStations.shift();
+            }
+
+            rawStations.push(...segmentStations);
+            prevStationName = destStation.name;
+        }
+
+        const stations: string[] = [];
+        for (let i = 0; i < rawStations.length - 1; i++) {
+            const currentName = rawStations[i];
+            const nextName = rawStations[i + 1];
+
+            stations.push(currentName);
+
+            const matchedRule = SKIP_SECTION_RULES.find((rule: string[]) => {
+                const first = rule[0];
+                const last = rule[rule.length - 1];
+                return (
+                    (first === currentName && last === nextName) ||
+                    (last === currentName && first === nextName)
+                );
+            });
+
+            if (matchedRule) {
+                const intermediates = matchedRule.slice(1, -1);
+                if (matchedRule[0] === currentName) {
+                    stations.push(...intermediates);
+                } else {
+                    stations.push(...[...intermediates].reverse());
+                }
+            }
+        }
+        if (rawStations.length > 0) {
+            stations.push(rawStations[rawStations.length - 1]);
+        }
+
+        return stations;
+    }, []);
+
     const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
         setIsLoading(true);
         setError(null);
@@ -277,23 +360,20 @@ export default function Form({
             return;
         }
 
+        const currentAllStations = getAllStations(data.startStation, data.segments || []);
+        const isDuplicateRoute = (currentAllStations.length > 1 && new Set(currentAllStations.slice(0, -1)).size !== currentAllStations.length - 1) ||
+            (currentAllStations.length >= 3 && currentAllStations[currentAllStations.length - 3] === currentAllStations[currentAllStations.length - 1]);
+        if (isDuplicateRoute) {
+            setIsLoading(false);
+            return;
+        }
+
         const isPass = data.searchType && data.searchType !== "ticket";
         if (isPass) {
             const startName = apiRequestBody.fullPath[0].stationName;
             const endName = apiRequestBody.fullPath[apiRequestBody.fullPath.length - 1].stationName;
             if (TEMPORARY_STATIONS.includes(startName) || TEMPORARY_STATIONS.includes(endName)) {
                 setError('臨時駅発着の定期券は計算できません');
-                setIsLoading(false);
-                return;
-            }
-
-            const stationNames = apiRequestBody.fullPath
-                .map(p => p.stationName)
-                .filter(name => !TEMPORARY_STATIONS.includes(name));
-            const firstPart = stationNames.slice(0, -1);
-            const hasDuplicateInFirstPart = firstPart.some((name, index) => firstPart.indexOf(name) !== index);
-            if (hasDuplicateInFirstPart) {
-                setError('経路が重複しています。');
                 setIsLoading(false);
                 return;
             }
@@ -311,6 +391,10 @@ export default function Form({
                 setIsLoading(false);
                 return;
             }
+
+            const stationNames = apiRequestBody.fullPath
+                .map(p => p.stationName)
+                .filter(name => !TEMPORARY_STATIONS.includes(name));
 
             const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
             const months = monthsMap[data.searchType] || 1;
@@ -589,89 +673,6 @@ export default function Form({
 
     const currentType = selectedPeriod;
     const isPeriodDisabled = currentType === "ticket";
-
-    // クライアント側での経路展開 (重複チェック用)
-    const getAllStations = (start: Station | null, segments: typeof formValues.segments): string[] => {
-        if (!start) return [];
-        if (segments.length === 0) return [start.name];
-
-        const rawStations: string[] = [];
-        let prevStationName = start.name;
-
-        for (let i = 0; i < segments.length; i++) {
-            const segment = segments[i];
-            const destStation = segment.destinationStation;
-            const line = segment.viaLine;
-
-            if (!destStation || !line) {
-                continue;
-            }
-
-            const matchLine = lineData.find(l => l.name === line.name);
-            if (!matchLine) {
-                continue;
-            }
-
-            const stationsOnLine = matchLine.stations;
-            const startIdx = stationsOnLine.indexOf(prevStationName);
-            const endIdx = stationsOnLine.indexOf(destStation.name);
-
-            if (startIdx === -1 || endIdx === -1) {
-                rawStations.push(destStation.name);
-                prevStationName = destStation.name;
-                continue;
-            }
-
-            let segmentStations: string[];
-            if (startIdx < endIdx) {
-                segmentStations = stationsOnLine.slice(startIdx, endIdx + 1);
-            } else {
-                segmentStations = stationsOnLine.slice(endIdx, startIdx + 1).reverse();
-            }
-
-            if (line.name === "新幹線") {
-                segmentStations = segmentStations.filter((station) => station !== "大阪");
-            }
-
-            if (rawStations.length > 0 && segmentStations.length > 0 && rawStations[rawStations.length - 1] === segmentStations[0]) {
-                segmentStations.shift();
-            }
-
-            rawStations.push(...segmentStations);
-            prevStationName = destStation.name;
-        }
-
-        const stations: string[] = [];
-        for (let i = 0; i < rawStations.length - 1; i++) {
-            const currentName = rawStations[i];
-            const nextName = rawStations[i + 1];
-
-            stations.push(currentName);
-
-            const matchedRule = SKIP_SECTION_RULES.find((rule: string[]) => {
-                const first = rule[0];
-                const last = rule[rule.length - 1];
-                return (
-                    (first === currentName && last === nextName) ||
-                    (last === currentName && first === nextName)
-                );
-            });
-
-            if (matchedRule) {
-                const intermediates = matchedRule.slice(1, -1);
-                if (matchedRule[0] === currentName) {
-                    stations.push(...intermediates);
-                } else {
-                    stations.push(...[...intermediates].reverse());
-                }
-            }
-        }
-        if (rawStations.length > 0) {
-            stations.push(rawStations[rawStations.length - 1]);
-        }
-
-        return stations;
-    };
 
     // リアルタイムバリデーション: 重複経路チェック
     const allStations = getAllStations(formValues.startStation, formValues.segments || []);
