@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.5...kippu-navi-v2.21.6) (2026-08-14)
+
+
+### Bug Fixes
+
+* 定期券ページアクセス時のデフォルト検索タイプをpass6に修正 ([#641](https://github.com/tojoryohei/kippu-navi/issues/641)) ([5983d1a](https://github.com/tojoryohei/kippu-navi/commit/5983d1a3c74ff043e3cc4148ba9a638cd5951203)), closes [#640](https://github.com/tojoryohei/kippu-navi/issues/640)
+
 ## [2.21.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.4...kippu-navi-v2.21.5) (2026-08-14)
 
 
