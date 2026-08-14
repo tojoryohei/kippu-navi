@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.3...kippu-navi-v2.21.4) (2026-08-14)
+
+
+### Bug Fixes
+
+* URL直接アクセス時にWASM初期化を待機して計算エラーを防止 ([#635](https://github.com/tojoryohei/kippu-navi/issues/635)) ([3132192](https://github.com/tojoryohei/kippu-navi/commit/313219211f8646c4b6c798b19918ec3763e270dd)), closes [#634](https://github.com/tojoryohei/kippu-navi/issues/634)
+
 ## [2.21.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.2...kippu-navi-v2.21.3) (2026-08-11)
 
 
