@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.4...kippu-navi-v2.21.5) (2026-08-14)
+
+
+### Bug Fixes
+
+* 乗車券計算時の重複経路による不要な API 通信を遮断 ([#638](https://github.com/tojoryohei/kippu-navi/issues/638)) ([0e62d8f](https://github.com/tojoryohei/kippu-navi/commit/0e62d8fed0754a18324007add81add46e6b4f2b9))
+
 ## [2.21.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.3...kippu-navi-v2.21.4) (2026-08-14)
 
 
