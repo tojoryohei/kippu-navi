@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.6...kippu-navi-v2.21.7) (2026-08-15)
+
+
+### Bug Fixes
+
+* Dockerfile・APIサーバーの事前計算データ参照パス修正および.gitignore・WASMバージョン更新 ([#645](https://github.com/tojoryohei/kippu-navi/issues/645)) ([71f02d1](https://github.com/tojoryohei/kippu-navi/commit/71f02d1b1fdcc0182f6594d45b9d476837a6f3ad)), closes [#644](https://github.com/tojoryohei/kippu-navi/issues/644)
+
 ## [2.21.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.5...kippu-navi-v2.21.6) (2026-08-14)
 
 
