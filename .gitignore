@@ -45,15 +45,15 @@ src/app/split/data/*.json
 public/engine/split_pass.wasm
 public/engine/graph_data.bin
 
-# split-pass-api large precomputed data
-split-pass-api/internal/graph/data/precomputed_server.bin
+# calculation-engine large precomputed data
+calculation-engine/internal/pass/graph/data/precomputed_server.bin
 
 # TypeScript build info cache
 tsconfig.tsbuildinfo
 
 # local compiled binaries
 *.exe
-split-pass-api/*.exe
+calculation-engine/*.exe
 
 # Next.js automatic type definitions
 next-env.d.ts

@@ -136,7 +136,7 @@ jobs:
         with:
           version: latest
           args: --timeout=5m
-          working-directory: split-pass-api
+          working-directory: calculation-engine
 
   go-test:
     name: Run Go Tests
@@ -152,5 +152,5 @@ jobs:
           cache: true
 
       - name: Run Go Test
-        working-directory: split-pass-api
+        working-directory: calculation-engine
         run: go test -v -race ./...
