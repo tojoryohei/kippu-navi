@@ -1,12 +1,12 @@
 package graphio
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
 	"calculation-engine/internal/domain"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
+	"encoding/json"
+	"fmt"
+	"io"
 )
 
 // JSONLoader は JSON ファイルから乗車券用グラフをロードします。

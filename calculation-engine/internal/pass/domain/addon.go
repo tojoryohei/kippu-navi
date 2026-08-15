@@ -3,7 +3,7 @@ package domain
 import (
 	"fmt"
 
-	cDomain "calculation-engine/internal/domain"
+	basedomain "calculation-engine/internal/domain"
 )
 
 type addonDefinition struct {
@@ -65,14 +65,14 @@ func (r *AddonRegistry) ResolveIDs(resolver func(string) (int, bool)) error {
 	for _, def := range r.definitions {
 		idA, okA := resolver(def.StationA)
 		if !okA {
-			return fmt.Errorf("%w: %s", cDomain.ErrStationNotFound, def.StationA)
+			return fmt.Errorf("%w: %s", basedomain.ErrStationNotFound, def.StationA)
 		}
 		idB, okB := resolver(def.StationB)
 		if !okB {
-			return fmt.Errorf("%w: %s", cDomain.ErrStationNotFound, def.StationB)
+			return fmt.Errorf("%w: %s", basedomain.ErrStationNotFound, def.StationB)
 		}
 		if idA == idB {
-			return fmt.Errorf("%w: %s", cDomain.ErrSameStation, def.StationA)
+			return fmt.Errorf("%w: %s", basedomain.ErrSameStation, def.StationA)
 		}
 		key := makePairKey(idA, idB)
 		r.resolved[key] = def.Fare

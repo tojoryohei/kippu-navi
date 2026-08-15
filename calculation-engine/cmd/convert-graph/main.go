@@ -1,10 +1,10 @@
 package main
 
 import (
+	"calculation-engine/internal/pass/infra/graphio"
 	"fmt"
 	"log"
 	"os"
-	"calculation-engine/internal/pass/infra/graphio"
 )
 
 func main() {

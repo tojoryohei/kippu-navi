@@ -2,13 +2,12 @@
 
 package fareio_test
 
-
 import (
+	passdomain "calculation-engine/internal/pass/domain"
+	"calculation-engine/internal/pass/infra/fareio"
 	"os"
 	"path/filepath"
 	"reflect"
-	passdomain "calculation-engine/internal/pass/domain"
-	"calculation-engine/internal/pass/infra/fareio"
 	"testing"
 )
 

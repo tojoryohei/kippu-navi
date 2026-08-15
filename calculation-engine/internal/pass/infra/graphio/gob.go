@@ -1,11 +1,11 @@
 package graphio
 
 import (
+	"calculation-engine/internal/pass/graph"
 	"encoding/gob"
 	"errors"
 	"fmt"
 	"io"
-	"calculation-engine/internal/pass/graph"
 )
 
 var ErrEmptyGraph = errors.New("グラフデータが空です")
@@ -40,4 +40,3 @@ func SaveBinary(g graph.Graph, w io.Writer) error {
 
 	return nil
 }
-

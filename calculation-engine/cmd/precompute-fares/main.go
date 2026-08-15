@@ -481,8 +481,6 @@ func isOnDetourMiddle(stationID int, rule passdomain.ResolvedBypassRule) bool {
 	return false
 }
 
-
-
 func makeUniqueBidirectionalRules(rules []passdomain.ResolvedBypassRule) []passdomain.ResolvedBypassRule {
 	var biRules []passdomain.ResolvedBypassRule
 	seen := make(map[string]bool)

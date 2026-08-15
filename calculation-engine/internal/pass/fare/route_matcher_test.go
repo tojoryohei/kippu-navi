@@ -1,10 +1,10 @@
 package fare_test
 
 import (
-	"errors"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/fare"
 	"calculation-engine/internal/pass/graph"
+	"errors"
 	"testing"
 )
 

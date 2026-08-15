@@ -1,6 +1,6 @@
 package domain
 
-import cDomain "calculation-engine/internal/domain"
+import basedomain "calculation-engine/internal/domain"
 
 // SplitPassRequest は分割乗車券計算のリクエストペイロードです
 type SplitPassRequest struct {
@@ -11,5 +11,5 @@ type SplitPassRequest struct {
 // SplitPassResponse は分割乗車券計算の結果です
 type SplitPassResponse struct {
 	TotalCost int
-	Path      []cDomain.Station // 順番に並んだ駅のIDと名前
+	Path      []basedomain.Station // 順番に並んだ駅のIDと名前
 }

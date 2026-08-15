@@ -1,9 +1,9 @@
 package fare
 
 import (
-	"fmt"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
+	"fmt"
 )
 
 // JointFareComponent は各社ごとの乗車統計を保持します

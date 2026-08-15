@@ -3,12 +3,12 @@
 package fareio
 
 import (
+	"calculation-engine/internal/domain"
+	passdomain "calculation-engine/internal/pass/domain"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-	"calculation-engine/internal/domain"
-	passdomain "calculation-engine/internal/pass/domain"
 )
 
 // RouteAndFareJSONLoader は JSON ファイルから特定運賃区間をロードします。

@@ -1,9 +1,9 @@
 package graph_test
 
 import (
+	"calculation-engine/internal/ticket/infra/graphio"
 	"os"
 	"testing"
-	"calculation-engine/internal/ticket/infra/graphio"
 )
 
 func TestRailwayGraph_LoadAndFindPath(t *testing.T) {
@@ -40,7 +40,7 @@ func TestRailwayGraph_LoadAndFindPath(t *testing.T) {
 	if len(res.StationIDs) == 0 {
 		t.Errorf("Path is empty")
 	}
-	
-	t.Logf("Path from Tokyo to Osaka found: %d stations, GiseiKilo: %d, EigyoKilo: %d", 
+
+	t.Logf("Path from Tokyo to Osaka found: %d stations, GiseiKilo: %d, EigyoKilo: %d",
 		len(res.StationIDs), res.GiseiKilo, res.EigyoKilo)
 }

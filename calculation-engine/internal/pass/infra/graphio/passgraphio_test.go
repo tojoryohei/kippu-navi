@@ -2,12 +2,12 @@ package graphio_test
 
 import (
 	"bytes"
-	"encoding/gob"
-	"errors"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/infra/graphio"
+	"encoding/gob"
+	"errors"
 	"strings"
 	"testing"
 )

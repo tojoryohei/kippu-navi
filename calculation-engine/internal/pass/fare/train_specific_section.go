@@ -1,9 +1,9 @@
 package fare
 
 import (
-	"fmt"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
+	"fmt"
 )
 
 // IsAllTrainSpecificApplicable は指定された全区間が電車特定区間に収まっているかを判定します。
