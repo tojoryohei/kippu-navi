@@ -14,9 +14,9 @@ import (
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/graph/data"
-	"calculation-engine/internal/handler"
-	"calculation-engine/internal/infra/fareio"
-	"calculation-engine/internal/infra/graphio"
+	"calculation-engine/internal/pass/handler"
+	"calculation-engine/internal/pass/infra/fareio"
+	"calculation-engine/internal/pass/infra/graphio"
 	"calculation-engine/internal/pass/optimizer"
 	"calculation-engine/internal/pass/usecase"
 )

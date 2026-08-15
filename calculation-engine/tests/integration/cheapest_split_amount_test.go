@@ -8,8 +8,8 @@ import (
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/graph/data"
-	"calculation-engine/internal/infra/fareio"
-	"calculation-engine/internal/infra/graphio"
+	"calculation-engine/internal/pass/infra/fareio"
+	"calculation-engine/internal/pass/infra/graphio"
 	"calculation-engine/internal/pass/optimizer"
 	"calculation-engine/internal/pass/usecase"
 	"strings"
@@ -370,7 +370,7 @@ func BenchmarkSearchOptimalSplit_Integration(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := search.Execute(fromID, toID, 3)
 		if err != nil {
 			b.Fatalf("Execute が失敗しました: %v", err)
@@ -459,7 +459,7 @@ func BenchmarkSearchOptimalSplit_PureDP(b *testing.B) {
 	b.Logf("Candidate stations count: %d", len(candStations))
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := search.RunBenchmarkDPForTest(fromID, toID, 3, 0, candStations, scratch)
 		if err != nil {
 			b.Fatalf("DP失敗: %v", err)

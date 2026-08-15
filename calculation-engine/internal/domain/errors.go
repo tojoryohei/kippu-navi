@@ -26,4 +26,10 @@ var (
 
 	// ErrNoValidPattern は、有効な分割パターンが見つからなかった場合のエラーです。
 	ErrNoValidPattern = errors.New("有効な分割パターンが見つかりませんでした")
+
+	// ErrEmptyGraph は、グラフが空（駅やエッジが存在しない）の場合のエラーです。
+	ErrEmptyGraph = errors.New("グラフが空です")
+
+	// ErrNoPathExists は、指定された2点間に経路が存在しない場合のエラーです。
+	ErrNoPathExists = errors.New("経路が存在しません")
 )

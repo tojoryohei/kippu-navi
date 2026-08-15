@@ -2,7 +2,7 @@ package integration
 
 import (
 	"calculation-engine/internal/pass/graph/data"
-	"calculation-engine/internal/infra/graphio"
+	"calculation-engine/internal/pass/infra/graphio"
 	"calculation-engine/internal/pass/usecase"
 	"testing"
 )
