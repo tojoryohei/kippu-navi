@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"calculation-engine/internal/infra/graphio"
+	"calculation-engine/internal/pass/infra/graphio"
 )
 
 // EdgeBinary はWasmにZero-copyキャストで渡すための辺構造体。

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"calculation-engine/internal/infra/graphio"
+	"calculation-engine/internal/pass/infra/graphio"
 )
 
 func main() {

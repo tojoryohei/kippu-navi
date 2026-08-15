@@ -5,8 +5,8 @@ import (
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/fare"
 	"calculation-engine/internal/pass/graph/data"
-	"calculation-engine/internal/infra/fareio"
-	"calculation-engine/internal/infra/graphio"
+	"calculation-engine/internal/pass/infra/fareio"
+	"calculation-engine/internal/pass/infra/graphio"
 	"testing"
 )
 

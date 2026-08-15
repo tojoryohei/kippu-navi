@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	passdomain "calculation-engine/internal/pass/domain"
-	"calculation-engine/internal/infra/fareio"
+	"calculation-engine/internal/pass/infra/fareio"
 	"testing"
 )
 

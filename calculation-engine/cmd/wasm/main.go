@@ -12,7 +12,7 @@ import (
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
-	"calculation-engine/internal/infra/fareio"
+	"calculation-engine/internal/pass/infra/fareio"
 	"calculation-engine/internal/pass/usecase"
 )
 
