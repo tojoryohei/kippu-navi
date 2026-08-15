@@ -20,7 +20,7 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 # ビルド環境から生成されたバイナリと事前計算データを抽出
 COPY --from=builder /app/server .
-COPY --from=builder /app/internal/graph/data/precomputed_server.bin ./internal/graph/data/precomputed_server.bin
+COPY --from=builder /app/internal/pass/graph/data/precomputed_server.bin ./internal/pass/graph/data/precomputed_server.bin
 
 # Cloud Runが動的に割り当てるPORT環境変数を利用して起動
 ENV PORT=8080

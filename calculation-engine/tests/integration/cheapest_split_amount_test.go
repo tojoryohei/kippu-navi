@@ -137,7 +137,7 @@ func generateMockPrecomputedBin(t testing.TB, g *graph.RailwayGraph, destPath st
 func setupSearch(t testing.TB) (*graph.RailwayGraph, *usecase.SearchOptimalSplit, *usecase.CalculateAmount) {
 	t.Helper()
 
-	binPath := "../../internal/graph/data/precomputed_server.bin"
+	binPath := "../../internal/pass/graph/data/precomputed_server.bin"
 	var useBinPath string
 	var mockGraph *graph.RailwayGraph
 
