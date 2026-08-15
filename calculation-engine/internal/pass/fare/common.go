@@ -1,10 +1,10 @@
 package fare
 
 import (
-	"errors"
-	"fmt"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
+	"errors"
+	"fmt"
 )
 
 var (

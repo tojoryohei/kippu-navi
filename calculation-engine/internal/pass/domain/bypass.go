@@ -3,9 +3,8 @@ package domain
 import (
 	"fmt"
 
-	cDomain "calculation-engine/internal/domain"
+	basedomain "calculation-engine/internal/domain"
 )
-
 
 // BypassRuleDefinition は第69条等の特例区間を駅名で定義します。
 type BypassRuleDefinition struct {
@@ -46,7 +45,7 @@ func (r *BypassRegistry) ResolveIDs(resolver func(string) (int, bool)) ([]Resolv
 		for i, name := range def.ShortcutPath {
 			id, ok := resolver(name)
 			if !ok {
-				return nil, fmt.Errorf("%w: %s", cDomain.ErrStationNotFound, name)
+				return nil, fmt.Errorf("%w: %s", basedomain.ErrStationNotFound, name)
 			}
 			shortcut[i] = id
 		}
@@ -55,7 +54,7 @@ func (r *BypassRegistry) ResolveIDs(resolver func(string) (int, bool)) ([]Resolv
 		for i, name := range def.DetourPath {
 			id, ok := resolver(name)
 			if !ok {
-				return nil, fmt.Errorf("%w: %s", cDomain.ErrStationNotFound, name)
+				return nil, fmt.Errorf("%w: %s", basedomain.ErrStationNotFound, name)
 			}
 			detour[i] = id
 		}

@@ -1,10 +1,10 @@
 package optimizer
 
 import (
+	"calculation-engine/internal/pass/usecase"
 	"errors"
 	"fmt"
 	"math"
-	"calculation-engine/internal/pass/usecase"
 )
 
 var (
@@ -92,7 +92,7 @@ func (o *DPOptimizer[T]) Optimize(path []int, months int, locked []bool, maxSect
 				if dp[k-1][i] == INF {
 					continue // (k-1)区間で駅iに到達できない場合はスキップ
 				}
-				
+
 				totalCost := dp[k-1][i] + cost
 				if totalCost < dp[k][j] {
 					dp[k][j] = totalCost

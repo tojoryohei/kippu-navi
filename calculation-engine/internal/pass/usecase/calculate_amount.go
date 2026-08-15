@@ -1,11 +1,11 @@
 package usecase
 
 import (
-	"fmt"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/fare"
 	"calculation-engine/internal/pass/graph"
+	"fmt"
 )
 
 // CalculateAmount は経路から定期運賃を計算するユースケースです。

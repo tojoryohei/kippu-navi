@@ -1,9 +1,6 @@
 package integration_test
 
 import (
-	"encoding/binary"
-	"os"
-	"path/filepath"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
@@ -12,6 +9,9 @@ import (
 	"calculation-engine/internal/pass/infra/graphio"
 	"calculation-engine/internal/pass/optimizer"
 	"calculation-engine/internal/pass/usecase"
+	"encoding/binary"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )

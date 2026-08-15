@@ -1,8 +1,8 @@
 package graphio
 
 import (
-	"io"
 	"calculation-engine/internal/pass/graph"
+	"io"
 )
 
 // Loader はグラフをロードするインターフェースです。

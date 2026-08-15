@@ -1,9 +1,9 @@
 package graph
 
 import (
-	"testing"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
+	"testing"
 )
 
 func TestNewIcPassGraph(t *testing.T) {

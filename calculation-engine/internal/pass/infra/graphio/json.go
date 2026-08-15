@@ -1,13 +1,13 @@
 package graphio
 
 import (
+	"calculation-engine/internal/domain"
+	passdomain "calculation-engine/internal/pass/domain"
+	"calculation-engine/internal/pass/graph"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"calculation-engine/internal/domain"
-	passdomain "calculation-engine/internal/pass/domain"
-	"calculation-engine/internal/pass/graph"
 )
 
 var ErrEmptyEdges = errors.New("エッジデータが空です")

@@ -1,9 +1,9 @@
 package graph
 
 import (
+	"calculation-engine/internal/domain"
 	"container/heap"
 	"fmt"
-	"calculation-engine/internal/domain"
 )
 
 // PathResult は経路探索の結果を保持します。

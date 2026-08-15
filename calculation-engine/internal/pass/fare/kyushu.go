@@ -1,10 +1,10 @@
 package fare
 
 import (
-	"errors"
-	"fmt"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
+	"errors"
+	"fmt"
 )
 
 // errNoSpecialFare は九州の特定定期運賃の適用対象外であることを示すセンチネルエラーです。

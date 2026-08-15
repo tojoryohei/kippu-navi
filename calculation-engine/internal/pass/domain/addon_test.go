@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	cDomain "calculation-engine/internal/domain"
+	basedomain "calculation-engine/internal/domain"
 )
 
 func TestAddonRegistry_ResolveIDs(t *testing.T) {
@@ -61,7 +61,7 @@ func TestAddonRegistry_ResolveIDs(t *testing.T) {
 			}{
 				{"StationA", "StationA", PassPrice{OneMonth: 100}},
 			},
-			wantErr: cDomain.ErrSameStation,
+			wantErr: basedomain.ErrSameStation,
 		},
 		{
 			name: "異常系: 存在しない駅名が含まれる",
@@ -71,7 +71,7 @@ func TestAddonRegistry_ResolveIDs(t *testing.T) {
 			}{
 				{"StationA", "UnknownStation", PassPrice{OneMonth: 200}},
 			},
-			wantErr: cDomain.ErrStationNotFound,
+			wantErr: basedomain.ErrStationNotFound,
 		},
 		{
 			name: "正常系: 複数の区間を登録",
