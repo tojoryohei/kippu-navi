@@ -127,7 +127,7 @@ func run() error {
 	splitUseCase := usecase.NewFindOptimalSplit(opt, amountCalc)
 
 	// 事前計算された運賃および経路データのロード
-	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := data.LoadPrecomputedFares("./internal/graph/data/precomputed_server.bin")
+	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := data.LoadPrecomputedFares("./internal/pass/graph/data/precomputed_server.bin")
 	if err != nil {
 		return fmt.Errorf("事前計算された運賃データのロードに失敗しました: %w", err)
 	}

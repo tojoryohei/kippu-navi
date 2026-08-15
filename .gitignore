@@ -54,6 +54,9 @@ tsconfig.tsbuildinfo
 # local compiled binaries
 *.exe
 calculation-engine/*.exe
+calculation-engine/api
+calculation-engine/server
+calculation-engine/test.wasm
 
 # Next.js automatic type definitions
 next-env.d.ts
