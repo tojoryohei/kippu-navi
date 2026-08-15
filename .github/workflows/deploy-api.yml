@@ -5,14 +5,14 @@ on:
     branches:
       - main
     paths:
-      - 'split-pass-api/**'
+      - 'calculation-engine/**'
       - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
 
 env:
   PROJECT_ID: 'bubbly-trail-470023-e4'
   REGION: 'asia-northeast1'
-  SERVICE_NAME: 'split-pass-api'
+  SERVICE_NAME: 'calculation-engine'
   GAR_REPO: 'cloud-run-source-deploy' 
 
 jobs:
@@ -55,19 +55,19 @@ jobs:
         id: cache-bin
         uses: actions/cache@v4
         with:
-          path: ./split-pass-api/internal/graph/data/precomputed_server.bin
+          path: ./calculation-engine/internal/pass/graph/data/precomputed_server.bin
           key: precomputed-server-${{ steps.gcs-meta.outputs.md5 }}
 
       - name: Download Precomputed Server Binary
         if: steps.cache-bin.outputs.cache-hit != 'true'
         run: |
-          gcloud storage cp gs://kippu-navi-build-secrets/data/precomputed_server.bin ./split-pass-api/internal/graph/data/
+          gcloud storage cp gs://kippu-navi-build-secrets/data/precomputed_server.bin ./calculation-engine/internal/pass/graph/data/
 
       - name: Build and Push Docker Image
         run: |
           IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
           
-          docker build -t $IMAGE_PATH ./split-pass-api
+          docker build -t $IMAGE_PATH ./calculation-engine
           docker push $IMAGE_PATH
 
       - name: Deploy to Cloud Run

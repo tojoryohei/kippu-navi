@@ -1,0 +1,53 @@
+//go:build !js || !wasm
+
+package fareio
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"calculation-engine/internal/domain"
+	passdomain "calculation-engine/internal/pass/domain"
+)
+
+// RouteAndFareJSONLoader は JSON ファイルから特定運賃区間をロードします。
+type RouteAndFareJSONLoader struct{}
+
+// Load は JSON ファイルを読み込み、特定運賃区間や調整運賃区間の配列を返します。
+func (l *RouteAndFareJSONLoader) Load(path string) ([]passdomain.RouteAndFare, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("fareio: JSONファイルのオープンに失敗しました: %w", err)
+	}
+	defer file.Close()
+
+	var rawData []rawRouteAndFare
+	decoder := json.NewDecoder(file)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&rawData); err != nil {
+		return nil, fmt.Errorf("fareio: JSONのデコードに失敗しました: %w", err)
+	}
+
+	if _, err := decoder.Token(); err != io.EOF {
+		return nil, fmt.Errorf("fareio: JSONデータの末尾に予期せぬデータが含まれています")
+	}
+
+	data := make([]passdomain.RouteAndFare, 0, len(rawData))
+	for _, raw := range rawData {
+		if len(raw.Route) < 2 {
+			return nil, fmt.Errorf("fareio: %w (不正なデータ: %v)", domain.ErrInvalidPath, raw.Route)
+		}
+
+		data = append(data, passdomain.RouteAndFare{
+			Route: raw.Route,
+			Fare: passdomain.PassPrice{
+				OneMonth:   raw.Fare.OneMonth,
+				ThreeMonth: raw.Fare.ThreeMonth,
+				SixMonth:   raw.Fare.SixMonth,
+			},
+		})
+	}
+
+	return data, nil
+}
