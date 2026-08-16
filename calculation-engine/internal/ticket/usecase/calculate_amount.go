@@ -1,0 +1,204 @@
+package usecase
+
+import (
+	"calculation-engine/internal/domain"
+	"calculation-engine/internal/pass/graph"
+	ticketdomain "calculation-engine/internal/ticket/domain"
+	"calculation-engine/internal/ticket/fare"
+	"fmt"
+)
+
+type CalculationResult struct {
+	Fare           int
+	BarrierFreeFee int
+	TotalEigyoKilo domain.DeciKilo
+}
+
+type CalculateAmount struct {
+	reg                      *fare.Registry
+	trainSpecificCalc        *fare.TrainSpecificSectionCalculator
+	specificFareRouteMatcher *fare.RouteMatcher
+	adjustedFareRouteMatcher *fare.RouteMatcher
+	graph                    graph.Graph
+}
+
+func NewCalculateAmount(
+	reg *fare.Registry,
+	trainSpecificCalc *fare.TrainSpecificSectionCalculator,
+	specificFareRouteMatcher *fare.RouteMatcher,
+	adjustedFareRouteMatcher *fare.RouteMatcher,
+	g graph.Graph,
+) *CalculateAmount {
+	return &CalculateAmount{
+		reg:                      reg,
+		trainSpecificCalc:        trainSpecificCalc,
+		specificFareRouteMatcher: specificFareRouteMatcher,
+		adjustedFareRouteMatcher: adjustedFareRouteMatcher,
+		graph:                    g,
+	}
+}
+
+type routeSummary struct {
+	edges          []*domain.Edge
+	totalEigyo     domain.DeciKilo
+	totalGisei     domain.DeciKilo
+	hasTrunk       bool
+	hasLocal       bool
+	statsByCompany []companyStats
+}
+
+type companyStats struct {
+	used     bool
+	hasTrunk bool
+	hasLocal bool
+	eigyo    domain.DeciKilo
+	gisei    domain.DeciKilo
+}
+
+func (u *CalculateAmount) analyzeRoute(path []int) (*routeSummary, error) {
+	if len(path) < 2 {
+		return nil, domain.ErrInvalidPath
+	}
+
+	summary := &routeSummary{
+		edges:          make([]*domain.Edge, 0, len(path)-1),
+		statsByCompany: make([]companyStats, domain.CompanyCount),
+	}
+
+	for i := 0; i < len(path)-1; i++ {
+		fromID := path[i]
+		toID := path[i+1]
+
+		var edge *domain.Edge
+		edges := u.graph.GetEdges(fromID)
+		for j := range edges {
+			if edges[j].ToID == toID {
+				edge = &edges[j].Edge
+				break
+			}
+		}
+		if edge == nil {
+			return nil, fmt.Errorf("CalculateAmount: 経路が見つかりません: %d -> %d", fromID, toID)
+		}
+
+		summary.edges = append(summary.edges, edge)
+		summary.totalEigyo += edge.EigyoKilo
+		summary.totalGisei += edge.GiseiKilo
+
+		if edge.IsLocal {
+			summary.hasLocal = true
+		} else {
+			summary.hasTrunk = true
+		}
+
+		cID := edge.Company
+		if int(cID) < 0 || int(cID) >= len(summary.statsByCompany) {
+			return nil, fmt.Errorf("analyzeRoute: %w: %d", domain.ErrUnknownCompany, cID)
+		}
+		summary.statsByCompany[cID].used = true
+		summary.statsByCompany[cID].eigyo += edge.EigyoKilo
+		summary.statsByCompany[cID].gisei += edge.GiseiKilo
+		if edge.IsLocal {
+			summary.statsByCompany[cID].hasLocal = true
+		} else {
+			summary.statsByCompany[cID].hasTrunk = true
+		}
+	}
+
+	return summary, nil
+}
+
+func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
+	if len(path) < 2 {
+		return nil, fmt.Errorf("CalculateAmount.Execute: %w", domain.ErrInvalidPath)
+	}
+
+	summary, err := u.analyzeRoute(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var totalFare int
+	var barrierFreeFee int
+
+	// バリアフリー加算
+	if fare.IsAllBarrierFreeFeeApplicable(summary.edges) {
+		barrierFreeFee = fare.CalculateBarrierFreeFee()
+	}
+
+	// 調整運賃チェック
+	if u.adjustedFareRouteMatcher != nil {
+		if f, ok := u.adjustedFareRouteMatcher.Search(path); ok {
+			return &CalculationResult{
+				Fare:           f,
+				BarrierFreeFee: barrierFreeFee,
+				TotalEigyoKilo: summary.totalEigyo,
+			}, nil
+		}
+	}
+
+	// 特定運賃チェック
+	if u.specificFareRouteMatcher != nil {
+		if f, ok := u.specificFareRouteMatcher.Search(path); ok {
+			return &CalculationResult{
+				Fare:           f,
+				BarrierFreeFee: barrierFreeFee,
+				TotalEigyoKilo: summary.totalEigyo,
+			}, nil
+		}
+	}
+
+	// 電車特定区間
+	isTrainSpecific := fare.IsAllTrainSpecificApplicable(summary.edges)
+	if isTrainSpecific {
+		params := ticketdomain.TicketFareParams{
+			RouteType: domain.RouteTypeTrunkOnly, // ドメインルール: 電車特定区間は幹線のみ
+			EigyoKilo: summary.totalEigyo,
+			GiseiKilo: summary.totalGisei,
+		}
+		fareVal, err := u.trainSpecificCalc.Calculate(params)
+		if err != nil {
+			return nil, fmt.Errorf("電車特定区間の運賃計算に失敗しました: %w", err)
+		}
+		return &CalculationResult{
+			Fare:           fareVal,
+			BarrierFreeFee: barrierFreeFee,
+			TotalEigyoKilo: summary.totalEigyo,
+		}, nil
+	}
+
+	// 基本運賃 (複数会社を跨ぐ場合も含む)
+	totalRouteType, err := domain.DetermineRouteType(summary.hasTrunk, summary.hasLocal)
+	if err != nil {
+		return nil, fmt.Errorf("CalculateAmount: 全区間のルート種別判定に失敗しました: %w", err)
+	}
+
+	components := make([]fare.JointFareComponent, 0, domain.CompanyCount)
+	for i := 0; i < int(domain.CompanyCount); i++ {
+		if !summary.statsByCompany[i].used {
+			continue
+		}
+		compRouteType, err := domain.DetermineRouteType(summary.statsByCompany[i].hasTrunk, summary.statsByCompany[i].hasLocal)
+		if err != nil {
+			return nil, fmt.Errorf("CalculateAmount: 会社 %d のルート種別判定に失敗しました: %w", i, err)
+		}
+		components = append(components, fare.JointFareComponent{
+			CompanyID: domain.CompanyID(i),
+			RouteType: compRouteType,
+			EigyoKilo: summary.statsByCompany[i].eigyo,
+			GiseiKilo: summary.statsByCompany[i].gisei,
+		})
+	}
+
+	fareVal, err := fare.CalculateJointFare(u.reg, summary.totalEigyo, summary.totalGisei, totalRouteType, components)
+	if err != nil {
+		return nil, fmt.Errorf("運賃の計算に失敗しました: %w", err)
+	}
+	totalFare += fareVal
+
+	return &CalculationResult{
+		Fare:           totalFare,
+		BarrierFreeFee: barrierFreeFee,
+		TotalEigyoKilo: summary.totalEigyo,
+	}, nil
+}

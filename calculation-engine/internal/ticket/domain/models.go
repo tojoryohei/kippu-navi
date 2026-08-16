@@ -8,3 +8,9 @@ type TicketFareParams struct {
 	EigyoKilo basedomain.DeciKilo
 	GiseiKilo basedomain.DeciKilo
 }
+
+// RouteAndFare は経路完全一致で適用される特定区間運賃や調整区間運賃を保持します。
+type RouteAndFare struct {
+	Route []string
+	Fare  int
+}

@@ -2,8 +2,8 @@ package fare
 
 import (
 	"calculation-engine/internal/domain"
-	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
+	ticketdomain "calculation-engine/internal/ticket/domain"
 	"errors"
 	"fmt"
 	"slices"
@@ -19,7 +19,7 @@ var (
 // RouteEntry は特定の経路とそれに紐づく運賃を保持します。
 type RouteEntry struct {
 	Route []int
-	Fare  passdomain.PassPrice
+	Fare  int
 }
 
 // RouteMatcher は経路の完全一致による特定運賃を検索・適用します。
@@ -49,7 +49,7 @@ func routeToPseudoFNV(route []int) uint64 {
 }
 
 // LoadFromDomainWithOptions は JSON からロードしたデータを用いて構築しますが、ignoreMissing が true の場合は駅名解決に失敗した経路をスキップします。
-func (m *RouteMatcher) LoadFromDomainWithOptions(route_and_fares []passdomain.RouteAndFare, g graph.Graph, ignoreMissing bool) error {
+func (m *RouteMatcher) LoadFromDomainWithOptions(route_and_fares []ticketdomain.RouteAndFare, g graph.Graph, ignoreMissing bool) error {
 	if g == nil {
 		return fmt.Errorf("LoadFromDomain: %w", graph.ErrInvalidGraph)
 	}
@@ -80,14 +80,14 @@ func (m *RouteMatcher) LoadFromDomainWithOptions(route_and_fares []passdomain.Ro
 }
 
 // LoadFromDomain は JSON からロードしたドメインモデルの配列と Graph (名前解決用) を用いてデータを構築します。
-func (m *RouteMatcher) LoadFromDomain(route_and_fares []passdomain.RouteAndFare, g graph.Graph) error {
+func (m *RouteMatcher) LoadFromDomain(route_and_fares []ticketdomain.RouteAndFare, g graph.Graph) error {
 	return m.LoadFromDomainWithOptions(route_and_fares, g, false)
 }
 
 // Insert は経路と運賃をマップに登録します。
 // 既に同じ経路が登録されている場合は ErrDuplicateRoute を返します。
 // 逆方向からの検索にも対応するため、逆順の経路も同時に登録します。
-func (m *RouteMatcher) Insert(route []int, fare passdomain.PassPrice) error {
+func (m *RouteMatcher) Insert(route []int, fare int) error {
 	// 重複チェック
 	if _, ok := m.Search(route); ok {
 		return ErrDuplicateRoute
@@ -134,14 +134,14 @@ func (m *RouteMatcher) Insert(route []int, fare passdomain.PassPrice) error {
 }
 
 // Search は指定された経路に完全に一致する特定区間運賃があるか検索します。
-func (m *RouteMatcher) Search(route []int) (passdomain.PassPrice, bool) {
+func (m *RouteMatcher) Search(route []int) (int, bool) {
 	if m.table == nil {
-		return passdomain.PassPrice{}, false
+		return 0, false
 	}
 	hash := routeToPseudoFNV(route)
 	entry, ok := m.table[hash]
 	if !ok {
-		return passdomain.PassPrice{}, false
+		return 0, false
 	}
 
 	// ハッシュが一致したエントリに対して、スライスが完全に一致するかを確認する（未登録経路によるFalse Positive対策）
@@ -149,5 +149,5 @@ func (m *RouteMatcher) Search(route []int) (passdomain.PassPrice, bool) {
 		return entry.Fare, true
 	}
 
-	return passdomain.PassPrice{}, false
+	return 0, false
 }

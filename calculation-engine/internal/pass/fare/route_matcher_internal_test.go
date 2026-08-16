@@ -5,55 +5,31 @@ import (
 	"testing"
 )
 
-// TestRouteMatcher_ActualCollision は人工的にハッシュ衝突を発生させ、
-// slices.Equal による完全一致チェックが正しく機能することを検証します。
-func TestRouteMatcher_ActualCollision(t *testing.T) {
+// TestRouteMatcher_FalsePositive は人工的にハッシュ値が一致した状況を作り出し、
+// slices.Equal による完全一致チェックが誤検知を防ぐことを検証します。
+func TestRouteMatcher_FalsePositive(t *testing.T) {
 	matcher := NewRouteMatcher()
 
 	// 2つの異なる経路を用意
 	route1 := []int{1, 2, 3}
 	route2 := []int{10, 20, 30}
 
-	// 人工的に衝突状態をシミュレートするため、同じハッシュ値のバケットに2つ登録する
-	h := uint64(42)
-	matcher.table[h] = []RouteEntry{
-		{Route: route1, Fare: passdomain.PassPrice{OneMonth: 100}},
-		{Route: route2, Fare: passdomain.PassPrice{OneMonth: 200}},
-	}
-
-	// Search メソッドのテスト（ハッシュ値を強制的に指定できないため、
-	// モック等を使わない限り、Search内部で計算されるハッシュと一致させる必要がある）
-	// なので、Search関数の代わりに内部ロジックを直接呼ぶか、
-	// routeToFNVInline が 42 を返すような入力を探すのは不可能なため、
-	// 登録されている route1, route2 自体のハッシュを使う。
-
+	// 登録済みの経路として route1 を手動で設定
 	h1 := routeToPseudoFNV(route1)
-	matcher.table[h1] = []RouteEntry{
-		{Route: route1, Fare: passdomain.PassPrice{OneMonth: 100}},
-		{Route: route2, Fare: passdomain.PassPrice{OneMonth: 200}}, // route1のハッシュにroute2を混ぜる
+	matcher.table[h1] = RouteEntry{
+		Route: route1,
+		Fare:  passdomain.PassPrice{OneMonth: 100},
 	}
 
-	// 1. route1 を探す -> 見つかるはず
-	if f, ok := matcher.Search(route1); !ok || f.OneMonth != 100 {
-		t.Errorf("route1 (正規) の検索に失敗しました: ok=%v, fare=%v", ok, f.OneMonth)
-	}
-
-	// 2. route2 を探す
-	// 通常は matcher.Search(route2) は routeToPseudoFNV(route2) のバケットを見に行く。
-	// そこで、route2のハッシュバケットにも route1 を混ぜて「衝突」を再現する。
+	// route2 のハッシュ値で検索したときに、偶然 route1 のデータが登録されている状態をシミュレート
 	h2 := routeToPseudoFNV(route2)
-	matcher.table[h2] = []RouteEntry{
-		{Route: route1, Fare: passdomain.PassPrice{OneMonth: 100}}, // route2のハッシュにroute1が混ざっている
-		{Route: route2, Fare: passdomain.PassPrice{OneMonth: 200}},
+	matcher.table[h2] = RouteEntry{
+		Route: route1, // route2のハッシュバケットにroute1のデータが存在
+		Fare:  passdomain.PassPrice{OneMonth: 100},
 	}
 
-	if f, ok := matcher.Search(route2); !ok || f.OneMonth != 200 {
-		t.Errorf("route2 (衝突想定) の検索に失敗しました: ok=%v, fare=%v", ok, f.OneMonth)
-	}
-
-	// 3. 存在しない経路 (route1と同じハッシュだが中身が違う)
-	matcher.table[h1] = append(matcher.table[h1], RouteEntry{Route: []int{9, 9, 9}, Fare: passdomain.PassPrice{OneMonth: 999}})
-	if _, ok := matcher.Search([]int{1, 2, 4}); ok {
-		t.Error("ハッシュが一致しても経路が異なる場合に ok=true が返されました")
+	// route2 を検索。ハッシュ(h2)は見つかるが、内部のRouteはroute1なので false が返るべき
+	if _, ok := matcher.Search(route2); ok {
+		t.Error("ハッシュが一致しても経路が異なる場合に ok=true が返されました（False Positiveの誤検知）")
 	}
 }

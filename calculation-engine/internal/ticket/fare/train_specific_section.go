@@ -1,9 +1,23 @@
 package fare
 
 import (
+	"calculation-engine/internal/domain"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"fmt"
 )
+
+// IsAllTrainSpecificApplicable は指定された全区間が電車特定区間に収まっているかを判定します。
+func IsAllTrainSpecificApplicable(edges []*domain.Edge) bool {
+	if len(edges) == 0 {
+		return false
+	}
+	for _, e := range edges {
+		if e == nil || !e.IsTrainSpecificSection {
+			return false
+		}
+	}
+	return true
+}
 
 // TrainSpecificSectionCalculator は電車特定区間の運賃計算を行います。
 type TrainSpecificSectionCalculator struct{}
