@@ -248,7 +248,7 @@ export default function Form({
     }, [setValue, getValues, initialCalculationMode, pathname, router]);
 
     // クライアント側での経路展開 (重複チェック用)
-    const getAllStations = useCallback((start: Station | null, segments: typeof formValues.segments): string[] => {
+    const getAllStations = useCallback((start: Station | null, segments: IFormInput["segments"]): string[] => {
         if (!start) return [];
         if (!segments || segments.length === 0) return [start.name];
 
@@ -434,7 +434,7 @@ export default function Form({
             setError(errorInstance.message);
             setIsLoading(false);
         }
-    }, [pathname, updateUrlAndState, isWasmReady]);
+    }, [pathname, updateUrlAndState, getAllStations]);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
