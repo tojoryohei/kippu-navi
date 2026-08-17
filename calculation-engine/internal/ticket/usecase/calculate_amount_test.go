@@ -31,10 +31,10 @@ func TestCalculateAmount_Execute(t *testing.T) {
 
 	trainSpecificCalc := fare.NewTrainSpecificSectionCalculator()
 
-	specificMatcher := fare.NewRouteMatcher()
+	specificMatcher := fare.NewPathMatcher()
 	_ = specificMatcher.Insert([]int{id("X"), id("Y")}, 500)
 
-	adjustedMatcher := fare.NewRouteMatcher()
+	adjustedMatcher := fare.NewPathMatcher()
 
 	calc := usecase.NewCalculateAmount(reg, trainSpecificCalc, specificMatcher, adjustedMatcher, g)
 

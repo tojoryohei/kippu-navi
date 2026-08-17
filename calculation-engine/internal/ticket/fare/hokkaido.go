@@ -11,8 +11,8 @@ func CalculateHokkaidoFare(params ticketdomain.TicketFareParams) (int, error) {
 	var targetKm int
 	var err error
 
-	switch params.RouteType {
-	case domain.RouteTypeTrunkOnly:
+	switch params.LineType {
+	case domain.LineTypeTrunkOnly:
 		targetKm, err = params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("CalculateHokkaidoFare: %w", err)
@@ -98,7 +98,7 @@ func CalculateHokkaidoFare(params ticketdomain.TicketFareParams) (int, error) {
 		}
 		return round1000(round10000(2116*200+1636*100+1283*300+705*(splitKilo-600))*11/10) / 100, nil
 
-	case domain.RouteTypeLocalOnly:
+	case domain.LineTypeLocalOnly:
 		targetKm, err = params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("CalculateHokkaidoFare: %w", err)
@@ -186,7 +186,7 @@ func CalculateHokkaidoFare(params ticketdomain.TicketFareParams) (int, error) {
 		}
 		return round1000(round10000(2311*182+1835*91+1402*273+772*(splitKilo-546))*11/10) / 100, nil
 
-	case domain.RouteTypeMixed:
+	case domain.LineTypeMixed:
 		eigyoKm, err := params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("CalculateHokkaidoFare: %w", err)
@@ -266,6 +266,6 @@ func CalculateHokkaidoFare(params ticketdomain.TicketFareParams) (int, error) {
 		return round1000(round10000(2116*200+1636*100+1283*300+705*(splitKilo-600))*11/10) / 100, nil
 
 	default:
-		return 0, fmt.Errorf("CalculateHokkaidoFare: %w", ErrInvalidRouteType)
+		return 0, fmt.Errorf("CalculateHokkaidoFare: %w", ErrInvalidLineType)
 	}
 }

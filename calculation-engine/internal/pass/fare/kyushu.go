@@ -28,7 +28,7 @@ func getKyushuSpecificFare(params passdomain.PassFareParams) (int, error) {
 	}
 	m := params.Months
 
-	if params.RouteType == domain.RouteTypeLocalOnly {
+	if params.LineType == domain.LineTypeLocalOnly {
 		switch {
 		case g == 4 && e == 3:
 			return extractMonthFare(passdomain.PassPrice{OneMonth: 7130, ThreeMonth: 20440, SixMonth: 36200}, m)
@@ -61,7 +61,7 @@ func getKyushuSpecificFare(params passdomain.PassFareParams) (int, error) {
 		}
 	}
 
-	if params.RouteType == domain.RouteTypeMixed {
+	if params.LineType == domain.LineTypeMixed {
 		switch {
 		case g == 4 && e == 3:
 			return extractMonthFare(passdomain.PassPrice{OneMonth: 7130, ThreeMonth: 20440, SixMonth: 36200}, m)

@@ -11,8 +11,8 @@ func CalculateStandardFare(params ticketdomain.TicketFareParams) (int, error) {
 	var targetKm int
 	var err error
 
-	switch params.RouteType {
-	case domain.RouteTypeTrunkOnly:
+	switch params.LineType {
+	case domain.LineTypeTrunkOnly:
 		targetKm, err = params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("CalculateStandardFare: %w", err)
@@ -48,7 +48,7 @@ func CalculateStandardFare(params ticketdomain.TicketFareParams) (int, error) {
 		}
 		return round1000(round10000(1620*300+1285*300+705*(splitKilo-600))*11/10) / 100, nil
 
-	case domain.RouteTypeLocalOnly:
+	case domain.LineTypeLocalOnly:
 		targetKm, err = params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("CalculateStandardFare: %w", err)
@@ -124,7 +124,7 @@ func CalculateStandardFare(params ticketdomain.TicketFareParams) (int, error) {
 		}
 		return round1000(round10000(1780*273+1410*273+770*(splitKilo-546))*11/10) / 100, nil
 
-	case domain.RouteTypeMixed:
+	case domain.LineTypeMixed:
 		eigyoKm, err := params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("CalculateStandardFare: %w", err)
@@ -165,6 +165,6 @@ func CalculateStandardFare(params ticketdomain.TicketFareParams) (int, error) {
 		return round1000(round10000(1620*300+1285*300+705*(splitKilo-600))*11/10) / 100, nil
 
 	default:
-		return 0, fmt.Errorf("CalculateStandardFare: %w", ErrInvalidRouteType)
+		return 0, fmt.Errorf("CalculateStandardFare: %w", ErrInvalidLineType)
 	}
 }

@@ -16,7 +16,7 @@ func TestCalculateEastFare(t *testing.T) {
 		{
 			name: "東日本 幹線のみ 10km",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(95), // 9.5km -> 10km
 			},
 			want:    210,
@@ -25,7 +25,7 @@ func TestCalculateEastFare(t *testing.T) {
 		{
 			name: "東日本 地方交通線のみ 10km",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(95), // 9.5km -> 10km
 			},
 			want:    220,
@@ -34,7 +34,7 @@ func TestCalculateEastFare(t *testing.T) {
 		{
 			name: "東日本 地方交通線のみ 11km",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(105), // 10.5km -> 11km
 			},
 			want:    260,
@@ -43,7 +43,7 @@ func TestCalculateEastFare(t *testing.T) {
 		{
 			name: "東日本 特定額 201km",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(2005), // 200.5km -> 201km
 			},
 			want:    3850,
@@ -52,7 +52,7 @@ func TestCalculateEastFare(t *testing.T) {
 		{
 			name: "東日本 幹線・地方交通線混在 10km以下 (地方交通線運賃)",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(95),
 			},
 			want:    220,
@@ -61,7 +61,7 @@ func TestCalculateEastFare(t *testing.T) {
 		{
 			name: "東日本 幹線・地方交通線混在 100km (擬制100km)",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(950),
 				GiseiKilo: domain.DeciKilo(1000),
 			},

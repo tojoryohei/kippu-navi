@@ -14,18 +14,18 @@ var adjustedFaresJSON []byte
 
 // Registry holds the embedded JSON data for ticket specific/adjusted fares.
 type Registry struct {
-	specificFares []ticketdomain.RouteAndFare
-	adjustedFares []ticketdomain.RouteAndFare
+	specificFares []ticketdomain.PathAndFare
+	adjustedFares []ticketdomain.PathAndFare
 }
 
 // NewRegistry initializes and returns a new Registry with loaded JSON data.
 func NewRegistry() (*Registry, error) {
-	sf, err := loadRouteAndFare(specificFaresJSON)
+	sf, err := loadPathAndFare(specificFaresJSON)
 	if err != nil {
 		return nil, fmt.Errorf("特定区間運賃の読み込みに失敗しました: %w", err)
 	}
 
-	af, err := loadRouteAndFare(adjustedFaresJSON)
+	af, err := loadPathAndFare(adjustedFaresJSON)
 	if err != nil {
 		return nil, fmt.Errorf("調整区間運賃の読み込みに失敗しました: %w", err)
 	}
@@ -37,11 +37,11 @@ func NewRegistry() (*Registry, error) {
 }
 
 // GetSpecificFares returns the list of specific fares.
-func (r *Registry) GetSpecificFares() []ticketdomain.RouteAndFare {
+func (r *Registry) GetSpecificFares() []ticketdomain.PathAndFare {
 	return r.specificFares
 }
 
 // GetAdjustedFares returns the list of adjusted fares.
-func (r *Registry) GetAdjustedFares() []ticketdomain.RouteAndFare {
+func (r *Registry) GetAdjustedFares() []ticketdomain.PathAndFare {
 	return r.adjustedFares
 }

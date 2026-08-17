@@ -9,14 +9,14 @@ import (
 	"io"
 )
 
-type rawRouteAndFare struct {
-	Route []string `json:"route"`
+type rawPathAndFare struct {
+	Path []string `json:"path"`
 	Fare  int      `json:"fare"`
 }
 
-// loadRouteAndFare は JSON データを読み込み、特定運賃区間や調整運賃区間の配列を返します。
-func loadRouteAndFare(data []byte) ([]ticketdomain.RouteAndFare, error) {
-	var rawData []rawRouteAndFare
+// loadPathAndFare は JSON データを読み込み、特定運賃区間や調整運賃区間の配列を返します。
+func loadPathAndFare(data []byte) ([]ticketdomain.PathAndFare, error) {
+	var rawData []rawPathAndFare
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	
@@ -28,14 +28,14 @@ func loadRouteAndFare(data []byte) ([]ticketdomain.RouteAndFare, error) {
 		return nil, fmt.Errorf("fareio: JSONデータの末尾に予期せぬデータが含まれています")
 	}
 
-	result := make([]ticketdomain.RouteAndFare, 0, len(rawData))
+	result := make([]ticketdomain.PathAndFare, 0, len(rawData))
 	for _, raw := range rawData {
-		if len(raw.Route) < 2 {
-			return nil, fmt.Errorf("fareio: %w (不正なデータ: %v)", domain.ErrInvalidPath, raw.Route)
+		if len(raw.Path) < 2 {
+			return nil, fmt.Errorf("fareio: %w (不正なデータ: %v)", domain.ErrInvalidPath, raw.Path)
 		}
 
-		result = append(result, ticketdomain.RouteAndFare{
-			Route: raw.Route,
+		result = append(result, ticketdomain.PathAndFare{
+			Path: raw.Path,
 			Fare:  raw.Fare,
 		})
 	}

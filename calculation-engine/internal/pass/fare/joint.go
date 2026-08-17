@@ -9,7 +9,7 @@ import (
 // JointFareComponent は各社ごとの乗車統計を保持します
 type JointFareComponent struct {
 	CompanyID domain.CompanyID
-	RouteType domain.RouteType
+	LineType domain.LineType
 	EigyoKilo domain.DeciKilo
 	GiseiKilo domain.DeciKilo
 }
@@ -17,7 +17,7 @@ type JointFareComponent struct {
 // CalculateJointFare は会社跨ぎの運賃計算ルール（差額加算方式）を適用します。
 // 1. 全区間を通算キロで Standard 運賃計算
 // 2. 各社ごとに (自社運賃 - Standard運賃) を加算
-func CalculateJointFare(r *Registry, totalEigyo, totalGisei domain.DeciKilo, totalRouteType domain.RouteType, components []JointFareComponent, months int) (int, error) {
+func CalculateJointFare(r *Registry, totalEigyo, totalGisei domain.DeciKilo, totalLineType domain.LineType, components []JointFareComponent, months int) (int, error) {
 	standardCalc, err := r.Get(domain.JRCentral)
 	if err != nil {
 		return 0, fmt.Errorf("joint_fare: standardの運賃計算機が見つかりません: %w", err)
@@ -25,7 +25,7 @@ func CalculateJointFare(r *Registry, totalEigyo, totalGisei domain.DeciKilo, tot
 
 	// 1. 基準運賃（全区間 Standard）
 	baseParams := passdomain.PassFareParams{
-		RouteType: totalRouteType,
+		LineType: totalLineType,
 		EigyoKilo: totalEigyo,
 		GiseiKilo: totalGisei,
 		Months:    months,
@@ -47,7 +47,7 @@ func CalculateJointFare(r *Registry, totalEigyo, totalGisei domain.DeciKilo, tot
 		}
 
 		compParams := passdomain.PassFareParams{
-			RouteType: comp.RouteType,
+			LineType: comp.LineType,
 			EigyoKilo: comp.EigyoKilo,
 			GiseiKilo: comp.GiseiKilo,
 			Months:    months,

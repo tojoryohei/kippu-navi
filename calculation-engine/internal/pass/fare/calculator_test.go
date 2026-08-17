@@ -67,11 +67,11 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 	}
 
 	tests := []calcTestCase{
-		// ── 正常系：RouteType別 ──────────────────────────────
+		// ── 正常系：LineType別 ──────────────────────────────
 		{
 			name: "幹線のみ 1ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(150),
 				GiseiKilo: domain.DeciKilo(150),
 				Months:    1,
@@ -81,7 +81,7 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 		{
 			name: "地方交通線のみ 3ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(205),
 				GiseiKilo: domain.DeciKilo(205),
 				Months:    3,
@@ -91,19 +91,19 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 		{
 			name: "幹線・地方混在 6ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(85),
 				GiseiKilo: domain.DeciKilo(94),
 				Months:    6,
 			},
 			wantFare: 30100,
 		},
-		// ── 境界値：RouteTypeMixed の10km特例 ────────────────
+		// ── 境界値：LineTypeMixed の10km特例 ────────────────
 		// 旅客営業規則第86条：営業キロが10km以下なら地方交通線運賃表を適用
 		{
 			name: "混在 営業キロちょうど10km → 地方交通線運賃表",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(100), // 10.0km → ceil = 10
 				GiseiKilo: domain.DeciKilo(110),
 				Months:    1,
@@ -114,7 +114,7 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 		{
 			name: "混在 営業キロ11km → 幹線運賃表・擬制キロ使用",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(101), // 10.1km → ceil = 11
 				GiseiKilo: domain.DeciKilo(111),
 				Months:    3,
@@ -126,7 +126,7 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 		{
 			name: "幹線のみ ちょうど100km 6ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(1000), // 100.0km → ceil = 100
 				GiseiKilo: domain.DeciKilo(1000),
 				Months:    6,
@@ -137,7 +137,7 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 		{
 			name: "幹線のみ 101km 1ヶ月（折り返し境界を超える）",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(1001), // 100.1km → ceil = 101
 				GiseiKilo: domain.DeciKilo(1001),
 				Months:    6,
@@ -149,7 +149,7 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 		{
 			name: "マイナスの距離",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(-10),
 				GiseiKilo: domain.DeciKilo(-10),
 				Months:    1,
@@ -160,7 +160,7 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 		{
 			name: "不正な月数",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(100),
 				GiseiKilo: domain.DeciKilo(100),
 				Months:    4,
@@ -169,15 +169,15 @@ func TestStandardCalculator_Calculate(t *testing.T) {
 			wantErrIs: domain.ErrInvalidMonths,
 		},
 		{
-			name: "不正なRouteType",
+			name: "不正なLineType",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteType(99),
+				LineType: domain.LineType(99),
 				EigyoKilo: domain.DeciKilo(100),
 				GiseiKilo: domain.DeciKilo(100),
 				Months:    1,
 			},
 			wantErr:   true,
-			wantErrIs: fare.ErrInvalidRouteType,
+			wantErrIs: fare.ErrInvalidLineType,
 		},
 	}
 
@@ -208,7 +208,7 @@ func TestHokkaidoCalculator_Calculate(t *testing.T) {
 		{
 			name: "幹線のみ 1ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(150),
 				GiseiKilo: domain.DeciKilo(150),
 				Months:    1,
@@ -218,7 +218,7 @@ func TestHokkaidoCalculator_Calculate(t *testing.T) {
 		{
 			name: "地方交通線のみ 6ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(205),
 				GiseiKilo: domain.DeciKilo(205),
 				Months:    6,
@@ -254,7 +254,7 @@ func TestEastCalculator_Calculate(t *testing.T) {
 		{
 			name: "幹線のみ 1ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(150),
 				GiseiKilo: domain.DeciKilo(150),
 				Months:    1,
@@ -264,7 +264,7 @@ func TestEastCalculator_Calculate(t *testing.T) {
 		{
 			name: "地方交通線のみ 3ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(205),
 				GiseiKilo: domain.DeciKilo(205),
 				Months:    3,
@@ -298,11 +298,11 @@ func TestShikokuCalculator_Calculate(t *testing.T) {
 
 	tests := []calcTestCase{
 		// ── 正常系 ───────────────────────────────────────────
-		// 四国は RouteType に関わらず常に GiseiKilo の単一テーブルを使用する
+		// 四国は LineType に関わらず常に GiseiKilo の単一テーブルを使用する
 		{
 			name: "1ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(104),
 				GiseiKilo: domain.DeciKilo(104),
 				Months:    1,
@@ -312,7 +312,7 @@ func TestShikokuCalculator_Calculate(t *testing.T) {
 		{
 			name: "3ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(188),
 				GiseiKilo: domain.DeciKilo(197),
 				Months:    3,
@@ -322,18 +322,18 @@ func TestShikokuCalculator_Calculate(t *testing.T) {
 		{
 			name: "6ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(778),
 				GiseiKilo: domain.DeciKilo(856),
 				Months:    6,
 			},
 			wantFare: 307100,
 		},
-		// RouteTypeが異なっても GiseiKilo を使うため結果は同じになる
+		// LineTypeが異なっても GiseiKilo を使うため結果は同じになる
 		{
-			name: "RouteTypeMixed でも GiseiKilo が使われること",
+			name: "LineTypeMixed でも GiseiKilo が使われること",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(188),
 				GiseiKilo: domain.DeciKilo(197),
 				Months:    1,
@@ -344,7 +344,7 @@ func TestShikokuCalculator_Calculate(t *testing.T) {
 		{
 			name: "マイナスの距離",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(-10),
 				GiseiKilo: domain.DeciKilo(-10),
 				Months:    1,
@@ -355,7 +355,7 @@ func TestShikokuCalculator_Calculate(t *testing.T) {
 		{
 			name: "不正な月数",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(28),
 				GiseiKilo: domain.DeciKilo(31),
 				Months:    5,
@@ -392,7 +392,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "特殊運賃 地方交通線 g=4,e=3 1ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(28), // ceil = 3
 				GiseiKilo: domain.DeciKilo(31), // ceil = 4
 				Months:    1,
@@ -402,7 +402,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "特殊運賃 地方交通線 g=4,e=3 3ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(28),
 				GiseiKilo: domain.DeciKilo(31),
 				Months:    3,
@@ -412,7 +412,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "特殊運賃 地方交通線 g=4,e=3 6ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(28),
 				GiseiKilo: domain.DeciKilo(31),
 				Months:    6,
@@ -423,7 +423,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "特殊運賃 g=41,e=37 6ヶ月 → 特殊運賃",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(370), // ceil = 37
 				GiseiKilo: domain.DeciKilo(407), // ceil = 41
 				Months:    6,
@@ -433,7 +433,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "特殊運賃 g=41,e=37 1ヶ月 → 通常テーブルへフォールバック",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(370),
 				GiseiKilo: domain.DeciKilo(407),
 				Months:    1,
@@ -444,7 +444,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "特殊運賃 g=41,e=37 3ヶ月 → 通常テーブルへフォールバック",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(370),
 				GiseiKilo: domain.DeciKilo(407),
 				Months:    3,
@@ -455,7 +455,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "特殊運賃 g=46,e=41 6ヶ月 → 特殊運賃",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(410), // ceil = 41
 				GiseiKilo: domain.DeciKilo(451), // ceil = 46
 				Months:    6,
@@ -465,7 +465,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "特殊運賃 g=46,e=41 1ヶ月 → 通常テーブルへフォールバック",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(410),
 				GiseiKilo: domain.DeciKilo(451),
 				Months:    1,
@@ -473,11 +473,11 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 			// 通常テーブル의 46km 1ヶ月運賃
 			wantFare: 32490,
 		},
-		// ── 特殊運賃：RouteTypeMixed ──────────────────────────
+		// ── 特殊運賃：LineTypeMixed ──────────────────────────
 		{
 			name: "特殊運賃 混在 g=4,e=3 1ヶ月",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(28),
 				GiseiKilo: domain.DeciKilo(31),
 				Months:    1,
@@ -488,7 +488,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "特殊運賃に該当しない距離は通常テーブルを使用",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(22), // ceil = 3
 				GiseiKilo: domain.DeciKilo(24), // ceil = 3
 				Months:    1,
@@ -500,7 +500,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "マイナスの距離",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(-10),
 				GiseiKilo: domain.DeciKilo(-10),
 				Months:    1,
@@ -511,7 +511,7 @@ func TestKyushuCalculator_Calculate(t *testing.T) {
 		{
 			name: "不正な月数",
 			params: passdomain.PassFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(28),
 				GiseiKilo: domain.DeciKilo(31),
 				Months:    5,

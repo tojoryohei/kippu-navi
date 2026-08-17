@@ -16,13 +16,13 @@ type rawFareData struct {
 	SixMonth   int `json:"SixMonth"`
 }
 
-type rawRouteAndFare struct {
-	Route []string    `json:"route"`
+type rawPathAndFare struct {
+	Path []string    `json:"path"`
 	Fare  rawFareData `json:"fare"`
 }
 
-func loadRouteAndFares(data []byte, name string) ([]passdomain.RouteAndFare, error) {
-	var rawData []rawRouteAndFare
+func loadPathAndFares(data []byte, name string) ([]passdomain.PathAndFare, error) {
+	var rawData []rawPathAndFare
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&rawData); err != nil {
@@ -33,13 +33,13 @@ func loadRouteAndFares(data []byte, name string) ([]passdomain.RouteAndFare, err
 		return nil, fmt.Errorf("%sデータの末尾に予期せぬデータが含まれています", name)
 	}
 
-	dataResult := make([]passdomain.RouteAndFare, 0, len(rawData))
+	dataResult := make([]passdomain.PathAndFare, 0, len(rawData))
 	for _, raw := range rawData {
-		if len(raw.Route) < 2 {
-			return nil, fmt.Errorf("%s: 経路には少なくとも2つの駅が必要です（不正なデータ: %v）", name, raw.Route)
+		if len(raw.Path) < 2 {
+			return nil, fmt.Errorf("%s: 経路には少なくとも2つの駅が必要です（不正なデータ: %v）", name, raw.Path)
 		}
-		dataResult = append(dataResult, passdomain.RouteAndFare{
-			Route: raw.Route,
+		dataResult = append(dataResult, passdomain.PathAndFare{
+			Path: raw.Path,
 			Fare: passdomain.PassPrice{
 				OneMonth:   raw.Fare.OneMonth,
 				ThreeMonth: raw.Fare.ThreeMonth,

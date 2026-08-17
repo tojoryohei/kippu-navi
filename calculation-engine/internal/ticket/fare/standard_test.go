@@ -16,7 +16,7 @@ func TestCalculateStandardFare(t *testing.T) {
 		{
 			name: "幹線のみ 3km (切り上げ)",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(21), // 2.1km -> 3km
 			},
 			want:    150,
@@ -25,7 +25,7 @@ func TestCalculateStandardFare(t *testing.T) {
 		{
 			name: "幹線のみ 6km",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(55), // 5.5km -> 6km
 			},
 			want:    190,
@@ -34,7 +34,7 @@ func TestCalculateStandardFare(t *testing.T) {
 		{
 			name: "幹線のみ 10km",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(95), // 9.5km -> 10km
 			},
 			want:    200,
@@ -43,7 +43,7 @@ func TestCalculateStandardFare(t *testing.T) {
 		{
 			name: "地方交通線のみ 7km",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeLocalOnly,
+				LineType: domain.LineTypeLocalOnly,
 				EigyoKilo: domain.DeciKilo(65), // 6.5km -> 7km
 			},
 			want:    210, // 地方交通線の7km
@@ -52,7 +52,7 @@ func TestCalculateStandardFare(t *testing.T) {
 		{
 			name: "幹線・地方交通線混在 10km以下 (地方交通線運賃が適用される)",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(81), // 8.1km -> 9km (10km以下)
 				GiseiKilo: domain.DeciKilo(95), // 擬制キロ
 			},
@@ -62,7 +62,7 @@ func TestCalculateStandardFare(t *testing.T) {
 		{
 			name: "幹線のみ 11km",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeTrunkOnly,
+				LineType: domain.LineTypeTrunkOnly,
 				EigyoKilo: domain.DeciKilo(101), // 10.1km -> 11km
 			},
 			want:    240,

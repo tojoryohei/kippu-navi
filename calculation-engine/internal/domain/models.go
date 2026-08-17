@@ -4,25 +4,25 @@ import (
 	"fmt"
 )
 
-// RouteType は路線の種別（幹線、地方交通線など）を表します。
-type RouteType int
+// LineType は路線の種別（幹線、地方交通線など）を表します。
+type LineType int
 
 const (
-	RouteTypeTrunkOnly RouteType = iota // 幹線のみ
-	RouteTypeLocalOnly                  // 地方交通線のみ
-	RouteTypeMixed                      // 幹線と地方交通線をまたぐ
+	LineTypeTrunkOnly LineType = iota // 幹線のみ
+	LineTypeLocalOnly                  // 地方交通線のみ
+	LineTypeMixed                      // 幹線と地方交通線をまたぐ
 )
 
-// DetermineRouteType は幹線・地方交通線の有無から RouteType を判定します。
-func DetermineRouteType(hasTrunk, hasLocal bool) (RouteType, error) {
+// DetermineLineType は幹線・地方交通線の有無から LineType を判定します。
+func DetermineLineType(hasTrunk, hasLocal bool) (LineType, error) {
 	if !hasTrunk && !hasLocal {
-		return 0, fmt.Errorf("DetermineRouteType: %w", ErrNoRouteType)
+		return 0, fmt.Errorf("DetermineLineType: %w", ErrNoLineType)
 	}
 	if hasTrunk && hasLocal {
-		return RouteTypeMixed, nil
+		return LineTypeMixed, nil
 	}
 	if hasLocal {
-		return RouteTypeLocalOnly, nil
+		return LineTypeLocalOnly, nil
 	}
-	return RouteTypeTrunkOnly, nil
+	return LineTypeTrunkOnly, nil
 }

@@ -15,8 +15,8 @@ var (
 	// ErrNegativeDistance は、距離に負の値が指定された場合のエラーです。
 	ErrNegativeDistance = errors.New("距離は0以上でなければなりません")
 
-	// ErrNoRouteType は、幹線も地方交通線も含まれていない場合のエラーです。
-	ErrNoRouteType = errors.New("幹線も地方交通線も含まれていません")
+	// ErrNoLineType は、幹線も地方交通線も含まれていない場合のエラーです。
+	ErrNoLineType = errors.New("幹線も地方交通線も含まれていません")
 
 	// ErrInvalidPath は、経路が無効な場合（駅数が足りないなど）のエラーです。
 	ErrInvalidPath = errors.New("経路には少なくとも2つの駅が必要です")

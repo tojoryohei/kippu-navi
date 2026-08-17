@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-// TestRouteMatcher_FalsePositive は人工的にハッシュ値が一致した状況を作り出し、
+// TestPathMatcher_FalsePositive は人工的にハッシュ値が一致した状況を作り出し、
 // slices.Equal による完全一致チェックが誤検知を防ぐことを検証します。
-func TestRouteMatcher_FalsePositive(t *testing.T) {
-	matcher := NewRouteMatcher()
+func TestPathMatcher_FalsePositive(t *testing.T) {
+	matcher := NewPathMatcher()
 
 	// 2つの異なる経路を用意
 	route1 := []int{1, 2, 3}
@@ -16,15 +16,15 @@ func TestRouteMatcher_FalsePositive(t *testing.T) {
 
 	// 登録済みの経路として route1 を手動で設定
 	h1 := routeToPseudoFNV(route1)
-	matcher.table[h1] = RouteEntry{
-		Route: route1,
+	matcher.table[h1] = PathEntry{
+		Path: route1,
 		Fare:  passdomain.PassPrice{OneMonth: 100},
 	}
 
 	// route2 のハッシュ値で検索したときに、偶然 route1 のデータが登録されている状態をシミュレート
 	h2 := routeToPseudoFNV(route2)
-	matcher.table[h2] = RouteEntry{
-		Route: route1, // route2のハッシュバケットにroute1のデータが存在
+	matcher.table[h2] = PathEntry{
+		Path: route1, // route2のハッシュバケットにroute1のデータが存在
 		Fare:  passdomain.PassPrice{OneMonth: 100},
 	}
 

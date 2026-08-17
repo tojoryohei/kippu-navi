@@ -17,23 +17,23 @@ type CalculationResult struct {
 type CalculateAmount struct {
 	reg                      *fare.Registry
 	trainSpecificCalc        *fare.TrainSpecificSectionCalculator
-	specificFareRouteMatcher *fare.RouteMatcher
-	adjustedFareRouteMatcher *fare.RouteMatcher
+	specificFarePathMatcher *fare.PathMatcher
+	adjustedFarePathMatcher *fare.PathMatcher
 	graph                    graph.Graph
 }
 
 func NewCalculateAmount(
 	reg *fare.Registry,
 	trainSpecificCalc *fare.TrainSpecificSectionCalculator,
-	specificFareRouteMatcher *fare.RouteMatcher,
-	adjustedFareRouteMatcher *fare.RouteMatcher,
+	specificFarePathMatcher *fare.PathMatcher,
+	adjustedFarePathMatcher *fare.PathMatcher,
 	g graph.Graph,
 ) *CalculateAmount {
 	return &CalculateAmount{
 		reg:                      reg,
 		trainSpecificCalc:        trainSpecificCalc,
-		specificFareRouteMatcher: specificFareRouteMatcher,
-		adjustedFareRouteMatcher: adjustedFareRouteMatcher,
+		specificFarePathMatcher: specificFarePathMatcher,
+		adjustedFarePathMatcher: adjustedFarePathMatcher,
 		graph:                    g,
 	}
 }
@@ -55,7 +55,7 @@ type companyStats struct {
 	gisei    domain.DeciKilo
 }
 
-func (u *CalculateAmount) analyzeRoute(path []int) (*routeSummary, error) {
+func (u *CalculateAmount) analyzePath(path []int) (*routeSummary, error) {
 	if len(path) < 2 {
 		return nil, domain.ErrInvalidPath
 	}
@@ -93,7 +93,7 @@ func (u *CalculateAmount) analyzeRoute(path []int) (*routeSummary, error) {
 
 		cID := edge.Company
 		if int(cID) < 0 || int(cID) >= len(summary.statsByCompany) {
-			return nil, fmt.Errorf("analyzeRoute: %w: %d", domain.ErrUnknownCompany, cID)
+			return nil, fmt.Errorf("analyzePath: %w: %d", domain.ErrUnknownCompany, cID)
 		}
 		summary.statsByCompany[cID].used = true
 		summary.statsByCompany[cID].eigyo += edge.EigyoKilo
@@ -113,7 +113,7 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 		return nil, fmt.Errorf("CalculateAmount.Execute: %w", domain.ErrInvalidPath)
 	}
 
-	summary, err := u.analyzeRoute(path)
+	summary, err := u.analyzePath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +127,8 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 	}
 
 	// 調整運賃チェック
-	if u.adjustedFareRouteMatcher != nil {
-		if f, ok := u.adjustedFareRouteMatcher.Search(path); ok {
+	if u.adjustedFarePathMatcher != nil {
+		if f, ok := u.adjustedFarePathMatcher.Search(path); ok {
 			return &CalculationResult{
 				Fare:           f,
 				BarrierFreeFee: barrierFreeFee,
@@ -138,8 +138,8 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 	}
 
 	// 特定運賃チェック
-	if u.specificFareRouteMatcher != nil {
-		if f, ok := u.specificFareRouteMatcher.Search(path); ok {
+	if u.specificFarePathMatcher != nil {
+		if f, ok := u.specificFarePathMatcher.Search(path); ok {
 			return &CalculationResult{
 				Fare:           f,
 				BarrierFreeFee: barrierFreeFee,
@@ -152,23 +152,23 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 	isTrainSpecific := fare.IsAllTrainSpecificApplicable(summary.edges)
 	if isTrainSpecific {
 		params := ticketdomain.TicketFareParams{
-			RouteType: domain.RouteTypeTrunkOnly, // ドメインルール: 電車特定区間は幹線のみ
+			LineType: domain.LineTypeTrunkOnly, // ドメインルール: 電車特定区間は幹線のみ
 			EigyoKilo: summary.totalEigyo,
 			GiseiKilo: summary.totalGisei,
 		}
-		fareVal, err := u.trainSpecificCalc.Calculate(params)
+		fare, err := u.trainSpecificCalc.Calculate(params)
 		if err != nil {
 			return nil, fmt.Errorf("電車特定区間の運賃計算に失敗しました: %w", err)
 		}
 		return &CalculationResult{
-			Fare:           fareVal,
+			Fare:           fare,
 			BarrierFreeFee: barrierFreeFee,
 			TotalEigyoKilo: summary.totalEigyo,
 		}, nil
 	}
 
 	// 基本運賃 (複数会社を跨ぐ場合も含む)
-	totalRouteType, err := domain.DetermineRouteType(summary.hasTrunk, summary.hasLocal)
+	totalLineType, err := domain.DetermineLineType(summary.hasTrunk, summary.hasLocal)
 	if err != nil {
 		return nil, fmt.Errorf("CalculateAmount: 全区間のルート種別判定に失敗しました: %w", err)
 	}
@@ -178,19 +178,19 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 		if !summary.statsByCompany[i].used {
 			continue
 		}
-		compRouteType, err := domain.DetermineRouteType(summary.statsByCompany[i].hasTrunk, summary.statsByCompany[i].hasLocal)
+		compLineType, err := domain.DetermineLineType(summary.statsByCompany[i].hasTrunk, summary.statsByCompany[i].hasLocal)
 		if err != nil {
 			return nil, fmt.Errorf("CalculateAmount: 会社 %d のルート種別判定に失敗しました: %w", i, err)
 		}
 		components = append(components, fare.JointFareComponent{
 			CompanyID: domain.CompanyID(i),
-			RouteType: compRouteType,
+			LineType: compLineType,
 			EigyoKilo: summary.statsByCompany[i].eigyo,
 			GiseiKilo: summary.statsByCompany[i].gisei,
 		})
 	}
 
-	fareVal, err := fare.CalculateJointFare(u.reg, summary.totalEigyo, summary.totalGisei, totalRouteType, components)
+	fareVal, err := fare.CalculateJointFare(u.reg, summary.totalEigyo, summary.totalGisei, totalLineType, components)
 	if err != nil {
 		return nil, fmt.Errorf("運賃の計算に失敗しました: %w", err)
 	}

@@ -38,8 +38,8 @@ func CalculateKyushuFare(params ticketdomain.TicketFareParams) (int, error) {
 		return 270, nil
 	}
 
-	switch params.RouteType {
-	case domain.RouteTypeTrunkOnly:
+	switch params.LineType {
+	case domain.LineTypeTrunkOnly:
 		// 第77条の５ 九州旅客鉄道会社内の幹線内相互発着の大人普通旅客運賃
 		// （1）営業キロが11キロメートルから100キロメートルまでの場合
 		if totalEigyoKilo <= 15 {
@@ -196,7 +196,7 @@ func CalculateKyushuFare(params ticketdomain.TicketFareParams) (int, error) {
 		}
 		return round1000(round10000(1975*300+1285*300+705*(splitKilo-600))*11/10) / 100, nil
 
-	case domain.RouteTypeLocalOnly:
+	case domain.LineTypeLocalOnly:
 		// 第77条の１０ 九州旅客鉄道会社線内の地方交通線内相互発着の大人普通旅客運賃
 		if totalGiseiKilo == 11 {
 			return 320, nil
@@ -414,7 +414,7 @@ func CalculateKyushuFare(params ticketdomain.TicketFareParams) (int, error) {
 		}
 		return round1000(round10000(1975*300+1285*300+705*(splitKilo-600))*11/10) / 100, nil
 
-	case domain.RouteTypeMixed:
+	case domain.LineTypeMixed:
 		// 第81条の５ 九州旅客鉄道会社内の幹線と地方交通線を連続して乗車する場合の大人普通旅客運賃
 		// （1）擬制キロが11キロメートルから100キロメートルまでの場合
 		if totalGiseiKilo <= 15 {
@@ -572,6 +572,6 @@ func CalculateKyushuFare(params ticketdomain.TicketFareParams) (int, error) {
 		return round1000(round10000(1975*300+1285*300+705*(splitKilo-600))*11/10) / 100, nil
 
 	default:
-		return 0, fmt.Errorf("CalculateKyushuFare: %w", ErrInvalidRouteType)
+		return 0, fmt.Errorf("CalculateKyushuFare: %w", ErrInvalidLineType)
 	}
 }

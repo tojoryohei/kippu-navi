@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrInvalidRouteType = errors.New("不正なRouteTypeです")
+	ErrInvalidLineType = errors.New("不正なLineTypeです")
 	ErrOutOfRange       = errors.New("距離が範囲外です")
 )
 

@@ -9,7 +9,7 @@ import (
 // JointFareComponent は各社ごとの乗車統計を保持します
 type JointFareComponent struct {
 	CompanyID domain.CompanyID
-	RouteType domain.RouteType
+	LineType domain.LineType
 	EigyoKilo domain.DeciKilo
 	GiseiKilo domain.DeciKilo
 }
@@ -18,7 +18,7 @@ type JointFareComponent struct {
 // 第85条 他の旅客鉄道会社線を連続して乗車する場合の大人普通旅客運賃
 // 1. 全区間を通算キロで Standard 運賃計算
 // 2. 各社ごとに (自社運賃 - Standard運賃) を加算
-func CalculateJointFare(r *Registry, totalEigyo, totalGisei domain.DeciKilo, totalRouteType domain.RouteType, components []JointFareComponent) (int, error) {
+func CalculateJointFare(r *Registry, totalEigyo, totalGisei domain.DeciKilo, totalLineType domain.LineType, components []JointFareComponent) (int, error) {
 	standardCalc, err := r.Get(domain.JRCentral)
 	if err != nil {
 		return 0, fmt.Errorf("joint_fare: standardの運賃計算機が見つかりません: %w", err)
@@ -26,7 +26,7 @@ func CalculateJointFare(r *Registry, totalEigyo, totalGisei domain.DeciKilo, tot
 
 	// 1. 基準運賃（全区間 Standard）
 	baseParams := ticketdomain.TicketFareParams{
-		RouteType: totalRouteType,
+		LineType: totalLineType,
 		EigyoKilo: totalEigyo,
 		GiseiKilo: totalGisei,
 	}
@@ -48,7 +48,7 @@ func CalculateJointFare(r *Registry, totalEigyo, totalGisei domain.DeciKilo, tot
 		}
 
 		compParams := ticketdomain.TicketFareParams{
-			RouteType: comp.RouteType,
+			LineType: comp.LineType,
 			EigyoKilo: comp.EigyoKilo,
 			GiseiKilo: comp.GiseiKilo,
 		}

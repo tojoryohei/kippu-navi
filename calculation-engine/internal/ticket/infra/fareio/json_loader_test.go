@@ -6,24 +6,24 @@ import (
 	"testing"
 )
 
-func TestLoadRouteAndFare(t *testing.T) {
+func TestLoadPathAndFare(t *testing.T) {
 	tests := []struct {
 		name      string
 		jsonData  []byte
-		wantFares []ticketdomain.RouteAndFare
+		wantFares []ticketdomain.PathAndFare
 		wantErr   bool
 	}{
 		{
 			name: "正常系",
 			jsonData: []byte(`[
 				{
-					"route": ["東京", "神田"],
+					"path": ["東京", "神田"],
 					"fare": 150
 				}
 			]`),
-			wantFares: []ticketdomain.RouteAndFare{
+			wantFares: []ticketdomain.PathAndFare{
 				{
-					Route: []string{"東京", "神田"},
+					Path: []string{"東京", "神田"},
 					Fare:  150,
 				},
 			},
@@ -38,14 +38,14 @@ func TestLoadRouteAndFare(t *testing.T) {
 		{
 			name:      "空の配列",
 			jsonData:  []byte(`[]`),
-			wantFares: []ticketdomain.RouteAndFare{},
+			wantFares: []ticketdomain.PathAndFare{},
 			wantErr:   false,
 		},
 		{
 			name: "未知のフィールドが含まれる",
 			jsonData: []byte(`[
 				{
-					"route": ["東京", "神田"],
+					"path": ["東京", "神田"],
 					"fare": 150,
 					"Unknown": 999
 				}
@@ -63,7 +63,7 @@ func TestLoadRouteAndFare(t *testing.T) {
 			name: "経路の駅数が1つしかない（バリデーションエラー）",
 			jsonData: []byte(`[
 				{
-					"route": ["東京"],
+					"path": ["東京"],
 					"fare": 150
 				}
 			]`),
@@ -74,15 +74,15 @@ func TestLoadRouteAndFare(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotFares, err := loadRouteAndFare(tt.jsonData)
+			gotFares, err := loadPathAndFare(tt.jsonData)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("loadRouteAndFare() エラー = %v, 期待されるエラー発生 = %v", err, tt.wantErr)
+				t.Errorf("loadPathAndFare() エラー = %v, 期待されるエラー発生 = %v", err, tt.wantErr)
 				return
 			}
 
 			if !tt.wantErr && !reflect.DeepEqual(gotFares, tt.wantFares) {
-				t.Errorf("loadRouteAndFare() 取得データ = %v, 期待値 = %v", gotFares, tt.wantFares)
+				t.Errorf("loadPathAndFare() 取得データ = %v, 期待値 = %v", gotFares, tt.wantFares)
 			}
 		})
 	}

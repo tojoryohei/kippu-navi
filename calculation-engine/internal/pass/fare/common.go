@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	ErrInvalidRouteType = errors.New("不正なRouteTypeです")
+	ErrInvalidLineType = errors.New("不正なLineTypeです")
 	ErrInvalidTable     = errors.New("運賃表が不正です")
 	ErrInvalidKilo      = errors.New("営業キロまたは運賃計算キロが0以下です")
 )
@@ -19,20 +19,20 @@ func calculateBaseFare(params passdomain.PassFareParams, trunkTable, localTable 
 	var useTrunkTable bool
 	var err error
 
-	switch params.RouteType {
-	case domain.RouteTypeTrunkOnly:
+	switch params.LineType {
+	case domain.LineTypeTrunkOnly:
 		targetKm, err = params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("calculateBaseFare: %w", err)
 		}
 		useTrunkTable = true
-	case domain.RouteTypeLocalOnly:
+	case domain.LineTypeLocalOnly:
 		targetKm, err = params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("calculateBaseFare: %w", err)
 		}
 		useTrunkTable = false
-	case domain.RouteTypeMixed:
+	case domain.LineTypeMixed:
 		eigyoKm, err := params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("calculateBaseFare: %w", err)
@@ -51,7 +51,7 @@ func calculateBaseFare(params passdomain.PassFareParams, trunkTable, localTable 
 			useTrunkTable = true
 		}
 	default:
-		return 0, fmt.Errorf("calculateBaseFare: %w", ErrInvalidRouteType)
+		return 0, fmt.Errorf("calculateBaseFare: %w", ErrInvalidLineType)
 	}
 
 	table := trunkTable

@@ -73,8 +73,8 @@ func loadFareTable(data []byte) ([101]passdomain.PassPrice, error) {
 type Calculators struct {
 	Registry      *fare.Registry
 	TrainSpecific *fare.TrainSpecificSectionCalculator
-	SpecificRoute *fare.RouteMatcher
-	AdjustedRoute *fare.RouteMatcher
+	SpecificRoute *fare.PathMatcher
+	AdjustedRoute *fare.PathMatcher
 }
 
 // InitRegistryWithOptions は JSON データをデコードし、全ての運賃計算機を初期化して返します。
@@ -133,21 +133,21 @@ func InitRegistryWithOptions(g graph.Graph, ignoreMissing bool) (*Calculators, e
 	trainSpecificCalc := fare.NewTrainSpecificSectionCalculator(trainSpecific)
 
 	// 特定運賃区間
-	specificFares, err := loadRouteAndFares(specificFaresJSON, "特定運賃区間")
+	specificFares, err := loadPathAndFares(specificFaresJSON, "特定運賃区間")
 	if err != nil {
 		return nil, fmt.Errorf("特定運賃区間の読み込みに失敗: %w", err)
 	}
-	specificSectionMatcher := fare.NewRouteMatcher()
+	specificSectionMatcher := fare.NewPathMatcher()
 	if err := specificSectionMatcher.LoadFromDomainWithOptions(specificFares, g, ignoreMissing); err != nil {
 		return nil, fmt.Errorf("特定運賃区間マッチャーの構築に失敗: %w", err)
 	}
 
 	// 調整運賃区間
-	adjustedFares, err := loadRouteAndFares(adjustedFaresJSON, "調整運賃区間")
+	adjustedFares, err := loadPathAndFares(adjustedFaresJSON, "調整運賃区間")
 	if err != nil {
 		return nil, fmt.Errorf("調整運賃区間の読み込みに失敗: %w", err)
 	}
-	adjustedFareMatcher := fare.NewRouteMatcher()
+	adjustedFareMatcher := fare.NewPathMatcher()
 	if err := adjustedFareMatcher.LoadFromDomainWithOptions(adjustedFares, g, ignoreMissing); err != nil {
 		return nil, fmt.Errorf("調整運賃区間マッチャーの構築に失敗: %w", err)
 	}

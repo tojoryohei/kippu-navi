@@ -16,7 +16,7 @@ func TestCalculateShikokuFare(t *testing.T) {
 		{
 			name: "四国 10km以下 (擬制3km)",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(95), // 9.5km -> 10km
 				GiseiKilo: domain.DeciKilo(25), // 2.5km -> 3km
 			},
@@ -26,7 +26,7 @@ func TestCalculateShikokuFare(t *testing.T) {
 		{
 			name: "四国 10km超 11km",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(105), // 10.5km -> 11km
 				GiseiKilo: domain.DeciKilo(105), // 10.5km -> 11km
 			},
@@ -36,7 +36,7 @@ func TestCalculateShikokuFare(t *testing.T) {
 		{
 			name: "四国 100km超 101km",
 			params: ticketdomain.TicketFareParams{
-				RouteType: domain.RouteTypeMixed,
+				LineType: domain.LineTypeMixed,
 				EigyoKilo: domain.DeciKilo(1005), // 100.5km -> 101km
 				GiseiKilo: domain.DeciKilo(1005), // 100.5km -> 101km
 			},
