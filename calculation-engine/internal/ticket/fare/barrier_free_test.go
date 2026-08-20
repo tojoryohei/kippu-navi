@@ -29,9 +29,9 @@ func TestIsAllBarrierFreeFeeApplicable(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "空の経路",
+			name:  "空の経路",
 			edges: []*domain.Edge{},
-			want: false,
+			want:  false,
 		},
 	}
 

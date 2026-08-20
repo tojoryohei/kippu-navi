@@ -1,9 +1,9 @@
 package fareio
 
 import (
+	ticketdomain "calculation-engine/internal/ticket/domain"
 	_ "embed"
 	"fmt"
-	ticketdomain "calculation-engine/internal/ticket/domain"
 )
 
 //go:embed data/specificFares.json

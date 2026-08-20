@@ -18,7 +18,7 @@ type rawFareData struct {
 
 type rawPathAndFare struct {
 	Path []string    `json:"path"`
-	Fare  rawFareData `json:"fare"`
+	Fare rawFareData `json:"fare"`
 }
 
 func loadPathAndFares(data []byte, name string) ([]passdomain.PathAndFare, error) {

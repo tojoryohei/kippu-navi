@@ -28,6 +28,9 @@ export function generateKippu(request: RouteRequest, options: GenerateKippuOptio
             break;
     }
 
+    const stationList: string[] = correctedPath.map(pathStep => pathStep.stationName);
+    console.log("\"" + stationList.join("\", \"") + "\"");
+
     // 大都市近郊区間の判定と運賃取得
     const majorCitySuburbanSection = whichMajorCitySuburbanSections(fullPath);
 

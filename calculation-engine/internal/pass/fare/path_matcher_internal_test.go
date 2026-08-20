@@ -18,14 +18,14 @@ func TestPathMatcher_FalsePositive(t *testing.T) {
 	h1 := routeToPseudoFNV(route1)
 	matcher.table[h1] = PathEntry{
 		Path: route1,
-		Fare:  passdomain.PassPrice{OneMonth: 100},
+		Fare: passdomain.PassPrice{OneMonth: 100},
 	}
 
 	// route2 のハッシュ値で検索したときに、偶然 route1 のデータが登録されている状態をシミュレート
 	h2 := routeToPseudoFNV(route2)
 	matcher.table[h2] = PathEntry{
 		Path: route1, // route2のハッシュバケットにroute1のデータが存在
-		Fare:  passdomain.PassPrice{OneMonth: 100},
+		Fare: passdomain.PassPrice{OneMonth: 100},
 	}
 
 	// route2 を検索。ハッシュ(h2)は見つかるが、内部のRouteはroute1なので false が返るべき

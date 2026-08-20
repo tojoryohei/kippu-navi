@@ -7,7 +7,7 @@ import (
 
 var (
 	ErrInvalidLineType = errors.New("不正なLineTypeです")
-	ErrOutOfRange       = errors.New("距離が範囲外です")
+	ErrOutOfRange      = errors.New("距離が範囲外です")
 )
 
 func calculateSplitKiloOfTrunk(totalKilo int) (int, error) {

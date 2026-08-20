@@ -11,7 +11,6 @@ import (
 
 type rawSpecialZone struct {
 	Name                string   `json:"name"`
-	CenterStation       string   `json:"centerStation"`
 	MinDistanceDeciKilo int      `json:"minDistanceDeciKilo"`
 	MaxDistanceDeciKilo int      `json:"maxDistanceDeciKilo"`
 	Stations            []string `json:"stations"`
@@ -19,7 +18,7 @@ type rawSpecialZone struct {
 
 // SpecialZoneRegistry は駅名から所属する特例ゾーンを高速に引くためのレジストリです。
 type SpecialZoneRegistry struct {
-	Zones           []ticketdomain.SpecialZone
+	Zones          []ticketdomain.SpecialZone
 	StationToZones map[string][]ticketdomain.SpecialZone
 }
 
@@ -37,14 +36,13 @@ func LoadSpecialZones() (*SpecialZoneRegistry, error) {
 	}
 
 	registry := &SpecialZoneRegistry{
-		Zones:           make([]ticketdomain.SpecialZone, 0, len(rawZones)),
+		Zones:          make([]ticketdomain.SpecialZone, 0, len(rawZones)),
 		StationToZones: make(map[string][]ticketdomain.SpecialZone),
 	}
 
 	for _, rz := range rawZones {
 		zone := ticketdomain.SpecialZone{
 			Name:                rz.Name,
-			CenterStation:       rz.CenterStation,
 			MinDistanceDeciKilo: domain.DeciKilo(rz.MinDistanceDeciKilo),
 			MaxDistanceDeciKilo: domain.DeciKilo(rz.MaxDistanceDeciKilo),
 			Stations:            rz.Stations,

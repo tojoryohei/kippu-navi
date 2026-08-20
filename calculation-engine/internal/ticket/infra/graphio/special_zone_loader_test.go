@@ -14,14 +14,12 @@ func TestSpecialZoneRegistry(t *testing.T) {
 			Zones: []ticketdomain.SpecialZone{
 				{
 					Name:                "東京都区内",
-					CenterStation:       "東京",
 					MinDistanceDeciKilo: 2000,
 					MaxDistanceDeciKilo: 99999,
 					Stations:            []string{"東京", "品川", "新宿", "池袋"},
 				},
 				{
 					Name:                "東京山手線内",
-					CenterStation:       "東京",
 					MinDistanceDeciKilo: 1000,
 					MaxDistanceDeciKilo: 2000,
 					Stations:            []string{"東京", "品川", "新宿"},

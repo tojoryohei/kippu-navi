@@ -2,9 +2,9 @@ package usecase
 
 import (
 	"calculation-engine/internal/domain"
-	"calculation-engine/internal/ticket/graph"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/fare"
+	"calculation-engine/internal/ticket/graph"
 	"fmt"
 )
 
@@ -18,28 +18,30 @@ func (c *CalculationResult) TotalAmount() int {
 	return c.Fare + c.BarrierFreeFee
 }
 
-
 type CalculateAmount struct {
-	reg                      *fare.Registry
-	trainSpecificCalc        *fare.TrainSpecificSectionCalculator
+	reg                     *fare.Registry
+	addonReg                *fare.AddonRegistry
+	trainSpecificCalc       *fare.TrainSpecificSectionCalculator
 	specificFarePathMatcher *fare.PathMatcher
 	adjustedFarePathMatcher *fare.PathMatcher
-	graph                    graph.Graph
+	graph                   graph.Graph
 }
 
 func NewCalculateAmount(
 	reg *fare.Registry,
+	addonReg *fare.AddonRegistry,
 	trainSpecificCalc *fare.TrainSpecificSectionCalculator,
 	specificFarePathMatcher *fare.PathMatcher,
 	adjustedFarePathMatcher *fare.PathMatcher,
 	g graph.Graph,
 ) *CalculateAmount {
 	return &CalculateAmount{
-		reg:                      reg,
-		trainSpecificCalc:        trainSpecificCalc,
+		reg:                     reg,
+		addonReg:                addonReg,
+		trainSpecificCalc:       trainSpecificCalc,
 		specificFarePathMatcher: specificFarePathMatcher,
 		adjustedFarePathMatcher: adjustedFarePathMatcher,
-		graph:                    g,
+		graph:                   g,
 	}
 }
 
@@ -134,72 +136,70 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 	// 調整運賃チェック
 	if u.adjustedFarePathMatcher != nil {
 		if f, ok := u.adjustedFarePathMatcher.Search(path); ok {
-			return &CalculationResult{
-				Fare:           f,
-				BarrierFreeFee: barrierFreeFee,
-				TotalEigyoKilo: summary.totalEigyo,
-			}, nil
+			totalFare = f
 		}
 	}
 
 	// 特定運賃チェック
-	if u.specificFarePathMatcher != nil {
+	if totalFare == 0 && u.specificFarePathMatcher != nil {
 		if f, ok := u.specificFarePathMatcher.Search(path); ok {
-			return &CalculationResult{
-				Fare:           f,
-				BarrierFreeFee: barrierFreeFee,
-				TotalEigyoKilo: summary.totalEigyo,
-			}, nil
+			totalFare = f
 		}
 	}
 
-	// 電車特定区間
-	isTrainSpecific := fare.IsAllTrainSpecificApplicable(summary.edges)
-	if isTrainSpecific {
-		params := ticketdomain.TicketFareParams{
-			LineType: domain.LineTypeTrunkOnly, // ドメインルール: 電車特定区間は幹線のみ
-			EigyoKilo: summary.totalEigyo,
-			GiseiKilo: summary.totalGisei,
+	if totalFare == 0 {
+		// 電車特定区間
+		isTrainSpecific := fare.IsAllTrainSpecificApplicable(summary.edges)
+		if isTrainSpecific {
+			params := ticketdomain.TicketFareParams{
+				LineType:  domain.LineTypeTrunkOnly, // ドメインルール: 電車特定区間は幹線のみ
+				EigyoKilo: summary.totalEigyo,
+				GiseiKilo: summary.totalGisei,
+			}
+			f, err := u.trainSpecificCalc.Calculate(params)
+			if err != nil {
+				return nil, fmt.Errorf("電車特定区間の運賃計算に失敗しました: %w", err)
+			}
+			totalFare = f
+		} else {
+			// 基本運賃 (複数会社を跨ぐ場合も含む)
+			totalLineType, err := domain.DetermineLineType(summary.hasTrunk, summary.hasLocal)
+			if err != nil {
+				return nil, fmt.Errorf("CalculateAmount: 全区間のルート種別判定に失敗しました: %w", err)
+			}
+
+			components := make([]fare.JointFareComponent, 0, domain.CompanyCount)
+			for i := 0; i < int(domain.CompanyCount); i++ {
+				if !summary.statsByCompany[i].used {
+					continue
+				}
+				compLineType, err := domain.DetermineLineType(summary.statsByCompany[i].hasTrunk, summary.statsByCompany[i].hasLocal)
+				if err != nil {
+					return nil, fmt.Errorf("CalculateAmount: 会社 %d のルート種別判定に失敗しました: %w", i, err)
+				}
+				components = append(components, fare.JointFareComponent{
+					CompanyID: domain.CompanyID(i),
+					LineType:  compLineType,
+					EigyoKilo: summary.statsByCompany[i].eigyo,
+					GiseiKilo: summary.statsByCompany[i].gisei,
+				})
+			}
+
+			fareVal, err := fare.CalculateJointFare(u.reg, summary.totalEigyo, summary.totalGisei, totalLineType, components)
+			if err != nil {
+				return nil, fmt.Errorf("運賃の計算に失敗しました: %w", err)
+			}
+			totalFare = fareVal
 		}
-		fare, err := u.trainSpecificCalc.Calculate(params)
-		if err != nil {
-			return nil, fmt.Errorf("電車特定区間の運賃計算に失敗しました: %w", err)
-		}
-		return &CalculationResult{
-			Fare:           fare,
-			BarrierFreeFee: barrierFreeFee,
-			TotalEigyoKilo: summary.totalEigyo,
-		}, nil
 	}
 
-	// 基本運賃 (複数会社を跨ぐ場合も含む)
-	totalLineType, err := domain.DetermineLineType(summary.hasTrunk, summary.hasLocal)
-	if err != nil {
-		return nil, fmt.Errorf("CalculateAmount: 全区間のルート種別判定に失敗しました: %w", err)
-	}
-
-	components := make([]fare.JointFareComponent, 0, domain.CompanyCount)
-	for i := 0; i < int(domain.CompanyCount); i++ {
-		if !summary.statsByCompany[i].used {
-			continue
+	// 加算運賃の適用
+	if u.addonReg != nil {
+		addons := u.addonReg.GetApplicableAddons(path)
+		for _, a := range addons {
+			totalFare += a
 		}
-		compLineType, err := domain.DetermineLineType(summary.statsByCompany[i].hasTrunk, summary.statsByCompany[i].hasLocal)
-		if err != nil {
-			return nil, fmt.Errorf("CalculateAmount: 会社 %d のルート種別判定に失敗しました: %w", i, err)
-		}
-		components = append(components, fare.JointFareComponent{
-			CompanyID: domain.CompanyID(i),
-			LineType: compLineType,
-			EigyoKilo: summary.statsByCompany[i].eigyo,
-			GiseiKilo: summary.statsByCompany[i].gisei,
-		})
 	}
-
-	fareVal, err := fare.CalculateJointFare(u.reg, summary.totalEigyo, summary.totalGisei, totalLineType, components)
-	if err != nil {
-		return nil, fmt.Errorf("運賃の計算に失敗しました: %w", err)
-	}
-	totalFare += fareVal
 
 	return &CalculationResult{
 		Fare:           totalFare,

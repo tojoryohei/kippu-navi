@@ -27,19 +27,19 @@ func TestCalculateJointFare(t *testing.T) {
 	eastCalc, _ := reg.Get(domain.JREast)
 
 	tests := []struct {
-		name           string
-		totalEigyo     domain.DeciKilo
-		totalGisei     domain.DeciKilo
+		name          string
+		totalEigyo    domain.DeciKilo
+		totalGisei    domain.DeciKilo
 		totalLineType domain.LineType
-		components     []fare.JointFareComponent
-		months         int
-		want           int
-		wantErr        bool
+		components    []fare.JointFareComponent
+		months        int
+		want          int
+		wantErr       bool
 	}{
 		{
-			name:           "単一会社（JR東海）のみの場合",
-			totalEigyo:     100, // 10km
-			totalGisei:     100,
+			name:          "単一会社（JR東海）のみの場合",
+			totalEigyo:    100, // 10km
+			totalGisei:    100,
 			totalLineType: domain.LineTypeTrunkOnly,
 			components: []fare.JointFareComponent{
 				{CompanyID: domain.JRCentral, LineType: domain.LineTypeTrunkOnly, EigyoKilo: 100, GiseiKilo: 100},
@@ -52,9 +52,9 @@ func TestCalculateJointFare(t *testing.T) {
 			}(),
 		},
 		{
-			name:           "複数会社（東日本 + 東海）の合算計算（6ヶ月運賃）",
-			totalEigyo:     368, // 合計 37km
-			totalGisei:     368,
+			name:          "複数会社（東日本 + 東海）の合算計算（6ヶ月運賃）",
+			totalEigyo:    368, // 合計 37km
+			totalGisei:    368,
 			totalLineType: domain.LineTypeTrunkOnly,
 			components: []fare.JointFareComponent{
 				{CompanyID: domain.JREast, LineType: domain.LineTypeTrunkOnly, EigyoKilo: 207, GiseiKilo: 207},
@@ -70,9 +70,9 @@ func TestCalculateJointFare(t *testing.T) {
 			}(),
 		},
 		{
-			name:           "3社跨ぎ（西日本 + 東日本 + 東海）の複雑な合算",
-			totalEigyo:     916, // 合計 92km
-			totalGisei:     990, // 合計 99km
+			name:          "3社跨ぎ（西日本 + 東日本 + 東海）の複雑な合算",
+			totalEigyo:    916, // 合計 92km
+			totalGisei:    990, // 合計 99km
 			totalLineType: domain.LineTypeMixed,
 			components: []fare.JointFareComponent{
 				{CompanyID: domain.JRWest, LineType: domain.LineTypeLocalOnly, EigyoKilo: 40, GiseiKilo: 44},
@@ -89,9 +89,9 @@ func TestCalculateJointFare(t *testing.T) {
 			}(),
 		},
 		{
-			name:           "異常系: レジストリに存在しない会社ID",
-			totalEigyo:     100,
-			totalGisei:     100,
+			name:          "異常系: レジストリに存在しない会社ID",
+			totalEigyo:    100,
+			totalGisei:    100,
 			totalLineType: domain.LineTypeTrunkOnly,
 			components: []fare.JointFareComponent{
 				{CompanyID: domain.CompanyID(99), LineType: domain.LineTypeTrunkOnly, EigyoKilo: 100, GiseiKilo: 100},

@@ -30,62 +30,90 @@ type rawTicketEdge struct {
 // 各リーダーは rawTicketEdge の配列を含んでいる必要があります。
 // データが空またはエッジが0件の場合はエラーを返します。
 func (l *JSONLoader) Load(readers ...io.Reader) (*graph.RailwayGraph, error) {
-	var allEdges []rawTicketEdge
+	_, full, err := l.LoadSeparatedGraphs(readers, nil)
+	return full, err
+}
 
-	for i, r := range readers {
+// LoadSeparatedGraphs は物理経路用と全エッジ用（特例エッジ含む）の2つのグラフを構築し返します。
+func (l *JSONLoader) LoadSeparatedGraphs(physicalReaders []io.Reader, virtualReaders []io.Reader) (physicalGraph, fullGraph *graph.RailwayGraph, err error) {
+	var physicalEdges []rawTicketEdge
+	var virtualEdges []rawTicketEdge
+
+	for i, r := range physicalReaders {
 		var edges []rawTicketEdge
 		decoder := json.NewDecoder(r)
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&edges); err != nil {
-			return nil, fmt.Errorf("graphio: JSONのデコードに失敗しました (reader index %d): %w", i, err)
+			return nil, nil, fmt.Errorf("graphio: physical JSONのデコードに失敗しました (reader index %d): %w", i, err)
 		}
-
-		if _, err := decoder.Token(); err != io.EOF {
-			return nil, fmt.Errorf("graphio: JSONデータの末尾に予期せぬデータが含まれています (reader index %d)", i)
-		}
-		
-		allEdges = append(allEdges, edges...)
+		physicalEdges = append(physicalEdges, edges...)
 	}
 
-	if len(allEdges) == 0 {
-		return nil, fmt.Errorf("graphio: %w", domain.ErrEmptyGraph)
+	for i, r := range virtualReaders {
+		var edges []rawTicketEdge
+		decoder := json.NewDecoder(r)
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&edges); err != nil {
+			return nil, nil, fmt.Errorf("graphio: virtual JSONのデコードに失敗しました (reader index %d): %w", i, err)
+		}
+		virtualEdges = append(virtualEdges, edges...)
 	}
 
-	g := graph.NewGraph(len(allEdges) * 2)
+	if len(physicalEdges) == 0 && len(virtualEdges) == 0 {
+		return nil, nil, fmt.Errorf("graphio: %w", domain.ErrEmptyGraph)
+	}
 
-	for _, re := range allEdges {
+	capacity := (len(physicalEdges) + len(virtualEdges)) * 2
+	mapper := &graph.StationNameIDMapper{
+		NameToID: make(map[string]int, capacity),
+		IDToName: make([]string, 0, capacity),
+	}
+
+	physicalGraph = graph.NewGraphWithMapper(capacity, mapper)
+	fullGraph = graph.NewGraphWithMapper(capacity, mapper)
+
+	addEdgeToGraph := func(g *graph.RailwayGraph, re rawTicketEdge) {
 		id0 := g.GetOrAddID(re.Station0)
 		id1 := g.GetOrAddID(re.Station1)
 
+		edgeData := domain.Edge{
+			FromID:                 id0,
+			ToID:                   id1,
+			EigyoKilo:              re.EigyoKilo,
+			GiseiKilo:              re.GiseiKilo,
+			IsLocal:                re.IsLocal,
+			Company:                re.Company,
+			IsTrainSpecificSection: re.IsTrainSpecificSection,
+			IsBarrierFreeSection:   re.IsBarrierFreeSection,
+		}
+
 		g.AddEdge(ticketdomain.TicketEdge{
-			Edge: domain.Edge{
-				FromID:                 id0,
-				ToID:                   id1,
-				EigyoKilo:              re.EigyoKilo,
-				GiseiKilo:              re.GiseiKilo,
-				IsLocal:                re.IsLocal,
-				Company:                re.Company,
-				IsTrainSpecificSection: re.IsTrainSpecificSection,
-				IsBarrierFreeSection:   re.IsBarrierFreeSection,
-			},
+			Edge:           edgeData,
 			Line:           re.Line,
 			IsBoldLineArea: re.IsBoldLineArea,
 		})
+
+		edgeDataRev := edgeData
+		edgeDataRev.FromID = id1
+		edgeDataRev.ToID = id0
+
 		g.AddEdge(ticketdomain.TicketEdge{
-			Edge: domain.Edge{
-				FromID:                 id1,
-				ToID:                   id0,
-				EigyoKilo:              re.EigyoKilo,
-				GiseiKilo:              re.GiseiKilo,
-				IsLocal:                re.IsLocal,
-				Company:                re.Company,
-				IsTrainSpecificSection: re.IsTrainSpecificSection,
-				IsBarrierFreeSection:   re.IsBarrierFreeSection,
-			},
+			Edge:           edgeDataRev,
 			Line:           re.Line,
 			IsBoldLineArea: re.IsBoldLineArea,
 		})
 	}
 
-	return g, nil
+	// 物理エッジは両方のグラフに追加
+	for _, re := range physicalEdges {
+		addEdgeToGraph(physicalGraph, re)
+		addEdgeToGraph(fullGraph, re)
+	}
+
+	// 仮想エッジはフルグラフのみに追加
+	for _, re := range virtualEdges {
+		addEdgeToGraph(fullGraph, re)
+	}
+
+	return physicalGraph, fullGraph, nil
 }

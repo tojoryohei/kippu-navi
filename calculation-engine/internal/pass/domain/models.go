@@ -30,12 +30,12 @@ func (f PassPrice) GetByMonths(months int) (int, error) {
 // PathAndFare は経路完全一致で適用される特定区間運賃や調整区間運賃を保持します。
 type PathAndFare struct {
 	Path []string
-	Fare  PassPrice
+	Fare PassPrice
 }
 
 // PassFareParams は定期運賃計算の入力パラメータです。
 type PassFareParams struct {
-	LineType basedomain.LineType
+	LineType  basedomain.LineType
 	EigyoKilo basedomain.DeciKilo
 	GiseiKilo basedomain.DeciKilo
 	Months    int

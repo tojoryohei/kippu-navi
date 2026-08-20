@@ -19,6 +19,7 @@ import (
 	"calculation-engine/internal/pass/infra/graphio"
 	"calculation-engine/internal/pass/optimizer"
 	"calculation-engine/internal/pass/usecase"
+	ticketfare "calculation-engine/internal/ticket/fare"
 )
 
 const (
@@ -47,58 +48,76 @@ func run() error {
 		return fmt.Errorf("JSONの読み込みに失敗しました: %w", loadErr)
 	}
 
-	// 運賃計算レジストリの初期化
-	calcs, err := fareio.InitRegistry(g)
+	// 乗車券の特定区間加算運賃の設定
+	ticketAddonFareReg := ticketfare.NewAddonRegistry()
+	ticketAddonFareReg.Register("南千歳", "新千歳空港", 20)
+	ticketAddonFareReg.Register("日根野", "りんくうタウン", 150)
+	ticketAddonFareReg.Register("りんくうタウン", "関西空港", 170)
+	ticketAddonFareReg.Register("日根野", "関西空港", 220)
+	ticketAddonFareReg.Register("児島", "宇多津", 110)
+	ticketAddonFareReg.Register("田吉", "宮崎空港", 130)
+
+	if err := ticketAddonFareReg.ResolveIDs(func(name string) (int, bool) {
+		return g.GetID(name)
+	}); err != nil {
+		return fmt.Errorf("乗車券の加算運賃ID解決に失敗しました: %w", err)
+	}
+
+	// TODO: ticketAddonFareReg は乗車券用のユースケース初期化時に DI します
+	_ = ticketAddonFareReg
+
+	// 定期券の運賃計算レジストリの初期化
+	passCalcs, err := fareio.InitRegistry(g)
 	if err != nil {
 		return fmt.Errorf("運賃計算機の初期化に失敗しました: %w", err)
 	}
 
-	// 特定区間加算運賃の設定
-	addonFareReg := passdomain.NewAddonRegistry()
-	addonFareReg.Register("南千歳", "新千歳空港", passdomain.PassPrice{OneMonth: 660, ThreeMonth: 1880, SixMonth: 3180})
-	addonFareReg.Register("日根野", "りんくうタウン", passdomain.PassPrice{OneMonth: 4690, ThreeMonth: 13320, SixMonth: 22440})
-	addonFareReg.Register("日根野", "関西空港", passdomain.PassPrice{OneMonth: 6640, ThreeMonth: 18900, SixMonth: 31820})
-	addonFareReg.Register("りんくうタウン", "関西空港", passdomain.PassPrice{OneMonth: 5010, ThreeMonth: 14250, SixMonth: 24000})
-	addonFareReg.Register("児島", "宇多津", passdomain.PassPrice{OneMonth: 1610, ThreeMonth: 4600, SixMonth: 8170})
-	addonFareReg.Register("田吉", "宮崎空港", passdomain.PassPrice{OneMonth: 3840, ThreeMonth: 10960, SixMonth: 18680})
+	// 定期券の特定区間加算運賃の設定
+	passAddonFareReg := passdomain.NewAddonRegistry()
+	passAddonFareReg.Register("南千歳", "新千歳空港", passdomain.PassPrice{OneMonth: 660, ThreeMonth: 1880, SixMonth: 3180})
+	passAddonFareReg.Register("日根野", "りんくうタウン", passdomain.PassPrice{OneMonth: 4690, ThreeMonth: 13320, SixMonth: 22440})
+	passAddonFareReg.Register("日根野", "関西空港", passdomain.PassPrice{OneMonth: 6640, ThreeMonth: 18900, SixMonth: 31820})
+	passAddonFareReg.Register("りんくうタウン", "関西空港", passdomain.PassPrice{OneMonth: 5010, ThreeMonth: 14250, SixMonth: 24000})
+	passAddonFareReg.Register("児島", "宇多津", passdomain.PassPrice{OneMonth: 1610, ThreeMonth: 4600, SixMonth: 8170})
+	passAddonFareReg.Register("田吉", "宮崎空港", passdomain.PassPrice{OneMonth: 3840, ThreeMonth: 10960, SixMonth: 18680})
 
 	// IDを解決
-	if err := addonFareReg.ResolveIDs(func(name string) (int, bool) {
+	if err := passAddonFareReg.ResolveIDs(func(name string) (int, bool) {
 		return g.GetID(name)
 	}); err != nil {
 		return fmt.Errorf("加算運賃のID解決に失敗しました: %w", err)
 	}
 
 	// 特急料金の設定
-	addonChargeReg := passdomain.NewAddonRegistry()
-	addonChargeReg.Register("博多", "博多南", passdomain.PassPrice{OneMonth: 4680, ThreeMonth: 13340, SixMonth: 25270})
+	passAddonChargeReg := passdomain.NewAddonRegistry()
+	passAddonChargeReg.Register("博多", "博多南", passdomain.PassPrice{OneMonth: 4680, ThreeMonth: 13340, SixMonth: 25270})
 
 	// IDを解決
-	if err := addonChargeReg.ResolveIDs(func(name string) (int, bool) {
+	if err := passAddonChargeReg.ResolveIDs(func(name string) (int, bool) {
 		return g.GetID(name)
 	}); err != nil {
 		return fmt.Errorf("特急料金のID解決に失敗しました: %w", err)
 	}
 
 	// 旅客営業規則 第69条 特例区間の設定
-	bypassReg := passdomain.NewBypassRegistry()
+	passBypassReg := passdomain.NewBypassRegistry()
 	// (1) 大沼以遠の各駅と、森以遠の各駅との相互間
-	bypassReg.Register(
+	passBypassReg.Register(
 		[]string{"大沼", "大沼公園", "赤井川", "駒ケ岳", "森"},
 		[]string{"大沼", "鹿部", "渡島沼尻", "渡島砂原", "掛澗", "尾白内", "東森", "森"},
 	)
 	// (2) 日暮里以遠の各駅と、赤羽以遠の各駅との相互間
-	bypassReg.Register(
+	passBypassReg.Register(
 		[]string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"},
 		[]string{"日暮里", "尾久", "赤羽"},
 	)
 	// (3) 赤羽以遠の各駅と、大宮以遠の各駅との相互間
-	bypassReg.Register(
+	passBypassReg.Register(
 		[]string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"},
 		[]string{"赤羽", "北赤羽", "浮間舟渡", "戸田公園", "（北）戸田", "北戸田", "武蔵浦和", "中浦和", "南与野", "与野本町", "北与野", "大宮"},
 	)
 	// (4) 品川以遠の各駅と、鶴見以遠の各駅との相互間
-	bypassReg.Register(
+	passBypassReg.Register(
 		[]string{"品川", "大井町", "大森", "蒲田", "川崎", "鶴見"},
 		[]string{"品川", "西大井", "武蔵小杉", "新川崎", "鶴見"},
 	)
@@ -106,25 +125,25 @@ func run() error {
 	// 旅客営業規則上は補正する必要がありますが、営業キロが等しく実際の定期券でも補正が行われていないため、特例区間として定義しません。
 
 	// IDを解決
-	bypassRules, err := bypassReg.ResolveIDs(func(name string) (int, bool) {
+	passBypassRules, err := passBypassReg.ResolveIDs(func(name string) (int, bool) {
 		return g.GetID(name)
 	})
 	if err != nil {
 		return fmt.Errorf("特例ルールのID解決に失敗しました: %w", err)
 	}
 
-	amountCalc := usecase.NewCalculateAmount(
+	passAmountCalc := usecase.NewCalculateAmount(
 		g,
-		calcs.Registry,
-		addonFareReg,
-		addonChargeReg,
-		calcs.TrainSpecific,
-		calcs.SpecificRoute,
-		calcs.AdjustedRoute,
+		passCalcs.Registry,
+		passAddonFareReg,
+		passAddonChargeReg,
+		passCalcs.TrainSpecific,
+		passCalcs.SpecificRoute,
+		passCalcs.AdjustedRoute,
 	)
 
-	opt := optimizer.NewDPOptimizer(amountCalc)
-	splitUseCase := usecase.NewFindOptimalSplit(opt, amountCalc)
+	passOpt := optimizer.NewDPOptimizer(passAmountCalc)
+	passSplitUseCase := usecase.NewFindOptimalSplit(passOpt, passAmountCalc)
 
 	// 事前計算された運賃および経路データのロード
 	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := data.LoadPrecomputedFares("./internal/pass/graph/data/precomputed_server.bin")
@@ -139,7 +158,7 @@ func run() error {
 	g.DistGisei = baseDistGisei
 
 	// 磁気定期券用: 区間数無制限 (0)
-	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules, 0, baseFares, numStations)
+	passSearchUseCase := usecase.NewSearchOptimalSplit(g, passSplitUseCase, passBypassRules, 0, baseFares, numStations)
 
 	// IC分割乗車券用
 	icGraph, err := graph.NewIcPassGraph(g)
@@ -148,15 +167,15 @@ func run() error {
 	}
 	icGraph.DistGisei = icDistGisei
 
-	icSearchUseCase := usecase.NewSearchOptimalSplit(icGraph, splitUseCase, bypassRules, 2, icFares, numStations)
+	icPassSearchUseCase := usecase.NewSearchOptimalSplit(icGraph, passSplitUseCase, passBypassRules, 2, icFares, numStations)
 
 	// ルーティング
 	mux := http.NewServeMux()
-	splitHandler := handler.NewSplit(g, searchUseCase)
-	mux.HandleFunc("/api/split-pass", splitHandler.HandleCalculate)
+	passSplitHandler := handler.NewSplit(g, passSearchUseCase)
+	mux.HandleFunc("/api/split-pass", passSplitHandler.HandleCalculate)
 
-	icSplitHandler := handler.NewSplit(icGraph, icSearchUseCase)
-	mux.HandleFunc("/api/split-icpass", icSplitHandler.HandleCalculate)
+	icPassSplitHandler := handler.NewSplit(icGraph, icPassSearchUseCase)
+	mux.HandleFunc("/api/split-icpass", icPassSplitHandler.HandleCalculate)
 
 	server := &http.Server{
 		Addr:         listenAddr,

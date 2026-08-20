@@ -11,11 +11,11 @@ import (
 // CalculateAmount は経路から定期運賃を計算するユースケースです。
 // グラフ、運賃レジストリ、特定区間加算運賃レジストリを協調させます。
 type CalculateAmount struct {
-	graph                    graph.TopologyProvider
-	reg                      *fare.Registry
-	addonFareReg             *passdomain.AddonRegistry
-	addonChargeReg           *passdomain.AddonRegistry
-	trainSpecificCalc        *fare.TrainSpecificSectionCalculator
+	graph                   graph.TopologyProvider
+	reg                     *fare.Registry
+	addonFareReg            *passdomain.AddonRegistry
+	addonChargeReg          *passdomain.AddonRegistry
+	trainSpecificCalc       *fare.TrainSpecificSectionCalculator
 	specificFarePathMatcher *fare.PathMatcher
 	adjustedFarePathMatcher *fare.PathMatcher
 }
@@ -31,11 +31,11 @@ func NewCalculateAmount(
 	adjustedFarePathMatcher *fare.PathMatcher,
 ) *CalculateAmount {
 	return &CalculateAmount{
-		graph:                    g,
-		reg:                      reg,
-		addonFareReg:             addonFareReg,
-		addonChargeReg:           addonChargeReg,
-		trainSpecificCalc:        trainSpecificCalc,
+		graph:                   g,
+		reg:                     reg,
+		addonFareReg:            addonFareReg,
+		addonChargeReg:          addonChargeReg,
+		trainSpecificCalc:       trainSpecificCalc,
 		specificFarePathMatcher: specificFarePathMatcher,
 		adjustedFarePathMatcher: adjustedFarePathMatcher,
 	}
@@ -197,7 +197,7 @@ func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, e
 	isTrainSpecific := fare.IsAllTrainSpecificApplicable(summary.edges)
 	if isTrainSpecific {
 		params := passdomain.PassFareParams{
-			LineType: domain.LineTypeTrunkOnly, // ドメインルール: 電車特定区間は幹線のみ
+			LineType:  domain.LineTypeTrunkOnly, // ドメインルール: 電車特定区間は幹線のみ
 			EigyoKilo: summary.totalEigyo,
 			GiseiKilo: summary.totalGisei,
 			Months:    months,
@@ -234,7 +234,7 @@ func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, e
 		}
 		components = append(components, fare.JointFareComponent{
 			CompanyID: domain.CompanyID(i),
-			LineType: compLineType,
+			LineType:  compLineType,
 			EigyoKilo: summary.statsByCompany[i].eigyo,
 			GiseiKilo: summary.statsByCompany[i].gisei,
 		})

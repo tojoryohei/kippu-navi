@@ -24,7 +24,7 @@ func TestLoadPathAndFare(t *testing.T) {
 			wantFares: []ticketdomain.PathAndFare{
 				{
 					Path: []string{"東京", "神田"},
-					Fare:  150,
+					Fare: 150,
 				},
 			},
 			wantErr: false,

@@ -11,7 +11,7 @@ import (
 
 type rawPathAndFare struct {
 	Path []string `json:"path"`
-	Fare  int      `json:"fare"`
+	Fare int      `json:"fare"`
 }
 
 // loadPathAndFare は JSON データを読み込み、特定運賃区間や調整運賃区間の配列を返します。
@@ -19,7 +19,7 @@ func loadPathAndFare(data []byte) ([]ticketdomain.PathAndFare, error) {
 	var rawData []rawPathAndFare
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
-	
+
 	if err := decoder.Decode(&rawData); err != nil {
 		return nil, fmt.Errorf("fareio: JSONのデコードに失敗しました: %w", err)
 	}
@@ -36,7 +36,7 @@ func loadPathAndFare(data []byte) ([]ticketdomain.PathAndFare, error) {
 
 		result = append(result, ticketdomain.PathAndFare{
 			Path: raw.Path,
-			Fare:  raw.Fare,
+			Fare: raw.Fare,
 		})
 	}
 

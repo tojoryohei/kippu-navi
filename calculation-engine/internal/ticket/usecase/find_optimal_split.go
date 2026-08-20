@@ -93,6 +93,15 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 		}
 	}
 
+	// 第88条の特例（大阪・新大阪と姫路以遠）の適用を試行
+	// 特定都区市内（大阪市内等）が適用されなかった場合（または距離閾値に満たなかった場合）に評価する
+	if osakaInfo, ok := ApplyOsakaShinOsakaException(path, e.graph); ok {
+		res, err := e.calc.Execute(osakaInfo.TransformedPath)
+		if err == nil {
+			return res, nil
+		}
+	}
+
 	// すべての特例適用が失敗（または閾値未達）だった場合は、特例を適用せずに元の物理経路にロールバックして運賃計算
 	return e.calc.Execute(path)
 }

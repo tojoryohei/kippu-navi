@@ -97,8 +97,8 @@ func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomai
 					lastChange := changingIdx[len(changingIdx)-1]
 
 					var prefix []int
-					// 東京と大阪・新大阪は出口駅を含めない、それ以外は出口駅を含める
-					if destZone.Name == "東京都区内" || destZone.Name == "東京山手線内" || destZone.Name == "大阪・新大阪" {
+					// 東京都区内と東京山手線内は出口駅を含めない、それ以外は出口駅を含める
+					if destZone.Name == "東京都区内" || destZone.Name == "東京山手線内" {
 						prefix = newPath[:lastChange+1]
 					} else {
 						prefix = newPath[:lastChange+2]
@@ -166,8 +166,8 @@ func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomai
 					firstChange := changingIdx[0]
 
 					var suffix []int
-					// 東京と大阪・新大阪は出口駅を含めない、それ以外は出口駅を含める
-					if originZone.Name == "東京都区内" || originZone.Name == "東京山手線内" || originZone.Name == "大阪・新大阪" {
+					// 東京都区内と東京山手線内は出口駅を含めない、それ以外は出口駅を含める
+					if originZone.Name == "東京都区内" || originZone.Name == "東京山手線内" {
 						suffix = newPath[firstChange+1:]
 					} else {
 						suffix = newPath[firstChange:]

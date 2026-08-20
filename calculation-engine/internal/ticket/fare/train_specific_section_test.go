@@ -18,7 +18,7 @@ func TestTrainSpecificSectionCalculator_Calculate(t *testing.T) {
 		{
 			name: "電車特定区間 3km以下",
 			params: ticketdomain.TicketFareParams{
-				LineType: domain.LineTypeTrunkOnly,
+				LineType:  domain.LineTypeTrunkOnly,
 				GiseiKilo: domain.DeciKilo(25), // 2.5km -> 3km
 			},
 			want:    140,
@@ -27,7 +27,7 @@ func TestTrainSpecificSectionCalculator_Calculate(t *testing.T) {
 		{
 			name: "電車特定区間 4〜6km",
 			params: ticketdomain.TicketFareParams{
-				LineType: domain.LineTypeTrunkOnly,
+				LineType:  domain.LineTypeTrunkOnly,
 				GiseiKilo: domain.DeciKilo(55), // 5.5km -> 6km
 			},
 			want:    170,
@@ -36,7 +36,7 @@ func TestTrainSpecificSectionCalculator_Calculate(t *testing.T) {
 		{
 			name: "電車特定区間 7〜10km",
 			params: ticketdomain.TicketFareParams{
-				LineType: domain.LineTypeTrunkOnly,
+				LineType:  domain.LineTypeTrunkOnly,
 				GiseiKilo: domain.DeciKilo(95), // 9.5km -> 10km
 			},
 			want:    190,
@@ -45,7 +45,7 @@ func TestTrainSpecificSectionCalculator_Calculate(t *testing.T) {
 		{
 			name: "電車特定区間 11km〜50km (例: 15km)",
 			params: ticketdomain.TicketFareParams{
-				LineType: domain.LineTypeTrunkOnly,
+				LineType:  domain.LineTypeTrunkOnly,
 				GiseiKilo: domain.DeciKilo(145), // 14.5km -> 15km
 			},
 			want:    230,
@@ -54,7 +54,7 @@ func TestTrainSpecificSectionCalculator_Calculate(t *testing.T) {
 		{
 			name: "電車特定区間 100km超 (例: 101km)",
 			params: ticketdomain.TicketFareParams{
-				LineType: domain.LineTypeTrunkOnly,
+				LineType:  domain.LineTypeTrunkOnly,
 				GiseiKilo: domain.DeciKilo(1005), // 100.5km -> 101km
 			},
 			want:    1870,

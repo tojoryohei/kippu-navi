@@ -54,15 +54,20 @@ type RailwayGraph struct {
 
 // NewGraph は指定された初期容量で新しいグラフを作成します。
 func NewGraph(capacity int) *RailwayGraph {
+	return NewGraphWithMapper(capacity, &StationNameIDMapper{
+		NameToID: make(map[string]int, capacity),
+		IDToName: make([]string, 0, capacity),
+	})
+}
+
+// NewGraphWithMapper は指定されたマッパーを共有する新しいグラフを作成します。
+func NewGraphWithMapper(capacity int, mapper *StationNameIDMapper) *RailwayGraph {
 	return &RailwayGraph{
 		FastGraph: &FastGraph{
 			Edges: make([][]ticketdomain.TicketEdge, 0, capacity),
 		},
-		StationNameIDMapper: &StationNameIDMapper{
-			NameToID: make(map[string]int, capacity),
-			IDToName: make([]string, 0, capacity),
-		},
-		GroupIDs: make([]int, 0, capacity),
+		StationNameIDMapper: mapper,
+		GroupIDs:            make([]int, 0, capacity),
 	}
 }
 
@@ -74,13 +79,15 @@ func (g *RailwayGraph) GetOrAddID(name string) int {
 	id := len(g.IDToName)
 	g.NameToID[name] = id
 	g.IDToName = append(g.IDToName, name)
-	g.Edges = append(g.Edges, nil)
 	return id
 }
 
 // AddEdge はグラフに新しいエッジを追加します。
 func (g *RailwayGraph) AddEdge(edge ticketdomain.TicketEdge) {
 	from := edge.FromID
+	for len(g.Edges) <= from {
+		g.Edges = append(g.Edges, nil)
+	}
 	g.Edges[from] = append(g.Edges[from], edge)
 }
 

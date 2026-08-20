@@ -1,13 +1,15 @@
 package ticket_test
 
 import (
+	"io"
+	"testing"
+
 	"calculation-engine/internal/graphdata"
 	"calculation-engine/internal/ticket/fare"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/fareio"
 	"calculation-engine/internal/ticket/infra/graphio"
 	"calculation-engine/internal/ticket/usecase"
-	"testing"
 )
 
 // setupTicketAmount は乗車券用の運賃計算ユースケースを初期化します
@@ -16,9 +18,9 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 
 	// 1. グラフのロード（edges.json と virtual_edges.json の両方をロード）
 	loader := &graphio.JSONLoader{}
-	g, err := loader.Load(
-		graphdata.GetEdgesReader(),
-		graphdata.GetVirtualEdgesReader(),
+	_, g, err := loader.LoadSeparatedGraphs(
+		[]io.Reader{graphdata.GetEdgesReader()},
+		[]io.Reader{graphdata.GetVirtualEdgesReader()},
 	)
 	if err != nil {
 		t.Fatalf("グラフデータのロードに失敗しました: %v", err)
@@ -59,12 +61,25 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		_ = adjustedMatcher.Insert(ids, f.Fare)
 	}
 
-	// 4. 電車特定区間計算
+	// 4. 加算運賃の登録
+	addonReg := fare.NewAddonRegistry()
+	addonReg.Register("南千歳", "新千歳空港", 20)
+	addonReg.Register("日根野", "りんくうタウン", 150)
+	addonReg.Register("りんくうタウン", "関西空港", 170)
+	addonReg.Register("日根野", "関西空港", 220)
+	addonReg.Register("児島", "宇多津", 110)
+	addonReg.Register("田吉", "宮崎空港", 130)
+	_ = addonReg.ResolveIDs(func(name string) (int, bool) {
+		return g.GetID(name)
+	})
+
+	// 5. 電車特定区間計算
 	trainSpecificCalc := fare.NewTrainSpecificSectionCalculator()
 
-	// 5. CalculateAmount ユースケースの作成
+	// 6. CalculateAmount ユースケースの作成
 	calc := usecase.NewCalculateAmount(
 		reg,
+		addonReg,
 		trainSpecificCalc,
 		specificMatcher,
 		adjustedMatcher,
@@ -119,7 +134,7 @@ func TestTicketAmountCalculation_Integration(t *testing.T) {
 			},
 		},
 		{
-			name: "東京〜西船橋（総武快速・緩行線経由：特定区間運賃の適用検証）",
+			name: "東京〜西船橋（特定区間運賃の適用検証）",
 			path: getIDs("東京", "新日本橋", "馬喰町", "錦糸町", "亀戸", "平井", "新小岩", "小岩", "市川", "本八幡", "下総中山", "西船橋"),
 			want: usecase.CalculationResult{
 				Fare:           350,
@@ -134,6 +149,51 @@ func TestTicketAmountCalculation_Integration(t *testing.T) {
 				Fare:           2090,
 				BarrierFreeFee: 0,
 				TotalEigyoKilo: 1095,
+			},
+		},
+		{
+			name: "南千歳〜新千歳空港（加算運賃の適用）",
+			path: getIDs("南千歳", "新千歳空港"),
+			want: usecase.CalculationResult{
+				Fare:           230, // 基本210 + 加算20
+				BarrierFreeFee: 0,
+				TotalEigyoKilo: 26,
+			},
+		},
+		{
+			name: "日根野〜関西空港（加算運賃の重複適用防止の検証）",
+			path: getIDs("日根野", "りんくうタウン", "関西空港"),
+			want: usecase.CalculationResult{
+				Fare:           450, // 基本230 + 加算220
+				BarrierFreeFee: 10,
+				TotalEigyoKilo: 111,
+			},
+		},
+		{
+			name: "日根野〜りんくうタウン（加算運賃の重複適用防止の検証）",
+			path: getIDs("日根野", "りんくうタウン"),
+			want: usecase.CalculationResult{
+				Fare:           320, // 基本160 + 加算160
+				BarrierFreeFee: 10,
+				TotalEigyoKilo: 42,
+			},
+		},
+		{
+			name: "りんくうタウン〜関西空港（加算運賃の重複適用防止の検証）",
+			path: getIDs("りんくうタウン", "関西空港"),
+			want: usecase.CalculationResult{
+				Fare:           360, // 基本190 + 加算170
+				BarrierFreeFee: 10,
+				TotalEigyoKilo: 69,
+			},
+		},
+		{
+			name: "田吉〜宮崎空港（加算運賃の適用）",
+			path: getIDs("宮崎", "南宮崎", "田吉", "宮崎空港"),
+			want: usecase.CalculationResult{
+				Fare:           400, // 基本270 + 加算130
+				BarrierFreeFee: 0,
+				TotalEigyoKilo: 60,
 			},
 		},
 	}

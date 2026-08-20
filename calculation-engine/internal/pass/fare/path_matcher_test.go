@@ -20,7 +20,7 @@ func TestPathMatcher(t *testing.T) {
 	fares := []passdomain.PathAndFare{
 		{
 			Path: []string{"A", "B", "C"},
-			Fare:  passdomain.PassPrice{OneMonth: 100, ThreeMonth: 285, SixMonth: 540},
+			Fare: passdomain.PassPrice{OneMonth: 100, ThreeMonth: 285, SixMonth: 540},
 		},
 	}
 
@@ -33,7 +33,7 @@ func TestPathMatcher(t *testing.T) {
 		invalidFares := []passdomain.PathAndFare{
 			{
 				Path: []string{"A", "Unknown"},
-				Fare:  passdomain.PassPrice{OneMonth: 100},
+				Fare: passdomain.PassPrice{OneMonth: 100},
 			},
 		}
 		matcher2 := fare.NewPathMatcher()
@@ -45,31 +45,31 @@ func TestPathMatcher(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path    []int
+		path     []int
 		wantHit  bool
 		wantFare int // OneMonth の値で検証
 	}{
 		{
 			name:     "完全一致（順方向）",
-			path:    []int{idA, idB, idC},
+			path:     []int{idA, idB, idC},
 			wantHit:  true,
 			wantFare: 100,
 		},
 		{
 			name:     "完全一致（逆方向）",
-			path:    []int{idC, idB, idA},
+			path:     []int{idC, idB, idA},
 			wantHit:  true,
 			wantFare: 100,
 		},
 		{
 			name:     "一部不一致（短い）",
-			path:    []int{idA, idB},
+			path:     []int{idA, idB},
 			wantHit:  false,
 			wantFare: 0,
 		},
 		{
 			name:     "全く異なる経路",
-			path:    []int{99, 100},
+			path:     []int{99, 100},
 			wantHit:  false,
 			wantFare: 0,
 		},

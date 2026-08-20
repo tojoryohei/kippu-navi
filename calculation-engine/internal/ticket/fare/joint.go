@@ -9,7 +9,7 @@ import (
 // JointFareComponent は各社ごとの乗車統計を保持します
 type JointFareComponent struct {
 	CompanyID domain.CompanyID
-	LineType domain.LineType
+	LineType  domain.LineType
 	EigyoKilo domain.DeciKilo
 	GiseiKilo domain.DeciKilo
 }
@@ -26,7 +26,7 @@ func CalculateJointFare(r *Registry, totalEigyo, totalGisei domain.DeciKilo, tot
 
 	// 1. 基準運賃（全区間 Standard）
 	baseParams := ticketdomain.TicketFareParams{
-		LineType: totalLineType,
+		LineType:  totalLineType,
 		EigyoKilo: totalEigyo,
 		GiseiKilo: totalGisei,
 	}
@@ -48,7 +48,7 @@ func CalculateJointFare(r *Registry, totalEigyo, totalGisei domain.DeciKilo, tot
 		}
 
 		compParams := ticketdomain.TicketFareParams{
-			LineType: comp.LineType,
+			LineType:  comp.LineType,
 			EigyoKilo: comp.EigyoKilo,
 			GiseiKilo: comp.GiseiKilo,
 		}

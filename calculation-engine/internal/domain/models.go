@@ -9,8 +9,8 @@ type LineType int
 
 const (
 	LineTypeTrunkOnly LineType = iota // 幹線のみ
-	LineTypeLocalOnly                  // 地方交通線のみ
-	LineTypeMixed                      // 幹線と地方交通線をまたぐ
+	LineTypeLocalOnly                 // 地方交通線のみ
+	LineTypeMixed                     // 幹線と地方交通線をまたぐ
 )
 
 // DetermineLineType は幹線・地方交通線の有無から LineType を判定します。

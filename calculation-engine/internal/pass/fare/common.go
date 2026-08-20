@@ -9,8 +9,8 @@ import (
 
 var (
 	ErrInvalidLineType = errors.New("不正なLineTypeです")
-	ErrInvalidTable     = errors.New("運賃表が不正です")
-	ErrInvalidKilo      = errors.New("営業キロまたは運賃計算キロが0以下です")
+	ErrInvalidTable    = errors.New("運賃表が不正です")
+	ErrInvalidKilo     = errors.New("営業キロまたは運賃計算キロが0以下です")
 )
 
 // calculateBaseFare は、幹線と地方交通線の運賃表を使い分ける本州・北海道向けの運賃計算ロジックです。

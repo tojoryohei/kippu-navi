@@ -19,7 +19,7 @@ var (
 // PathEntry は特定の経路とそれに紐づく運賃を保持します。
 type PathEntry struct {
 	Path []int
-	Fare  int
+	Fare int
 }
 
 // PathMatcher は経路の完全一致による特定運賃を検索・適用します。
@@ -103,7 +103,7 @@ func (m *PathMatcher) Insert(path []int, fare int) error {
 	}
 	m.table[hash] = PathEntry{
 		Path: routeCopy,
-		Fare:  fare,
+		Fare: fare,
 	}
 
 	// 逆方向の経路も登録
@@ -128,7 +128,7 @@ func (m *PathMatcher) Insert(path []int, fare int) error {
 	}
 	m.table[revHash] = PathEntry{
 		Path: rev,
-		Fare:  fare,
+		Fare: fare,
 	}
 	return nil
 }

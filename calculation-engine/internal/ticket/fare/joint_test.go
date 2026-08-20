@@ -11,18 +11,18 @@ func TestCalculateJointFare(t *testing.T) {
 	r := fare.NewRegistry()
 
 	tests := []struct {
-		name           string
-		totalEigyo     domain.DeciKilo
-		totalGisei     domain.DeciKilo
+		name          string
+		totalEigyo    domain.DeciKilo
+		totalGisei    domain.DeciKilo
 		totalLineType domain.LineType
-		components     []fare.JointFareComponent
-		want           int
-		wantErr        bool
+		components    []fare.JointFareComponent
+		want          int
+		wantErr       bool
 	}{
 		{
-			name:           "本州内（東海・西日本）またがり: 加算なし",
-			totalEigyo:     domain.DeciKilo(505), // 50.5km -> 51km
-			totalGisei:     domain.DeciKilo(505),
+			name:          "本州内（東海・西日本）またがり: 加算なし",
+			totalEigyo:    domain.DeciKilo(505), // 50.5km -> 51km
+			totalGisei:    domain.DeciKilo(505),
 			totalLineType: domain.LineTypeTrunkOnly,
 			components: []fare.JointFareComponent{
 				{CompanyID: domain.JRCentral, LineType: domain.LineTypeTrunkOnly, EigyoKilo: domain.DeciKilo(200), GiseiKilo: domain.DeciKilo(200)},
@@ -32,9 +32,9 @@ func TestCalculateJointFare(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           "東日本またがり（加算あり）",
-			totalEigyo:     domain.DeciKilo(2005), // 200.5km -> 201km
-			totalGisei:     domain.DeciKilo(2005),
+			name:          "東日本またがり（加算あり）",
+			totalEigyo:    domain.DeciKilo(2005), // 200.5km -> 201km
+			totalGisei:    domain.DeciKilo(2005),
 			totalLineType: domain.LineTypeTrunkOnly,
 			components: []fare.JointFareComponent{
 				{CompanyID: domain.JRCentral, LineType: domain.LineTypeTrunkOnly, EigyoKilo: domain.DeciKilo(1000), GiseiKilo: domain.DeciKilo(1000)},
