@@ -1,4 +1,4 @@
-package integration_test
+package ticket_test
 
 import (
 	"calculation-engine/internal/graphdata"
@@ -39,7 +39,6 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		for i, name := range f.Path {
 			id, ok := g.GetID(name)
 			if !ok {
-				// 本番のテストでは無視するかエラーにするが、ここでは無視
 				continue
 			}
 			ids[i] = id

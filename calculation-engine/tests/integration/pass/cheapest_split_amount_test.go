@@ -1,4 +1,4 @@
-package integration_test
+package pass_test
 
 import (
 	"calculation-engine/internal/domain"

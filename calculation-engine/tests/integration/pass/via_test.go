@@ -1,4 +1,4 @@
-package integration
+package pass_test
 
 import (
 	"calculation-engine/internal/pass/graph/data"
