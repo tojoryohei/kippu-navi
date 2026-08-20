@@ -2,27 +2,27 @@ package usecase_test
 
 import (
 	"calculation-engine/internal/domain"
-	passdomain "calculation-engine/internal/pass/domain"
-	"calculation-engine/internal/pass/graph"
+	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/fare"
+	ticketgraph "calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/usecase"
 	"testing"
 )
 
 func TestCalculateAmount_Execute(t *testing.T) {
-	g := graph.NewGraph(20)
+	g := ticketgraph.NewGraph(20)
 
 	id := func(name string) int { return g.GetOrAddID(name) }
 
-	g.AddEdge(passdomain.PassEdge{Edge: domain.Edge{
+	g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{
 		FromID: id("A"), ToID: id("B"),
 		EigyoKilo: 100, GiseiKilo: 100, IsLocal: false, Company: domain.JREast,
 	}})
-	g.AddEdge(passdomain.PassEdge{Edge: domain.Edge{
+	g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{
 		FromID: id("B"), ToID: id("C"),
 		EigyoKilo: 200, GiseiKilo: 200, IsLocal: false, Company: domain.JRCentral,
 	}})
-	g.AddEdge(passdomain.PassEdge{Edge: domain.Edge{
+	g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{
 		FromID: id("X"), ToID: id("Y"),
 		EigyoKilo: 50, GiseiKilo: 50, IsLocal: false, Company: domain.JREast,
 	}})

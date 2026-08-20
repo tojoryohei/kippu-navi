@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"calculation-engine/internal/domain"
-	"calculation-engine/internal/pass/graph"
+	"calculation-engine/internal/ticket/graph"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/fare"
 	"fmt"
@@ -13,6 +13,11 @@ type CalculationResult struct {
 	BarrierFreeFee int
 	TotalEigyoKilo domain.DeciKilo
 }
+
+func (c *CalculationResult) TotalAmount() int {
+	return c.Fare + c.BarrierFreeFee
+}
+
 
 type CalculateAmount struct {
 	reg                      *fare.Registry

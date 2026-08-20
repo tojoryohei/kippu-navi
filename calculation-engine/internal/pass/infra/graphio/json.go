@@ -16,6 +16,7 @@ var ErrEmptyEdges = errors.New("エッジデータが空です")
 type JSONLoader struct{}
 
 type rawEdge struct {
+	Line                   string           `json:"line"`
 	Station0               string           `json:"station0"`
 	Station1               string           `json:"station1"`
 	EigyoKilo              domain.DeciKilo  `json:"eigyoKilo"`
@@ -23,6 +24,7 @@ type rawEdge struct {
 	IsLocal                bool             `json:"isLocal"`
 	Company                domain.CompanyID `json:"company"`
 	IsTrainSpecificSection bool             `json:"isTrainSpecificSection"`
+	IsBoldLineArea         bool             `json:"isBoldLineArea"`
 	IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
 	IsIcPassArea           bool             `json:"isIcPassArea"`
 }

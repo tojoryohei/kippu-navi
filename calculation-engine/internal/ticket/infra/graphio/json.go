@@ -21,8 +21,9 @@ type rawTicketEdge struct {
 	IsLocal                bool             `json:"isLocal"`
 	Company                domain.CompanyID `json:"company"`
 	IsTrainSpecificSection bool             `json:"isTrainSpecificSection"`
-	IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
 	IsBoldLineArea         bool             `json:"isBoldLineArea"`
+	IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
+	IsIcPassArea           bool             `json:"isIcPassArea"`
 }
 
 // Load は JSON データを読み込み、新しい乗車券用 Graph を構築して返します。

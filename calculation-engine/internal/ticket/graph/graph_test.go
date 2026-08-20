@@ -1,20 +1,14 @@
 package graph_test
 
 import (
+	"calculation-engine/internal/graphdata"
 	"calculation-engine/internal/ticket/infra/graphio"
-	"os"
 	"testing"
 )
 
 func TestRailwayGraph_LoadAndFindPath(t *testing.T) {
-	file, err := os.Open("data/edges.json")
-	if err != nil {
-		t.Fatalf("Failed to open edges.json: %v", err)
-	}
-	defer file.Close()
-
 	loader := &graphio.JSONLoader{}
-	g, err := loader.Load(file)
+	g, err := loader.Load(graphdata.GetEdgesReader())
 	if err != nil {
 		t.Fatalf("Failed to load graph: %v", err)
 	}

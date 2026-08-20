@@ -2,18 +2,15 @@ package data
 
 import (
 	"bytes"
-	_ "embed"
+	"calculation-engine/internal/graphdata"
 	"fmt"
 	"os"
 	"unsafe"
 )
 
-//go:embed edges.json
-var edgesJSON []byte
-
 // GetEdgesReader はグラフデータ(edges.json)のReaderを返すゲッターメソッドです。
 func GetEdgesReader() *bytes.Reader {
-	return bytes.NewReader(edgesJSON)
+	return graphdata.GetEdgesReader()
 }
 
 var (
