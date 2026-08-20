@@ -26,27 +26,34 @@ type rawTicketEdge struct {
 	IsIcPassArea           bool             `json:"isIcPassArea"`
 }
 
-// Load は JSON データを読み込み、新しい乗車券用 Graph を構築して返します。
+// Load は複数の JSON データを読み込み、新しい乗車券用 Graph を構築して返します。
+// 各リーダーは rawTicketEdge の配列を含んでいる必要があります。
 // データが空またはエッジが0件の場合はエラーを返します。
-func (l *JSONLoader) Load(r io.Reader) (*graph.RailwayGraph, error) {
-	var edges []rawTicketEdge
-	decoder := json.NewDecoder(r)
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&edges); err != nil {
-		return nil, fmt.Errorf("graphio: JSONのデコードに失敗しました: %w", err)
+func (l *JSONLoader) Load(readers ...io.Reader) (*graph.RailwayGraph, error) {
+	var allEdges []rawTicketEdge
+
+	for i, r := range readers {
+		var edges []rawTicketEdge
+		decoder := json.NewDecoder(r)
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&edges); err != nil {
+			return nil, fmt.Errorf("graphio: JSONのデコードに失敗しました (reader index %d): %w", i, err)
+		}
+
+		if _, err := decoder.Token(); err != io.EOF {
+			return nil, fmt.Errorf("graphio: JSONデータの末尾に予期せぬデータが含まれています (reader index %d)", i)
+		}
+		
+		allEdges = append(allEdges, edges...)
 	}
 
-	if _, err := decoder.Token(); err != io.EOF {
-		return nil, fmt.Errorf("graphio: JSONデータの末尾に予期せぬデータが含まれています")
-	}
-
-	if len(edges) == 0 {
+	if len(allEdges) == 0 {
 		return nil, fmt.Errorf("graphio: %w", domain.ErrEmptyGraph)
 	}
 
-	g := graph.NewGraph(len(edges) * 2)
+	g := graph.NewGraph(len(allEdges) * 2)
 
-	for _, re := range edges {
+	for _, re := range allEdges {
 		id0 := g.GetOrAddID(re.Station0)
 		id1 := g.GetOrAddID(re.Station1)
 
