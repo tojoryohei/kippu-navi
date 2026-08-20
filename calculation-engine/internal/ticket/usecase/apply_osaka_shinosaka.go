@@ -4,6 +4,15 @@ import (
 	"calculation-engine/internal/ticket/graph"
 )
 
+func isHimejiBeyondStation(name string) bool {
+	switch name {
+	case "手柄山平和公園", "京口", "播磨高岡", "相生":
+		return true
+	default:
+		return false
+	}
+}
+
 // ApplyOsakaShinOsakaException は旅客営業規則第88条（大阪・新大阪と姫路以遠間の特例）を適用します。
 // 経路内に「姫路」が含まれており、かつ発着駅が「大阪」または「新大阪」の場合、仮想駅「大阪・新大阪」に置換します。
 func ApplyOsakaShinOsakaException(path []int, g graph.Graph) (*AppliedZoneInfo, bool) {
@@ -11,15 +20,15 @@ func ApplyOsakaShinOsakaException(path []int, g graph.Graph) (*AppliedZoneInfo, 
 		return nil, false
 	}
 
-	himejiFound := false
-	for _, id := range path {
+	himejiIdx := -1
+	for i, id := range path {
 		if g.GetName(id) == "姫路" {
-			himejiFound = true
+			himejiIdx = i
 			break
 		}
 	}
 
-	if !himejiFound {
+	if himejiIdx == -1 {
 		return nil, false
 	}
 
@@ -30,6 +39,30 @@ func ApplyOsakaShinOsakaException(path []int, g graph.Graph) (*AppliedZoneInfo, 
 	destMatch := destName == "大阪" || destName == "新大阪"
 
 	if !originMatch && !destMatch {
+		return nil, false
+	}
+	if originMatch && destMatch {
+		return nil, false
+	}
+
+	validDirection := false
+	if originMatch {
+		if himejiIdx == len(path)-1 {
+			validDirection = true
+		} else {
+			nextName := g.GetName(path[himejiIdx+1])
+			validDirection = isHimejiBeyondStation(nextName)
+		}
+	} else if destMatch {
+		if himejiIdx == 0 {
+			validDirection = true
+		} else {
+			prevName := g.GetName(path[himejiIdx-1])
+			validDirection = isHimejiBeyondStation(prevName)
+		}
+	}
+
+	if !validDirection {
 		return nil, false
 	}
 
