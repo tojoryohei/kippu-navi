@@ -2,15 +2,23 @@ package main
 
 import (
 	"calculation-engine/internal/ticket/infra/graphio"
+	"calculation-engine/internal/graphdata"
 	"fmt"
 	"log"
+	"io"
 )
 
 func main() {
-	g, err := graphio.LoadGraph("internal/graphdata/stations.json", "internal/graphdata/edges.json", "internal/graphdata/virtual_edges.json")
+	loader := &graphio.JSONLoader{}
+	physicalGraph, _, err := loader.LoadSeparatedGraphs(
+		[]io.Reader{graphdata.GetEdgesReader()},
+		[]io.Reader{graphdata.GetVirtualEdgesReader()},
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
+	
+	g := physicalGraph
 	fromID, _ := g.GetID("蒲田")
 	toID, _ := g.GetID("熱海")
 	res, _ := g.FindShortestPathGisei(fromID, toID)
