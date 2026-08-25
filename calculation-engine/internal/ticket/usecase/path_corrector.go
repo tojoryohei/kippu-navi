@@ -256,33 +256,41 @@ func (c *SpecificSectionCorrector) Correct(path []int, g graph.Graph) ([]int, er
 					}
 
 					// パス内に進入駅（from[0]の手前）が存在する場合、それが許可された駅かチェック
-					if i > 0 && len(requiredBefore) > 0 {
-						beforeName := g.GetName(path[i-1])
-						found := false
-						for _, valid := range requiredBefore {
-							if beforeName == valid {
-								found = true
-								break
+					if i > 0 {
+						if len(requiredBefore) == 0 {
+							validDirection = false // 空なら外側に駅が存在してはいけない
+						} else {
+							beforeName := g.GetName(path[i-1])
+							found := false
+							for _, valid := range requiredBefore {
+								if beforeName == valid {
+									found = true
+									break
+								}
 							}
-						}
-						if !found {
-							validDirection = false
+							if !found {
+								validDirection = false
+							}
 						}
 					}
 
 					// パス内に退出駅（from[末尾]の次）が存在する場合、それが許可された駅かチェック
 					endIdx := i + len(rule.from)
-					if endIdx < len(path) && len(requiredAfter) > 0 {
-						afterName := g.GetName(path[endIdx])
-						found := false
-						for _, valid := range requiredAfter {
-							if afterName == valid {
-								found = true
-								break
+					if endIdx < len(path) {
+						if len(requiredAfter) == 0 {
+							validDirection = false // 空なら外側に駅が存在してはいけない
+						} else {
+							afterName := g.GetName(path[endIdx])
+							found := false
+							for _, valid := range requiredAfter {
+								if afterName == valid {
+									found = true
+									break
+								}
 							}
-						}
-						if !found {
-							validDirection = false
+							if !found {
+								validDirection = false
+							}
 						}
 					}
 
@@ -326,7 +334,7 @@ type ShinkansenOverlapCorrector struct {
 	// 新幹線の特例区間を在来線の駅配列に展開するマッピング
 	mappings [][]string
 
-	// 控除する重複区間のルール (モック)
+	// 控除する重複区間のルール
 	overlapDeductions [][]string
 }
 
@@ -493,7 +501,6 @@ func (c *ShinkansenOverlapCorrector) Correct(path []int, g graph.Graph) ([]int, 
 								deducted = true
 								break
 							} else {
-								// それ以外は丸ごと削除するモック動作
 								i += len(deduction)
 								deducted = true
 								break

@@ -71,43 +71,31 @@ func ApplyOsakaShinOsakaException(path []int, g graph.Graph) (*AppliedZoneInfo, 
 		return nil, false
 	}
 
-	newPath := make([]int, 0, len(path))
-
-	firstNonBoundary := 0
-	for i := 0; i < len(path); i++ {
-		name := g.GetName(path[i])
-		if name != "大阪" && name != "新大阪" {
-			firstNonBoundary = i
-			break
-		}
-	}
-
-	lastNonBoundary := len(path) - 1
-	for i := len(path) - 1; i >= 0; i-- {
-		name := g.GetName(path[i])
-		if name != "大阪" && name != "新大阪" {
-			lastNonBoundary = i
-			break
-		}
-	}
-
+	var newPath []int
 	applied := false
 
 	if originMatch {
-		newPath = append(newPath, zoneID)
-		newPath = append(newPath, path[firstNonBoundary:lastNonBoundary+1]...)
+		if g.GetName(path[0]) == "大阪" {
+			newPath = append([]int{zoneID}, path...)
+		} else {
+			// 新大阪の場合
+			if len(path) > 1 && g.GetName(path[1]) == "大阪" {
+				newPath = append([]int{zoneID}, path[1:]...)
+			} else {
+				newPath = append([]int{zoneID}, path...)
+			}
+		}
 		applied = true
 	} else {
-		newPath = append(newPath, path[0:lastNonBoundary+1]...)
-	}
-
-	if destMatch {
-		if !originMatch {
-			// newPath already contains up to lastNonBoundary
-			newPath = append(newPath, zoneID)
+		if g.GetName(path[len(path)-1]) == "大阪" {
+			newPath = append(path, zoneID)
 		} else {
-			// we already appended [firstNonBoundary:lastNonBoundary+1]
-			newPath = append(newPath, zoneID)
+			// 新大阪の場合
+			if len(path) > 1 && g.GetName(path[len(path)-2]) == "大阪" {
+				newPath = append(path[:len(path)-1], zoneID)
+			} else {
+				newPath = append(path, zoneID)
+			}
 		}
 		applied = true
 	}

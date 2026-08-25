@@ -29,14 +29,16 @@ func (m *mockGraph) GetID(name string) (int, bool) {
 func TestApplyOsakaShinOsakaException(t *testing.T) {
 	g := &mockGraph{
 		names: map[int]string{
-			1: "新大阪",
-			2: "大阪",
-			3: "尼崎",
-			4: "姫路",
-			5: "相生",
-			6: "東姫路",
-			7: "加古川",
-			8: "和田山",
+			1:  "新大阪",
+			2:  "大阪",
+			3:  "尼崎",
+			4:  "姫路",
+			5:  "相生",
+			6:  "東姫路",
+			7:  "加古川",
+			8:  "和田山",
+			9:  "新神戸",
+			10: "西明石",
 		},
 	}
 
@@ -44,26 +46,43 @@ func TestApplyOsakaShinOsakaException(t *testing.T) {
 		name       string
 		path       []int
 		wantApply  bool
+		wantPath   []int // 特例適用後の期待されるパス
 	}{
 		{
-			name:      "新大阪から姫路以遠（相生）",
+			name:      "新大阪から姫路以遠（相生）: 在来線ルート",
 			path:      []int{1, 2, 3, 4, 5}, // 新大阪, 大阪, 尼崎, 姫路, 相生
 			wantApply: true,
+			wantPath:  []int{999, 2, 3, 4, 5}, // 大阪・新大阪, 大阪, 尼崎, 姫路, 相生
 		},
 		{
-			name:      "姫路以遠（相生）から新大阪",
+			name:      "新大阪から姫路以遠（相生）: 新幹線ルート",
+			path:      []int{1, 9, 10, 4, 5}, // 新大阪, 新神戸, 西明石, 姫路, 相生
+			wantApply: true,
+			wantPath:  []int{999, 1, 9, 10, 4, 5}, // 大阪・新大阪, 新大阪, 新神戸, 西明石, 姫路, 相生
+		},
+		{
+			name:      "大阪から姫路以遠（相生）",
+			path:      []int{2, 3, 4, 5}, // 大阪, 尼崎, 姫路, 相生
+			wantApply: true,
+			wantPath:  []int{999, 2, 3, 4, 5}, // 大阪・新大阪, 大阪, 尼崎, 姫路, 相生
+		},
+		{
+			name:      "姫路以遠（相生）から新大阪: 在来線ルート",
 			path:      []int{5, 4, 3, 2, 1}, // 相生, 姫路, 尼崎, 大阪, 新大阪
 			wantApply: true,
+			wantPath:  []int{5, 4, 3, 2, 999}, // 相生, 姫路, 尼崎, 大阪, 大阪・新大阪
 		},
 		{
-			name:      "新大阪から姫路まで",
-			path:      []int{1, 2, 3, 4}, // 新大阪, 大阪, 尼崎, 姫路
+			name:      "姫路以遠（相生）から新大阪: 新幹線ルート",
+			path:      []int{5, 4, 10, 9, 1}, // 相生, 姫路, 西明石, 新神戸, 新大阪
 			wantApply: true,
+			wantPath:  []int{5, 4, 10, 9, 1, 999}, // 相生, 姫路, 西明石, 新神戸, 新大阪, 大阪・新大阪
 		},
 		{
-			name:      "姫路から新大阪まで",
-			path:      []int{4, 3, 2, 1}, // 姫路, 尼崎, 大阪, 新大阪
+			name:      "姫路以遠（相生）から大阪",
+			path:      []int{5, 4, 3, 2}, // 相生, 姫路, 尼崎, 大阪
 			wantApply: true,
+			wantPath:  []int{5, 4, 3, 2, 999}, // 相生, 姫路, 尼崎, 大阪, 大阪・新大阪
 		},
 		{
 			name:      "新大阪から姫路を通って逆方向（東姫路）",
@@ -84,9 +103,19 @@ func TestApplyOsakaShinOsakaException(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, applied := ApplyOsakaShinOsakaException(tt.path, g)
+			info, applied := ApplyOsakaShinOsakaException(tt.path, g)
 			if applied != tt.wantApply {
-				t.Errorf("got %v, want %v", applied, tt.wantApply)
+				t.Fatalf("got applied %v, want %v", applied, tt.wantApply)
+			}
+			if applied {
+				if len(info.TransformedPath) != len(tt.wantPath) {
+					t.Fatalf("got path len %d, want %d\ngot: %v\nwant: %v", len(info.TransformedPath), len(tt.wantPath), info.TransformedPath, tt.wantPath)
+				}
+				for i, id := range info.TransformedPath {
+					if id != tt.wantPath[i] {
+						t.Errorf("path[%d] = %d, want %d\ngot: %v\nwant: %v", i, id, tt.wantPath[i], info.TransformedPath, tt.wantPath)
+					}
+				}
 			}
 		})
 	}
