@@ -49,13 +49,13 @@ func routeToPseudoFNV(path []int) uint64 {
 }
 
 // LoadFromDomainWithOptions は JSON からロードしたデータを用いて構築しますが、ignoreMissing が true の場合は駅名解決に失敗した経路をスキップします。
-func (m *PathMatcher) LoadFromDomainWithOptions(path_and_fares []passdomain.PathAndFare, g graph.Graph, ignoreMissing bool) error {
+func (m *PathMatcher) LoadFromDomainWithOptions(pathAndFares []passdomain.PathAndFare, g graph.Graph, ignoreMissing bool) error {
 	if g == nil {
 		return fmt.Errorf("LoadFromDomain: %w", graph.ErrInvalidGraph)
 	}
 
-	m.table = make(map[uint64]PathEntry, len(path_and_fares)*2)
-	for _, sf := range path_and_fares {
+	m.table = make(map[uint64]PathEntry, len(pathAndFares)*2)
+	for _, sf := range pathAndFares {
 		path := make([]int, len(sf.Path))
 		skip := false
 		for i, name := range sf.Path {
@@ -80,8 +80,8 @@ func (m *PathMatcher) LoadFromDomainWithOptions(path_and_fares []passdomain.Path
 }
 
 // LoadFromDomain は JSON からロードしたドメインモデルの配列と Graph (名前解決用) を用いてデータを構築します。
-func (m *PathMatcher) LoadFromDomain(path_and_fares []passdomain.PathAndFare, g graph.Graph) error {
-	return m.LoadFromDomainWithOptions(path_and_fares, g, false)
+func (m *PathMatcher) LoadFromDomain(pathAndFares []passdomain.PathAndFare, g graph.Graph) error {
+	return m.LoadFromDomainWithOptions(pathAndFares, g, false)
 }
 
 // Insert は経路と運賃をマップに登録します。
