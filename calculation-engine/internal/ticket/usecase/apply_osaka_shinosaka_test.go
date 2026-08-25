@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"testing"
 	"calculation-engine/internal/ticket/graph"
+	"testing"
 )
 
 type mockGraph struct {
@@ -43,10 +43,10 @@ func TestApplyOsakaShinOsakaException(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		path       []int
-		wantApply  bool
-		wantPath   []int // 特例適用後の期待されるパス
+		name      string
+		path      []int
+		wantApply bool
+		wantPath  []int // 特例適用後の期待されるパス
 	}{
 		{
 			name:      "新大阪から姫路以遠（相生）: 在来線ルート",

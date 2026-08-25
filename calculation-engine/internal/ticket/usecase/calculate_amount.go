@@ -12,6 +12,7 @@ type CalculationResult struct {
 	Fare           int
 	BarrierFreeFee int
 	TotalEigyoKilo domain.DeciKilo
+	FinalPath      []int
 }
 
 func (c *CalculationResult) TotalAmount() int {
@@ -85,7 +86,9 @@ func (u *CalculateAmount) analyzePath(path []int) (*routeSummary, error) {
 			}
 		}
 		if edge == nil {
-			return nil, fmt.Errorf("CalculateAmount: 経路が見つかりません: %d -> %d", fromID, toID)
+			fromName := u.graph.GetName(fromID)
+			toName := u.graph.GetName(toID)
+			return nil, fmt.Errorf("CalculateAmount: 経路が見つかりません: %s(%d) -> %s(%d)", fromName, fromID, toName, toID)
 		}
 
 		summary.edges = append(summary.edges, edge)
@@ -205,5 +208,6 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 		Fare:           totalFare,
 		BarrierFreeFee: barrierFreeFee,
 		TotalEigyoKilo: summary.totalEigyo,
+		FinalPath:      path,
 	}, nil
 }

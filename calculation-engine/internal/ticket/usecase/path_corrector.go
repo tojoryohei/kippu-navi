@@ -50,7 +50,7 @@ func NewSpecificSectionCorrector() *SpecificSectionCorrector {
 			validBefore []string
 			validAfter  []string
 		}{
-			// 第69条 特定区間における旅客運賃・料金計算の営業キロ又は運賃計算キロ
+			// 旅客営業規則 第69条 特定区間における旅客運賃・料金計算の営業キロ又は運賃計算キロ
 			{
 				// （1）大沼以遠（新函館北斗方面）の各駅と、森以遠（石倉方面）の各駅との相互間
 				from:        []string{"大沼", "鹿部", "渡島沼尻", "渡島砂原", "掛澗", "尾白内", "東森", "森"},
@@ -107,7 +107,7 @@ func NewSpecificSectionCorrector() *SpecificSectionCorrector {
 				validBefore: []string{"和木"},
 				validAfter:  []string{"徳山"},
 			},
-			// 第157条 選択乗車
+			// 旅客営業規則 第157条 選択乗車
 			{
 				// （19）辰野以遠（宮木方面）の各駅と塩尻以遠（洗馬又は広丘方面）の各駅との相互間（小野経由、岡谷経由）
 				from:        []string{"辰野", "川岸", "岡谷", "みどり湖", "塩尻"},
@@ -205,6 +205,25 @@ func NewSpecificSectionCorrector() *SpecificSectionCorrector {
 				to:          []string{"本川内", "長与", "（長）高田", "道ノ尾", "西浦上", "浦上"},
 				validBefore: []string{},
 				validAfter:  []string{"長崎"},
+			},
+			// 旅客営業取扱基準規程 第43条の2 西小倉・小倉間及び、吉塚・博多間の区間外乗車に係わる片道乗車券等の発売方の特例
+			{
+				from:        []string{"南小倉", "西小倉", "小倉", "博多", "吉塚", "柚須"},
+				to:          []string{"南小倉", "西小倉", "吉塚", "柚須"},
+				validBefore: []string{"城野"},
+				validAfter:  []string{"原町"},
+			},
+			{
+				from:        []string{"南小倉", "西小倉", "小倉", "博多"},
+				to:          []string{"南小倉", "西小倉", "博多"},
+				validBefore: []string{"城野"},
+				validAfter:  []string{"博多南", "竹下"},
+			},
+			{
+				from:        []string{"小倉", "博多", "吉塚", "柚須"},
+				to:          []string{"小倉", "吉塚", "柚須"},
+				validBefore: []string{"門司", "新下関"},
+				validAfter:  []string{"原町"},
 			},
 		},
 	}
@@ -353,6 +372,8 @@ func NewShinkansenOverlapCorrector() *ShinkansenOverlapCorrector {
 		{"倉敷", "中庄", "庭瀬", "北長瀬", "岡山"},
 		{"浦上", "長崎"},
 		{"宇土", "富合", "川尻", "西熊本", "熊本"},
+		{"上野", "鶯谷", "日暮里"},
+		{"東京", "神田", "秋葉原", "御徒町", "上野", "鶯谷", "日暮里"},
 	}
 
 	// 片道ルートから「分岐駅 -> 折り返し駅 -> 分岐駅」の完全な往復パターンを自動生成する
