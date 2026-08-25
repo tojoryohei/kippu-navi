@@ -76,28 +76,27 @@ export function parseRoute(
         let matchedLine: Line | null = null;
 
         if (rawLineName && rawLineName.trim() !== "") {
-            matchedLine = lineData.find(l => l.name === rawLineName) || null;
-
-            if (!matchedLine) {
-                const candidates = lineData.filter(l => l.name.split('_')[0] === rawLineName || l.name.startsWith(rawLineName));
-                if (candidates.length === 1) {
-                    matchedLine = candidates[0];
-                } else if (candidates.length > 1) {
-                    const prevStationObj = stationMap.get(currentStationName);
-                    const prevLines = prevStationObj?.lines || [];
+            const candidates = lineData.filter(l => l.name === rawLineName || l.name.split('_')[0] === rawLineName || l.name.startsWith(rawLineName));
+            
+            if (candidates.length === 1) {
+                matchedLine = candidates[0];
+            } else if (candidates.length > 1) {
+                const prevStationObj = stationMap.get(currentStationName);
+                const prevLines = prevStationObj?.lines || [];
+                
+                const bothIncluded = candidates.find(l =>
+                    l.stations?.includes(currentStationName) && (destStationName ? l.stations?.includes(destStationName) : true)
+                );
+                
+                if (bothIncluded) {
+                    matchedLine = bothIncluded;
+                } else {
                     const exactStationLine = candidates.find(l => prevLines.includes(l.name));
                     if (exactStationLine) {
                         matchedLine = exactStationLine;
                     } else {
-                        const bothIncluded = candidates.find(l =>
-                            l.stations?.includes(currentStationName) && (destStationName ? l.stations?.includes(destStationName) : true)
-                        );
-                        if (bothIncluded) {
-                            matchedLine = bothIncluded;
-                        } else {
-                            const prevIncluded = candidates.find(l => l.stations?.includes(currentStationName));
-                            matchedLine = prevIncluded || candidates[0];
-                        }
+                        const prevIncluded = candidates.find(l => l.stations?.includes(currentStationName));
+                        matchedLine = prevIncluded || candidates.find(l => l.name === rawLineName) || candidates[0];
                     }
                 }
             }

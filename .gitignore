@@ -42,8 +42,8 @@ src/app/fare/data/*.json
 src/app/split/data/*.json
 
 # wasm and graph data
-public/engine/split_pass.wasm
-public/engine/graph_data.bin
+public/engine/*.wasm
+public/engine/*.bin
 
 # calculation-engine large precomputed data
 calculation-engine/internal/pass/graph/data/precomputed_server.bin
