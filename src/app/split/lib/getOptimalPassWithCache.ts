@@ -58,8 +58,8 @@ export async function getOptimalPassWithCache(
     });
 
     const endpoint = isIc
-        ? "https://kippu-navi.com/api/split-icpass"
-        : "https://kippu-navi.com/api/split-pass";
+        ? "/api/split-icpass"
+        : "/api/split-pass";
 
     const response = await fetch(`${endpoint}?${params.toString()}`, {
         method: "GET",

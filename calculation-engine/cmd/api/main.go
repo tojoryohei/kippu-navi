@@ -11,15 +11,21 @@ import (
 	"syscall"
 	"time"
 
+	"calculation-engine/internal/graphdata"
 	passdomain "calculation-engine/internal/pass/domain"
-	"calculation-engine/internal/pass/graph"
-	"calculation-engine/internal/pass/graph/data"
-	"calculation-engine/internal/pass/handler"
-	"calculation-engine/internal/pass/infra/fareio"
-	"calculation-engine/internal/pass/infra/graphio"
-	"calculation-engine/internal/pass/optimizer"
-	"calculation-engine/internal/pass/usecase"
+	passgraph "calculation-engine/internal/pass/graph"
+	passdata "calculation-engine/internal/pass/graph/data"
+	passhandler "calculation-engine/internal/pass/handler"
+	passfareio "calculation-engine/internal/pass/infra/fareio"
+	passgraphio "calculation-engine/internal/pass/infra/graphio"
+	passopt "calculation-engine/internal/pass/optimizer"
+	passusecase "calculation-engine/internal/pass/usecase"
 	ticketfare "calculation-engine/internal/ticket/fare"
+	tickethandler "calculation-engine/internal/ticket/handler"
+	ticketfareio "calculation-engine/internal/ticket/infra/fareio"
+	ticketgraphio "calculation-engine/internal/ticket/infra/graphio"
+	ticketusecase "calculation-engine/internal/ticket/usecase"
+	"io"
 )
 
 const (
@@ -42,32 +48,24 @@ func run() error {
 	listenAddr := ":" + port
 
 	// グラフの初期化
-	loader := &graphio.JSONLoader{}
-	g, loadErr := loader.Load(data.GetEdgesReader())
+	loader := &passgraphio.JSONLoader{}
+	g, loadErr := loader.Load(passdata.GetEdgesReader())
 	if loadErr != nil {
 		return fmt.Errorf("JSONの読み込みに失敗しました: %w", loadErr)
 	}
 
-	// 乗車券の特定区間加算運賃の設定
-	ticketAddonFareReg := ticketfare.NewAddonRegistry()
-	ticketAddonFareReg.Register("南千歳", "新千歳空港", 20)
-	ticketAddonFareReg.Register("日根野", "りんくうタウン", 150)
-	ticketAddonFareReg.Register("りんくうタウン", "関西空港", 170)
-	ticketAddonFareReg.Register("日根野", "関西空港", 220)
-	ticketAddonFareReg.Register("児島", "宇多津", 110)
-	ticketAddonFareReg.Register("田吉", "宮崎空港", 130)
-
-	if err := ticketAddonFareReg.ResolveIDs(func(name string) (int, bool) {
-		return g.GetID(name)
-	}); err != nil {
-		return fmt.Errorf("乗車券の加算運賃ID解決に失敗しました: %w", err)
+	// 乗車券グラフの初期化
+	ticketLoader := &ticketgraphio.JSONLoader{}
+	_, ticketFullGraph, err := ticketLoader.LoadSeparatedGraphs(
+		[]io.Reader{graphdata.GetEdgesReader()},
+		[]io.Reader{graphdata.GetVirtualEdgesReader()},
+	)
+	if err != nil {
+		return fmt.Errorf("乗車券グラフのロードに失敗しました: %w", err)
 	}
 
-	// TODO: ticketAddonFareReg は乗車券用のユースケース初期化時に DI します
-	_ = ticketAddonFareReg
-
 	// 定期券の運賃計算レジストリの初期化
-	passCalcs, err := fareio.InitRegistry(g)
+	passCalcs, err := passfareio.InitRegistry(g)
 	if err != nil {
 		return fmt.Errorf("運賃計算機の初期化に失敗しました: %w", err)
 	}
@@ -132,7 +130,7 @@ func run() error {
 		return fmt.Errorf("特例ルールのID解決に失敗しました: %w", err)
 	}
 
-	passAmountCalc := usecase.NewCalculateAmount(
+	passAmountCalc := passusecase.NewCalculateAmount(
 		g,
 		passCalcs.Registry,
 		passAddonFareReg,
@@ -142,11 +140,11 @@ func run() error {
 		passCalcs.AdjustedRoute,
 	)
 
-	passOpt := optimizer.NewDPOptimizer(passAmountCalc)
-	passSplitUseCase := usecase.NewFindOptimalSplit(passOpt, passAmountCalc)
+	passOptimizer := passopt.NewDPOptimizer(passAmountCalc)
+	passSplitUseCase := passusecase.NewFindOptimalSplit(passOptimizer, passAmountCalc)
 
 	// 事前計算された運賃および経路データのロード
-	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := data.LoadPrecomputedFares("./internal/pass/graph/data/precomputed_server.bin")
+	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := passdata.LoadPrecomputedFares("./internal/pass/graph/data/precomputed_server.bin")
 	if err != nil {
 		return fmt.Errorf("事前計算された運賃データのロードに失敗しました: %w", err)
 	}
@@ -158,24 +156,105 @@ func run() error {
 	g.DistGisei = baseDistGisei
 
 	// 磁気定期券用: 区間数無制限 (0)
-	passSearchUseCase := usecase.NewSearchOptimalSplit(g, passSplitUseCase, passBypassRules, 0, baseFares, numStations)
+	passSearchUseCase := passusecase.NewSearchOptimalSplit(g, passSplitUseCase, passBypassRules, 0, baseFares, numStations)
 
 	// IC分割乗車券用
-	icGraph, err := graph.NewIcPassGraph(g)
+	icGraph, err := passgraph.NewIcPassGraph(g)
 	if err != nil {
 		return fmt.Errorf("ICグラフの生成に失敗しました: %w", err)
 	}
 	icGraph.DistGisei = icDistGisei
 
-	icPassSearchUseCase := usecase.NewSearchOptimalSplit(icGraph, passSplitUseCase, passBypassRules, 2, icFares, numStations)
+	icPassSearchUseCase := passusecase.NewSearchOptimalSplit(icGraph, passSplitUseCase, passBypassRules, 2, icFares, numStations)
+
+	// 乗車券用コンポーネント初期化
+	ticketZoneReg, err := ticketgraphio.LoadSpecialZones()
+	if err != nil {
+		return fmt.Errorf("乗車券の特例ゾーンロードに失敗しました: %w", err)
+	}
+
+	ticketFareReg := ticketfare.NewRegistry()
+	ticketFareioReg, err := ticketfareio.NewRegistry()
+	if err != nil {
+		return fmt.Errorf("乗車券のfareioロードに失敗しました: %w", err)
+	}
+
+	ticketSpecificMatcher := ticketfare.NewPathMatcher()
+	for _, f := range ticketFareioReg.GetSpecificFares() {
+		ids := make([]int, 0, len(f.Path))
+		for _, name := range f.Path {
+			id, ok := ticketFullGraph.GetID(name)
+			if ok {
+				ids = append(ids, id)
+			}
+		}
+		if len(ids) == len(f.Path) {
+			_ = ticketSpecificMatcher.Insert(ids, f.Fare)
+		}
+	}
+
+	ticketAdjustedMatcher := ticketfare.NewPathMatcher()
+	for _, f := range ticketFareioReg.GetAdjustedFares() {
+		ids := make([]int, 0, len(f.Path))
+		for _, name := range f.Path {
+			id, ok := ticketFullGraph.GetID(name)
+			if ok {
+				ids = append(ids, id)
+			}
+		}
+		if len(ids) == len(f.Path) {
+			_ = ticketAdjustedMatcher.Insert(ids, f.Fare)
+		}
+	}
+
+	ticketAddonFareReg := ticketfare.NewAddonRegistry()
+	ticketAddonFareReg.Register("南千歳", "新千歳空港", 20)
+	ticketAddonFareReg.Register("日根野", "りんくうタウン", 150)
+	ticketAddonFareReg.Register("りんくうタウン", "関西空港", 170)
+	ticketAddonFareReg.Register("日根野", "関西空港", 220)
+	ticketAddonFareReg.Register("児島", "宇多津", 110)
+	ticketAddonFareReg.Register("田吉", "宮崎空港", 130)
+
+	if err := ticketAddonFareReg.ResolveIDs(func(name string) (int, bool) {
+		return ticketFullGraph.GetID(name)
+	}); err != nil {
+		return fmt.Errorf("乗車券の加算運賃ID解決に失敗しました: %w", err)
+	}
+
+	ticketTrainSpecificCalc := ticketfare.NewTrainSpecificSectionCalculator()
+
+	ticketAmountCalc := ticketusecase.NewCalculateAmount(
+		ticketFareReg,
+		ticketAddonFareReg,
+		ticketTrainSpecificCalc,
+		ticketSpecificMatcher,
+		ticketAdjustedMatcher,
+		ticketFullGraph,
+	)
+
+	ticketApplier := ticketusecase.NewSpecialZoneApplier(ticketFullGraph, ticketZoneReg)
+	ticketSegmentEvaluator := ticketusecase.NewTicketSegmentEvaluator(ticketAmountCalc, ticketApplier, ticketZoneReg, ticketFullGraph)
+
+	ticketCorrector := ticketusecase.NewPipelineCorrector(
+		ticketusecase.NewShinkansenOverlapCorrector(),
+		ticketusecase.NewSpecificSectionCorrector(),
+	)
+
+	ticketHandler := tickethandler.NewTicket(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator)
 
 	// ルーティング
 	mux := http.NewServeMux()
-	passSplitHandler := handler.NewSplit(g, passSearchUseCase)
+
+	// 定期券ルート
+	passSplitHandler := passhandler.NewSplit(g, passSearchUseCase)
 	mux.HandleFunc("/api/split-pass", passSplitHandler.HandleCalculate)
 
-	icPassSplitHandler := handler.NewSplit(icGraph, icPassSearchUseCase)
+	icPassSplitHandler := passhandler.NewSplit(icGraph, icPassSearchUseCase)
 	mux.HandleFunc("/api/split-icpass", icPassSplitHandler.HandleCalculate)
+
+	// 乗車券ルート
+	mux.HandleFunc("/api/fare", ticketHandler.HandleCalculateFare)
+	mux.HandleFunc("/api/fare/ticket", ticketHandler.HandleCalculateFare)
 
 	server := &http.Server{
 		Addr:         listenAddr,

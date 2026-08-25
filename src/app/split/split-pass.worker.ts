@@ -36,10 +36,13 @@ declare const Go: {
 };
 
 interface WorkerGlobalScope {
-  prepareGraphBuffer(size: number): number;
-  initGraphFromBuffer(size: number): boolean | string;
+  preparePassGraphBuffer(size: number): number;
+  initPassGraphFromBuffer(size: number): boolean | string;
+  prepareTicketGraphBuffer(size: number): number;
+  initTicketGraphFromBuffer(size: number): boolean | string;
   reconstructAndCalculate(splitStationsJson: string, months: number, isIc: boolean): string;
   calculateRoutePass(stationNamesJson: string, months: number, isIc: boolean, calculationMode: string): string;
+  calculateRouteTicket(jsonStr: string): string;
 }
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
 
@@ -65,8 +68,9 @@ const go = new Go();
 let wasmInstance: WebAssembly.Instance | null = null;
 let graphInitialized = false;
 
-const WASM_URL = `${baseOrigin}/engine/split_pass.wasm?v=${WASM_VERSION}`;
-const GRAPH_URL = `${baseOrigin}/engine/graph_data.bin?v=${WASM_VERSION}`;
+const WASM_URL = `${baseOrigin}/engine/main.wasm?v=${WASM_VERSION}`;
+const PASS_GRAPH_URL = `${baseOrigin}/engine/pass_graph_data.bin?v=${WASM_VERSION}`;
+const TICKET_GRAPH_URL = `${baseOrigin}/engine/ticket_graph_data.bin?v=${WASM_VERSION}`;
 
 async function initWasm() {
   if (wasmInstance) return;
@@ -84,25 +88,40 @@ async function initWasm() {
     go.run(wasmInstance);
 
     // グラフデータのロード (真のゼロコピー)
-    const graphResponse = await fetch(GRAPH_URL);
-    if (!graphResponse.ok) {
-      throw new Error(`Graph data fetch failed from ${GRAPH_URL}: ${graphResponse.status} ${graphResponse.statusText}`);
+    // 1. 定期券グラフのロード
+    const passGraphResponse = await fetch(PASS_GRAPH_URL);
+    if (!passGraphResponse.ok) {
+      throw new Error(`Pass graph data fetch failed from ${PASS_GRAPH_URL}: ${passGraphResponse.status} ${passGraphResponse.statusText}`);
     }
-    const graphArrayBuffer = await graphResponse.arrayBuffer();
-    const size = graphArrayBuffer.byteLength;
+    const passGraphArrayBuffer = await passGraphResponse.arrayBuffer();
+    const passSize = passGraphArrayBuffer.byteLength;
 
-    // Go側にメモリ確保を依頼し、そのポインタ (オフセット) を取得
-    const ptr = workerSelf.prepareGraphBuffer(size);
-
-    // Wasmのリニアメモリに直接書き込み (Zero-copy Memory Offset Injection)
+    const passPtr = workerSelf.preparePassGraphBuffer(passSize);
     const wasmMem = (wasmInstance.exports.mem || (go.importObject.env && go.importObject.env.memory)) as WebAssembly.Memory;
     const wasmMemory = new Uint8Array(wasmMem.buffer);
-    wasmMemory.set(new Uint8Array(graphArrayBuffer), ptr);
+    wasmMemory.set(new Uint8Array(passGraphArrayBuffer), passPtr);
 
-    // Go側の初期化関数を実行
-    const initResult = workerSelf.initGraphFromBuffer(size);
-    if (initResult !== true) {
-      throw new Error(`Graph initialization failed: ${initResult}`);
+    const initPassResult = workerSelf.initPassGraphFromBuffer(passSize);
+    if (initPassResult !== true) {
+      throw new Error(`Pass graph initialization failed: ${initPassResult}`);
+    }
+
+    // 2. 乗車券グラフのロード
+    const ticketGraphResponse = await fetch(TICKET_GRAPH_URL);
+    if (!ticketGraphResponse.ok) {
+      throw new Error(`Ticket graph data fetch failed from ${TICKET_GRAPH_URL}: ${ticketGraphResponse.status} ${ticketGraphResponse.statusText}`);
+    }
+    const ticketGraphArrayBuffer = await ticketGraphResponse.arrayBuffer();
+    const ticketSize = ticketGraphArrayBuffer.byteLength;
+
+    const ticketPtr = workerSelf.prepareTicketGraphBuffer(ticketSize);
+    // wasmMemory は再取得（メモリが拡張された可能性を考慮）
+    const wasmMemory2 = new Uint8Array(((wasmInstance.exports.mem || (go.importObject.env && go.importObject.env.memory)) as WebAssembly.Memory).buffer);
+    wasmMemory2.set(new Uint8Array(ticketGraphArrayBuffer), ticketPtr);
+
+    const initTicketResult = workerSelf.initTicketGraphFromBuffer(ticketSize);
+    if (initTicketResult !== "ok") {
+      throw new Error(`Ticket graph initialization failed: ${initTicketResult}`);
     }
 
     graphInitialized = true;
@@ -135,6 +154,28 @@ onmessage = async (e: MessageEvent) => {
         return;
       }
       postMessage({ type: 'success_route_pass', requestId, result });
+    } catch (err) {
+      postMessage({ type: 'error', error: String(err) });
+    }
+  } else if (type === 'calculateRouteTicket') {
+    if (!graphInitialized) {
+      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
+      return;
+    }
+
+    const { fullPath, calculationMode, requestId } = payload;
+    try {
+      const reqJsonStr = JSON.stringify({
+        fullPath: fullPath.map((stationName: string) => ({ stationName, lineName: null })),
+        calculationMode: calculationMode || "normal"
+      });
+      const resultJsonStr = workerSelf.calculateRouteTicket(reqJsonStr);
+      const result = JSON.parse(resultJsonStr);
+      if (result.error) {
+        postMessage({ type: 'error', error: result.error });
+        return;
+      }
+      postMessage({ type: 'success_route_ticket', requestId, result });
     } catch (err) {
       postMessage({ type: 'error', error: String(err) });
     }

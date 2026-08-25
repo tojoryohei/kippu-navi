@@ -413,26 +413,31 @@ export default function Form({
             return;
         }
 
-        try {
-            const response = await fetch('/api/fare', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(apiRequestBody),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || "サーバーエラーが発生しました。");
+        if (!isPass) {
+            if (!workerRef.current || !isWasmReadyRef.current) {
+                let waited = 0;
+                while ((!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                    waited += 50;
+                }
             }
 
-            const responseData = await response.json();
-            setResult(responseData.data || null);
-            setServerTime(responseData.time || null);
-            setIsLoading(false);
-        } catch (err: unknown) {
-            const errorInstance = err instanceof Error ? err : new Error(String(err));
-            setError(errorInstance.message);
-            setIsLoading(false);
+            if (!workerRef.current || !isWasmReadyRef.current) {
+                setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
+                setIsLoading(false);
+                return;
+            }
+
+            const calcId = ++latestCalcIdRef.current;
+            workerRef.current.postMessage({
+                type: "calculateRouteTicket",
+                payload: {
+                    fullPath: apiRequestBody.fullPath.map(p => p.stationName),
+                    calculationMode: data.calculationMode,
+                    requestId: calcId
+                }
+            });
+            return;
         }
     }, [pathname, updateUrlAndState, getAllStations]);
 
@@ -463,6 +468,18 @@ export default function Form({
                             setCorrectedStartPass(wResult.correctedPath[0] || "");
                             setCorrectedEndPass(wResult.correctedPath[wResult.correctedPath.length - 1] || "");
                         }
+                    }
+                    setIsLoading(false);
+
+                    calculationCountRef.current += 1;
+                    if (calculationCountRef.current >= 10) {
+                        console.log("Recycling Web Worker to reclaim Wasm linear memory...");
+                        initWorker();
+                    }
+                } else if (type === "success_route_ticket") {
+                    if (requestId === latestCalcIdRef.current) {
+                        setResult(wResult.data);
+                        setServerTime(wResult.time);
                     }
                     setIsLoading(false);
 
