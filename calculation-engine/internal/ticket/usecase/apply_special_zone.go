@@ -5,6 +5,7 @@ import (
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/graphio"
+	"fmt"
 )
 
 // AppliedZoneInfo は特例ゾーンが適用された仮想経路とその閾値を保持します。
@@ -93,16 +94,13 @@ func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomai
 
 			if len(changingIdx) == 1 || len(changingIdx) == 2 {
 				zoneID, ok := s.graph.GetID(destZone.Name)
+				fmt.Printf("Apply: destZone=%s, changingIdx=%v, zoneID=%d, ok=%v\n", destZone.Name, changingIdx, zoneID, ok)
 				if ok {
 					lastChange := changingIdx[len(changingIdx)-1]
 
 					var prefix []int
-					// 東京都区内と東京山手線内は出口駅を含めない、それ以外は出口駅を含める
-					if destZone.Name == "東京都区内" || destZone.Name == "東京山手線内" {
-						prefix = newPath[:lastChange+1]
-					} else {
-						prefix = newPath[:lastChange+2]
-					}
+					// 全てのゾーンで出口駅を含める
+					prefix = newPath[:lastChange+2]
 
 					temp := make([]int, 0, len(prefix)+1)
 					temp = append(temp, prefix...)
@@ -162,16 +160,13 @@ func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomai
 
 			if len(changingIdx) == 1 || len(changingIdx) == 2 {
 				zoneID, ok := s.graph.GetID(originZone.Name)
+				fmt.Printf("Apply: originZone=%s, changingIdx=%v, zoneID=%d, ok=%v\n", originZone.Name, changingIdx, zoneID, ok)
 				if ok {
 					firstChange := changingIdx[0]
 
 					var suffix []int
-					// 東京都区内と東京山手線内は出口駅を含めない、それ以外は出口駅を含める
-					if originZone.Name == "東京都区内" || originZone.Name == "東京山手線内" {
-						suffix = newPath[firstChange+1:]
-					} else {
-						suffix = newPath[firstChange:]
-					}
+					// 全てのゾーンで出口駅を含める
+					suffix = newPath[firstChange:]
 
 					temp := make([]int, 0, 1+len(suffix))
 					temp = append(temp, zoneID)

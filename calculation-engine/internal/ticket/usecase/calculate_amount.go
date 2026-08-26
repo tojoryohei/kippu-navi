@@ -6,6 +6,7 @@ import (
 	"calculation-engine/internal/ticket/fare"
 	"calculation-engine/internal/ticket/graph"
 	"fmt"
+	"strings"
 )
 
 type CalculationResult struct {
@@ -26,6 +27,7 @@ type CalculateAmount struct {
 	specificFarePathMatcher *fare.PathMatcher
 	adjustedFarePathMatcher *fare.PathMatcher
 	graph                   graph.Graph
+	zoneRoutes              ticketdomain.ZoneRoutes
 }
 
 func NewCalculateAmount(
@@ -35,6 +37,7 @@ func NewCalculateAmount(
 	specificFarePathMatcher *fare.PathMatcher,
 	adjustedFarePathMatcher *fare.PathMatcher,
 	g graph.Graph,
+	zoneRoutes ticketdomain.ZoneRoutes,
 ) *CalculateAmount {
 	return &CalculateAmount{
 		reg:                     reg,
@@ -43,6 +46,7 @@ func NewCalculateAmount(
 		specificFarePathMatcher: specificFarePathMatcher,
 		adjustedFarePathMatcher: adjustedFarePathMatcher,
 		graph:                   g,
+		zoneRoutes:              zoneRoutes,
 	}
 }
 
@@ -88,6 +92,7 @@ func (u *CalculateAmount) analyzePath(path []int) (*routeSummary, error) {
 		if edge == nil {
 			fromName := u.graph.GetName(fromID)
 			toName := u.graph.GetName(toID)
+			fmt.Printf("analyzePath Error: 経路が見つかりません: %s(%d) -> %s(%d)\n", fromName, fromID, toName, toID)
 			return nil, fmt.Errorf("CalculateAmount: 経路が見つかりません: %s(%d) -> %s(%d)", fromName, fromID, toName, toID)
 		}
 
@@ -123,8 +128,12 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 		return nil, fmt.Errorf("CalculateAmount.Execute: %w", domain.ErrInvalidPath)
 	}
 
-	summary, err := u.analyzePath(path)
+	// 特例運賃計算用の仮想経路を構築（北新地→大阪・塚本などの置換）
+	farePath := u.buildFarePath(path)
+
+	summary, err := u.analyzePath(farePath)
 	if err != nil {
+		fmt.Printf("CalculateAmount.Execute: analyzePath failed: %v\n", err)
 		return nil, err
 	}
 
@@ -208,6 +217,128 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 		Fare:           totalFare,
 		BarrierFreeFee: barrierFreeFee,
 		TotalEigyoKilo: summary.totalEigyo,
-		FinalPath:      path,
+		FinalPath:      path, // 実経路をそのまま返す
 	}, nil
+}
+
+func (u *CalculateAmount) buildFarePath(path []int) []int {
+	if len(path) == 0 {
+		return path
+	}
+	farePath := make([]int, 0, len(path)*2)
+
+	for i := 0; i < len(path); i++ {
+		id := path[i]
+		name := u.graph.GetName(id)
+
+		// 特定都区市内の判定
+		if u.zoneRoutes != nil && (strings.HasSuffix(name, "市内") || strings.HasSuffix(name, "区内") || name == "東京山手線内") {
+			if i+1 < len(path) {
+				nextName := u.graph.GetName(path[i+1])
+				if route := u.zoneRoutes.GetRoute(name, nextName); route != nil {
+					for j, rName := range route {
+						if j < len(route)-1 {
+							if rID, ok := u.graph.GetID(rName); ok {
+								farePath = append(farePath, rID)
+							}
+						}
+					}
+					continue
+				}
+			}
+			if i > 0 {
+				prevName := u.graph.GetName(path[i-1])
+				if route := u.zoneRoutes.GetRoute(name, prevName); route != nil {
+					for j := len(route) - 2; j >= 0; j-- {
+						if rID, ok := u.graph.GetID(route[j]); ok {
+							farePath = append(farePath, rID)
+						}
+					}
+					continue
+				}
+			}
+		}
+		farePath = append(farePath, id)
+	}
+
+	return u.applyKitashinchiReplacement(farePath)
+}
+
+func (u *CalculateAmount) applyKitashinchiReplacement(path []int) []int {
+	if len(path) < 6 {
+		return path
+	}
+
+	expectedPath := []string{"北新地", "新福島", "海老江", "御幣島", "加島", "尼崎"}
+	osakaPath := []string{"大阪", "塚本", "尼崎"}
+
+	// 順方向チェック (北新地発)
+	matchFwd := true
+	for i, name := range expectedPath {
+		actualName := u.graph.GetName(path[i])
+		if actualName != name {
+			matchFwd = false
+			break
+		}
+	}
+	fmt.Printf("Kitashinchi matchFwd: %v, pathLen: %d\n", matchFwd, len(path))
+	if matchFwd {
+		validDirection := false
+		if len(path) == 6 {
+			validDirection = true
+		} else {
+			nextStation := u.graph.GetName(path[6])
+			if nextStation == "立花" || nextStation == "塚口" {
+				validDirection = true
+			}
+		}
+		if validDirection {
+			newPath := make([]int, 0, len(path)-3)
+			for _, name := range osakaPath {
+				id, _ := u.graph.GetID(name)
+				newPath = append(newPath, id)
+			}
+			newPath = append(newPath, path[6:]...)
+			fmt.Printf("Kitashinchi replaced! newPath length: %d\n", len(newPath))
+			return newPath
+		} else {
+			nextStation := ""
+			if len(path) > 6 {
+				nextStation = u.graph.GetName(path[6])
+			}
+			fmt.Printf("Kitashinchi validDirection false! nextStation: %s\n", nextStation)
+		}
+	}
+
+	// 逆方向チェック (北新地着)
+	matchRev := true
+	n := len(path)
+	for i, name := range expectedPath {
+		if u.graph.GetName(path[n-1-i]) != name {
+			matchRev = false
+			break
+		}
+	}
+	if matchRev {
+		validDirection := false
+		if len(path) == 6 {
+			validDirection = true
+		} else {
+			prevStation := u.graph.GetName(path[n-7])
+			if prevStation == "立花" || prevStation == "塚口" {
+				validDirection = true
+			}
+		}
+		if validDirection {
+			newPath := make([]int, 0, len(path)-3)
+			newPath = append(newPath, path[:n-6]...)
+			idAmagasaki, _ := u.graph.GetID("尼崎")
+			idTsukamoto, _ := u.graph.GetID("塚本")
+			idOsaka, _ := u.graph.GetID("大阪")
+			newPath = append(newPath, idAmagasaki, idTsukamoto, idOsaka)
+			return newPath
+		}
+	}
+
+	return path
 }

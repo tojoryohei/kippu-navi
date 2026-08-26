@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"calculation-engine/internal/domain"
+	ticketgraphdata "calculation-engine/internal/graphdata"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/infra/fareio"
@@ -21,6 +22,7 @@ import (
 	ticketfareio "calculation-engine/internal/ticket/infra/fareio"
 	ticketgraphio "calculation-engine/internal/ticket/infra/graphio"
 	ticketusecase "calculation-engine/internal/ticket/usecase"
+	"io"
 )
 
 // passTempBuffer は定期券JSから書き込まれるバッファ
@@ -1160,9 +1162,21 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	}
 
 	// 乗車券コンポーネント初期化
+	zoneRoutesBytes, err := io.ReadAll(ticketgraphdata.GetZoneRoutesReader())
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: failed to read zone routes data: %v", err))
+	}
+	ticketZoneRoutes, err := ticketdomain.LoadZoneRoutesFromBytes(zoneRoutesBytes)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: ticket zone routes load failed: %v", err))
+	}
+
 	ticketZoneReg, err := ticketgraphio.LoadSpecialZones()
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: ticket zone load failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: LoadSpecialZones failed: %v", err))
+	}
+	for _, z := range ticketZoneReg.Zones {
+		ticketFullGraph.GetOrAddID(z.Name)
 	}
 
 	ticketFareReg := ticketfare.NewRegistry()
@@ -1222,6 +1236,7 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketSpecificMatcher,
 		ticketAdjustedMatcher,
 		ticketFullGraph,
+		ticketZoneRoutes,
 	)
 
 	ticketApplier = ticketusecase.NewSpecialZoneApplier(ticketFullGraph, ticketZoneReg)

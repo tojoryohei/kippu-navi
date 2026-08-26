@@ -1,10 +1,12 @@
 package ticket_test
 
 import (
+	"fmt"
 	"io"
 	"testing"
 
 	"calculation-engine/internal/graphdata"
+	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/fare"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/fareio"
@@ -30,6 +32,11 @@ func setupTicketSplit(t *testing.T) (*usecase.FindOptimalSplit, *usecase.TicketS
 	zoneReg, err := graphio.LoadSpecialZones()
 	if err != nil {
 		t.Fatalf("特例ゾーンのロードに失敗しました: %v", err)
+	}
+
+	// ゾーン名をグラフに追加
+	for _, z := range zoneReg.Zones {
+		fullGraph.GetOrAddID(z.Name)
 	}
 
 	// 3. 運賃計算器の初期化
@@ -81,6 +88,15 @@ func setupTicketSplit(t *testing.T) (*usecase.FindOptimalSplit, *usecase.TicketS
 
 	trainSpecificCalc := fare.NewTrainSpecificSectionCalculator()
 
+	zrBytes, err := io.ReadAll(graphdata.GetZoneRoutesReader())
+	if err != nil {
+		t.Fatalf("zoneRoutesの読み込みに失敗しました: %v", err)
+	}
+	zoneRoutes, err := ticketdomain.LoadZoneRoutesFromBytes(zrBytes)
+	if err != nil {
+		t.Fatalf("zoneRoutesのパースに失敗しました: %v", err)
+	}
+
 	calc := usecase.NewCalculateAmount(
 		fareReg,
 		addonReg,
@@ -88,6 +104,7 @@ func setupTicketSplit(t *testing.T) (*usecase.FindOptimalSplit, *usecase.TicketS
 		specificMatcher,
 		adjustedMatcher,
 		fullGraph,
+		zoneRoutes,
 	)
 
 	// 4. 特例適用器とセグメントエバリュエータ
@@ -125,8 +142,15 @@ func TestTicketSegmentEvaluator_Execute(t *testing.T) {
 			t.Fatalf("Execute() err = %v", err)
 		}
 
+		fmt.Print("Path IDs: ")
+		for _, id := range path {
+			fmt.Printf("%s ", g.GetName(id))
+		}
+		fmt.Println()
+
 		// 東京〜名古屋 (営業キロ366.0km -> 366km) の運賃は 6380円
 		if res.TotalAmount() != 6490 {
+			fmt.Printf("TEST FAILED! TotalAmount=%d, TotalEigyoKilo=%v, FinalPath=%v\n", res.TotalAmount(), res.TotalEigyoKilo, res.FinalPath)
 			t.Errorf("期待する運賃(6490)と異なります: %d", res.TotalAmount())
 		}
 	})

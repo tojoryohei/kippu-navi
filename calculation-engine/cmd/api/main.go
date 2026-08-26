@@ -20,6 +20,7 @@ import (
 	passgraphio "calculation-engine/internal/pass/infra/graphio"
 	passopt "calculation-engine/internal/pass/optimizer"
 	passusecase "calculation-engine/internal/pass/usecase"
+	ticketdomain "calculation-engine/internal/ticket/domain"
 	ticketfare "calculation-engine/internal/ticket/fare"
 	tickethandler "calculation-engine/internal/ticket/handler"
 	ticketfareio "calculation-engine/internal/ticket/infra/fareio"
@@ -168,9 +169,18 @@ func run() error {
 	icPassSearchUseCase := passusecase.NewSearchOptimalSplit(icGraph, passSplitUseCase, passBypassRules, 2, icFares, numStations)
 
 	// 乗車券用コンポーネント初期化
+	ticketZoneRoutes, err := ticketdomain.LoadZoneRoutes("./internal/graphdata/zone_routes.json")
+	if err != nil {
+		return fmt.Errorf("乗車券の特例ゾーンルートロードに失敗しました: %w", err)
+	}
+
 	ticketZoneReg, err := ticketgraphio.LoadSpecialZones()
 	if err != nil {
 		return fmt.Errorf("乗車券の特例ゾーンロードに失敗しました: %w", err)
+	}
+
+	for _, z := range ticketZoneReg.Zones {
+		ticketFullGraph.GetOrAddID(z.Name)
 	}
 
 	ticketFareReg := ticketfare.NewRegistry()
@@ -230,6 +240,7 @@ func run() error {
 		ticketSpecificMatcher,
 		ticketAdjustedMatcher,
 		ticketFullGraph,
+		ticketZoneRoutes,
 	)
 
 	ticketApplier := ticketusecase.NewSpecialZoneApplier(ticketFullGraph, ticketZoneReg)

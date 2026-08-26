@@ -81,8 +81,8 @@ func TestSpecialZoneApplier_Apply(t *testing.T) {
 				MinDistanceDeciKilo: 2000,
 			},
 			destZone: nil,
-			// 期待結果: 東京都区内(5) -> 新横浜(3) -> 小田原(4)
-			wantPath:   []int{5, 3, 4},
+			// 期待結果: 東京都区内(5) -> 品川(2) -> 新横浜(3) -> 小田原(4)
+			wantPath:   []int{5, 2, 3, 4},
 			wantThresh: 2000,
 			wantOk:     true,
 		},

@@ -14,6 +14,9 @@ var virtualEdgesJSON []byte
 //go:embed special_zones.json
 var specialZonesJSON []byte
 
+//go:embed zone_routes.json
+var zoneRoutesJSON []byte
+
 // GetEdgesReader はグラフデータ(edges.json)のReaderを返すゲッターメソッドです。
 func GetEdgesReader() *bytes.Reader {
 	return bytes.NewReader(edgesJSON)
@@ -27,4 +30,9 @@ func GetVirtualEdgesReader() *bytes.Reader {
 // GetSpecialZonesReader は特定都区市内データ(special_zones.json)のReaderを返すゲッターメソッドです。
 func GetSpecialZonesReader() *bytes.Reader {
 	return bytes.NewReader(specialZonesJSON)
+}
+
+// GetZoneRoutesReader は特定都区市内などのルートデータ(zone_routes.json)のReaderを返すゲッターメソッドです。
+func GetZoneRoutesReader() *bytes.Reader {
+	return bytes.NewReader(zoneRoutesJSON)
 }

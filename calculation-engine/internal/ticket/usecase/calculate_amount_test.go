@@ -37,7 +37,7 @@ func TestCalculateAmount_Execute(t *testing.T) {
 	adjustedMatcher := fare.NewPathMatcher()
 
 	addonReg := fare.NewAddonRegistry()
-	calc := usecase.NewCalculateAmount(reg, addonReg, trainSpecificCalc, specificMatcher, adjustedMatcher, g)
+	calc := usecase.NewCalculateAmount(reg, addonReg, trainSpecificCalc, specificMatcher, adjustedMatcher, g, nil)
 
 	t.Run("特定区間運賃に合致", func(t *testing.T) {
 		res, err := calc.Execute([]int{id("X"), id("Y")})

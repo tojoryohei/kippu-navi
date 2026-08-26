@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"calculation-engine/internal/graphdata"
+	"calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/fare"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/fareio"
@@ -26,7 +27,17 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		t.Fatalf("グラフデータのロードに失敗しました: %v", err)
 	}
 
-	// 2. 運賃計算レジストリ（各社）
+	// 2. 特例（特定都区市内）のレジストリ
+	zoneReg, err := graphio.LoadSpecialZones()
+	if err != nil {
+		t.Fatalf("特例ゾーンのロードに失敗しました: %v", err)
+	}
+
+	for _, z := range zoneReg.Zones {
+		g.GetOrAddID(z.Name)
+	}
+
+	// 2.5 運賃計算レジストリ（各社）
 	reg := fare.NewRegistry()
 
 	// 3. 特定区間運賃・調整運賃のロード
@@ -76,6 +87,15 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 	// 5. 電車特定区間計算
 	trainSpecificCalc := fare.NewTrainSpecificSectionCalculator()
 
+	zrBytes, err := io.ReadAll(graphdata.GetZoneRoutesReader())
+	if err != nil {
+		t.Fatalf("zoneRoutesの読み込みに失敗しました: %v", err)
+	}
+	zoneRoutes, err := domain.LoadZoneRoutesFromBytes(zrBytes)
+	if err != nil {
+		t.Fatalf("zoneRoutesのパースに失敗しました: %v", err)
+	}
+
 	// 6. CalculateAmount ユースケースの作成
 	calc := usecase.NewCalculateAmount(
 		reg,
@@ -84,6 +104,7 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		specificMatcher,
 		adjustedMatcher,
 		g,
+		zoneRoutes,
 	)
 
 	return calc, g
@@ -210,7 +231,7 @@ func TestTicketAmountCalculation_Integration(t *testing.T) {
 					t.Errorf("Execute() = nil, 期待値 %v", tt.want)
 					return
 				}
-				if *got != tt.want {
+				if got.Fare != tt.want.Fare || got.BarrierFreeFee != tt.want.BarrierFreeFee || got.TotalEigyoKilo != tt.want.TotalEigyoKilo {
 					t.Errorf("Execute() = %+v, 期待値 %+v", *got, tt.want)
 				}
 			}

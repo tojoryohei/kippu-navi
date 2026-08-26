@@ -82,13 +82,17 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 	for _, cand := range candidates {
 		appliedInfo, ok := e.applier.Apply(path, cand.origin, cand.dest)
 		if ok {
+			fmt.Printf("TicketSegmentEvaluator: appliedInfo.TransformedPath len=%d\n", len(appliedInfo.TransformedPath))
 			// 特例が適用された仮想経路で運賃計算を試みる
 			res, err := e.calc.Execute(appliedInfo.TransformedPath)
 			if err == nil {
 				// 合計営業キロが閾値を満たしているか確認
+				fmt.Printf("TicketSegmentEvaluator: res.TotalEigyoKilo=%v, ThresholdKilo=%v\n", res.TotalEigyoKilo, appliedInfo.ThresholdKilo)
 				if res.TotalEigyoKilo > appliedInfo.ThresholdKilo {
 					return res, nil // 強制適用成功！
 				}
+			} else {
+				fmt.Printf("TicketSegmentEvaluator: calc.Execute failed: %v\n", err)
 			}
 		}
 	}
