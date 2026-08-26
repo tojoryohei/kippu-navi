@@ -1,0 +1,22 @@
+[
+  {
+    "startStation": "盛岡",
+    "endStation": "目時",
+    "fare": 2420
+  },
+  {
+    "startStation": "目時",
+    "endStation": "八戸",
+    "fare": 930
+  },
+  {
+    "startStation": "目時",
+    "endStation": "青森",
+    "fare": 3700
+  },
+  {
+    "startStation": "河原田",
+    "endStation": "津",
+    "fare": 520
+  }
+]

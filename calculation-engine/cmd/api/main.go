@@ -231,6 +231,11 @@ func run() error {
 		return fmt.Errorf("乗車券の加算運賃ID解決に失敗しました: %w", err)
 	}
 
+	ticketPrivateFareReg, err := ticketfareio.NewPrivateFareRegistry()
+	if err != nil {
+		return fmt.Errorf("私鉄運賃データの読み込みに失敗しました: %w", err)
+	}
+
 	ticketTrainSpecificCalc := ticketfare.NewTrainSpecificSectionCalculator()
 
 	ticketAmountCalc := ticketusecase.NewCalculateAmount(
@@ -239,6 +244,7 @@ func run() error {
 		ticketTrainSpecificCalc,
 		ticketSpecificMatcher,
 		ticketAdjustedMatcher,
+		ticketPrivateFareReg,
 		ticketFullGraph,
 		ticketZoneRoutes,
 	)

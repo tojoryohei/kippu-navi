@@ -5,6 +5,7 @@ import (
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/fare"
 	ticketgraph "calculation-engine/internal/ticket/graph"
+	"calculation-engine/internal/ticket/infra/fareio"
 	"calculation-engine/internal/ticket/usecase"
 	"testing"
 )
@@ -27,6 +28,19 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		EigyoKilo: 50, GiseiKilo: 50, IsLocal: false, Company: domain.JREast,
 	}})
 
+	g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{
+		FromID: id("A"), ToID: id("河原田"),
+		EigyoKilo: 100, GiseiKilo: 100, IsLocal: false, Company: domain.JRCentral,
+	}})
+	g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{
+		FromID: id("河原田"), ToID: id("津"),
+		EigyoKilo: 223, GiseiKilo: 223, IsLocal: false, Company: domain.Other,
+	}})
+	g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{
+		FromID: id("津"), ToID: id("D"),
+		EigyoKilo: 100, GiseiKilo: 100, IsLocal: false, Company: domain.JRCentral,
+	}})
+
 	reg := fare.NewRegistry()
 
 	trainSpecificCalc := fare.NewTrainSpecificSectionCalculator()
@@ -37,7 +51,8 @@ func TestCalculateAmount_Execute(t *testing.T) {
 	adjustedMatcher := fare.NewPathMatcher()
 
 	addonReg := fare.NewAddonRegistry()
-	calc := usecase.NewCalculateAmount(reg, addonReg, trainSpecificCalc, specificMatcher, adjustedMatcher, g, nil)
+	privateReg, _ := fareio.NewPrivateFareRegistry()
+	calc := usecase.NewCalculateAmount(reg, addonReg, trainSpecificCalc, specificMatcher, adjustedMatcher, privateReg, g, nil)
 
 	t.Run("特定区間運賃に合致", func(t *testing.T) {
 		res, err := calc.Execute([]int{id("X"), id("Y")})
@@ -58,7 +73,24 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		// 10km (A-B) 東日本 - 基準運賃 = 200 - 200 = 差額0円。よって合計は510円となる。
 		// 個別の運賃計算機の正確性はそれぞれのテストで担保されているため、ここでは運賃が0より大きいことのみを検証する。
 		if res.Fare <= 0 {
-			t.Errorf("expected fare > 0, got %d", res.Fare)
+			t.Errorf("expected > 0, got %d", res.Fare)
+		}
+	})
+
+	t.Run("通過連絡運輸（私鉄区間を含む）", func(t *testing.T) {
+		res, err := calc.Execute([]int{id("A"), id("河原田"), id("津"), id("D")})
+		if err != nil {
+			t.Fatalf("Execute() error = %v", err)
+		}
+		// A-河原田: 10km, 津-D: 10km -> JR合計20km
+		// 20kmの本州幹線運賃は330円
+		// 私鉄区間（河原田-津）は520円（privateFares.jsonに定義）
+		// 合計: 330 + 520 = 850円
+		if res.Fare != 850 {
+			t.Errorf("expected 850 (JR 330 + 私鉄 520), got %d", res.Fare)
+		}
+		if res.TotalEigyoKilo != 200 {
+			t.Errorf("expected JR total eigyo kilo 200, got %d", res.TotalEigyoKilo)
 		}
 	})
 }

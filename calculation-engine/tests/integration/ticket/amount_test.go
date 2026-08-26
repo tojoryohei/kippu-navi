@@ -96,6 +96,11 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		t.Fatalf("zoneRoutesのパースに失敗しました: %v", err)
 	}
 
+	privateReg, err := fareio.NewPrivateFareRegistry()
+	if err != nil {
+		t.Fatalf("PrivateFareRegistryの初期化に失敗しました: %v", err)
+	}
+
 	// 6. CalculateAmount ユースケースの作成
 	calc := usecase.NewCalculateAmount(
 		reg,
@@ -103,6 +108,7 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		trainSpecificCalc,
 		specificMatcher,
 		adjustedMatcher,
+		privateReg,
 		g,
 		zoneRoutes,
 	)

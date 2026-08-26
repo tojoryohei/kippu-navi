@@ -97,12 +97,18 @@ func setupTicketSplit(t *testing.T) (*usecase.FindOptimalSplit, *usecase.TicketS
 		t.Fatalf("zoneRoutesのパースに失敗しました: %v", err)
 	}
 
+	privateReg, err := fareio.NewPrivateFareRegistry()
+	if err != nil {
+		t.Fatalf("PrivateFareRegistryの初期化に失敗しました: %v", err)
+	}
+
 	calc := usecase.NewCalculateAmount(
 		fareReg,
 		addonReg,
 		trainSpecificCalc,
 		specificMatcher,
 		adjustedMatcher,
+		privateReg,
 		fullGraph,
 		zoneRoutes,
 	)

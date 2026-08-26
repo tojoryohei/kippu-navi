@@ -5,15 +5,17 @@ import (
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/fare"
 	"calculation-engine/internal/ticket/graph"
+	"calculation-engine/internal/ticket/infra/fareio"
 	"fmt"
 	"strings"
 )
 
 type CalculationResult struct {
-	Fare           int
-	BarrierFreeFee int
-	TotalEigyoKilo domain.DeciKilo
-	FinalPath      []int
+	Fare               int
+	BarrierFreeFee     int
+	TotalEigyoKilo     domain.DeciKilo // JRの合計（運賃計算用）
+	TotalPathEigyoKilo domain.DeciKilo // 私鉄を含めた全経路の合計（有効日数計算用）
+	FinalPath          []int
 }
 
 func (c *CalculationResult) TotalAmount() int {
@@ -26,6 +28,7 @@ type CalculateAmount struct {
 	trainSpecificCalc       *fare.TrainSpecificSectionCalculator
 	specificFarePathMatcher *fare.PathMatcher
 	adjustedFarePathMatcher *fare.PathMatcher
+	privateFareReg          *fareio.PrivateFareRegistry
 	graph                   graph.Graph
 	zoneRoutes              ticketdomain.ZoneRoutes
 }
@@ -36,6 +39,7 @@ func NewCalculateAmount(
 	trainSpecificCalc *fare.TrainSpecificSectionCalculator,
 	specificFarePathMatcher *fare.PathMatcher,
 	adjustedFarePathMatcher *fare.PathMatcher,
+	privateFareReg *fareio.PrivateFareRegistry,
 	g graph.Graph,
 	zoneRoutes ticketdomain.ZoneRoutes,
 ) *CalculateAmount {
@@ -45,6 +49,7 @@ func NewCalculateAmount(
 		trainSpecificCalc:       trainSpecificCalc,
 		specificFarePathMatcher: specificFarePathMatcher,
 		adjustedFarePathMatcher: adjustedFarePathMatcher,
+		privateFareReg:          privateFareReg,
 		graph:                   g,
 		zoneRoutes:              zoneRoutes,
 	}
@@ -52,8 +57,9 @@ func NewCalculateAmount(
 
 type routeSummary struct {
 	edges          []*domain.Edge
-	totalEigyo     domain.DeciKilo
-	totalGisei     domain.DeciKilo
+	totalEigyo     domain.DeciKilo // JRの合計
+	totalGisei     domain.DeciKilo // JRの合計
+	totalPathEigyo domain.DeciKilo // JR・私鉄を含めた経路全体の営業キロ
 	hasTrunk       bool
 	hasLocal       bool
 	statsByCompany []companyStats
@@ -97,14 +103,6 @@ func (u *CalculateAmount) analyzePath(path []int) (*routeSummary, error) {
 		}
 
 		summary.edges = append(summary.edges, edge)
-		summary.totalEigyo += edge.EigyoKilo
-		summary.totalGisei += edge.GiseiKilo
-
-		if edge.IsLocal {
-			summary.hasLocal = true
-		} else {
-			summary.hasTrunk = true
-		}
 
 		cID := edge.Company
 		if int(cID) < 0 || int(cID) >= len(summary.statsByCompany) {
@@ -117,6 +115,21 @@ func (u *CalculateAmount) analyzePath(path []int) (*routeSummary, error) {
 			summary.statsByCompany[cID].hasLocal = true
 		} else {
 			summary.statsByCompany[cID].hasTrunk = true
+		}
+
+		// JR・私鉄を問わず全経路の営業キロを合算
+		summary.totalPathEigyo += edge.EigyoKilo
+
+		// JRの距離のみを合計（CompanyID 0 は私鉄として除外）
+		if cID != domain.Other {
+			summary.totalEigyo += edge.EigyoKilo
+			summary.totalGisei += edge.GiseiKilo
+
+			if edge.IsLocal {
+				summary.hasLocal = true
+			} else {
+				summary.hasTrunk = true
+			}
 		}
 	}
 
@@ -181,7 +194,8 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 			}
 
 			components := make([]fare.JointFareComponent, 0, domain.CompanyCount)
-			for i := 0; i < int(domain.CompanyCount); i++ {
+			// JR各社（1〜6）のみを対象とする
+			for i := 1; i < int(domain.CompanyCount); i++ {
 				if !summary.statsByCompany[i].used {
 					continue
 				}
@@ -213,11 +227,44 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 		}
 	}
 
+	// 私鉄運賃の計算 (Company == 0 の区間)
+	if u.privateFareReg != nil {
+		var privateStartIdx = -1
+		for i, edge := range summary.edges {
+			if edge.Company == domain.Other {
+				if privateStartIdx == -1 {
+					privateStartIdx = i
+				}
+			} else {
+				if privateStartIdx != -1 {
+					startName := u.graph.GetName(farePath[privateStartIdx])
+					endName := u.graph.GetName(farePath[i])
+					if f, ok := u.privateFareReg.GetFare(startName, endName); ok {
+						totalFare += f
+					} else {
+						return nil, fmt.Errorf("私鉄運賃が見つかりません: %s - %s", startName, endName)
+					}
+					privateStartIdx = -1
+				}
+			}
+		}
+		if privateStartIdx != -1 {
+			startName := u.graph.GetName(farePath[privateStartIdx])
+			endName := u.graph.GetName(farePath[len(summary.edges)])
+			if f, ok := u.privateFareReg.GetFare(startName, endName); ok {
+				totalFare += f
+			} else {
+				return nil, fmt.Errorf("私鉄運賃が見つかりません: %s - %s", startName, endName)
+			}
+		}
+	}
+
 	return &CalculationResult{
-		Fare:           totalFare,
-		BarrierFreeFee: barrierFreeFee,
-		TotalEigyoKilo: summary.totalEigyo,
-		FinalPath:      path, // 実経路をそのまま返す
+		Fare:               totalFare,
+		BarrierFreeFee:     barrierFreeFee,
+		TotalEigyoKilo:     summary.totalEigyo,
+		TotalPathEigyoKilo: summary.totalPathEigyo,
+		FinalPath:          path, // 実経路をそのまま返す
 	}, nil
 }
 

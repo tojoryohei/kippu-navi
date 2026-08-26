@@ -1227,6 +1227,11 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		return js.ValueOf(fmt.Sprintf("error: ticket addon fare resolve failed: %v", err))
 	}
 
+	ticketPrivateFareReg, err := ticketfareio.NewPrivateFareRegistry()
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: private fare load failed: %v", err))
+	}
+
 	ticketTrainSpecificCalc := ticketfare.NewTrainSpecificSectionCalculator()
 
 	ticketAmountCalc = ticketusecase.NewCalculateAmount(
@@ -1235,6 +1240,7 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketTrainSpecificCalc,
 		ticketSpecificMatcher,
 		ticketAdjustedMatcher,
+		ticketPrivateFareReg,
 		ticketFullGraph,
 		ticketZoneRoutes,
 	)
@@ -1300,7 +1306,8 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 	depStation := ticketFullGraph.GetName(evaluationResult.FinalPath[0])
 	arrStation := ticketFullGraph.GetName(evaluationResult.FinalPath[len(evaluationResult.FinalPath)-1])
 
-	validDays := ticketdomain.CalculateValidDaysFromKilo(evaluationResult.TotalEigyoKilo)
+	// 有効日数の計算（JR・他社線の合計営業キロから算出）
+	validDays := ticketdomain.CalculateValidDaysFromKilo(evaluationResult.TotalPathEigyoKilo)
 
 	var elapsed float64
 	if perf := js.Global().Get("performance"); perf.Truthy() {
