@@ -125,7 +125,11 @@ func TestSpecificSectionCorrector(t *testing.T) {
 		},
 	}
 
-	c := NewSpecificSectionCorrector()
+	c := NewPipelineCorrector(
+		NewRule69Corrector(),
+		NewRule157Corrector(),
+		NewRule43_2Corrector(),
+	)
 
 	tests := []struct {
 		name     string
@@ -284,7 +288,7 @@ func TestPipelineCorrector(t *testing.T) {
 	}
 
 	c1 := NewShinkansenOverlapCorrector()
-	c2 := NewSpecificSectionCorrector()
+	c2 := NewPipelineCorrector(NewRule69Corrector(), NewRule157Corrector(), NewRule43_2Corrector())
 	pipeline := NewPipelineCorrector(c1, c2)
 
 	tests := []struct {

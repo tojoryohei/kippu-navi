@@ -42,7 +42,7 @@ type SpecificSectionCorrector struct {
 	}
 }
 
-func NewSpecificSectionCorrector() *SpecificSectionCorrector {
+func NewRule69Corrector() *SpecificSectionCorrector {
 	return &SpecificSectionCorrector{
 		rules: []struct {
 			from        []string
@@ -107,6 +107,18 @@ func NewSpecificSectionCorrector() *SpecificSectionCorrector {
 				validBefore: []string{"和木"},
 				validAfter:  []string{"徳山"},
 			},
+		},
+	}
+}
+
+func NewRule157Corrector() *SpecificSectionCorrector {
+	return &SpecificSectionCorrector{
+		rules: []struct {
+			from        []string
+			to          []string
+			validBefore []string
+			validAfter  []string
+		}{
 			// 旅客営業規則 第157条 選択乗車
 			{
 				// （19）辰野以遠（宮木方面）の各駅と塩尻以遠（洗馬又は広丘方面）の各駅との相互間（小野経由、岡谷経由）
@@ -206,6 +218,18 @@ func NewSpecificSectionCorrector() *SpecificSectionCorrector {
 				validBefore: []string{},
 				validAfter:  []string{"長崎"},
 			},
+		},
+	}
+}
+
+func NewRule43_2Corrector() *SpecificSectionCorrector {
+	return &SpecificSectionCorrector{
+		rules: []struct {
+			from        []string
+			to          []string
+			validBefore []string
+			validAfter  []string
+		}{
 			// 旅客営業取扱基準規程 第43条の2 西小倉・小倉間及び、吉塚・博多間の区間外乗車に係わる片道乗車券等の発売方の特例
 			{
 				from:        []string{"南小倉", "西小倉", "小倉", "博多", "吉塚", "柚須"},
@@ -224,6 +248,26 @@ func NewSpecificSectionCorrector() *SpecificSectionCorrector {
 				to:          []string{"小倉", "吉塚", "柚須"},
 				validBefore: []string{"門司", "新下関"},
 				validAfter:  []string{"原町"},
+			},
+		},
+	}
+}
+
+// NewPostZoneCleanupCorrector は、特定都区市内などの適用後に発生する不要な経由駅を消去するための事後補正ルールです。
+func NewPostZoneCleanupCorrector() *SpecificSectionCorrector {
+	return &SpecificSectionCorrector{
+		rules: []struct {
+			from        []string
+			to          []string
+			validBefore []string
+			validAfter  []string
+		}{
+			// 北九州市内適用後の事後補正（出口駅の西小倉を消去して新幹線計算に乗せる）
+			{
+				from:        []string{"北九州市内", "小倉", "西小倉"},
+				to:          []string{"北九州市内", "小倉"},
+				validBefore: []string{},
+				validAfter:  []string{"博多", "吉塚"},
 			},
 		},
 	}

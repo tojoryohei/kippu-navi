@@ -21,19 +21,21 @@ type RouteEvaluator[T EvaluationResult] interface {
 // TicketSegmentEvaluator は乗車券の分割区間を評価する実装です。
 // ここで特例ゾーンの強制適用と距離によるロールバックの制御を行います。
 type TicketSegmentEvaluator struct {
-	calc         *CalculateAmount
-	applier      *SpecialZoneApplier
-	zoneRegistry *graphio.SpecialZoneRegistry
-	graph        graph.Graph
+	calc              *CalculateAmount
+	applier           *SpecialZoneApplier
+	postZoneCorrector PathCorrector
+	zoneRegistry      *graphio.SpecialZoneRegistry
+	graph             graph.Graph
 }
 
 // NewTicketSegmentEvaluator は新しい TicketSegmentEvaluator を作成します。
-func NewTicketSegmentEvaluator(calc *CalculateAmount, applier *SpecialZoneApplier, reg *graphio.SpecialZoneRegistry, g graph.Graph) *TicketSegmentEvaluator {
+func NewTicketSegmentEvaluator(calc *CalculateAmount, applier *SpecialZoneApplier, postZoneCorrector PathCorrector, reg *graphio.SpecialZoneRegistry, g graph.Graph) *TicketSegmentEvaluator {
 	return &TicketSegmentEvaluator{
-		calc:         calc,
-		applier:      applier,
-		zoneRegistry: reg,
-		graph:        g,
+		calc:              calc,
+		applier:           applier,
+		postZoneCorrector: postZoneCorrector,
+		zoneRegistry:      reg,
+		graph:             g,
 	}
 }
 
@@ -82,9 +84,19 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 	for _, cand := range candidates {
 		appliedInfo, ok := e.applier.Apply(path, cand.origin, cand.dest)
 		if ok {
-			fmt.Printf("TicketSegmentEvaluator: appliedInfo.TransformedPath len=%d\n", len(appliedInfo.TransformedPath))
+			transformedPath := appliedInfo.TransformedPath
+			if e.postZoneCorrector != nil {
+				var err error
+				transformedPath, err = e.postZoneCorrector.Correct(transformedPath, e.graph)
+				if err != nil {
+					fmt.Printf("TicketSegmentEvaluator: postZoneCorrector failed: %v\n", err)
+					continue
+				}
+			}
+
+			fmt.Printf("TicketSegmentEvaluator: appliedInfo.TransformedPath len=%d\n", len(transformedPath))
 			// 特例が適用された仮想経路で運賃計算を試みる
-			res, err := e.calc.Execute(appliedInfo.TransformedPath)
+			res, err := e.calc.Execute(transformedPath)
 			if err == nil {
 				// 合計営業キロが閾値を満たしているか確認
 				fmt.Printf("TicketSegmentEvaluator: res.TotalEigyoKilo=%v, ThresholdKilo=%v\n", res.TotalEigyoKilo, appliedInfo.ThresholdKilo)
@@ -100,14 +112,32 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 	// 第88条の特例（大阪・新大阪と姫路以遠）の適用を試行
 	// 特定都区市内（大阪市内等）が適用されなかった場合（または距離閾値に満たなかった場合）に評価する
 	if osakaInfo, ok := ApplyOsakaShinOsakaException(path, e.graph); ok {
-		res, err := e.calc.Execute(osakaInfo.TransformedPath)
+		transformedPath := osakaInfo.TransformedPath
+		if e.postZoneCorrector != nil {
+			var err error
+			transformedPath, err = e.postZoneCorrector.Correct(transformedPath, e.graph)
+			if err != nil {
+				fmt.Printf("TicketSegmentEvaluator: postZoneCorrector failed (rule 88): %v\n", err)
+				return nil, err
+			}
+		}
+		res, err := e.calc.Execute(transformedPath)
 		if err == nil {
 			return res, nil
 		}
 	}
 
 	// すべての特例適用が失敗（または閾値未達）だった場合は、特例を適用せずに元の物理経路にロールバックして運賃計算
-	return e.calc.Execute(path)
+	transformedPath := path
+	if e.postZoneCorrector != nil {
+		var err error
+		transformedPath, err = e.postZoneCorrector.Correct(transformedPath, e.graph)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// どの特例ゾーン条件も満たさなかった場合は通常計算
+	return e.calc.Execute(transformedPath)
 }
 
 // EvaluatedSegment は、評価済みの区間の経路と結果を保持します。

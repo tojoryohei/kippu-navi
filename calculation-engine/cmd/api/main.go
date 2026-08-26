@@ -250,11 +250,19 @@ func run() error {
 	)
 
 	ticketApplier := ticketusecase.NewSpecialZoneApplier(ticketFullGraph, ticketZoneReg)
-	ticketSegmentEvaluator := ticketusecase.NewTicketSegmentEvaluator(ticketAmountCalc, ticketApplier, ticketZoneReg, ticketFullGraph)
+	ticketSegmentEvaluator := ticketusecase.NewTicketSegmentEvaluator(
+		ticketAmountCalc,
+		ticketApplier,
+		ticketusecase.NewPostZoneCleanupCorrector(),
+		ticketZoneReg,
+		ticketFullGraph,
+	)
 
 	ticketCorrector := ticketusecase.NewPipelineCorrector(
 		ticketusecase.NewShinkansenOverlapCorrector(),
-		ticketusecase.NewSpecificSectionCorrector(),
+		ticketusecase.NewRule43_2Corrector(),
+		ticketusecase.NewRule69Corrector(),
+		ticketusecase.NewRule157Corrector(),
 	)
 
 	ticketHandler := tickethandler.NewTicket(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator)

@@ -115,7 +115,7 @@ func setupTicketSplit(t *testing.T) (*usecase.FindOptimalSplit, *usecase.TicketS
 
 	// 4. 特例適用器とセグメントエバリュエータ
 	applier := usecase.NewSpecialZoneApplier(fullGraph, zoneReg)
-	segmentEvaluator := usecase.NewTicketSegmentEvaluator(calc, applier, zoneReg, fullGraph)
+	segmentEvaluator := usecase.NewTicketSegmentEvaluator(calc, applier, nil, zoneReg, fullGraph)
 
 	// 5. 分割オプティマイザ
 	opt := optimizer.NewDPOptimizer(segmentEvaluator)

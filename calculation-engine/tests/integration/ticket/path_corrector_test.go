@@ -22,7 +22,11 @@ func TestPathCorrectorIntegration(t *testing.T) {
 
 	pipeline := usecase.NewPipelineCorrector(
 		usecase.NewShinkansenOverlapCorrector(),
-		usecase.NewSpecificSectionCorrector(),
+		usecase.NewPipelineCorrector(
+			usecase.NewRule43_2Corrector(),
+			usecase.NewRule69Corrector(),
+			usecase.NewRule157Corrector(),
+		),
 	)
 
 	// ヘルパー関数: 駅名のスライスからIDのスライスへの変換
