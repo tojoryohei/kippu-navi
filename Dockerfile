@@ -49,8 +49,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 COPY --from=builder --chown=nextjs:nodejs /app/src/data ./src/data
-COPY --from=builder --chown=nextjs:nodejs /app/src/app/fare/data ./src/app/fare/data
-COPY --from=builder --chown=nextjs:nodejs /app/src/app/split/data ./src/app/split/data
 
 USER nextjs
 

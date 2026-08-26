@@ -36,10 +36,7 @@ yarn-error.log*
 .gitconfig
 
 # secret data
-src/data/*.db
-src/data/*.json
-src/app/fare/data/*.json
-src/app/split/data/*.json
+src/data/*
 
 # wasm and graph data
 public/engine/*.wasm
