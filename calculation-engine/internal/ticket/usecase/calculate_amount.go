@@ -242,7 +242,7 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 					if f, ok := u.privateFareReg.GetFare(startName, endName); ok {
 						totalFare += f
 					} else {
-						return nil, fmt.Errorf("私鉄運賃が見つかりません: %s - %s", startName, endName)
+						return nil, fmt.Errorf("運賃が未登録です: %s - %s", startName, endName)
 					}
 					privateStartIdx = -1
 				}
@@ -254,7 +254,7 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 			if f, ok := u.privateFareReg.GetFare(startName, endName); ok {
 				totalFare += f
 			} else {
-				return nil, fmt.Errorf("私鉄運賃が見つかりません: %s - %s", startName, endName)
+				return nil, fmt.Errorf("運賃が未登録です: %s - %s", startName, endName)
 			}
 		}
 	}

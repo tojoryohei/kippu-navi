@@ -1,22 +1,207 @@
 [
   {
-    "startStation": "盛岡",
-    "endStation": "目時",
-    "fare": 2420
+    "startStation": "八戸",
+    "endStation": "野辺地",
+    "fare": 1590
   },
   {
-    "startStation": "目時",
+    "startStation": "青森",
+    "endStation": "野辺地",
+    "fare": 1230
+  },
+  {
+    "startStation": "青森",
     "endStation": "八戸",
-    "fare": 930
+    "fare": 2700
   },
   {
-    "startStation": "目時",
-    "endStation": "青森",
-    "fare": 3700
+    "startStation": "青森",
+    "endStation": "盛岡",
+    "fare": 6120
+  },
+  {
+    "startStation": "青森",
+    "endStation": "好摩",
+    "fare": 5430
+  },
+  {
+    "startStation": "野辺地",
+    "endStation": "盛岡",
+    "fare": 4560
+  },
+  {
+    "startStation": "野辺地",
+    "endStation": "好摩",
+    "fare": 3870
+  },
+  {
+    "startStation": "八戸",
+    "endStation": "盛岡",
+    "fare": 3230
+  },
+  {
+    "startStation": "八戸",
+    "endStation": "好摩",
+    "fare": 2540
+  },
+  {
+    "startStation": "盛岡",
+    "endStation": "好摩",
+    "fare": 690
+  },
+  {
+    "startStation": "直江津",
+    "endStation": "糸魚川",
+    "fare": 1070
+  },
+  {
+    "startStation": "直江津",
+    "endStation": "上越妙高",
+    "fare": 400
+  },
+  {
+    "startStation": "直江津",
+    "endStation": "長野",
+    "fare": 1920
+  },
+  {
+    "startStation": "六日町",
+    "endStation": "十日町",
+    "fare": 400
+  },
+  {
+    "startStation": "六日町",
+    "endStation": "犀潟",
+    "fare": 1310
+  },
+  {
+    "startStation": "十日町",
+    "endStation": "犀潟",
+    "fare": 1080
+  },
+  {
+    "startStation": "小諸",
+    "endStation": "篠ノ井",
+    "fare": 980
+  },
+  {
+    "startStation": "長野",
+    "endStation": "豊野",
+    "fare": 260
+  },
+  {
+    "startStation": "長野",
+    "endStation": "直江津",
+    "fare": 1920
+  },
+  {
+    "startStation": "水戸",
+    "endStation": "鹿島サッカースタジアム",
+    "fare": 1560
+  },
+  {
+    "startStation": "中野",
+    "endStation": "西船橋",
+    "fare": 330
+  },
+  {
+    "startStation": "北千住",
+    "endStation": "西日暮里",
+    "fare": 180
+  },
+  {
+    "startStation": "岡崎",
+    "endStation": "高蔵寺",
+    "fare": 990
+  },
+  {
+    "startStation": "勝川",
+    "endStation": "枇杷島",
+    "fare": 450
   },
   {
     "startStation": "河原田",
     "endStation": "津",
     "fare": 520
+  },
+  {
+    "startStation": "富山",
+    "endStation": "高岡",
+    "fare": 390
+  },
+  {
+    "startStation": "津幡",
+    "endStation": "高岡",
+    "fare": 640
+  },
+  {
+    "startStation": "津幡",
+    "endStation": "富山",
+    "fare": 1150
+  },
+  {
+    "startStation": "金沢",
+    "endStation": "高岡",
+    "fare": 870
+  },
+  {
+    "startStation": "金沢",
+    "endStation": "津幡",
+    "fare": 270
+  },
+  {
+    "startStation": "越前花堂",
+    "endStation": "福井",
+    "fare": 170
+  },
+  {
+    "startStation": "鶴橋",
+    "endStation": "松阪",
+    "fare": 1880
+  },
+  {
+    "startStation": "福知山",
+    "endStation": "豊岡",
+    "fare": 990
+  },
+  {
+    "startStation": "福知山",
+    "endStation": "西舞鶴",
+    "fare": 1200
+  },
+  {
+    "startStation": "豊岡",
+    "endStation": "西舞鶴",
+    "fare": 1500
+  },
+  {
+    "startStation": "上郡",
+    "endStation": "佐用",
+    "fare": 500
+  },
+  {
+    "startStation": "上郡",
+    "endStation": "智頭",
+    "fare": 1320
+  },
+  {
+    "startStation": "佐用",
+    "endStation": "智頭",
+    "fare": 950
+  },
+  {
+    "startStation": "窪川",
+    "endStation": "若井",
+    "fare": 210
+  },
+  {
+    "startStation": "博多",
+    "endStation": "姪浜",
+    "fare": 300
+  },
+  {
+    "startStation": "有田",
+    "endStation": "伊万里",
+    "fare": 550
   }
 ]

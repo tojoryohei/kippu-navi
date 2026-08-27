@@ -1,0 +1,11 @@
+[
+  {
+    "startStation": "鶴橋",
+    "endStation": "松阪",
+    "fare": {
+      "OneMonth": 36580,
+      "ThreeMonth": 104260,
+      "SixMonth": 197540
+    }
+  }
+]
