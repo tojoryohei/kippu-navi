@@ -166,8 +166,16 @@ func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, e
 		}
 	}
 
+	// JRの区間のみを抽出 (他会社線と連絡する場合はJRのみで判定)
+	var jrEdges []*domain.Edge
+	for _, edge := range summary.edges {
+		if edge.Company != domain.Other {
+			jrEdges = append(jrEdges, edge)
+		}
+	}
+
 	// 鉄道バリアフリー料金の適用判定
-	isBarrierFree := fare.IsAllBarrierFreeFeeApplicable(summary.edges)
+	isBarrierFree := len(jrEdges) > 0 && fare.IsAllBarrierFreeFeeApplicable(jrEdges)
 	if !isBarrierFree {
 		barrierFreeFee = 0
 	}
@@ -198,8 +206,7 @@ func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, e
 	}
 
 	// 電車特定区間の判定と計算
-	isTrainSpecific := fare.IsAllTrainSpecificApplicable(summary.edges)
-	if isTrainSpecific {
+	if len(jrEdges) > 0 && fare.IsAllTrainSpecificApplicable(jrEdges) {
 		params := passdomain.PassFareParams{
 			LineType:  domain.LineTypeTrunkOnly, // ドメインルール: 電車特定区間は幹線のみ
 			EigyoKilo: summary.totalEigyo,

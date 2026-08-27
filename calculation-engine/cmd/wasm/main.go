@@ -1333,7 +1333,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 		Data: tickethandler.KippuData{
 			Fare:             evaluationResult.TotalAmount(),
 			ValidDays:        validDays,
-			TotalEigyoKilo:   int(evaluationResult.TotalEigyoKilo),
+			TotalEigyoKilo:   int(evaluationResult.TotalPathEigyoKilo),
 			DepartureStation: depStation,
 			ArrivalStation:   arrStation,
 			PrintedViaLines:  printStrings,

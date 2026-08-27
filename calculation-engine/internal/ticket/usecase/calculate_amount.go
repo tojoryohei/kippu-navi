@@ -153,8 +153,16 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 	var totalFare int
 	var barrierFreeFee int
 
+	// JRの区間のみを抽出 (他会社線と連絡する場合はJRのみで判定)
+	var jrEdges []*domain.Edge
+	for _, edge := range summary.edges {
+		if edge.Company != domain.Other {
+			jrEdges = append(jrEdges, edge)
+		}
+	}
+
 	// バリアフリー加算
-	if fare.IsAllBarrierFreeFeeApplicable(summary.edges) {
+	if len(jrEdges) > 0 && fare.IsAllBarrierFreeFeeApplicable(jrEdges) {
 		barrierFreeFee = fare.CalculateBarrierFreeFee()
 	}
 
@@ -174,7 +182,7 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 
 	if totalFare == 0 {
 		// 電車特定区間
-		isTrainSpecific := fare.IsAllTrainSpecificApplicable(summary.edges)
+		isTrainSpecific := len(jrEdges) > 0 && fare.IsAllTrainSpecificApplicable(jrEdges)
 		if isTrainSpecific {
 			params := ticketdomain.TicketFareParams{
 				LineType:  domain.LineTypeTrunkOnly, // ドメインルール: 電車特定区間は幹線のみ
@@ -186,11 +194,21 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 				return nil, fmt.Errorf("電車特定区間の運賃計算に失敗しました: %w", err)
 			}
 			totalFare = f
-		} else {
+		} else if len(jrEdges) > 0 {
 			// 基本運賃 (複数会社を跨ぐ場合も含む)
-			totalLineType, err := domain.DetermineLineType(summary.hasTrunk, summary.hasLocal)
+			var totalLineType domain.LineType
+			var err error
+			var hasTrunk, hasLocal bool
+			for _, e := range jrEdges {
+				if e.IsLocal {
+					hasLocal = true
+				} else {
+					hasTrunk = true
+				}
+			}
+			totalLineType, err = domain.DetermineLineType(hasTrunk, hasLocal)
 			if err != nil {
-				return nil, fmt.Errorf("CalculateAmount: 全区間のルート種別判定に失敗しました: %w", err)
+				return nil, fmt.Errorf("CalculateAmount: 全JR区間のルート種別判定に失敗しました: %w", err)
 			}
 
 			components := make([]fare.JointFareComponent, 0, domain.CompanyCount)
