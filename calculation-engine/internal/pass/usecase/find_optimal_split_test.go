@@ -78,6 +78,7 @@ func TestFindOptimalSplit_Execute(t *testing.T) {
 		fare.NewTrainSpecificSectionCalculator(dummyTable),
 		fare.NewPathMatcher(),
 		fare.NewPathMatcher(),
+		nil,
 	)
 
 	opt := optimizer.NewDPOptimizer(calc)
@@ -251,7 +252,7 @@ func TestFindOptimalSplit_Execute_MultipleOptimalPaths(t *testing.T) {
 	calc := usecase.NewCalculateAmount(
 		g, reg, addonFareReg, addonChargeReg,
 		fare.NewTrainSpecificSectionCalculator(dummyTable),
-		fare.NewPathMatcher(), fare.NewPathMatcher(),
+		fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
 	)
 
 	opt := optimizer.NewDPOptimizer(calc)

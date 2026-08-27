@@ -56,7 +56,7 @@ func generateMockPrecomputedBin(t testing.TB, g *graph.RailwayGraph, destPath st
 
 	amountCalc := usecase.NewCalculateAmount(
 		g, calcs.Registry, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
-		calcs.TrainSpecific, calcs.SpecificRoute, calcs.AdjustedRoute,
+		calcs.TrainSpecific, calcs.SpecificRoute, calcs.AdjustedRoute, nil,
 	)
 
 	baseFares := make([]int32, 3*numStations*numStations)
@@ -205,7 +205,7 @@ func setupSearch(t testing.TB) (*graph.RailwayGraph, *usecase.SearchOptimalSplit
 
 	amount := usecase.NewCalculateAmount(
 		g, calcs.Registry, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
-		calcs.TrainSpecific, calcs.SpecificRoute, calcs.AdjustedRoute,
+		calcs.TrainSpecific, calcs.SpecificRoute, calcs.AdjustedRoute, nil,
 	)
 	opt := optimizer.NewDPOptimizer(amount)
 	split := usecase.NewFindOptimalSplit(opt, amount)

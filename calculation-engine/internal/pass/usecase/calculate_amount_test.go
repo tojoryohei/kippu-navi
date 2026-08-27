@@ -78,6 +78,7 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		trainSpecificCalc,
 		fare.NewPathMatcher(),
 		fare.NewPathMatcher(),
+		nil,
 	)
 
 	tests := []struct {

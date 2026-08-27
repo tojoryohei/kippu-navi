@@ -61,6 +61,7 @@ func setup(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		calcs.TrainSpecific,
 		calcs.SpecificRoute,
 		calcs.AdjustedRoute,
+		nil,
 	)
 	return u, g
 }

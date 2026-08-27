@@ -247,6 +247,11 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		return passBaseGraph.GetID(name)
 	})
 
+	passPrivateFareReg, err := fareio.NewPrivateFareRegistry()
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: passPrivateFareRegistry Init failed: %v", err))
+	}
+
 	baseAmountCalc = usecase.NewCalculateAmount(
 		passBaseGraph,
 		baseCalcs.Registry,
@@ -255,6 +260,7 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		baseCalcs.TrainSpecific,
 		baseCalcs.SpecificRoute,
 		baseCalcs.AdjustedRoute,
+		passPrivateFareReg,
 	)
 
 	// icAmountCalc の構築
@@ -270,6 +276,7 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		icCalcs.TrainSpecific,
 		icCalcs.SpecificRoute,
 		icCalcs.AdjustedRoute,
+		passPrivateFareReg,
 	)
 
 	// 特例ルールの設定

@@ -5,30 +5,33 @@ import (
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/fare"
 	"calculation-engine/internal/pass/graph"
+	"calculation-engine/internal/pass/infra/fareio"
 	"fmt"
 )
 
 // CalculateAmount は経路から定期運賃を計算するユースケースです。
 // グラフ、運賃レジストリ、特定区間加算運賃レジストリを協調させます。
 type CalculateAmount struct {
-	graph                   graph.TopologyProvider
+	graph                   graph.Graph
 	reg                     *fare.Registry
 	addonFareReg            *passdomain.AddonRegistry
 	addonChargeReg          *passdomain.AddonRegistry
 	trainSpecificCalc       *fare.TrainSpecificSectionCalculator
 	specificFarePathMatcher *fare.PathMatcher
 	adjustedFarePathMatcher *fare.PathMatcher
+	privateFareReg          *fareio.PrivateFareRegistry
 }
 
 // NewCalculateAmount は新しい CalculateAmount を作成します。
 func NewCalculateAmount(
-	g graph.TopologyProvider,
+	g graph.Graph,
 	reg *fare.Registry,
 	addonFareReg *passdomain.AddonRegistry,
 	addonChargeReg *passdomain.AddonRegistry,
 	trainSpecificCalc *fare.TrainSpecificSectionCalculator,
 	specificFarePathMatcher *fare.PathMatcher,
 	adjustedFarePathMatcher *fare.PathMatcher,
+	privateFareReg *fareio.PrivateFareRegistry,
 ) *CalculateAmount {
 	return &CalculateAmount{
 		graph:                   g,
@@ -38,6 +41,7 @@ func NewCalculateAmount(
 		trainSpecificCalc:       trainSpecificCalc,
 		specificFarePathMatcher: specificFarePathMatcher,
 		adjustedFarePathMatcher: adjustedFarePathMatcher,
+		privateFareReg:          privateFareReg,
 	}
 }
 
@@ -248,11 +252,52 @@ func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, e
 	// 特急料金の集計
 	addonCharges := u.addonChargeReg.GetApplicableAddons(path)
 	for _, addon := range addonCharges {
-		chargeVal, err := addon.GetByMonths(months)
+		fareVal, err := addon.GetByMonths(months)
 		if err != nil {
 			return nil, fmt.Errorf("特急料金の取得に失敗しました: %w", err)
 		}
-		limitedExpressCharge += chargeVal
+		limitedExpressCharge += fareVal
+	}
+
+	// 私鉄運賃の計算 (Company == 0 の区間)
+	if u.privateFareReg != nil {
+		var privateStartIdx = -1
+		for i, edge := range summary.edges {
+			if edge.Company == domain.Other {
+				if privateStartIdx == -1 {
+					privateStartIdx = i
+				}
+			} else {
+				if privateStartIdx != -1 {
+					startName := u.graph.GetName(path[privateStartIdx])
+					endName := u.graph.GetName(path[i])
+					if passPrice, ok := u.privateFareReg.GetFare(startName, endName); ok {
+						val, err := passPrice.GetByMonths(months)
+						if err != nil {
+							return nil, fmt.Errorf("私鉄定期運賃の取得に失敗しました: %w", err)
+						}
+						totalFare += val
+					} else {
+						return nil, fmt.Errorf("私鉄定期運賃が見つかりません: %s - %s", startName, endName)
+					}
+					privateStartIdx = -1
+				}
+			}
+		}
+		// 末尾が私鉄の場合
+		if privateStartIdx != -1 {
+			startName := u.graph.GetName(path[privateStartIdx])
+			endName := u.graph.GetName(path[len(summary.edges)])
+			if passPrice, ok := u.privateFareReg.GetFare(startName, endName); ok {
+				val, err := passPrice.GetByMonths(months)
+				if err != nil {
+					return nil, fmt.Errorf("私鉄定期運賃の取得に失敗しました: %w", err)
+				}
+				totalFare += val
+			} else {
+				return nil, fmt.Errorf("私鉄定期運賃が見つかりません: %s - %s", startName, endName)
+			}
+		}
 	}
 
 	return &CalculationResult{

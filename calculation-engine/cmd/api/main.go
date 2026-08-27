@@ -131,6 +131,11 @@ func run() error {
 		return fmt.Errorf("特例ルールのID解決に失敗しました: %w", err)
 	}
 
+	passPrivateFareReg, err := passfareio.NewPrivateFareRegistry()
+	if err != nil {
+		return fmt.Errorf("定期券用私鉄運賃データの読み込みに失敗しました: %w", err)
+	}
+
 	passAmountCalc := passusecase.NewCalculateAmount(
 		g,
 		passCalcs.Registry,
@@ -139,6 +144,7 @@ func run() error {
 		passCalcs.TrainSpecific,
 		passCalcs.SpecificRoute,
 		passCalcs.AdjustedRoute,
+		passPrivateFareReg,
 	)
 
 	passOptimizer := passopt.NewDPOptimizer(passAmountCalc)

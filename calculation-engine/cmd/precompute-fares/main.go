@@ -108,6 +108,11 @@ func run(args []string) error {
 	// 双方向ルールの重複排除
 	rules := makeUniqueBidirectionalRules(bypassRules)
 
+	passPrivateFareReg, err := fareio.NewPrivateFareRegistry()
+	if err != nil {
+		return fmt.Errorf("定期券用私鉄運賃データの読み込みに失敗しました: %w", err)
+	}
+
 	amountCalc := usecase.NewCalculateAmount(
 		baseGraph,
 		calcs.Registry,
@@ -116,6 +121,7 @@ func run(args []string) error {
 		calcs.TrainSpecific,
 		calcs.SpecificRoute,
 		calcs.AdjustedRoute,
+		passPrivateFareReg,
 	)
 
 	// ICグラフの構築
