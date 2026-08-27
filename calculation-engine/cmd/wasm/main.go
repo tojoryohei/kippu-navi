@@ -39,8 +39,8 @@ var ticketWasmGraph *WasmGraph
 
 var passBaseGraph *graph.RailwayGraph
 var icGraph *graph.RailwayGraph
-var baseAmountCalc *usecase.CalculateAmount
-var icAmountCalc *usecase.CalculateAmount
+var passBaseAmountCalc *usecase.CalculateAmount
+var passIcAmountCalc *usecase.CalculateAmount
 var bypassRules []passdomain.ResolvedBypassRule
 
 // 乗車券用のグローバルコンポーネント
@@ -53,7 +53,7 @@ var ticketHandler *tickethandler.Ticket
 
 // 実行中のコンテキスト
 var activeGraph *graph.RailwayGraph
-var activeAmountCalc *usecase.CalculateAmount
+var passActiveAmountCalc *usecase.CalculateAmount
 
 // EdgeBinary はバイナリデータ内の辺表現 (16 bytes)
 type EdgeBinary struct {
@@ -223,27 +223,27 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	}
 	icGraph = ic
 
-	// baseAmountCalc の構築
-	baseCalcs, err := fareio.InitRegistry(passBaseGraph)
+	// passBaseAmountCalc の構築
+	passBaseCalcs, err := fareio.InitRegistry(passBaseGraph)
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf("error: InitRegistry failed: %v", err))
 	}
 
-	addonFareReg := passdomain.NewAddonRegistry()
-	addonFareReg.Register("南千歳", "新千歳空港", passdomain.PassPrice{OneMonth: 660, ThreeMonth: 1880, SixMonth: 3180})
-	addonFareReg.Register("日根野", "りんくうタウン", passdomain.PassPrice{OneMonth: 4690, ThreeMonth: 13320, SixMonth: 22440})
-	addonFareReg.Register("日根野", "関西空港", passdomain.PassPrice{OneMonth: 6640, ThreeMonth: 18900, SixMonth: 31820})
-	addonFareReg.Register("りんくうタウン", "関西空港", passdomain.PassPrice{OneMonth: 5010, ThreeMonth: 14250, SixMonth: 24000})
-	addonFareReg.Register("児島", "宇多津", passdomain.PassPrice{OneMonth: 1610, ThreeMonth: 4600, SixMonth: 8170})
-	addonFareReg.Register("田吉", "宮崎空港", passdomain.PassPrice{OneMonth: 3840, ThreeMonth: 10960, SixMonth: 18680})
+	passAddonFareReg := passdomain.NewAddonRegistry()
+	passAddonFareReg.Register("南千歳", "新千歳空港", passdomain.PassPrice{OneMonth: 660, ThreeMonth: 1880, SixMonth: 3180})
+	passAddonFareReg.Register("日根野", "りんくうタウン", passdomain.PassPrice{OneMonth: 4690, ThreeMonth: 13320, SixMonth: 22440})
+	passAddonFareReg.Register("日根野", "関西空港", passdomain.PassPrice{OneMonth: 6640, ThreeMonth: 18900, SixMonth: 31820})
+	passAddonFareReg.Register("りんくうタウン", "関西空港", passdomain.PassPrice{OneMonth: 5010, ThreeMonth: 14250, SixMonth: 24000})
+	passAddonFareReg.Register("児島", "宇多津", passdomain.PassPrice{OneMonth: 1610, ThreeMonth: 4600, SixMonth: 8170})
+	passAddonFareReg.Register("田吉", "宮崎空港", passdomain.PassPrice{OneMonth: 3840, ThreeMonth: 10960, SixMonth: 18680})
 
-	addonFareReg.ResolveIDs(func(name string) (int, bool) {
+	passAddonFareReg.ResolveIDs(func(name string) (int, bool) {
 		return passBaseGraph.GetID(name)
 	})
 
-	addonChargeReg := passdomain.NewAddonRegistry()
-	addonChargeReg.Register("博多", "博多南", passdomain.PassPrice{OneMonth: 4680, ThreeMonth: 13340, SixMonth: 25270})
-	addonChargeReg.ResolveIDs(func(name string) (int, bool) {
+	passAddonChargeReg := passdomain.NewAddonRegistry()
+	passAddonChargeReg.Register("博多", "博多南", passdomain.PassPrice{OneMonth: 4680, ThreeMonth: 13340, SixMonth: 25270})
+	passAddonChargeReg.ResolveIDs(func(name string) (int, bool) {
 		return passBaseGraph.GetID(name)
 	})
 
@@ -252,53 +252,61 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		return js.ValueOf(fmt.Sprintf("error: passPrivateFareRegistry Init failed: %v", err))
 	}
 
-	baseAmountCalc = usecase.NewCalculateAmount(
+	passBaseAmountCalc = usecase.NewCalculateAmount(
 		passBaseGraph,
-		baseCalcs.Registry,
-		addonFareReg,
-		addonChargeReg,
-		baseCalcs.TrainSpecific,
-		baseCalcs.SpecificRoute,
-		baseCalcs.AdjustedRoute,
+		passBaseCalcs.Registry,
+		passAddonFareReg,
+		passAddonChargeReg,
+		passBaseCalcs.TrainSpecific,
+		passBaseCalcs.SpecificRoute,
+		passBaseCalcs.AdjustedRoute,
 		passPrivateFareReg,
 	)
 
-	// icAmountCalc の構築
-	icCalcs, err := fareio.InitRegistry(icGraph)
+	// passIcAmountCalc の構築
+	passIcCalcs, err := fareio.InitRegistry(icGraph)
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf("error: ic InitRegistry failed: %v", err))
 	}
-	icAmountCalc = usecase.NewCalculateAmount(
+	passIcAmountCalc = usecase.NewCalculateAmount(
 		icGraph,
-		icCalcs.Registry,
-		addonFareReg,
-		addonChargeReg,
-		icCalcs.TrainSpecific,
-		icCalcs.SpecificRoute,
-		icCalcs.AdjustedRoute,
+		passIcCalcs.Registry,
+		passAddonFareReg,
+		passAddonChargeReg,
+		passIcCalcs.TrainSpecific,
+		passIcCalcs.SpecificRoute,
+		passIcCalcs.AdjustedRoute,
 		passPrivateFareReg,
 	)
 
 	// 特例ルールの設定
-	bypassReg := passdomain.NewBypassRegistry()
-	bypassReg.Register(
+	passBypassReg := passdomain.NewBypassRegistry()
+	passBypassReg.Register(
 		[]string{"大沼", "大沼公園", "赤井川", "駒ケ岳", "森"},
 		[]string{"大沼", "鹿部", "渡島沼尻", "渡島砂原", "掛澗", "尾白内", "東森", "森"},
 	)
-	bypassReg.Register(
+	passBypassReg.Register(
 		[]string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"},
 		[]string{"日暮里", "尾久", "赤羽"},
 	)
-	bypassReg.Register(
+	passBypassReg.Register(
 		[]string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"},
 		[]string{"赤羽", "北赤羽", "浮間舟渡", "戸田公園", "（北）戸田", "北戸田", "武蔵浦和", "中浦和", "南与野", "与野本町", "北与野", "大宮"},
 	)
-	bypassReg.Register(
+	passBypassReg.Register(
 		[]string{"品川", "大井町", "大森", "蒲田", "川崎", "鶴見"},
 		[]string{"品川", "西大井", "武蔵小杉", "新川崎", "鶴見"},
 	)
+	passBypassReg.Register(
+		[]string{"八代", "新八代", "千丁", "有佐", "小川", "松橋", "宇土"},
+		[]string{"八代", "新八代", "宇土"},
+	)
+	passBypassReg.Register(
+		[]string{"宇多津", "丸亀", "讃岐塩屋", "多度津"},
+		[]string{"宇多津", "多度津"},
+	)
 
-	bypassRules, err = bypassReg.ResolveIDs(func(name string) (int, bool) {
+	bypassRules, err = passBypassReg.ResolveIDs(func(name string) (int, bool) {
 		return passBaseGraph.GetID(name)
 	})
 	if err != nil {
@@ -319,10 +327,10 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 
 	if isIc {
 		activeGraph = icGraph
-		activeAmountCalc = icAmountCalc
+		passActiveAmountCalc = passIcAmountCalc
 	} else {
 		activeGraph = passBaseGraph
-		activeAmountCalc = baseAmountCalc
+		passActiveAmountCalc = passBaseAmountCalc
 	}
 
 	var splitNames []string
@@ -495,7 +503,7 @@ func getCheapestNoSplitSegmentsWasm(start, end, months int, allowOvershoot bool)
 	var bestResults []*usecase.CalculationResult
 
 	for _, path := range validPaths {
-		res, err := activeAmountCalc.Execute(path, months)
+		res, err := passActiveAmountCalc.Execute(path, months)
 		if err != nil {
 			continue
 		}
@@ -986,10 +994,10 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 
 	if isIc {
 		activeGraph = icGraph
-		activeAmountCalc = icAmountCalc
+		passActiveAmountCalc = passIcAmountCalc
 	} else {
 		activeGraph = passBaseGraph
-		activeAmountCalc = baseAmountCalc
+		passActiveAmountCalc = passBaseAmountCalc
 	}
 
 	var stationNames []string
@@ -1023,7 +1031,7 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 			if !isPathValidWasm(cand) {
 				continue
 			}
-			res, err := activeAmountCalc.Execute(cand, months)
+			res, err := passActiveAmountCalc.Execute(cand, months)
 			if err != nil {
 				continue
 			}
@@ -1042,7 +1050,7 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 		finalPath = applyNormalBypassCorrection(stationIDs)
 	}
 
-	res, err := activeAmountCalc.Execute(finalPath, months)
+	res, err := passActiveAmountCalc.Execute(finalPath, months)
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf(`{"error":"calculation failed: %v"}`, err))
 	}
