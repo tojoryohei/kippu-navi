@@ -61,24 +61,46 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 	}
 
 	var candidates []zoneCandidate
-
-	// 両端適用の組み合わせ
+	
+	// ゾーンを「特定都区市内（山手線内以外）」と「東京山手線内」に分離する
+	var originCityZones, originYamanoteZones []*ticketdomain.SpecialZone
 	for i := range originZones {
-		for j := range destZones {
-			// 同一ゾーン発着は特例適用外（距離が200kmを超えないため）
-			if originZones[i].Name != destZones[j].Name {
-				candidates = append(candidates, zoneCandidate{origin: &originZones[i], dest: &destZones[j]})
-			}
+		if originZones[i].Name == "東京山手線内" {
+			originYamanoteZones = append(originYamanoteZones, &originZones[i])
+		} else {
+			originCityZones = append(originCityZones, &originZones[i])
 		}
 	}
-	// 出発のみ適用
-	for i := range originZones {
-		candidates = append(candidates, zoneCandidate{origin: &originZones[i], dest: nil})
+
+	var destCityZones, destYamanoteZones []*ticketdomain.SpecialZone
+	for i := range destZones {
+		if destZones[i].Name == "東京山手線内" {
+			destYamanoteZones = append(destYamanoteZones, &destZones[i])
+		} else {
+			destCityZones = append(destCityZones, &destZones[i])
+		}
 	}
-	// 到着のみ適用
-	for j := range destZones {
-		candidates = append(candidates, zoneCandidate{origin: nil, dest: &destZones[j]})
+
+	addCandidates := func(origins, dests []*ticketdomain.SpecialZone) {
+		for _, d := range dests {
+			// 1. 両端適用
+			for _, o := range origins {
+				candidates = append(candidates, zoneCandidate{origin: o, dest: d})
+			}
+			// 2. 着駅のみ適用
+			candidates = append(candidates, zoneCandidate{origin: nil, dest: d})
+		}
+		// 3. 発駅のみ適用
+		for _, o := range origins {
+			candidates = append(candidates, zoneCandidate{origin: o, dest: nil})
+		}
 	}
+
+	// 第1フェーズ: 特定都区市内（第86条: 200km超）の判定
+	addCandidates(originCityZones, destCityZones)
+
+	// 第2フェーズ: 東京山手線内（第87条: 100km超200km以下）の判定
+	addCandidates(originYamanoteZones, destYamanoteZones)
 
 	// 厳しい条件（リストの先頭）から順に試行する
 	for _, cand := range candidates {
