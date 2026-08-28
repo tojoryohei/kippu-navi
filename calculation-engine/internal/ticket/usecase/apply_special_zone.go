@@ -5,7 +5,6 @@ import (
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/graphio"
-	"fmt"
 )
 
 // AppliedZoneInfo は特例ゾーンが適用された仮想経路とその閾値を保持します。
@@ -94,7 +93,6 @@ func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomai
 
 			if len(changingIdx) == 1 || len(changingIdx) == 2 {
 				zoneID, ok := s.graph.GetID(destZone.Name)
-				fmt.Printf("Apply: destZone=%s, changingIdx=%v, zoneID=%d, ok=%v\n", destZone.Name, changingIdx, zoneID, ok)
 				if ok {
 					lastChange := changingIdx[len(changingIdx)-1]
 
@@ -160,7 +158,6 @@ func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomai
 
 			if len(changingIdx) == 1 || len(changingIdx) == 2 {
 				zoneID, ok := s.graph.GetID(originZone.Name)
-				fmt.Printf("Apply: originZone=%s, changingIdx=%v, zoneID=%d, ok=%v\n", originZone.Name, changingIdx, zoneID, ok)
 				if ok {
 					firstChange := changingIdx[0]
 

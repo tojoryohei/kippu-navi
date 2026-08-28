@@ -61,7 +61,7 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 	}
 
 	var candidates []zoneCandidate
-	
+
 	// ゾーンを「特定都区市内（山手線内以外）」と「東京山手線内」に分離する
 	var originCityZones, originYamanoteZones []*ticketdomain.SpecialZone
 	for i := range originZones {
@@ -111,22 +111,16 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 				var err error
 				transformedPath, err = e.postZoneCorrector.Correct(transformedPath, e.graph)
 				if err != nil {
-					fmt.Printf("TicketSegmentEvaluator: postZoneCorrector failed: %v\n", err)
 					continue
 				}
 			}
-
-			fmt.Printf("TicketSegmentEvaluator: appliedInfo.TransformedPath len=%d\n", len(transformedPath))
 			// 特例が適用された仮想経路で運賃計算を試みる
 			res, err := e.calc.Execute(transformedPath)
 			if err == nil {
 				// 合計営業キロが閾値を満たしているか確認
-				fmt.Printf("TicketSegmentEvaluator: res.TotalEigyoKilo=%v, ThresholdKilo=%v\n", res.TotalEigyoKilo, appliedInfo.ThresholdKilo)
 				if res.TotalEigyoKilo > appliedInfo.ThresholdKilo {
 					return res, nil // 強制適用成功！
 				}
-			} else {
-				fmt.Printf("TicketSegmentEvaluator: calc.Execute failed: %v\n", err)
 			}
 		}
 	}
@@ -139,7 +133,6 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 			var err error
 			transformedPath, err = e.postZoneCorrector.Correct(transformedPath, e.graph)
 			if err != nil {
-				fmt.Printf("TicketSegmentEvaluator: postZoneCorrector failed (rule 88): %v\n", err)
 				return nil, err
 			}
 		}

@@ -101,7 +101,6 @@ func (u *CalculateAmount) analyzePath(path []int) (*routeSummary, error) {
 		if edge == nil {
 			fromName := u.graph.GetName(fromID)
 			toName := u.graph.GetName(toID)
-			fmt.Printf("analyzePath Error: 経路が見つかりません: %s(%d) -> %s(%d)\n", fromName, fromID, toName, toID)
 			return nil, fmt.Errorf("CalculateAmount: 経路が見つかりません: %s(%d) -> %s(%d)", fromName, fromID, toName, toID)
 		}
 
@@ -178,7 +177,7 @@ func (u *CalculateAmount) applyArticle70(path []int) []int {
 		}
 	}
 	if inSegment {
-		segments = append(segments, segment{startIdx, len(path)-1})
+		segments = append(segments, segment{startIdx, len(path) - 1})
 	}
 
 	if len(segments) == 0 {
@@ -253,7 +252,6 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 
 	summary, err := u.analyzePath(farePath)
 	if err != nil {
-		fmt.Printf("CalculateAmount.Execute: analyzePath failed: %v\n", err)
 		return nil, err
 	}
 
@@ -477,7 +475,6 @@ func (u *CalculateAmount) applyKitashinchiReplacement(path []int) []int {
 			break
 		}
 	}
-	fmt.Printf("Kitashinchi matchFwd: %v, pathLen: %d\n", matchFwd, len(path))
 	if matchFwd {
 		validDirection := false
 		if len(path) == 6 {
@@ -495,14 +492,7 @@ func (u *CalculateAmount) applyKitashinchiReplacement(path []int) []int {
 				newPath = append(newPath, id)
 			}
 			newPath = append(newPath, path[6:]...)
-			fmt.Printf("Kitashinchi replaced! newPath length: %d\n", len(newPath))
 			return newPath
-		} else {
-			nextStation := ""
-			if len(path) > 6 {
-				nextStation = u.graph.GetName(path[6])
-			}
-			fmt.Printf("Kitashinchi validDirection false! nextStation: %s\n", nextStation)
 		}
 	}
 
