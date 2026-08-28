@@ -301,6 +301,18 @@ func (u *CalculateAmount) buildFarePath(path []int) []int {
 			if i+1 < len(path) {
 				nextName := u.graph.GetName(path[i+1])
 				if route := u.zoneRoutes.GetRoute(name, nextName); route != nil {
+					// 旅客営業規則: 東京都区内・東京山手線内から品川(出口)経由で新横浜へ向かう場合
+					// 東京・品川間は東海道本線（新幹線）として計算する。
+					// 東京→品川の直接辺は新幹線のみ存在するため、["東京","品川"]と展開するだけで自動的にJRCentral辺が選ばれる。
+					if (name == "東京都区内" || name == "東京山手線内") && nextName == "品川" && i+2 < len(path) {
+						if u.graph.GetName(path[i+2]) == "新横浜" {
+							if tokyoID, ok := u.graph.GetID("東京"); ok {
+								farePath = append(farePath, tokyoID)
+								continue
+							}
+						}
+					}
+					// 通常のゾーンルート展開（最後の駅（出口駅）を除いた駅名を追加）
 					for j, rName := range route {
 						if j < len(route)-1 {
 							if rID, ok := u.graph.GetID(rName); ok {
@@ -314,6 +326,18 @@ func (u *CalculateAmount) buildFarePath(path []int) []int {
 			if i > 0 {
 				prevName := u.graph.GetName(path[i-1])
 				if route := u.zoneRoutes.GetRoute(name, prevName); route != nil {
+					// 旅客営業規則: 新横浜から品川(入口)経由で東京都区内・東京山手線内へ入る場合
+					// 品川・東京間は東海道本線（新幹線）として計算する。
+					// 品川→東京の直接辺は新幹線のみ存在するため、["品川","東京"]と展開するだけで自動的にJRCentral辺が選ばれる。
+					if (name == "東京都区内" || name == "東京山手線内") && prevName == "品川" && i >= 2 {
+						if u.graph.GetName(path[i-2]) == "新横浜" {
+							if tokyoID, ok := u.graph.GetID("東京"); ok {
+								farePath = append(farePath, tokyoID)
+								continue
+							}
+						}
+					}
+					// 通常のゾーンルート展開（逆方向: 先頭の駅から颮list[1]まで追加）
 					for j := len(route) - 2; j >= 0; j-- {
 						if rID, ok := u.graph.GetID(route[j]); ok {
 							farePath = append(farePath, rID)
