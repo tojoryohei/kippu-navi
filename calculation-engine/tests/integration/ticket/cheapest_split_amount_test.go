@@ -102,6 +102,15 @@ func setupTicketSplit(t *testing.T) (*usecase.FindOptimalSplit, *usecase.TicketS
 		t.Fatalf("PrivateFareRegistryの初期化に失敗しました: %v", err)
 	}
 
+	arBytes, err := io.ReadAll(graphdata.GetArticle70RoutesReader())
+	if err != nil {
+		t.Fatalf("article70Routesの読み込みに失敗しました: %v", err)
+	}
+	article70Routes, err := ticketdomain.LoadArticle70RoutesFromBytes(arBytes)
+	if err != nil {
+		t.Fatalf("article70Routesのパースに失敗しました: %v", err)
+	}
+
 	calc := usecase.NewCalculateAmount(
 		fareReg,
 		addonReg,
@@ -111,6 +120,7 @@ func setupTicketSplit(t *testing.T) (*usecase.FindOptimalSplit, *usecase.TicketS
 		privateReg,
 		fullGraph,
 		zoneRoutes,
+		article70Routes,
 	)
 
 	// 4. 特例適用器とセグメントエバリュエータ

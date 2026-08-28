@@ -21,7 +21,8 @@ type EdgeBinary struct {
 	IsTrainSpecificSection bool    // 1 byte
 	IsBarrierFreeSection   bool    // 1 byte
 	IsIcPassArea           bool    // 1 byte
-	Pad                    [2]byte // 2 bytes
+	IsBoldLineArea         bool    // 1 byte
+	Pad                    [1]byte // 1 byte padding
 }
 
 func main() {
@@ -76,7 +77,8 @@ func main() {
 			eb.IsLocal = e.IsLocal
 			eb.IsTrainSpecificSection = e.IsTrainSpecificSection
 			eb.IsBarrierFreeSection = e.IsBarrierFreeSection
-			eb.IsIcPassArea = false // Ticketgraph currently does not track IcPassArea per edge, or set default
+			eb.IsIcPassArea = false // Ticketgraph currently does not track IcPassArea per edge
+			eb.IsBoldLineArea = e.IsBoldLineArea
 
 			edgeData = append(edgeData, eb)
 			currEdgeCount++

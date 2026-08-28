@@ -180,6 +180,15 @@ func run() error {
 		return fmt.Errorf("乗車券の特例ゾーンルートロードに失敗しました: %w", err)
 	}
 
+	arBytes, err := io.ReadAll(graphdata.GetArticle70RoutesReader())
+	if err != nil {
+		return fmt.Errorf("article70Routesの読み込みに失敗しました: %w", err)
+	}
+	ticketArticle70Routes, err := ticketdomain.LoadArticle70RoutesFromBytes(arBytes)
+	if err != nil {
+		return fmt.Errorf("article70Routesのパースに失敗しました: %w", err)
+	}
+
 	ticketZoneReg, err := ticketgraphio.LoadSpecialZones()
 	if err != nil {
 		return fmt.Errorf("乗車券の特例ゾーンロードに失敗しました: %w", err)
@@ -253,6 +262,7 @@ func run() error {
 		ticketPrivateFareReg,
 		ticketFullGraph,
 		ticketZoneRoutes,
+		ticketArticle70Routes,
 	)
 
 	ticketApplier := ticketusecase.NewSpecialZoneApplier(ticketFullGraph, ticketZoneReg)

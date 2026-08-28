@@ -36,3 +36,11 @@ func GetSpecialZonesReader() *bytes.Reader {
 func GetZoneRoutesReader() *bytes.Reader {
 	return bytes.NewReader(zoneRoutesJSON)
 }
+
+//go:embed article70_routes.json
+var article70RoutesJSON []byte
+
+// GetArticle70RoutesReader は70条特例のルートデータ(article70_routes.json)のReaderを返すゲッターメソッドです。
+func GetArticle70RoutesReader() *bytes.Reader {
+	return bytes.NewReader(article70RoutesJSON)
+}

@@ -96,6 +96,15 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		t.Fatalf("zoneRoutesのパースに失敗しました: %v", err)
 	}
 
+	arBytes, err := io.ReadAll(graphdata.GetArticle70RoutesReader())
+	if err != nil {
+		t.Fatalf("article70Routesの読み込みに失敗しました: %v", err)
+	}
+	article70Routes, err := domain.LoadArticle70RoutesFromBytes(arBytes)
+	if err != nil {
+		t.Fatalf("article70Routesのパースに失敗しました: %v", err)
+	}
+
 	privateReg, err := fareio.NewPrivateFareRegistry()
 	if err != nil {
 		t.Fatalf("PrivateFareRegistryの初期化に失敗しました: %v", err)
@@ -111,6 +120,7 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		privateReg,
 		g,
 		zoneRoutes,
+		article70Routes,
 	)
 
 	return calc, g
@@ -171,7 +181,7 @@ func TestTicketAmountCalculation_Integration(t *testing.T) {
 		},
 		{
 			name: "東京〜宇都宮",
-			path: getIDs("東京山手線内", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮", "土呂", "東大宮", "蓮田", "白岡", "新白岡", "久喜", "東鷲宮", "栗橋", "古河", "野木", "間々田", "小山", "小金井", "自治医大", "石橋", "雀宮", "宇都宮"),
+			path: getIDs("東京山手線内", "田端", "上中里", "王子", "東十条", "赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮", "土呂", "東大宮", "蓮田", "白岡", "新白岡", "久喜", "東鷲宮", "栗橋", "古河", "野木", "間々田", "小山", "小金井", "自治医大", "石橋", "雀宮", "宇都宮"),
 			want: usecase.CalculationResult{
 				Fare:           2090,
 				BarrierFreeFee: 0,

@@ -65,7 +65,8 @@ type EdgeBinary struct {
 	IsTrainSpecificSection bool
 	IsBarrierFreeSection   bool
 	IsIcPassArea           bool
-	Pad                    [2]byte
+	IsBoldLineArea         bool
+	Pad                    [1]byte
 }
 
 // WasmGraph はバイナリデータからキャストされたグラフデータを提供する Graph 実装
@@ -101,7 +102,8 @@ func (g *WasmGraph) GetEdges(id int) []passdomain.PassEdge {
 				IsTrainSpecificSection: eb.IsTrainSpecificSection,
 				IsBarrierFreeSection:   eb.IsBarrierFreeSection,
 			},
-			IsIcPassArea: eb.IsIcPassArea,
+			IsIcPassArea:   eb.IsIcPassArea,
+			IsBoldLineArea: eb.IsBoldLineArea,
 		}
 	}
 	return edges
@@ -1169,8 +1171,8 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketEdges := make([]ticketdomain.TicketEdge, len(passEdges))
 		for j, pe := range passEdges {
 			ticketEdges[j] = ticketdomain.TicketEdge{
-				Edge: pe.Edge,
-				// IsShinkansen や Line は現在WASMバイナリに持たせていないためゼロ値となるが、運賃計算・補正ロジックには影響しない
+				Edge:           pe.Edge,
+				IsBoldLineArea: pe.IsBoldLineArea,
 			}
 		}
 		ticketFullGraph.Edges[i] = ticketEdges
@@ -1184,6 +1186,15 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	ticketZoneRoutes, err := ticketdomain.LoadZoneRoutesFromBytes(zoneRoutesBytes)
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf("error: ticket zone routes load failed: %v", err))
+	}
+
+	arBytes, err := io.ReadAll(ticketgraphdata.GetArticle70RoutesReader())
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: failed to read article70 routes data: %v", err))
+	}
+	ticketArticle70Routes, err := ticketdomain.LoadArticle70RoutesFromBytes(arBytes)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: ticket article70 routes load failed: %v", err))
 	}
 
 	ticketZoneReg, err := ticketgraphio.LoadSpecialZones()
@@ -1258,6 +1269,7 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketPrivateFareReg,
 		ticketFullGraph,
 		ticketZoneRoutes,
+		ticketArticle70Routes,
 	)
 
 	ticketApplier = ticketusecase.NewSpecialZoneApplier(ticketFullGraph, ticketZoneReg)
