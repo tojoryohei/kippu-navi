@@ -4,6 +4,7 @@ import (
 	"calculation-engine/internal/domain"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -24,7 +25,23 @@ func (m *mockSuburbanGraph) FindShortestPathGisei(startID, endID int) (*graph.Pa
 		return p, nil
 	}
 	// Fallback for missing mocks
-	return nil, nil
+	return nil, fmt.Errorf("not found")
+}
+
+func (m *mockSuburbanGraph) FindShortestPathGiseiSuburban(startID, endID int, areaID domain.SuburbanAreaID) (*graph.PathResult, error) {
+	key := string(rune(startID)) + "-" + string(rune(endID))
+	if p, ok := m.shortestPaths[key]; ok {
+		return p, nil
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func (m *mockSuburbanGraph) FindShortestPathEigyoSuburban(startID, endID int, areaID domain.SuburbanAreaID) (*graph.PathResult, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockSuburbanGraph) FindShortestPathEigyoTrainSpecific(startID, endID int) (*graph.PathResult, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func TestSuburbanAreaCorrector(t *testing.T) {
@@ -41,7 +58,7 @@ func TestSuburbanAreaCorrector(t *testing.T) {
 		},
 	}
 
-	c := NewSuburbanAreaCorrector()
+	c := NewSuburbanAreaCorrector(nil)
 
 	tests := []struct {
 		name     string

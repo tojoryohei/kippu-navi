@@ -127,22 +127,28 @@ func (s *SuburbanAreaCorrector) Correct(path []int, g graph.Graph) ([]int, error
 }
 
 func (s *SuburbanAreaCorrector) findShortestPathGisei(startID, endID int, jrArea domain.SuburbanAreaID, g graph.Graph) (*graph.PathResult, error) {
-	if rg, ok := g.(*graph.RailwayGraph); ok {
-		return rg.FindShortestPathGiseiSuburban(startID, endID, jrArea)
+	if f, ok := g.(interface {
+		FindShortestPathGiseiSuburban(int, int, domain.SuburbanAreaID) (*graph.PathResult, error)
+	}); ok {
+		return f.FindShortestPathGiseiSuburban(startID, endID, jrArea)
 	}
 	return nil, fmt.Errorf("graph does not support FindShortestPathGiseiSuburban")
 }
 
 func (s *SuburbanAreaCorrector) findShortestPathEigyo(startID, endID int, jrArea domain.SuburbanAreaID, g graph.Graph) (*graph.PathResult, error) {
-	if rg, ok := g.(*graph.RailwayGraph); ok {
-		return rg.FindShortestPathEigyoSuburban(startID, endID, jrArea)
+	if f, ok := g.(interface {
+		FindShortestPathEigyoSuburban(int, int, domain.SuburbanAreaID) (*graph.PathResult, error)
+	}); ok {
+		return f.FindShortestPathEigyoSuburban(startID, endID, jrArea)
 	}
 	return nil, fmt.Errorf("graph does not support FindShortestPathEigyoSuburban")
 }
 
 func (s *SuburbanAreaCorrector) findShortestPathEigyoTrainSpecific(startID, endID int, g graph.Graph) (*graph.PathResult, error) {
-	if rg, ok := g.(*graph.RailwayGraph); ok {
-		return rg.FindShortestPathEigyoTrainSpecific(startID, endID)
+	if f, ok := g.(interface {
+		FindShortestPathEigyoTrainSpecific(int, int) (*graph.PathResult, error)
+	}); ok {
+		return f.FindShortestPathEigyoTrainSpecific(startID, endID)
 	}
 	return nil, fmt.Errorf("graph does not support FindShortestPathEigyoTrainSpecific")
 }
