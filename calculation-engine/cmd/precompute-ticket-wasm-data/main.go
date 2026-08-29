@@ -13,16 +13,16 @@ import (
 // EdgeBinary はWasmにZero-copyキャストで渡すための辺構造体。
 // 16バイト固定サイズで、メモリアライメントを完全に統一。
 type EdgeBinary struct {
-	ToID                   int32   // 4 bytes
-	EigyoKilo              int16   // 2 bytes
-	GiseiKilo              int16   // 2 bytes
-	Company                int16   // 2 bytes
-	IsLocal                bool    // 1 byte
-	IsTrainSpecificSection bool    // 1 byte
-	IsBarrierFreeSection   bool    // 1 byte
-	IsIcPassArea           bool    // 1 byte
-	IsBoldLineArea         bool    // 1 byte
-	Pad                    [1]byte // 1 byte padding
+	ToID                   int32 // 4 bytes
+	EigyoKilo              int16 // 2 bytes
+	GiseiKilo              int16 // 2 bytes
+	Company                int16 // 2 bytes
+	IsLocal                bool  // 1 byte
+	IsTrainSpecificSection bool  // 1 byte
+	IsBarrierFreeSection   bool  // 1 byte
+	IsIcPassArea           bool  // 1 byte
+	IsBoldLineArea         bool  // 1 byte
+	SuburbanArea           uint8 // 1 byte
 }
 
 func main() {
@@ -79,6 +79,7 @@ func main() {
 			eb.IsBarrierFreeSection = e.IsBarrierFreeSection
 			eb.IsIcPassArea = false // Ticketgraph currently does not track IcPassArea per edge
 			eb.IsBoldLineArea = e.IsBoldLineArea
+			eb.SuburbanArea = uint8(e.SuburbanArea)
 
 			edgeData = append(edgeData, eb)
 			currEdgeCount++

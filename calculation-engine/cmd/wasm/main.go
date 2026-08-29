@@ -66,7 +66,7 @@ type EdgeBinary struct {
 	IsBarrierFreeSection   bool
 	IsIcPassArea           bool
 	IsBoldLineArea         bool
-	Pad                    [1]byte
+	SuburbanArea           uint8
 }
 
 // WasmGraph はバイナリデータからキャストされたグラフデータを提供する Graph 実装
@@ -101,6 +101,7 @@ func (g *WasmGraph) GetEdges(id int) []passdomain.PassEdge {
 				IsLocal:                eb.IsLocal,
 				IsTrainSpecificSection: eb.IsTrainSpecificSection,
 				IsBarrierFreeSection:   eb.IsBarrierFreeSection,
+				SuburbanArea:           domain.SuburbanAreaID(eb.SuburbanArea),
 			},
 			IsIcPassArea:   eb.IsIcPassArea,
 			IsBoldLineArea: eb.IsBoldLineArea,
@@ -1281,7 +1282,16 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketFullGraph,
 	)
 
+	fareEval := func(path []int) (int, error) {
+		res, err := ticketAmountCalc.Execute(path)
+		if err != nil {
+			return 0, err
+		}
+		return res.TotalAmount(), nil
+	}
+
 	ticketCorrector = ticketusecase.NewPipelineCorrector(
+		ticketusecase.NewSuburbanAreaCorrector(fareEval),
 		ticketusecase.NewShinkansenOverlapCorrector(),
 		ticketusecase.NewRule43_2Corrector(),
 		ticketusecase.NewRule69Corrector(),
@@ -1343,6 +1353,9 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 
 	// 有効日数の計算（JR・他社線の合計営業キロから算出）
 	validDays := ticketdomain.CalculateValidDaysFromKilo(evaluationResult.TotalPathEigyoKilo)
+	if ticketusecase.IsSuburbanAreaComplete(correctedPath, ticketFullGraph) {
+		validDays = 1 // 旅客営業規則第75条により、大都市近郊区間完結（連絡会社線含む）の場合は1日
+	}
 
 	var elapsed float64
 	if perf := js.Global().Get("performance"); perf.Truthy() {

@@ -16,17 +16,18 @@ var ErrEmptyEdges = errors.New("エッジデータが空です")
 type JSONLoader struct{}
 
 type rawEdge struct {
-	Line                   string           `json:"line"`
-	Station0               string           `json:"station0"`
-	Station1               string           `json:"station1"`
-	EigyoKilo              domain.DeciKilo  `json:"eigyoKilo"`
-	GiseiKilo              domain.DeciKilo  `json:"giseiKilo"`
-	IsLocal                bool             `json:"isLocal"`
-	Company                domain.CompanyID `json:"company"`
-	IsTrainSpecificSection bool             `json:"isTrainSpecificSection"`
-	IsBoldLineArea         bool             `json:"isBoldLineArea"`
-	IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
-	IsIcPassArea           bool             `json:"isIcPassArea"`
+	Line                   string                `json:"line"`
+	Station0               string                `json:"station0"`
+	Station1               string                `json:"station1"`
+	EigyoKilo              domain.DeciKilo       `json:"eigyoKilo"`
+	GiseiKilo              domain.DeciKilo       `json:"giseiKilo"`
+	IsLocal                bool                  `json:"isLocal"`
+	Company                domain.CompanyID      `json:"company"`
+	IsTrainSpecificSection bool                  `json:"isTrainSpecificSection"`
+	IsBoldLineArea         bool                  `json:"isBoldLineArea"`
+	IsBarrierFreeSection   bool                  `json:"isBarrierFreeSection"`
+	IsIcPassArea           bool                  `json:"isIcPassArea"`
+	SuburbanArea           domain.SuburbanAreaID `json:"suburbanArea"`
 }
 
 // Load は JSON データを読み込み、新しい Graph を構築して返します。
@@ -65,6 +66,7 @@ func (l *JSONLoader) Load(r io.Reader) (*graph.RailwayGraph, error) {
 				Company:                re.Company,
 				IsTrainSpecificSection: re.IsTrainSpecificSection,
 				IsBarrierFreeSection:   re.IsBarrierFreeSection,
+				SuburbanArea:           re.SuburbanArea,
 			},
 			IsIcPassArea: re.IsIcPassArea,
 		})
@@ -78,6 +80,7 @@ func (l *JSONLoader) Load(r io.Reader) (*graph.RailwayGraph, error) {
 				Company:                re.Company,
 				IsTrainSpecificSection: re.IsTrainSpecificSection,
 				IsBarrierFreeSection:   re.IsBarrierFreeSection,
+				SuburbanArea:           re.SuburbanArea,
 			},
 			IsIcPassArea: re.IsIcPassArea,
 		})

@@ -102,6 +102,9 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 
 	// 有効日数の計算（JR・他社線の合計営業キロから算出）
 	validDays := domain.CalculateValidDaysFromKilo(res.TotalPathEigyoKilo)
+	if usecase.IsSuburbanAreaComplete(correctedPath, h.graph) {
+		validDays = 1 // 大都市近郊区間完結（連絡会社線含む）の場合は1日
+	}
 
 	kippuData := KippuData{
 		TotalEigyoKilo:   int(res.TotalEigyoKilo),

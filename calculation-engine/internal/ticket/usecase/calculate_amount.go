@@ -386,7 +386,7 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 		BarrierFreeFee:     barrierFreeFee,
 		TotalEigyoKilo:     summary.totalEigyo,
 		TotalPathEigyoKilo: summary.totalPathEigyo,
-		FinalPath:          path, // 実経路をそのまま返す
+		FinalPath:          path,
 	}, nil
 }
 

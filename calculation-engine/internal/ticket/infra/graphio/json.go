@@ -13,17 +13,18 @@ import (
 type JSONLoader struct{}
 
 type rawTicketEdge struct {
-	Line                   string           `json:"line"`
-	Station0               string           `json:"station0"`
-	Station1               string           `json:"station1"`
-	EigyoKilo              domain.DeciKilo  `json:"eigyoKilo"`
-	GiseiKilo              domain.DeciKilo  `json:"giseiKilo"`
-	IsLocal                bool             `json:"isLocal"`
-	Company                domain.CompanyID `json:"company"`
-	IsTrainSpecificSection bool             `json:"isTrainSpecificSection"`
-	IsBoldLineArea         bool             `json:"isBoldLineArea"`
-	IsBarrierFreeSection   bool             `json:"isBarrierFreeSection"`
-	IsIcPassArea           bool             `json:"isIcPassArea"`
+	Line                   string                `json:"line"`
+	Station0               string                `json:"station0"`
+	Station1               string                `json:"station1"`
+	EigyoKilo              domain.DeciKilo       `json:"eigyoKilo"`
+	GiseiKilo              domain.DeciKilo       `json:"giseiKilo"`
+	IsLocal                bool                  `json:"isLocal"`
+	Company                domain.CompanyID      `json:"company"`
+	IsTrainSpecificSection bool                  `json:"isTrainSpecificSection"`
+	IsBoldLineArea         bool                  `json:"isBoldLineArea"`
+	IsBarrierFreeSection   bool                  `json:"isBarrierFreeSection"`
+	IsIcPassArea           bool                  `json:"isIcPassArea"`
+	SuburbanArea           domain.SuburbanAreaID `json:"suburbanArea"`
 }
 
 // Load は複数の JSON データを読み込み、新しい乗車券用 Graph を構築して返します。
@@ -85,6 +86,7 @@ func (l *JSONLoader) LoadSeparatedGraphs(physicalReaders []io.Reader, virtualRea
 			Company:                re.Company,
 			IsTrainSpecificSection: re.IsTrainSpecificSection,
 			IsBarrierFreeSection:   re.IsBarrierFreeSection,
+			SuburbanArea:           re.SuburbanArea,
 		}
 
 		g.AddEdge(ticketdomain.TicketEdge{

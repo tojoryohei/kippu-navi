@@ -274,7 +274,16 @@ func run() error {
 		ticketFullGraph,
 	)
 
+	fareEval := func(path []int) (int, error) {
+		res, err := ticketAmountCalc.Execute(path)
+		if err != nil {
+			return 0, err
+		}
+		return res.TotalAmount(), nil
+	}
+
 	ticketCorrector := ticketusecase.NewPipelineCorrector(
+		ticketusecase.NewSuburbanAreaCorrector(fareEval),
 		ticketusecase.NewShinkansenOverlapCorrector(),
 		ticketusecase.NewRule43_2Corrector(),
 		ticketusecase.NewRule69Corrector(),
