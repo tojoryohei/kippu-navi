@@ -7,7 +7,6 @@ import (
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/fareio"
 	"fmt"
-	"strings"
 )
 
 type CalculationResult struct {
@@ -401,8 +400,10 @@ func (u *CalculateAmount) buildFarePath(path []int) []int {
 		id := path[i]
 		name := u.graph.GetName(id)
 
-		// 特定都区市内の判定
-		if u.zoneRoutes != nil && (strings.HasSuffix(name, "市内") || strings.HasSuffix(name, "区内") || name == "東京山手線内") {
+		// ゾーン名（特定都区市内や大阪・新大阪など）であるかどうかの判定
+		// zoneRoutesにキーとして登録されていればゾーンとして扱う
+		_, isZone := u.zoneRoutes[name]
+		if u.zoneRoutes != nil && isZone {
 			if i+1 < len(path) {
 				nextName := u.graph.GetName(path[i+1])
 				if route := u.zoneRoutes.GetRoute(name, nextName); route != nil {
