@@ -152,8 +152,6 @@ const createApiRequestBody = (data: FormValues, pathname: string) => {
     }
 
     fullPath.push(path[path.length - 1]);
-    
-    console.log(JSON.stringify(fullPath.map(step => step.stationName)));
 
     for (let i = 0; i < fullPath.length - 1; i++) {
         fullPath[i].lineName = getKana(fullPath[i].lineName!, fullPath[i].stationName, fullPath[i + 1].stationName);
