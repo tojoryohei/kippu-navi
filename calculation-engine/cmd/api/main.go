@@ -214,7 +214,9 @@ func run() error {
 			}
 		}
 		if len(ids) == len(f.Path) {
-			_ = ticketSpecificMatcher.Insert(ids, f.Fare)
+			if err := ticketSpecificMatcher.Insert(ids, f.Fare); err != nil {
+				panic(fmt.Sprintf("特定運賃の登録に失敗しました (経路: %v): %v", f.Path, err))
+			}
 		}
 	}
 
@@ -228,7 +230,9 @@ func run() error {
 			}
 		}
 		if len(ids) == len(f.Path) {
-			_ = ticketAdjustedMatcher.Insert(ids, f.Fare)
+			if err := ticketAdjustedMatcher.Insert(ids, f.Fare); err != nil {
+				panic(fmt.Sprintf("調整運賃の登録に失敗しました (経路: %v): %v", f.Path, err))
+			}
 		}
 	}
 

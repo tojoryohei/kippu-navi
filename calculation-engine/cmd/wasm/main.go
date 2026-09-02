@@ -1222,7 +1222,9 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 			}
 		}
 		if len(ids) == len(f.Path) {
-			_ = ticketSpecificMatcher.Insert(ids, f.Fare)
+			if err := ticketSpecificMatcher.Insert(ids, f.Fare); err != nil {
+				return js.ValueOf(fmt.Sprintf("エラー: 特定運賃の登録に失敗しました (経路: %v): %v", f.Path, err))
+			}
 		}
 	}
 
@@ -1236,7 +1238,9 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 			}
 		}
 		if len(ids) == len(f.Path) {
-			_ = ticketAdjustedMatcher.Insert(ids, f.Fare)
+			if err := ticketAdjustedMatcher.Insert(ids, f.Fare); err != nil {
+				return js.ValueOf(fmt.Sprintf("エラー: 調整運賃の登録に失敗しました (経路: %v): %v", f.Path, err))
+			}
 		}
 	}
 
