@@ -1,3 +1,4 @@
+/// <reference lib="webworker.importscripts" />
 // Blob Worker環境でも正しいオリジンを抽出するヘルパー関数
 function getBaseOrigin(): string {
   if (typeof self === 'undefined' || !self.location) return '';
