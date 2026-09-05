@@ -4,5 +4,25 @@
   "compatibility_date": "2026-09-05",
   "assets": {
     "directory": "./out"
+  },
+  "env": {
+    "staging": {
+      "name": "kippu-navi",
+      "routes": [
+        {
+          "pattern": "stg.kippu-navi.com",
+          "custom_domain": true
+        }
+      ]
+    },
+    "production": {
+      "name": "kippu-navi-production",
+      "routes": [
+        {
+          "pattern": "kippu-navi.com",
+          "custom_domain": true
+        }
+      ]
+    }
   }
 }

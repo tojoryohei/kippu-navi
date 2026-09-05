@@ -22,7 +22,10 @@ function getBaseOrigin(): string {
 }
 
 const baseOrigin = getBaseOrigin();
-importScripts(`${baseOrigin}/engine/wasm_exec.js`);
+// CI embeds the same commit version that is used to package all four engine files.
+const wasmVersion = process.env.NEXT_PUBLIC_WASM_VERSION;
+const engineBaseUrl = `${baseOrigin}/engine${wasmVersion ? `/${wasmVersion}` : ''}`;
+importScripts(`${engineBaseUrl}/wasm_exec.js`);
 
 interface GoInstance {
   importObject: WebAssembly.Imports;
@@ -68,9 +71,9 @@ const go = new Go();
 let wasmInstance: WebAssembly.Instance | null = null;
 let graphInitialized = false;
 
-const WASM_URL = `${baseOrigin}/engine/main.wasm`;
-const PASS_GRAPH_URL = `${baseOrigin}/engine/pass_graph_data.bin`;
-const TICKET_GRAPH_URL = `${baseOrigin}/engine/ticket_graph_data.bin`;
+const WASM_URL = `${engineBaseUrl}/main.wasm`;
+const PASS_GRAPH_URL = `${engineBaseUrl}/pass_graph_data.bin`;
+const TICKET_GRAPH_URL = `${engineBaseUrl}/ticket_graph_data.bin`;
 
 async function initWasm() {
   if (wasmInstance) return;

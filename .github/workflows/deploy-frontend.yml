@@ -1,0 +1,93 @@
+name: Deploy frontend to Cloudflare
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# All development branches share one staging deployment. Do not run uploads in parallel.
+concurrency:
+  group: frontend-${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Production stays on Cloud Run until the migration is explicitly enabled.
+    if: >-
+      github.ref_type == 'branch' &&
+      (github.ref != 'refs/heads/main' || vars.CLOUDFLARE_PRODUCTION_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    env:
+      DEPLOY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      NEXT_PUBLIC_WASM_VERSION: ${{ github.sha }}
+      NEXT_PUBLIC_GOOGLE_ANALYTICS_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID }}
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+      NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Verify staging domain isolation
+        if: env.DEPLOY_ENVIRONMENT == 'staging'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/check-staging-target.mjs
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: calculation-engine/go.mod
+          cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build -- --webpack
+
+      - name: Build and package matching WASM assets
+        run: node scripts/package-cloudflare-assets.mjs
+
+      - name: Deploy static assets
+        uses: cloudflare/wrangler-action@v3
+        with:
+          wranglerVersion: '4.129.0'
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env ${{ env.DEPLOY_ENVIRONMENT }}
+
+      - name: Write deployment summary
+        env:
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          if [ "$DEPLOY_ENVIRONMENT" = production ]; then
+            DEPLOY_URL="https://kippu-navi.com"
+          else
+            DEPLOY_URL="https://stg.kippu-navi.com"
+          fi
+          {
+            printf 'Environment: `%s`\n\n' "$DEPLOY_ENVIRONMENT"
+            printf 'Branch: `%s`\n\n' "$DEPLOY_BRANCH"
+            printf 'Commit: `%s`\n\n' "$DEPLOY_SHA"
+            printf 'Deployment: %s/deployment.json\n' "$DEPLOY_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
