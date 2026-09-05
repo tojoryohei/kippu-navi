@@ -1,0 +1,88 @@
+name: Deploy WASM to R2
+
+on:
+  push:
+    tags:
+      - 'wasm-*'  # 例: wasm-20260905-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # タグ名から WASM_VERSION を確認（例: wasm-20260905-1 → 20260905-1）
+      - name: Extract WASM version from tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#wasm-}"
+          echo "WASM version: $VERSION"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'calculation-engine/go.mod'
+          cache-dependency-path: 'calculation-engine/go.sum'
+
+      # 1. WASM バイナリをビルド
+      - name: Build WASM binary
+        working-directory: calculation-engine
+        run: |
+          GOOS=js GOARCH=wasm go build \
+            -o static/main.wasm \
+            ./cmd/wasm/
+
+      # 2. 定期券グラフデータ（pass_graph_data.bin）を生成
+      - name: Build pass graph binary
+        working-directory: calculation-engine
+        run: |
+          go run ./cmd/precompute-pass-wasm-data/ \
+            internal/graphdata/edges.json \
+            static/pass_graph_data.bin
+
+      # 3. 乗車券グラフデータ（ticket_graph_data.bin）を生成
+      - name: Build ticket graph binary
+        working-directory: calculation-engine
+        run: |
+          go run ./cmd/precompute-ticket-wasm-data/ \
+            internal/graphdata/edges.json \
+            internal/graphdata/virtual_edges.json \
+            static/ticket_graph_data.bin
+
+      # 4. wasm_exec.js を Go ランタイムからコピー
+      - name: Copy wasm_exec.js
+        run: |
+          GOROOT=$(go env GOROOT)
+          cp "$GOROOT/misc/wasm/wasm_exec.js" calculation-engine/static/wasm_exec.js
+
+      # 5. R2 にアップロード
+      - name: Upload to Cloudflare R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          BUCKET="${{ secrets.CLOUDFLARE_R2_BUCKET_NAME }}"
+
+          npx --yes wrangler@latest r2 object put \
+            "${BUCKET}/engine/main.wasm" \
+            --file ./calculation-engine/static/main.wasm \
+            --content-type "application/wasm"
+
+          npx wrangler r2 object put \
+            "${BUCKET}/engine/pass_graph_data.bin" \
+            --file ./calculation-engine/static/pass_graph_data.bin \
+            --content-type "application/octet-stream"
+
+          npx wrangler r2 object put \
+            "${BUCKET}/engine/ticket_graph_data.bin" \
+            --file ./calculation-engine/static/ticket_graph_data.bin \
+            --content-type "application/octet-stream"
+
+          npx wrangler r2 object put \
+            "${BUCKET}/engine/wasm_exec.js" \
+            --file ./calculation-engine/static/wasm_exec.js \
+            --content-type "application/javascript"
+
+          echo "R2 upload complete"

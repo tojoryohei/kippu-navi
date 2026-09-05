@@ -1,5 +1,3 @@
-/// <reference lib="webworker" />
-
 // Blob Worker環境でも正しいオリジンを抽出するヘルパー関数
 function getBaseOrigin(): string {
   if (typeof self === 'undefined' || !self.location) return '';
@@ -23,8 +21,7 @@ function getBaseOrigin(): string {
 }
 
 const baseOrigin = getBaseOrigin();
-const WASM_VERSION = "20260902-6";
-importScripts(`${baseOrigin}/engine/wasm_exec.js?v=${WASM_VERSION}`);
+importScripts(`${baseOrigin}/engine/wasm_exec.js`);
 
 interface GoInstance {
   importObject: WebAssembly.Imports;
@@ -70,9 +67,9 @@ const go = new Go();
 let wasmInstance: WebAssembly.Instance | null = null;
 let graphInitialized = false;
 
-const WASM_URL = `${baseOrigin}/engine/main.wasm?v=${WASM_VERSION}`;
-const PASS_GRAPH_URL = `${baseOrigin}/engine/pass_graph_data.bin?v=${WASM_VERSION}`;
-const TICKET_GRAPH_URL = `${baseOrigin}/engine/ticket_graph_data.bin?v=${WASM_VERSION}`;
+const WASM_URL = `${baseOrigin}/engine/main.wasm`;
+const PASS_GRAPH_URL = `${baseOrigin}/engine/pass_graph_data.bin`;
+const TICKET_GRAPH_URL = `${baseOrigin}/engine/ticket_graph_data.bin`;
 
 async function initWasm() {
   if (wasmInstance) return;
