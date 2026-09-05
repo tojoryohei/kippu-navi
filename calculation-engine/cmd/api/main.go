@@ -176,7 +176,11 @@ func run() error {
 	icPassSearchUseCase := passusecase.NewSearchOptimalSplit(icGraph, passSplitUseCase, passBypassRules, 2, icFares, numStations)
 
 	// 乗車券用コンポーネント初期化
-	ticketZoneRoutes, err := ticketdomain.LoadZoneRoutes("./internal/graphdata/zone_routes.json")
+	zoneRoutesBytes, err := io.ReadAll(graphdata.GetZoneRoutesReader())
+	if err != nil {
+		return fmt.Errorf("乗車券の特例ゾーンルート読み込みに失敗しました: %w", err)
+	}
+	ticketZoneRoutes, err := ticketdomain.LoadZoneRoutesFromBytes(zoneRoutesBytes)
 	if err != nil {
 		return fmt.Errorf("乗車券の特例ゾーンルートロードに失敗しました: %w", err)
 	}
