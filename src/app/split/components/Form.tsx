@@ -72,8 +72,8 @@ interface WasmClientResponse {
 function adaptWasmResponseToSplitApiResponse(wasmRes: WasmClientResponse): SplitApiResponse {
     const normalSegs = wasmRes.normal?.segments || [];
     const cheapestKippuData: KippuData = {
-        departureStation: normalSegs[0]?.start || "",
-        arrivalStation: normalSegs[normalSegs.length - 1]?.end || "",
+        departureStation: normalSegs[0]?.path ? normalSegs[0].path[0] : (normalSegs[0]?.start || ""),
+        arrivalStation: normalSegs[normalSegs.length - 1]?.path ? normalSegs[normalSegs.length - 1].path[normalSegs[normalSegs.length - 1].path.length - 1] : (normalSegs[normalSegs.length - 1]?.end || ""),
         totalEigyoKilo: normalSegs.reduce((sum: number, s: WasmSegment) => sum + (s.totalEigyoKilo || 0), 0),
         printedViaLines: normalSegs.flatMap((s: WasmSegment) => s.via || []),
         fare: wasmRes.normal?.totalAmount || 0,
@@ -206,20 +206,29 @@ export default function SplitForm({
         setSearchedType(data.searchType);
 
         try {
+            const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
+            const months = data.searchType !== "ticket" ? (monthsMap[data.searchType] || "6") : "6";
+            
             const query = new URLSearchParams({
                 from: data.startStation.name,
                 to: data.endStation.name,
-                searchType: data.searchType,
+                months: months,
                 isIc: isIcPass ? "true" : "false",
             });
-            const apiRes = await fetch(`/api/split?${query.toString()}`);
+            let endpoint = "";
+            if (data.searchType === "ticket") {
+                endpoint = "/api/split-ticket";
+            } else if (isIcPass) {
+                endpoint = "/api/split-icpass";
+            } else {
+                endpoint = "/api/split-pass";
+            }
+            const apiRes = await fetch(`${endpoint}?${query.toString()}`);
             const res = await apiRes.json();
             if (res.error) {
                 setError(res.error);
                 setIsCalculating(false);
-            } else if (res.result && "passStations" in res.result) {
-                const { passStations } = res.result as SplitPassResult;
-
+            } else {
                 if (!workerRef.current || !isWasmReadyRef.current) {
                     let waited = 0;
                     while ((!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
@@ -237,9 +246,9 @@ export default function SplitForm({
                 const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
                 const months = monthsMap[data.searchType] || 1;
 
-                const splitPaths = (passStations.splitPatterns && passStations.splitPatterns.length > 0)
-                    ? passStations.splitPatterns
-                    : [passStations.normal];
+                const splitPaths = (res.results && res.results.length > 0)
+                    ? res.results
+                    : [res.normal];
 
                 const calcId = ++latestCalcIdRef.current;
                 workerRef.current.postMessage({
@@ -248,16 +257,13 @@ export default function SplitForm({
                         splitPaths,
                         months,
                         isIc: isIcPass,
+                        isTicket: data.searchType === "ticket",
                         requestId: calcId,
                     }
                 });
 
                 // APIの応答時間をサーバー時間として設定
                 setServerTime(res.serverTime || null);
-            } else {
-                setResult(res.result || null);
-                setServerTime(res.serverTime || null);
-                setIsCalculating(false);
             }
         } catch (err: unknown) {
             const errorInstance = err instanceof Error ? err : new Error(String(err));
@@ -288,7 +294,7 @@ export default function SplitForm({
             setIsWasmReady(false);
             isWasmReadyRef.current = false;
 
-            const worker = new Worker(new URL("../split-pass.worker.ts", import.meta.url));
+            const worker = new Worker(new URL("../split.worker", import.meta.url));
             workerRef.current = worker;
             calculationCountRef.current = 0;
 

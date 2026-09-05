@@ -1,0 +1,8 @@
+/*
+  Link: </guide>; rel="service-doc", </sitemap.xml>; rel="sitemap"
+
+/.well-known/traffic-advice
+  Content-Type: application/trafficadvice+json
+
+/.well-known/apple-app-site-association
+  Content-Type: application/json

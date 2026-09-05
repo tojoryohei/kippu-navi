@@ -51,7 +51,7 @@ func main() {
 	ticketLoader := &graphio.JSONLoader{}
 	_, g, err := ticketLoader.LoadSeparatedGraphs(
 		[]io.Reader{inEdgesFile},
-		[]io.Reader{inVirtualEdgesFile},
+		[]io.Reader{},
 	)
 	if err != nil {
 		log.Fatalf("JSONのロードに失敗しました: %v", err)

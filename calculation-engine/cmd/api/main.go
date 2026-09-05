@@ -20,6 +20,7 @@ import (
 	passgraphio "calculation-engine/internal/pass/infra/graphio"
 	passopt "calculation-engine/internal/pass/optimizer"
 	passusecase "calculation-engine/internal/pass/usecase"
+	ticketdata "calculation-engine/internal/ticket/data"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	ticketfare "calculation-engine/internal/ticket/fare"
 	tickethandler "calculation-engine/internal/ticket/handler"
@@ -59,7 +60,7 @@ func run() error {
 	ticketLoader := &ticketgraphio.JSONLoader{}
 	_, ticketFullGraph, err := ticketLoader.LoadSeparatedGraphs(
 		[]io.Reader{graphdata.GetEdgesReader()},
-		[]io.Reader{graphdata.GetVirtualEdgesReader()},
+		[]io.Reader{},
 	)
 	if err != nil {
 		return fmt.Errorf("乗車券グラフのロードに失敗しました: %w", err)
@@ -296,6 +297,20 @@ func run() error {
 
 	ticketHandler := tickethandler.NewTicket(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator)
 
+	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketFullGraph, ticketSegmentEvaluator)
+
+	ticketFares, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares("./internal/ticket/data/precomputed_server.bin")
+	if err != nil {
+		log.Printf("事前計算された乗車券運賃データのロードに失敗しました: %v", err)
+		// 失敗しても起動できるようにする（データが存在しない初期時などのため）
+	} else if int32(ticketFullGraph.NumStations()) != numTicketStations {
+		log.Printf("データ不整合: edges.jsonの駅数(%d)が乗車券事前計算データの駅数(%d)と一致しません", ticketFullGraph.NumStations(), numTicketStations)
+	} else {
+		ticketSearchUseCase.SetPrecomputedFares(ticketFares)
+	}
+
+	ticketSplitHandler := tickethandler.NewSplit(ticketFullGraph, ticketSearchUseCase)
+
 	// ルーティング
 	mux := http.NewServeMux()
 
@@ -309,6 +324,7 @@ func run() error {
 	// 乗車券ルート
 	mux.HandleFunc("/api/fare", ticketHandler.HandleCalculateFare)
 	mux.HandleFunc("/api/fare/ticket", ticketHandler.HandleCalculateFare)
+	mux.HandleFunc("/api/split-ticket", ticketSplitHandler.HandleCalculate)
 
 	server := &http.Server{
 		Addr:         listenAddr,

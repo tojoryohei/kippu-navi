@@ -1088,6 +1088,177 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 	return js.ValueOf(string(resBytes))
 }
 
+func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
+	splitStationsJson := args[0].String()
+
+	var splitNames []string
+	if err := json.Unmarshal([]byte(splitStationsJson), &splitNames); err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSON unmarshal failed: %v"}`, err))
+	}
+
+	if len(splitNames) < 2 {
+		return js.ValueOf(`{"error":"at least 2 stations required"}`)
+	}
+
+	splitIDs := make([]int, len(splitNames))
+	for i, name := range splitNames {
+		id, ok := ticketFullGraph.GetID(name)
+		if !ok {
+			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
+		}
+		splitIDs[i] = id
+	}
+
+	search := ticketusecase.NewSearchOptimalSplit(ticketFullGraph, ticketSegmentEvaluator)
+
+	var allSegCandidates [][]ticketusecase.TicketSplitSegment
+	for i := 0; i < len(splitIDs)-1; i++ {
+		segs, err := search.GetCheapestTicketSegments(splitIDs[i], splitIDs[i+1])
+		if err != nil {
+			return js.ValueOf(fmt.Sprintf(`{"error":"failed to get segments: %v"}`, err))
+		}
+		allSegCandidates = append(allSegCandidates, segs)
+	}
+
+	// generate combinations
+	var combinations [][]ticketusecase.TicketSplitSegment
+	var current []ticketusecase.TicketSplitSegment
+	var backtrack func(depth int)
+	backtrack = func(depth int) {
+		if depth == len(allSegCandidates) {
+			combo := make([]ticketusecase.TicketSplitSegment, len(current))
+			copy(combo, current)
+			combinations = append(combinations, combo)
+			return
+		}
+		for _, seg := range allSegCandidates[depth] {
+			current = append(current, seg)
+			backtrack(depth + 1)
+			current = current[:len(current)-1]
+		}
+	}
+	if len(allSegCandidates) > 0 {
+		backtrack(0)
+	}
+
+	type SegmentResponse struct {
+		Path           []string                              `json:"path"`
+		Via            []string                              `json:"via"`
+		Result         *ticketusecase.CalculationResult `json:"result"`
+		TotalEigyoKilo domain.DeciKilo                       `json:"totalEigyoKilo"`
+		Start          string                                `json:"start"`
+		End            string                                `json:"end"`
+	}
+
+	type ResultResponse struct {
+		TotalAmount int               `json:"totalAmount"`
+		Segments    []SegmentResponse `json:"segments"`
+	}
+
+	type ClientResponse struct {
+		Normal  ResultResponse   `json:"normal"`
+		Results []ResultResponse `json:"results"`
+	}
+
+	var clientResults []ResultResponse
+	for _, combo := range combinations {
+		var apiSegments []SegmentResponse
+		totalAmount := 0
+		for _, seg := range combo {
+			correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
+			if len(correctedPath) == 0 {
+				correctedPath = seg.Path
+			}
+			correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
+			if correctedResult != nil {
+				correctedPath = correctedTransformedPath
+			}
+			if correctedResult == nil {
+				correctedResult = seg.Result
+			}
+
+			pathNames := make([]string, len(correctedPath))
+			for k, id := range correctedPath {
+				pathNames[k] = ticketFullGraph.GetName(id)
+			}
+			viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
+			var eigyo domain.DeciKilo
+			if correctedResult != nil {
+				eigyo = correctedResult.TotalEigyoKilo
+			}
+			fare := correctedResult.TotalAmount()
+			totalAmount += fare
+
+			apiSegments = append(apiSegments, SegmentResponse{
+				Path:           pathNames,
+				Via:            viaNames,
+				Result:         seg.Result,
+				TotalEigyoKilo: eigyo,
+				Start:          ticketFullGraph.GetName(seg.StartStationID),
+				End:            ticketFullGraph.GetName(seg.EndStationID),
+			})
+		}
+		clientResults = append(clientResults, ResultResponse{
+			TotalAmount: totalAmount,
+			Segments:    apiSegments,
+		})
+	}
+
+	// 通常経路（分割なし）の算出
+	normalSegs, err := search.GetCheapestTicketSegments(splitIDs[0], splitIDs[len(splitIDs)-1])
+	var normalResult ResultResponse
+	if err == nil && len(normalSegs) > 0 {
+		seg := normalSegs[0]
+		correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
+		if len(correctedPath) == 0 {
+			correctedPath = seg.Path
+		}
+		correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
+		if correctedResult != nil {
+			correctedPath = correctedTransformedPath
+		}
+		if correctedResult == nil {
+			correctedResult = seg.Result
+		}
+
+		pathNames := make([]string, len(correctedPath))
+		for k, id := range correctedPath {
+			pathNames[k] = ticketFullGraph.GetName(id)
+		}
+		viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
+		var eigyo domain.DeciKilo
+		if correctedResult != nil {
+			eigyo = correctedResult.TotalEigyoKilo
+		}
+
+		normalResult = ResultResponse{
+			TotalAmount: correctedResult.TotalAmount(),
+			Segments: []SegmentResponse{
+				{
+					Path:           pathNames,
+					Via:            viaNames,
+					Result:         correctedResult,
+					TotalEigyoKilo: eigyo,
+					Start:          ticketFullGraph.GetName(seg.StartStationID),
+					End:            ticketFullGraph.GetName(seg.EndStationID),
+				},
+			},
+		}
+	}
+
+	resp := ClientResponse{
+		Normal:  normalResult,
+		Results: clientResults,
+	}
+
+	respJSON, err := json.Marshal(resp)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSON marshal failed: %v"}`, err))
+	}
+
+	return js.ValueOf(string(respJSON))
+}
+
 func main() {
 	c := make(chan struct{})
 
@@ -1096,8 +1267,10 @@ func main() {
 	js.Global().Set("prepareTicketGraphBuffer", js.FuncOf(prepareTicketGraphBuffer))
 	js.Global().Set("initTicketGraphFromBuffer", js.FuncOf(initTicketGraphFromBuffer))
 	js.Global().Set("reconstructAndCalculate", js.FuncOf(reconstructAndCalculate))
+	js.Global().Set("reconstructAndCalculateTicket", js.FuncOf(reconstructAndCalculateTicket))
 	js.Global().Set("calculateRoutePass", js.FuncOf(calculateRoutePass))
 	js.Global().Set("calculateRouteTicket", js.FuncOf(calculateRouteTicket))
+	js.Global().Set("calculateOptimalSplitTicket", js.FuncOf(calculateOptimalSplitTicket))
 
 	<-c
 }
@@ -1345,7 +1518,10 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 		return js.ValueOf(fmt.Sprintf(`{"error": "経路補正エラー: %v"}`, err))
 	}
 
-	evaluationResult, err := ticketSegmentEvaluator.Execute(correctedPath, 0)
+	evaluationResult, transformedPath, err := ticketSegmentEvaluator.Execute(correctedPath, 0)
+	if err == nil {
+		correctedPath = transformedPath
+	}
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf(`{"error": "運賃計算エラー: %v"}`, err))
 	}
@@ -1385,3 +1561,177 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 
 	return js.ValueOf(string(respBytes))
 }
+
+func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
+	startName := args[0].String()
+	endName := args[1].String()
+
+	startID, ok := ticketFullGraph.GetID(startName)
+	if !ok {
+		return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, startName))
+	}
+	endID, ok := ticketFullGraph.GetID(endName)
+	if !ok {
+		return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, endName))
+	}
+
+	search := ticketusecase.NewSearchOptimalSplit(ticketFullGraph, ticketSegmentEvaluator)
+
+	bestResultPaths, err := search.Execute(startID, endID, 0)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"failed to search optimal split: %v"}`, err))
+	}
+
+	type SegmentResponse struct {
+		Path           []string                              `json:"path"`
+		Via            []string                              `json:"via"`
+		Result         *ticketusecase.CalculationResult `json:"result"`
+		TotalEigyoKilo domain.DeciKilo                       `json:"totalEigyoKilo"`
+		Start          string                                `json:"start"`
+		End            string                                `json:"end"`
+	}
+
+	type ResultResponse struct {
+		TotalAmount int               `json:"totalAmount"`
+		Segments    []SegmentResponse `json:"segments"`
+	}
+
+	type ClientResponse struct {
+		Normal  ResultResponse   `json:"normal"`
+		Results []ResultResponse `json:"results"`
+	}
+
+	var clientResults []ResultResponse
+
+	for _, splitIDs := range bestResultPaths {
+		var allSegCandidates [][]ticketusecase.TicketSplitSegment
+		for i := 0; i < len(splitIDs)-1; i++ {
+			segs, err := search.GetCheapestTicketSegments(splitIDs[i], splitIDs[i+1])
+			if err != nil {
+				continue
+			}
+			allSegCandidates = append(allSegCandidates, segs)
+		}
+		if len(allSegCandidates) != len(splitIDs)-1 {
+			continue
+		}
+
+		var combinations [][]ticketusecase.TicketSplitSegment
+		var current []ticketusecase.TicketSplitSegment
+		var backtrack func(depth int)
+		backtrack = func(depth int) {
+			if depth == len(allSegCandidates) {
+				combo := make([]ticketusecase.TicketSplitSegment, len(current))
+				copy(combo, current)
+				combinations = append(combinations, combo)
+				return
+			}
+			for _, seg := range allSegCandidates[depth] {
+				current = append(current, seg)
+				backtrack(depth + 1)
+				current = current[:len(current)-1]
+			}
+		}
+		if len(allSegCandidates) > 0 {
+			backtrack(0)
+		}
+
+		for _, combo := range combinations {
+			var apiSegments []SegmentResponse
+			totalAmount := 0
+			for _, seg := range combo {
+				correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
+				if len(correctedPath) == 0 {
+					correctedPath = seg.Path
+				}
+				correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
+				if correctedResult != nil {
+					correctedPath = correctedTransformedPath
+				}
+				if correctedResult == nil {
+					correctedResult = seg.Result
+				}
+
+				pathNames := make([]string, len(correctedPath))
+				for k, id := range correctedPath {
+					pathNames[k] = ticketFullGraph.GetName(id)
+				}
+				viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
+				var eigyo domain.DeciKilo
+				if correctedResult != nil {
+					eigyo = correctedResult.TotalEigyoKilo
+				}
+				fare := correctedResult.TotalAmount()
+				totalAmount += fare
+
+				apiSegments = append(apiSegments, SegmentResponse{
+					Path:           pathNames,
+					Via:            viaNames,
+					Result:         correctedResult,
+					TotalEigyoKilo: eigyo,
+					Start:          ticketFullGraph.GetName(seg.StartStationID),
+					End:            ticketFullGraph.GetName(seg.EndStationID),
+				})
+			}
+			clientResults = append(clientResults, ResultResponse{
+				TotalAmount: totalAmount,
+				Segments:    apiSegments,
+			})
+		}
+	}
+
+	// Normal result
+	normalSegs, err := search.GetCheapestTicketSegments(startID, endID)
+	var normalResult ResultResponse
+	if err == nil && len(normalSegs) > 0 {
+		seg := normalSegs[0]
+		correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
+		if len(correctedPath) == 0 {
+			correctedPath = seg.Path
+		}
+		correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
+		if correctedResult != nil {
+			correctedPath = correctedTransformedPath
+		}
+		if correctedResult == nil {
+			correctedResult = seg.Result
+		}
+
+		pathNames := make([]string, len(correctedPath))
+		for k, id := range correctedPath {
+			pathNames[k] = ticketFullGraph.GetName(id)
+		}
+		viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
+		var eigyo domain.DeciKilo
+		if correctedResult != nil {
+			eigyo = correctedResult.TotalEigyoKilo
+		}
+
+		normalResult = ResultResponse{
+			TotalAmount: correctedResult.TotalAmount(),
+			Segments: []SegmentResponse{
+				{
+					Path:           pathNames,
+					Via:            viaNames,
+					Result:         correctedResult,
+					TotalEigyoKilo: eigyo,
+					Start:          ticketFullGraph.GetName(seg.StartStationID),
+					End:            ticketFullGraph.GetName(seg.EndStationID),
+				},
+			},
+		}
+	}
+
+	resp := ClientResponse{
+		Normal:  normalResult,
+		Results: clientResults,
+	}
+
+	respJSON, err := json.Marshal(resp)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSON marshal failed: %v"}`, err))
+	}
+
+	return js.ValueOf(string(respJSON))
+}
+

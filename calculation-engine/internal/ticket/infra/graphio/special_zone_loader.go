@@ -16,6 +16,21 @@ type rawSpecialZone struct {
 	Stations            []string `json:"stations"`
 }
 
+// ZoneCenterStations maps each special zone name to its official JR center station name.
+var ZoneCenterStations = map[string]string{
+	"札幌市内":      "札幌",
+	"仙台市内":      "仙台",
+	"東京都区内":     "東京",
+	"横浜市内":      "横浜",
+	"名古屋市内":     "名古屋",
+	"京都市内":      "京都",
+	"大阪市内":      "大阪",
+	"神戸市内":      "神戸",
+	"広島市内":      "広島",
+	"北九州市内":     "小倉",
+	"福岡市内":      "博多",
+}
+
 // SpecialZoneRegistry は駅名から所属する特例ゾーンを高速に引くためのレジストリです。
 type SpecialZoneRegistry struct {
 	Zones          []ticketdomain.SpecialZone

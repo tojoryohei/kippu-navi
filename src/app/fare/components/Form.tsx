@@ -452,7 +452,7 @@ export default function Form({
             setIsWasmReady(false);
             isWasmReadyRef.current = false;
 
-            const worker = new Worker(new URL("../../split/split-pass.worker.ts", import.meta.url));
+            const worker = new Worker(new URL("../../split/split.worker.ts", import.meta.url));
             workerRef.current = worker;
             calculationCountRef.current = 0;
 

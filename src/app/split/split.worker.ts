@@ -23,7 +23,7 @@ function getBaseOrigin(): string {
 }
 
 const baseOrigin = getBaseOrigin();
-const WASM_VERSION = "20260815";
+const WASM_VERSION = "20260902-6";
 importScripts(`${baseOrigin}/engine/wasm_exec.js?v=${WASM_VERSION}`);
 
 interface GoInstance {
@@ -41,8 +41,10 @@ interface WorkerGlobalScope {
   prepareTicketGraphBuffer(size: number): number;
   initTicketGraphFromBuffer(size: number): boolean | string;
   reconstructAndCalculate(splitStationsJson: string, months: number, isIc: boolean): string;
+  reconstructAndCalculateTicket(splitStationsJson: string): string;
   calculateRoutePass(stationNamesJson: string, months: number, isIc: boolean, calculationMode: string): string;
   calculateRouteTicket(jsonStr: string): string;
+  calculateOptimalSplitTicket(startStationName: string, endStationName: string): string;
 }
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
 
@@ -179,13 +181,31 @@ onmessage = async (e: MessageEvent) => {
     } catch (err) {
       postMessage({ type: 'error', error: String(err) });
     }
+  } else if (type === 'calculateOptimalSplitTicket') {
+    if (!graphInitialized) {
+      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
+      return;
+    }
+
+    const { startStationName, endStationName, requestId } = payload;
+    try {
+      const resultJsonStr = workerSelf.calculateOptimalSplitTicket(startStationName, endStationName);
+      const result = JSON.parse(resultJsonStr);
+      if (result.error) {
+        postMessage({ type: 'error', error: result.error });
+        return;
+      }
+      postMessage({ type: 'success_calculate_optimal_split_ticket', requestId, result });
+    } catch (err) {
+      postMessage({ type: 'error', error: String(err) });
+    }
   } else if (type === 'calculate') {
     if (!graphInitialized) {
       postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
       return;
     }
 
-    const { splitPaths, months, isIc, requestId } = payload;
+    const { splitPaths, months, isIc, isTicket, requestId } = payload;
     try {
       const combinedResults: WasmResultResponse[] = [];
       let normalResult: WasmResultResponse | null = null;
@@ -193,7 +213,13 @@ onmessage = async (e: MessageEvent) => {
       for (const path of splitPaths) {
         // splitStations は JSON 文字列として Go に渡す
         const splitStationsJson = JSON.stringify(path);
-        const resultJsonStr = workerSelf.reconstructAndCalculate(splitStationsJson, months, isIc);
+        let resultJsonStr = "";
+        
+        if (isTicket) {
+          resultJsonStr = workerSelf.reconstructAndCalculateTicket(splitStationsJson);
+        } else {
+          resultJsonStr = workerSelf.reconstructAndCalculate(splitStationsJson, months, isIc);
+        }
 
         const result = JSON.parse(resultJsonStr);
         if (result.error) {

@@ -41,9 +41,9 @@ func NewTicketSegmentEvaluator(calc *CalculateAmount, applier *SpecialZoneApplie
 
 // Execute は与えられた物理経路に対して特例適用を試行し、最安（または適切な）運賃結果を返します。
 // ※ months は定期券とのインターフェース互換用であり、乗車券では無視されます。
-func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationResult, error) {
+func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationResult, []int, error) {
 	if len(path) < 2 {
-		return nil, domain.ErrInvalidPath
+		return nil, nil, domain.ErrInvalidPath
 	}
 
 	startID := path[0]
@@ -119,7 +119,7 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 			if err == nil {
 				// 合計営業キロが閾値を満たしているか確認
 				if res.TotalEigyoKilo > appliedInfo.ThresholdKilo {
-					return res, nil // 強制適用成功！
+					return res, transformedPath, nil // 強制適用成功！
 				}
 			}
 		}
@@ -133,12 +133,12 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 			var err error
 			transformedPath, err = e.postZoneCorrector.Correct(transformedPath, e.graph)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 		}
 		res, err := e.calc.Execute(transformedPath)
 		if err == nil {
-			return res, nil
+			return res, transformedPath, nil
 		}
 	}
 
@@ -148,11 +148,11 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 		var err error
 		transformedPath, err = e.postZoneCorrector.Correct(transformedPath, e.graph)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	// どの特例ゾーン条件も満たさなかった場合は通常計算
-	return e.calc.Execute(transformedPath)
+	res, err := e.calc.Execute(transformedPath)
+	return res, transformedPath, err
 }
 
 // EvaluatedSegment は、評価済みの区間の経路と結果を保持します。

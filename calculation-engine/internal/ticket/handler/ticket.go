@@ -94,7 +94,7 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 運賃計算（TicketSegmentEvaluator に委譲）
-	res, err := h.evaluator.Execute(correctedPath, 0)
+	res, _, err := h.evaluator.Execute(correctedPath, 0)
 	if err != nil {
 		h.writeError(w, http.StatusInternalServerError, "運賃計算に失敗しました: "+err.Error(), start)
 		return
