@@ -1,4 +1,5 @@
 import { PassCacheResult, SplitPassResult } from '@/app/types';
+import { getApiUrl } from '@/app/lib/api';
 
 export async function getOptimalPassWithCache(
     startStation: string,
@@ -18,7 +19,7 @@ export async function getOptimalPassWithCache(
         ? "/api/split-icpass"
         : "/api/split-pass";
 
-    const response = await fetch(`${endpoint}?${params.toString()}`, {
+    const response = await fetch(`${getApiUrl(endpoint)}?${params.toString()}`, {
         method: "GET",
         headers: { "Accept": "application/json" },
         cache: "no-store"
@@ -49,4 +50,3 @@ export async function getOptimalPassWithCache(
         time: endTime - startTime,
     };
 }
-

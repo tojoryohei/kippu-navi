@@ -35,6 +35,30 @@ const (
 	shutdownTimeout = 10 * time.Second
 )
 
+var localDevelopmentOrigins = map[string]struct{}{
+	"http://localhost:3000": {},
+	"http://127.0.0.1:3000": {},
+}
+
+func allowLocalDevelopmentCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if _, allowed := localDevelopmentOrigins[origin]; allowed {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Add("Vary", "Origin")
+		}
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	if err := run(); err != nil {
 		log.Printf("致命的なエラー: %v", err)
@@ -332,7 +356,7 @@ func run() error {
 
 	server := &http.Server{
 		Addr:         listenAddr,
-		Handler:      mux,
+		Handler:      allowLocalDevelopmentCORS(mux),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}

@@ -9,6 +9,7 @@ import { usePostHog } from "posthog-js/react";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
+import { getApiUrl } from "@/app/lib/api";
 import { SearchOption, SearchType, SplitApiResponse, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
 
 interface ExtendedSplitFormInput {
@@ -222,7 +223,7 @@ export default function SplitForm({
             } else {
                 endpoint = "/api/split-pass";
             }
-            const apiRes = await fetch(`${endpoint}?${query.toString()}`);
+            const apiRes = await fetch(`${getApiUrl(endpoint)}?${query.toString()}`);
             const res = await apiRes.json();
             if (res.error) {
                 setError(res.error);
