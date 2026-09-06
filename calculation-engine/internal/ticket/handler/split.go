@@ -102,19 +102,15 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var normalResp []string
-	var apiResults [][]string
+	normalResp := []string{reqStart, reqEnd}
+	apiResults := make([][]string, 0, len(optResult))
 
-	for i, path := range optResult {
+	for _, path := range optResult {
 		names := make([]string, len(path))
 		for j, id := range path {
 			names[j] = h.graph.GetName(id)
 		}
-		if i == 0 {
-			normalResp = names
-		} else {
-			apiResults = append(apiResults, names)
-		}
+		apiResults = append(apiResults, names)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

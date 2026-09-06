@@ -63,9 +63,20 @@ func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, 
 	for _, pr := range pathsResult {
 		path := pr.StationIDs
 		n := len(path)
+		if maxSections <= 0 {
+			minCostToEnd, splitPaths := u.searchUnlimitedSplit(path)
+			if minCostToEnd < minTotalFare {
+				minTotalFare = minCostToEnd
+				bestResultPaths = nil
+			}
+			if minCostToEnd == minTotalFare && minCostToEnd != math.MaxInt {
+				bestResultPaths = append(bestResultPaths, splitPaths...)
+			}
+			continue
+		}
 
 		maxK := maxSections
-		if maxK <= 0 || maxK >= n {
+		if maxK >= n {
 			maxK = n - 1
 		}
 
@@ -170,7 +181,6 @@ func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, 
 			for k := 1; k <= maxK; k++ {
 				if dp[k][n-1] == minCostToEnd {
 					backtrack(n-1, k, nil)
-					break // only need one optimal split per path
 				}
 			}
 		}
@@ -180,7 +190,92 @@ func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, 
 		return [][]int{{startID, endID}}, nil
 	}
 
-	return bestResultPaths, nil
+	uniquePaths := make([][]int, 0, len(bestResultPaths))
+	for _, path := range bestResultPaths {
+		if !containsPath(uniquePaths, path) {
+			uniquePaths = append(uniquePaths, path)
+		}
+	}
+
+	return uniquePaths, nil
+}
+
+// searchUnlimitedSplit は区間数無制限の最適分割を O(n²) で探索し、
+// 最安運賃となる分割を区間数にかかわらずすべて返します。
+func (u *SearchOptimalSplit) searchUnlimitedSplit(path []int) (int, [][]int) {
+	n := len(path)
+	dp := make([]int, n)
+	prev := make([][]int, n)
+	for i := range dp {
+		dp[i] = math.MaxInt
+	}
+	dp[0] = 0
+
+	for j := 1; j < n; j++ {
+		for i := 0; i < j; i++ {
+			if dp[i] == math.MaxInt {
+				continue
+			}
+
+			cost, ok := u.segmentFare(path[i : j+1])
+			if !ok {
+				continue
+			}
+
+			total := dp[i] + cost
+			if total < dp[j] {
+				dp[j] = total
+				prev[j] = []int{i}
+			} else if total == dp[j] {
+				prev[j] = append(prev[j], i)
+			}
+		}
+	}
+
+	if dp[n-1] == math.MaxInt {
+		return math.MaxInt, nil
+	}
+
+	var results [][]int
+	var backtrack func(j int, reversedEnds []int)
+	backtrack = func(j int, reversedEnds []int) {
+		if j == 0 {
+			splitStations := make([]int, len(reversedEnds)+1)
+			splitStations[0] = path[0]
+			for i, pathIndex := range reversedEnds {
+				splitStations[len(reversedEnds)-i] = path[pathIndex]
+			}
+			results = append(results, splitStations)
+			return
+		}
+
+		for _, i := range prev[j] {
+			nextEnds := make([]int, len(reversedEnds)+1)
+			copy(nextEnds, reversedEnds)
+			nextEnds[len(reversedEnds)] = j
+			backtrack(i, nextEnds)
+		}
+	}
+	backtrack(n-1, nil)
+
+	return dp[n-1], results
+}
+
+func (u *SearchOptimalSplit) segmentFare(path []int) (int, bool) {
+	if u.fares != nil {
+		numStations := u.graph.NumStations()
+		idx := path[0]*numStations + path[len(path)-1]
+		if idx < 0 || idx >= len(u.fares) || u.fares[idx] == math.MaxInt32 {
+			return 0, false
+		}
+		return int(u.fares[idx]), true
+	}
+
+	res, _, err := u.evaluator.Execute(path, 0)
+	if err != nil {
+		return 0, false
+	}
+	return res.TotalAmount(), true
 }
 
 // GetCheapestTicketSegments は2駅間の最も安い乗車券経路（分割なし）を取得します。
