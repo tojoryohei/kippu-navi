@@ -4,8 +4,11 @@ import (
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/usecase"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -81,8 +84,11 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 最大分割数は 3 とする（乗車券の場合）
-	maxSections := 3
+	maxSections, err := parseMaxSections(query)
+	if err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	optResult, err := h.search.Execute(startID, endID, maxSections)
 	if err != nil {
 		log.Printf("乗車券の分割計算エラー: %v", err)
@@ -120,6 +126,21 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}); err != nil {
 		log.Printf("レスポンスのエンコードエラー: %v", err)
 	}
+}
+
+// parseMaxSections は省略時に0（無制限）を返します。
+// 指定する場合は、分割後の最大区間数を1以上の整数で渡します。
+func parseMaxSections(query url.Values) (int, error) {
+	if !query.Has("maxSections") {
+		return 0, nil
+	}
+
+	raw := query.Get("maxSections")
+	maxSections, err := strconv.Atoi(raw)
+	if err != nil || maxSections < 1 {
+		return 0, fmt.Errorf("maxSectionsは1以上の整数で指定してください")
+	}
+	return maxSections, nil
 }
 
 func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
