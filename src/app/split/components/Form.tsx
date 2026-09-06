@@ -9,7 +9,7 @@ import { usePostHog } from "posthog-js/react";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
-import { SearchOption, SearchType, SplitApiResponse, SplitPassResult, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
+import { SearchOption, SearchType, SplitApiResponse, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
 
 interface ExtendedSplitFormInput {
     startStation: Station | null;
@@ -208,7 +208,7 @@ export default function SplitForm({
         try {
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
             const months = data.searchType !== "ticket" ? (monthsMap[data.searchType] || "6") : "6";
-            
+
             const query = new URLSearchParams({
                 from: data.startStation.name,
                 to: data.endStation.name,
