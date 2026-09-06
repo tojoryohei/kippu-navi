@@ -27,6 +27,48 @@ type rawTicketEdge struct {
 	SuburbanArea           domain.SuburbanAreaID `json:"suburbanArea"`
 }
 
+func decodeTicketEdges(readers []io.Reader, kind string) ([]rawTicketEdge, error) {
+	var result []rawTicketEdge
+	for i, r := range readers {
+		var edges []rawTicketEdge
+		decoder := json.NewDecoder(r)
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&edges); err != nil {
+			return nil, fmt.Errorf("graphio: %s JSONのデコードに失敗しました (reader index %d): %w", kind, i, err)
+		}
+		result = append(result, edges...)
+	}
+	return result, nil
+}
+
+func addEdgeToGraph(g *graph.RailwayGraph, re rawTicketEdge) {
+	id0 := g.GetOrAddID(re.Station0)
+	id1 := g.GetOrAddID(re.Station1)
+	edgeData := domain.Edge{
+		FromID:                 id0,
+		ToID:                   id1,
+		EigyoKilo:              re.EigyoKilo,
+		GiseiKilo:              re.GiseiKilo,
+		IsLocal:                re.IsLocal,
+		Company:                re.Company,
+		IsTrainSpecificSection: re.IsTrainSpecificSection,
+		IsBarrierFreeSection:   re.IsBarrierFreeSection,
+		SuburbanArea:           re.SuburbanArea,
+	}
+	g.AddEdge(ticketdomain.TicketEdge{
+		Edge:           edgeData,
+		Line:           re.Line,
+		IsBoldLineArea: re.IsBoldLineArea,
+	})
+
+	edgeData.FromID, edgeData.ToID = id1, id0
+	g.AddEdge(ticketdomain.TicketEdge{
+		Edge:           edgeData,
+		Line:           re.Line,
+		IsBoldLineArea: re.IsBoldLineArea,
+	})
+}
+
 // Load は複数の JSON データを読み込み、新しい乗車券用 Graph を構築して返します。
 // 各リーダーは rawTicketEdge の配列を含んでいる必要があります。
 // データが空またはエッジが0件の場合はエラーを返します。
@@ -37,27 +79,13 @@ func (l *JSONLoader) Load(readers ...io.Reader) (*graph.RailwayGraph, error) {
 
 // LoadSeparatedGraphs は物理経路用と全エッジ用（特例エッジ含む）の2つのグラフを構築し返します。
 func (l *JSONLoader) LoadSeparatedGraphs(physicalReaders []io.Reader, virtualReaders []io.Reader) (physicalGraph, fullGraph *graph.RailwayGraph, err error) {
-	var physicalEdges []rawTicketEdge
-	var virtualEdges []rawTicketEdge
-
-	for i, r := range physicalReaders {
-		var edges []rawTicketEdge
-		decoder := json.NewDecoder(r)
-		decoder.DisallowUnknownFields()
-		if err := decoder.Decode(&edges); err != nil {
-			return nil, nil, fmt.Errorf("graphio: physical JSONのデコードに失敗しました (reader index %d): %w", i, err)
-		}
-		physicalEdges = append(physicalEdges, edges...)
+	physicalEdges, err := decodeTicketEdges(physicalReaders, "physical")
+	if err != nil {
+		return nil, nil, err
 	}
-
-	for i, r := range virtualReaders {
-		var edges []rawTicketEdge
-		decoder := json.NewDecoder(r)
-		decoder.DisallowUnknownFields()
-		if err := decoder.Decode(&edges); err != nil {
-			return nil, nil, fmt.Errorf("graphio: virtual JSONのデコードに失敗しました (reader index %d): %w", i, err)
-		}
-		virtualEdges = append(virtualEdges, edges...)
+	virtualEdges, err := decodeTicketEdges(virtualReaders, "virtual")
+	if err != nil {
+		return nil, nil, err
 	}
 
 	if len(physicalEdges) == 0 && len(virtualEdges) == 0 {
@@ -73,39 +101,6 @@ func (l *JSONLoader) LoadSeparatedGraphs(physicalReaders []io.Reader, virtualRea
 	physicalGraph = graph.NewGraphWithMapper(capacity, mapper)
 	fullGraph = graph.NewGraphWithMapper(capacity, mapper)
 
-	addEdgeToGraph := func(g *graph.RailwayGraph, re rawTicketEdge) {
-		id0 := g.GetOrAddID(re.Station0)
-		id1 := g.GetOrAddID(re.Station1)
-
-		edgeData := domain.Edge{
-			FromID:                 id0,
-			ToID:                   id1,
-			EigyoKilo:              re.EigyoKilo,
-			GiseiKilo:              re.GiseiKilo,
-			IsLocal:                re.IsLocal,
-			Company:                re.Company,
-			IsTrainSpecificSection: re.IsTrainSpecificSection,
-			IsBarrierFreeSection:   re.IsBarrierFreeSection,
-			SuburbanArea:           re.SuburbanArea,
-		}
-
-		g.AddEdge(ticketdomain.TicketEdge{
-			Edge:           edgeData,
-			Line:           re.Line,
-			IsBoldLineArea: re.IsBoldLineArea,
-		})
-
-		edgeDataRev := edgeData
-		edgeDataRev.FromID = id1
-		edgeDataRev.ToID = id0
-
-		g.AddEdge(ticketdomain.TicketEdge{
-			Edge:           edgeDataRev,
-			Line:           re.Line,
-			IsBoldLineArea: re.IsBoldLineArea,
-		})
-	}
-
 	// 物理エッジは両方のグラフに追加
 	for _, re := range physicalEdges {
 		addEdgeToGraph(physicalGraph, re)
@@ -118,4 +113,19 @@ func (l *JSONLoader) LoadSeparatedGraphs(physicalReaders []io.Reader, virtualRea
 	}
 
 	return physicalGraph, fullGraph, nil
+}
+
+// AddVirtualEdges は既存グラフへ運賃計算専用の仮想エッジを追加します。
+func (l *JSONLoader) AddVirtualEdges(g *graph.RailwayGraph, readers ...io.Reader) error {
+	if g == nil {
+		return fmt.Errorf("graphio: graph is nil")
+	}
+	edges, err := decodeTicketEdges(readers, "virtual")
+	if err != nil {
+		return err
+	}
+	for _, edge := range edges {
+		addEdgeToGraph(g, edge)
+	}
+	return nil
 }

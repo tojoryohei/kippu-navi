@@ -45,6 +45,7 @@ var bypassRules []passdomain.ResolvedBypassRule
 
 // 乗車券用のグローバルコンポーネント
 var ticketFullGraph *ticketgraph.RailwayGraph
+var ticketSearchGraph *ticketgraph.RailwayGraph
 var ticketAmountCalc *ticketusecase.CalculateAmount
 var ticketApplier *ticketusecase.SpecialZoneApplier
 var ticketSegmentEvaluator *ticketusecase.TicketSegmentEvaluator
@@ -1109,7 +1110,7 @@ func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 		splitIDs[i] = id
 	}
 
-	search := ticketusecase.NewSearchOptimalSplit(ticketFullGraph, ticketSegmentEvaluator)
+	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
 
 	var allSegCandidates [][]ticketusecase.TicketSplitSegment
 	for i := 0; i < len(splitIDs)-1; i++ {
@@ -1142,12 +1143,12 @@ func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 	}
 
 	type SegmentResponse struct {
-		Path           []string                              `json:"path"`
-		Via            []string                              `json:"via"`
+		Path           []string                         `json:"path"`
+		Via            []string                         `json:"via"`
 		Result         *ticketusecase.CalculationResult `json:"result"`
-		TotalEigyoKilo domain.DeciKilo                       `json:"totalEigyoKilo"`
-		Start          string                                `json:"start"`
-		End            string                                `json:"end"`
+		TotalEigyoKilo domain.DeciKilo                  `json:"totalEigyoKilo"`
+		Start          string                           `json:"start"`
+		End            string                           `json:"end"`
 	}
 
 	type ResultResponse struct {
@@ -1327,19 +1328,25 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		nameMap:     nameMap,
 	}
 
-	// ticketFullGraph の構築
-	ticketFullGraph = &ticketgraph.RailwayGraph{
-		FastGraph: &ticketgraph.FastGraph{
-			Edges: make([][]ticketdomain.TicketEdge, numStations),
-		},
-		StationNameIDMapper: &ticketgraph.StationNameIDMapper{
-			NameToID: make(map[string]int, numStations),
-			IDToName: make([]string, numStations),
-		},
+	newTicketGraph := func() *ticketgraph.RailwayGraph {
+		return &ticketgraph.RailwayGraph{
+			FastGraph: &ticketgraph.FastGraph{
+				Edges: make([][]ticketdomain.TicketEdge, numStations),
+			},
+			StationNameIDMapper: &ticketgraph.StationNameIDMapper{
+				NameToID: make(map[string]int, numStations),
+				IDToName: make([]string, numStations),
+			},
+		}
 	}
+	ticketSearchGraph = newTicketGraph()
+	ticketFullGraph = newTicketGraph()
 	for i := 0; i < int(numStations); i++ {
-		ticketFullGraph.IDToName[i] = ticketWasmGraph.GetName(i)
-		ticketFullGraph.NameToID[ticketWasmGraph.GetName(i)] = i
+		name := ticketWasmGraph.GetName(i)
+		ticketSearchGraph.IDToName[i] = name
+		ticketSearchGraph.NameToID[name] = i
+		ticketFullGraph.IDToName[i] = name
+		ticketFullGraph.NameToID[name] = i
 		// WasmGraph から PassEdge を取り出し、TicketEdge に変換する
 		passEdges := ticketWasmGraph.GetEdges(i)
 		ticketEdges := make([]ticketdomain.TicketEdge, len(passEdges))
@@ -1349,7 +1356,11 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 				IsBoldLineArea: pe.IsBoldLineArea,
 			}
 		}
-		ticketFullGraph.Edges[i] = ticketEdges
+		ticketSearchGraph.Edges[i] = ticketEdges
+		ticketFullGraph.Edges[i] = append([]ticketdomain.TicketEdge(nil), ticketEdges...)
+	}
+	if err := (&ticketgraphio.JSONLoader{}).AddVirtualEdges(ticketFullGraph, ticketgraphdata.GetVirtualEdgesReader()); err != nil {
+		return js.ValueOf(fmt.Sprintf("error: failed to add virtual ticket edges: %v", err))
 	}
 
 	// 乗車券コンポーネント初期化
@@ -1575,7 +1586,7 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 		return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, endName))
 	}
 
-	search := ticketusecase.NewSearchOptimalSplit(ticketFullGraph, ticketSegmentEvaluator)
+	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
 
 	bestResultPaths, err := search.Execute(startID, endID, 0)
 	if err != nil {
@@ -1583,12 +1594,12 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 	}
 
 	type SegmentResponse struct {
-		Path           []string                              `json:"path"`
-		Via            []string                              `json:"via"`
+		Path           []string                         `json:"path"`
+		Via            []string                         `json:"via"`
 		Result         *ticketusecase.CalculationResult `json:"result"`
-		TotalEigyoKilo domain.DeciKilo                       `json:"totalEigyoKilo"`
-		Start          string                                `json:"start"`
-		End            string                                `json:"end"`
+		TotalEigyoKilo domain.DeciKilo                  `json:"totalEigyoKilo"`
+		Start          string                           `json:"start"`
+		End            string                           `json:"end"`
 	}
 
 	type ResultResponse struct {
@@ -1734,4 +1745,3 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 
 	return js.ValueOf(string(respJSON))
 }
-

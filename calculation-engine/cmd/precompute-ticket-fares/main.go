@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
-	"math"
 
 	"calculation-engine/internal/domain"
+	ticketgraphdata "calculation-engine/internal/graphdata"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	ticketfare "calculation-engine/internal/ticket/fare"
 	ticketfareio "calculation-engine/internal/ticket/infra/fareio"
 	ticketgraphio "calculation-engine/internal/ticket/infra/graphio"
 	ticketusecase "calculation-engine/internal/ticket/usecase"
-	ticketgraphdata "calculation-engine/internal/graphdata"
 )
 
 func main() {
@@ -41,7 +41,7 @@ func run(args []string) error {
 	ticketLoader := &ticketgraphio.JSONLoader{}
 	_, ticketFullGraph, err := ticketLoader.LoadSeparatedGraphs(
 		[]io.Reader{ticketgraphdata.GetEdgesReader()},
-		[]io.Reader{},
+		[]io.Reader{ticketgraphdata.GetVirtualEdgesReader()},
 	)
 	if err != nil {
 		return fmt.Errorf("JSONの読み込みに失敗しました: %w", err)
@@ -73,7 +73,7 @@ func run(args []string) error {
 	log.Printf("駅数 = %d (ゾーン含む)", numStations)
 
 	ticketFareReg := ticketfare.NewRegistry()
-	
+
 	// Create O(1) map for stationID -> centerStationID
 	stationToCenterID := make([]int, numStations)
 	for i := range stationToCenterID {
@@ -182,7 +182,7 @@ func run(args []string) error {
 	baseDistEigyo := make([][]domain.DeciKilo, numStations)
 
 	var wg sync.WaitGroup
-	
+
 	// Reduce concurrency to avoid OOM killer during 4-hour run
 	numWorkers := 2
 	sem := make(chan struct{}, numWorkers)
@@ -196,7 +196,7 @@ func run(args []string) error {
 		go func(startID int) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			
+
 			dG, pG := ticketFullGraph.FindAllShortestPathsGisei(startID)
 			basePrevGisei[startID] = pG
 			baseDistGisei[startID] = dG
@@ -216,7 +216,7 @@ func run(args []string) error {
 
 	var wgFares sync.WaitGroup
 	var completedCount int32
-	
+
 	for i := 0; i < numStations; i++ {
 		if i >= len(ticketFullGraph.Edges) || len(ticketFullGraph.Edges[i]) == 0 {
 			continue
@@ -279,7 +279,7 @@ func run(args []string) error {
 					baseFares[idx] = int32(minFare)
 				}
 			}
-			
+
 			current := atomic.AddInt32(&completedCount, 1)
 			if current%50 == 0 {
 				log.Printf("進行状況: %d/%d 駅完了", current, numStations)

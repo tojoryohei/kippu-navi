@@ -58,9 +58,9 @@ func run() error {
 
 	// 乗車券グラフの初期化
 	ticketLoader := &ticketgraphio.JSONLoader{}
-	_, ticketFullGraph, err := ticketLoader.LoadSeparatedGraphs(
+	ticketSearchGraph, ticketFullGraph, err := ticketLoader.LoadSeparatedGraphs(
 		[]io.Reader{graphdata.GetEdgesReader()},
-		[]io.Reader{},
+		[]io.Reader{graphdata.GetVirtualEdgesReader()},
 	)
 	if err != nil {
 		return fmt.Errorf("乗車券グラフのロードに失敗しました: %w", err)
@@ -301,7 +301,7 @@ func run() error {
 
 	ticketHandler := tickethandler.NewTicket(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator)
 
-	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketFullGraph, ticketSegmentEvaluator)
+	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
 
 	ticketFares, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares("./internal/ticket/data/precomputed_server.bin")
 	if err != nil {
@@ -313,7 +313,7 @@ func run() error {
 		ticketSearchUseCase.SetPrecomputedFares(ticketFares)
 	}
 
-	ticketSplitHandler := tickethandler.NewSplit(ticketFullGraph, ticketSearchUseCase)
+	ticketSplitHandler := tickethandler.NewSplit(ticketSearchGraph, ticketSearchUseCase)
 
 	// ルーティング
 	mux := http.NewServeMux()
