@@ -214,7 +214,6 @@ export default function SplitForm({
                 from: data.startStation.name,
                 to: data.endStation.name,
                 months: months,
-                isIc: isIcPass ? "true" : "false",
             });
             let endpoint = "";
             if (data.searchType === "ticket") {
