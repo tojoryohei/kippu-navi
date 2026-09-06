@@ -28,6 +28,28 @@ func NewBypassRegistry() *BypassRegistry {
 	return &BypassRegistry{}
 }
 
+// NewDefaultBypassRegistry は定期券計算で共通利用する特例区間を登録します。
+func NewDefaultBypassRegistry() *BypassRegistry {
+	registry := NewBypassRegistry()
+	registry.Register(
+		[]string{"大沼", "大沼公園", "赤井川", "駒ケ岳", "森"},
+		[]string{"大沼", "鹿部", "渡島沼尻", "渡島砂原", "掛澗", "尾白内", "東森", "森"},
+	)
+	registry.Register(
+		[]string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"},
+		[]string{"日暮里", "尾久", "赤羽"},
+	)
+	registry.Register(
+		[]string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"},
+		[]string{"赤羽", "北赤羽", "浮間舟渡", "戸田公園", "（北）戸田", "北戸田", "武蔵浦和", "中浦和", "南与野", "与野本町", "北与野", "大宮"},
+	)
+	registry.Register(
+		[]string{"品川", "大井町", "大森", "蒲田", "川崎", "鶴見"},
+		[]string{"品川", "西大井", "武蔵小杉", "新川崎", "鶴見"},
+	)
+	return registry
+}
+
 // Register は新しい特例ルールを登録します。
 func (r *BypassRegistry) Register(shortcut, detour []string) {
 	r.definitions = append(r.definitions, BypassRuleDefinition{

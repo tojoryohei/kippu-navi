@@ -284,32 +284,7 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	)
 
 	// 特例ルールの設定
-	passBypassReg := passdomain.NewBypassRegistry()
-	passBypassReg.Register(
-		[]string{"大沼", "大沼公園", "赤井川", "駒ケ岳", "森"},
-		[]string{"大沼", "鹿部", "渡島沼尻", "渡島砂原", "掛澗", "尾白内", "東森", "森"},
-	)
-	passBypassReg.Register(
-		[]string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"},
-		[]string{"日暮里", "尾久", "赤羽"},
-	)
-	passBypassReg.Register(
-		[]string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"},
-		[]string{"赤羽", "北赤羽", "浮間舟渡", "戸田公園", "（北）戸田", "北戸田", "武蔵浦和", "中浦和", "南与野", "与野本町", "北与野", "大宮"},
-	)
-	passBypassReg.Register(
-		[]string{"品川", "大井町", "大森", "蒲田", "川崎", "鶴見"},
-		[]string{"品川", "西大井", "武蔵小杉", "新川崎", "鶴見"},
-	)
-	passBypassReg.Register(
-		[]string{"八代", "新八代", "千丁", "有佐", "小川", "松橋", "宇土"},
-		[]string{"八代", "新八代", "宇土"},
-	)
-	passBypassReg.Register(
-		[]string{"宇多津", "丸亀", "讃岐塩屋", "多度津"},
-		[]string{"宇多津", "多度津"},
-	)
-
+	passBypassReg := passdomain.NewDefaultBypassRegistry()
 	bypassRules, err = passBypassReg.ResolveIDs(func(name string) (int, bool) {
 		return passBaseGraph.GetID(name)
 	})
