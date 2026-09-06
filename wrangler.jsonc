@@ -7,7 +7,8 @@
     "directory": "./out",
     "binding": "ASSETS",
     "run_worker_first": [
-      "/api/*"
+      "/api/*",
+      "/ingest/*"
     ]
   },
   "env": {

@@ -6,11 +6,10 @@ import React from 'react';
 
 if (typeof window !== 'undefined') {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
 
-  if (posthogKey && posthogHost) {
+  if (posthogKey) {
     posthog.init(posthogKey, {
-      api_host: posthogHost,
+      api_host: '/ingest',
       ui_host: 'https://us.posthog.com',
       person_profiles: 'never',
       capture_pageview: false,
