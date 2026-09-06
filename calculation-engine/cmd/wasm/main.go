@@ -1429,7 +1429,6 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketPrivateFareReg,
 		ticketFullGraph,
 		ticketZoneRoutes,
-		ticketArticle70Routes,
 	)
 
 	ticketApplier = ticketusecase.NewSpecialZoneApplier(ticketFullGraph, ticketZoneReg)
@@ -1455,6 +1454,7 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketusecase.NewRule43_2Corrector(),
 		ticketusecase.NewRule69Corrector(),
 		ticketusecase.NewRule157Corrector(),
+		ticketusecase.NewArticle70Corrector(ticketArticle70Routes),
 	)
 
 	ticketHandler = tickethandler.NewTicket(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator)
@@ -1496,7 +1496,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 		}
 	}
 
-	correctedPath, err := ticketCorrector.Correct(pathIDs, ticketFullGraph)
+	correctedPath, err := ticketusecase.CorrectPathForMode(pathIDs, ticketFullGraph, ticketCorrector, req.CalculationMode)
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf(`{"error": "経路補正エラー: %v"}`, err))
 	}

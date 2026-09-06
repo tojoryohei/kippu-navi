@@ -335,3 +335,28 @@ func TestPipelineCorrector(t *testing.T) {
 		})
 	}
 }
+
+func TestCorrectPathForMode(t *testing.T) {
+	g := &mockGraphCorrector{names: map[int]string{1: "北九州市内", 2: "小倉", 3: "西小倉", 4: "博多"}}
+	for _, mode := range []string{"normal", "cheapest", "uncorrect"} {
+		t.Run(mode, func(t *testing.T) {
+			original := []int{1, 2, 3, 4}
+			var corrector PathCorrector = NewPipelineCorrector(NewPostZoneCleanupCorrector())
+			want := []int{1, 2, 4}
+			if mode == "uncorrect" {
+				corrector = nil // 補正禁止では補正処理自体を呼ばない。
+				want = original
+			}
+			got, err := CorrectPathForMode(original, g, corrector, mode)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("got %v, want %v", got, want)
+			}
+			if !reflect.DeepEqual(original, []int{1, 2, 3, 4}) {
+				t.Fatal("input path was mutated")
+			}
+		})
+	}
+}

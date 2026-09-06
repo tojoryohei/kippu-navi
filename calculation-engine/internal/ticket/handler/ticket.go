@@ -86,8 +86,8 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 		pathIDs = append(pathIDs, id)
 	}
 
-	// 経路補正（calculationModeに応じて処理を変える場合はここで分岐可能ですが、一旦すべて同じ処理とします）
-	correctedPath, err := h.corrector.Correct(pathIDs, h.graph)
+	// モードに応じて経路補正パイプラインを適用する。
+	correctedPath, err := usecase.CorrectPathForMode(pathIDs, h.graph, h.corrector, req.CalculationMode)
 	if err != nil {
 		h.writeError(w, http.StatusBadRequest, "経路の補正に失敗しました: "+err.Error(), start)
 		return

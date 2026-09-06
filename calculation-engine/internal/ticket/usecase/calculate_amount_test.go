@@ -52,7 +52,7 @@ func TestCalculateAmount_Execute(t *testing.T) {
 
 	addonReg := fare.NewAddonRegistry()
 	privateReg, _ := fareio.NewPrivateFareRegistry()
-	calc := usecase.NewCalculateAmount(reg, addonReg, trainSpecificCalc, specificMatcher, adjustedMatcher, privateReg, g, nil, nil)
+	calc := usecase.NewCalculateAmount(reg, addonReg, trainSpecificCalc, specificMatcher, adjustedMatcher, privateReg, g, nil)
 
 	t.Run("特定区間運賃に合致", func(t *testing.T) {
 		res, err := calc.Execute([]int{id("X"), id("Y")})
@@ -120,9 +120,21 @@ func TestCalculateAmount_Execute(t *testing.T) {
 			},
 		})
 
-		calcWithA70 := usecase.NewCalculateAmount(reg, addonReg, trainSpecificCalc, specificMatcher, adjustedMatcher, privateReg, g, nil, article70Routes)
+		corrector := usecase.NewArticle70Corrector(article70Routes)
 
-		res, err := calcWithA70.Execute([]int{id("T1"), id("T2"), id("T3"), id("T4")})
+		raw, err := calc.Execute([]int{id("T1"), id("T2"), id("T3"), id("T4")})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if raw.TotalEigyoKilo != 30 {
+			t.Fatalf("uncorrected distance = %d, want 30", raw.TotalEigyoKilo)
+		}
+
+		corrected, err := corrector.Correct([]int{id("T1"), id("T2"), id("T3"), id("T4")}, g)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res, err := calc.Execute(corrected)
 		if err != nil {
 			t.Fatalf("Execute() error = %v", err)
 		}
@@ -140,10 +152,14 @@ func TestCalculateAmount_Execute(t *testing.T) {
 				"T2": {"T2", "TX", "T3"},
 			},
 		})
-		calcWithA70 := usecase.NewCalculateAmount(reg, addonReg, trainSpecificCalc, specificMatcher, adjustedMatcher, privateReg, g, nil, article70Routes)
+		corrector := usecase.NewArticle70Corrector(article70Routes)
 
 		// T2からT3へエリア内完結の移動
-		res, err := calcWithA70.Execute([]int{id("T2"), id("T3")})
+		corrected, err := corrector.Correct([]int{id("T2"), id("T3")}, g)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res, err := calc.Execute(corrected)
 		if err != nil {
 			t.Fatalf("Execute() error = %v", err)
 		}
@@ -180,9 +196,13 @@ func TestCalculateAmount_Execute(t *testing.T) {
 				"錦糸町": shortestNodes,
 			},
 		})
-		calcWithA70 := usecase.NewCalculateAmount(reg, addonReg, trainSpecificCalc, specificMatcher, adjustedMatcher, privateReg, g, nil, article70Routes)
+		corrector := usecase.NewArticle70Corrector(article70Routes)
 
-		res, err := calcWithA70.Execute([]int{id("千葉"), id("錦糸町"), id("秋葉原"), id("新宿"), id("品川"), id("横浜")})
+		corrected, err := corrector.Correct([]int{id("千葉"), id("錦糸町"), id("秋葉原"), id("新宿"), id("品川"), id("横浜")}, g)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res, err := calc.Execute(corrected)
 		if err != nil {
 			t.Fatalf("Execute() error = %v", err)
 		}

@@ -275,7 +275,6 @@ func run() error {
 		ticketPrivateFareReg,
 		ticketFullGraph,
 		ticketZoneRoutes,
-		ticketArticle70Routes,
 	)
 
 	ticketApplier := ticketusecase.NewSpecialZoneApplier(ticketFullGraph, ticketZoneReg)
@@ -301,6 +300,7 @@ func run() error {
 		ticketusecase.NewRule43_2Corrector(),
 		ticketusecase.NewRule69Corrector(),
 		ticketusecase.NewRule157Corrector(),
+		ticketusecase.NewArticle70Corrector(ticketArticle70Routes),
 	)
 
 	ticketHandler := tickethandler.NewTicket(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator)

@@ -583,3 +583,11 @@ func (c *ShinkansenOverlapCorrector) Correct(path []int, g graph.Graph) ([]int, 
 
 	return result, nil
 }
+
+// CorrectPathForMode は補正禁止の場合だけパイプラインを省略します。
+func CorrectPathForMode(path []int, g graph.Graph, corrector PathCorrector, mode string) ([]int, error) {
+	if mode == "uncorrect" {
+		return path, nil
+	}
+	return corrector.Correct(path, g)
+}

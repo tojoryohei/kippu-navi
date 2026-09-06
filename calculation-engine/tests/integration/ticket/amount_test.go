@@ -96,15 +96,6 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		t.Fatalf("zoneRoutesのパースに失敗しました: %v", err)
 	}
 
-	arBytes, err := io.ReadAll(graphdata.GetArticle70RoutesReader())
-	if err != nil {
-		t.Fatalf("article70Routesの読み込みに失敗しました: %v", err)
-	}
-	article70Routes, err := domain.LoadArticle70RoutesFromBytes(arBytes)
-	if err != nil {
-		t.Fatalf("article70Routesのパースに失敗しました: %v", err)
-	}
-
 	privateReg, err := fareio.NewPrivateFareRegistry()
 	if err != nil {
 		t.Fatalf("PrivateFareRegistryの初期化に失敗しました: %v", err)
@@ -120,7 +111,6 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 		privateReg,
 		g,
 		zoneRoutes,
-		article70Routes,
 	)
 
 	return calc, g
