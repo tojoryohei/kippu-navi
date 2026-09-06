@@ -173,6 +173,7 @@ export default function SplitForm({
     const onSubmit: SubmitHandler<ExtendedSplitFormInput> = useCallback(async (data) => {
         if (!data.startStation?.name || !data.endStation?.name) return;
 
+        const calculationStartedAt = performance.now();
         setShowAllPatterns(false);
         setError(null);
         setResult(null);
@@ -225,6 +226,7 @@ export default function SplitForm({
             }
             const apiRes = await fetch(`${getApiUrl(endpoint)}?${query.toString()}`);
             const res = await apiRes.json();
+            setServerTime(performance.now() - calculationStartedAt);
             if (res.error) {
                 setError(res.error);
                 setIsCalculating(false);
@@ -261,9 +263,6 @@ export default function SplitForm({
                         requestId: calcId,
                     }
                 });
-
-                // APIの応答時間をサーバー時間として設定
-                setServerTime(res.serverTime || null);
             }
         } catch (err: unknown) {
             const errorInstance = err instanceof Error ? err : new Error(String(err));
