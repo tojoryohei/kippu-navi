@@ -1,43 +1,62 @@
 package data
 
 import (
-	"encoding/binary"
 	"fmt"
 	"os"
+	"unsafe"
 )
 
-// LoadPrecomputedTicketFares は事前計算された乗車券運賃データを読み込みます
-func LoadPrecomputedTicketFares(filepath string) ([]int32, int32, error) {
-	file, err := os.Open(filepath)
+var (
+	mmapData    []byte
+	mmapFileObj *os.File
+)
+
+// LoadPrecomputedTicketFares は事前計算した乗車券運賃と物理グラフの距離をmmapで読み込みます。
+func LoadPrecomputedTicketFares(filepath string) ([]int32, []uint16, int32, error) {
+	data, file, err := mmapFile(filepath)
 	if err != nil {
-		return nil, 0, fmt.Errorf("ファイルのオープンに失敗しました: %w", err)
+		return nil, nil, 0, err
 	}
-	defer file.Close()
+	mmapData = data
+	mmapFileObj = file
 
-	var magic [8]byte
-	if err := binary.Read(file, binary.LittleEndian, &magic); err != nil {
-		return nil, 0, fmt.Errorf("マジックナンバーの読み込みに失敗しました: %w", err)
+	if len(mmapData) < 16 {
+		ClosePrecomputedTicketFares()
+		return nil, nil, 0, fmt.Errorf("data: ファイルサイズが小さすぎます")
 	}
-
-	expectedMagic := [8]byte{'T', 'K', 'S', 'R', 'V', 'B', 0, 0}
-	if magic != expectedMagic {
-		return nil, 0, fmt.Errorf("無効なマジックナンバーです: %v", magic)
-	}
-
-	var numStations int32
-	if err := binary.Read(file, binary.LittleEndian, &numStations); err != nil {
-		return nil, 0, fmt.Errorf("駅数の読み込みに失敗しました: %w", err)
+	if magic := string(mmapData[:8]); magic != "TKSRV2\x00\x00" {
+		ClosePrecomputedTicketFares()
+		return nil, nil, 0, fmt.Errorf("data: 不正なマジックヘッダーです: %q", magic)
 	}
 
-	var padding [4]byte
-	if err := binary.Read(file, binary.LittleEndian, &padding); err != nil {
-		return nil, 0, fmt.Errorf("パディングの読み込みに失敗しました: %w", err)
+	numStations := *(*int32)(unsafe.Pointer(&mmapData[8]))
+	if numStations <= 0 {
+		ClosePrecomputedTicketFares()
+		return nil, nil, 0, fmt.Errorf("data: 駅数が不正です: %d", numStations)
 	}
 
-	fares := make([]int32, numStations*numStations)
-	if err := binary.Read(file, binary.LittleEndian, &fares); err != nil {
-		return nil, 0, fmt.Errorf("運賃データの読み込みに失敗しました: %w", err)
+	flatSize := int(numStations * numStations)
+	offsetFares := 16
+	offsetDistGisei := offsetFares + flatSize*4
+	requiredSize := offsetDistGisei + flatSize*2
+	if len(mmapData) < requiredSize {
+		ClosePrecomputedTicketFares()
+		return nil, nil, 0, fmt.Errorf("data: ファイルサイズが不足しています (期待: %d, 実際: %d)", requiredSize, len(mmapData))
 	}
 
-	return fares, numStations, nil
+	fares := unsafe.Slice((*int32)(unsafe.Pointer(&mmapData[offsetFares])), flatSize)
+	distGisei := unsafe.Slice((*uint16)(unsafe.Pointer(&mmapData[offsetDistGisei])), flatSize)
+	return fares, distGisei, numStations, nil
+}
+
+// ClosePrecomputedTicketFares はマッピングしたデータとファイルを解放します。
+func ClosePrecomputedTicketFares() {
+	if mmapData != nil {
+		_ = munmapFile(mmapData)
+		mmapData = nil
+	}
+	if mmapFileObj != nil {
+		_ = mmapFileObj.Close()
+		mmapFileObj = nil
+	}
 }

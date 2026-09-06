@@ -57,7 +57,7 @@ jobs:
         id: gcs-meta
         run: |
           PASS_MD5=$(gcloud storage objects describe gs://kippu-navi-build-secrets/data/precomputed_server.bin --format="value(md5Hash)" | tr -dc 'a-zA-Z0-9')
-          TICKET_MD5=$(gcloud storage objects describe gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin --format="value(md5Hash)" 2>/dev/null | tr -dc 'a-zA-Z0-9' || true)
+          TICKET_MD5=$(gcloud storage objects describe gs://kippu-navi-build-secrets/data/ticket_precomputed_server_v2.bin --format="value(md5Hash)" 2>/dev/null | tr -dc 'a-zA-Z0-9' || true)
           if [ -z "$TICKET_MD5" ]; then
             TICKET_MD5="missing-${{ github.sha }}"
           fi
@@ -77,12 +77,12 @@ jobs:
         if: steps.cache-bin.outputs.cache-hit != 'true'
         run: |
           gcloud storage cp gs://kippu-navi-build-secrets/data/precomputed_server.bin ./calculation-engine/internal/pass/graph/data/
-          if ! gcloud storage cp gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin ./calculation-engine/internal/ticket/data/precomputed_server.bin; then
+          if ! gcloud storage cp gs://kippu-navi-build-secrets/data/ticket_precomputed_server_v2.bin ./calculation-engine/internal/ticket/data/precomputed_server.bin; then
             (
               cd calculation-engine
               go run ./cmd/precompute-ticket-fares ./internal/ticket/data/precomputed_server.bin
             )
-            gcloud storage cp ./calculation-engine/internal/ticket/data/precomputed_server.bin gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin
+            gcloud storage cp ./calculation-engine/internal/ticket/data/precomputed_server.bin gs://kippu-navi-build-secrets/data/ticket_precomputed_server_v2.bin
           fi
 
       - name: Build and Push Docker Image

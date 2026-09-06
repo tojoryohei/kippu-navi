@@ -50,9 +50,7 @@ type RailwayGraph struct {
 	*StationNameIDMapper
 	physicalEdgesOnly bool
 	GroupIDs          []int // 連結成分ごとのグループID
-	PrevGisei         []int16
-	DistGisei         []int16
-	DistEigyo         []int16
+	DistGisei         []uint16
 }
 
 // NewPhysicalGraphView はグラフ本体を共有し、物理エッジだけを返す探索用ビューを作成します。

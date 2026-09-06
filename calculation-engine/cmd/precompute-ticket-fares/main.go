@@ -39,7 +39,7 @@ func run(args []string) error {
 
 	log.Printf("乗車券グラフを読み込んでいます...")
 	ticketLoader := &ticketgraphio.JSONLoader{}
-	_, ticketFullGraph, err := ticketLoader.LoadSeparatedGraphs(
+	ticketSearchGraph, ticketFullGraph, err := ticketLoader.LoadSeparatedGraphs(
 		[]io.Reader{ticketgraphdata.GetEdgesReader()},
 		[]io.Reader{ticketgraphdata.GetVirtualEdgesReader()},
 	)
@@ -175,15 +175,19 @@ func run(args []string) error {
 		ticketFullGraph,
 	)
 
-	log.Println("全点対最短経路（ベース）を事前計算しています...")
+	log.Println("物理グラフの全点対最短経路を事前計算しています...")
 	basePrevGisei := make([][]int, numStations)
 	baseDistGisei := make([][]domain.DeciKilo, numStations)
 	basePrevEigyo := make([][]int, numStations)
 	baseDistEigyo := make([][]domain.DeciKilo, numStations)
+	physicalDistGisei := make([]uint16, numStations*numStations)
+	for i := range physicalDistGisei {
+		physicalDistGisei[i] = math.MaxUint16
+	}
 
 	var wg sync.WaitGroup
 
-	// Reduce concurrency to avoid OOM killer during 4-hour run
+	// 経路復元用データの同時保持によるメモリ不足を防ぐ
 	numWorkers := 2
 	sem := make(chan struct{}, numWorkers)
 
@@ -197,13 +201,22 @@ func run(args []string) error {
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			dG, pG := ticketFullGraph.FindAllShortestPathsGisei(startID)
+			// 分割候補の経路探索には物理エッジだけを使う。
+			// 特例ゾーンなどの仮想エッジは、復元した経路を evaluator で運賃評価するときに適用される。
+			dG, pG := ticketSearchGraph.FindAllShortestPathsGisei(startID)
 			basePrevGisei[startID] = pG
 			baseDistGisei[startID] = dG
 
-			dE, pE := ticketFullGraph.FindAllShortestPathsEigyo(startID)
+			dE, pE := ticketSearchGraph.FindAllShortestPathsEigyo(startID)
 			basePrevEigyo[startID] = pE
 			baseDistEigyo[startID] = dE
+
+			rowOffset := startID * numStations
+			for endID, distance := range dG {
+				if distance >= 0 && distance < domain.DeciKilo(math.MaxUint16) {
+					physicalDistGisei[rowOffset+endID] = uint16(distance)
+				}
+			}
 		}(i)
 	}
 	wg.Wait()
@@ -296,7 +309,7 @@ func run(args []string) error {
 	}
 	defer outServerFile.Close()
 
-	magic := [8]byte{'T', 'K', 'S', 'R', 'V', 'B', 0, 0}
+	magic := [8]byte{'T', 'K', 'S', 'R', 'V', '2', 0, 0}
 	if _, err := outServerFile.Write(magic[:]); err != nil {
 		return fmt.Errorf("Magicの書き込みに失敗しました: %w", err)
 	}
@@ -312,6 +325,9 @@ func run(args []string) error {
 
 	if err := binary.Write(outServerFile, binary.LittleEndian, baseFares); err != nil {
 		return fmt.Errorf("BaseFaresの書き込みに失敗しました: %w", err)
+	}
+	if err := binary.Write(outServerFile, binary.LittleEndian, physicalDistGisei); err != nil {
+		return fmt.Errorf("DistGiseiの書き込みに失敗しました: %w", err)
 	}
 
 	return nil

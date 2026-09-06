@@ -307,7 +307,7 @@ func run() error {
 
 	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
 
-	ticketFares, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares("./internal/ticket/data/precomputed_server.bin")
+	ticketFares, ticketDistGisei, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares("./internal/ticket/data/precomputed_server.bin")
 	if err != nil {
 		log.Printf("事前計算された乗車券運賃データのロードに失敗しました: %v", err)
 		// 失敗しても起動できるようにする（データが存在しない初期時などのため）
@@ -315,6 +315,7 @@ func run() error {
 		log.Printf("データ不整合: edges.jsonの駅数(%d)が乗車券事前計算データの駅数(%d)と一致しません", ticketFullGraph.NumStations(), numTicketStations)
 	} else {
 		ticketSearchUseCase.SetPrecomputedFares(ticketFares)
+		ticketSearchGraph.DistGisei = ticketDistGisei
 	}
 
 	ticketSplitHandler := tickethandler.NewSplit(ticketSearchGraph, ticketSearchUseCase)

@@ -357,7 +357,7 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 	dist []domain.DeciKilo,
 	eigyoDist []domain.DeciKilo,
 	prev []int,
-	rootGisei domain.DeciKilo, maxGisei domain.DeciKilo, precalcDistGisei []int16, endDistOffset int,
+	rootGisei domain.DeciKilo, maxGisei domain.DeciKilo, precalcDistGisei []uint16, endDistOffset int,
 ) (*PathResult, error) {
 	if startID < 0 || startID >= len(g.IDToName) {
 		return nil, fmt.Errorf("FindShortestPathGiseiWithForbidden: %w: ID %d", domain.ErrStationNotFound, startID)
