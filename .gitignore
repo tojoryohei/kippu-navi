@@ -61,3 +61,4 @@ next-env.d.ts
 calculation-engine/bin/
 calculation-engine/static/
 calculation-engine/wasm
+.cloudflare-engine/

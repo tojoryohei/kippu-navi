@@ -1,13 +1,12 @@
-import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const version = process.env.NEXT_PUBLIC_WASM_VERSION;
 const environment = process.env.DEPLOY_ENVIRONMENT;
-if (!version || !/^[a-f0-9]{40}$/.test(version)) {
-  throw new Error('NEXT_PUBLIC_WASM_VERSION must be the full Git commit SHA used for the Next.js build.');
+if (!version || !/^[a-f0-9]{64}$/.test(version)) {
+  throw new Error('NEXT_PUBLIC_WASM_VERSION must be the 64-character content hash used for the Next.js build.');
 }
 if (!['staging', 'production'].includes(environment)) {
   throw new Error('DEPLOY_ENVIRONMENT must be staging or production.');
@@ -16,27 +15,17 @@ const out = join(root, 'out');
 if (!existsSync(join(out, 'index.html'))) {
   throw new Error('Run npm run build before packaging Cloudflare assets.');
 }
-const engine = join(root, 'calculation-engine');
 const engineRoot = join(out, 'engine');
+const prepared = join(root, '.cloudflare-engine', version);
+if (!existsSync(join(prepared, 'main.wasm'))) {
+  throw new Error('Run node scripts/build-cloudflare-engine.mjs before packaging Cloudflare assets.');
+}
 // Only the four freshly built client files belong in the deployment.
 // In particular, do not ship local server fare caches or stale Go runtimes.
 rmSync(engineRoot, { recursive: true, force: true });
 const destination = join(engineRoot, version);
 mkdirSync(destination, { recursive: true });
-function go(args, env = process.env) {
-  return execFileSync('go', args, { cwd: engine, env, stdio: 'inherit' });
-}
-go(['build', '-trimpath', '-o', join(destination, 'main.wasm'), './cmd/wasm/'],
-  { ...process.env, GOOS: 'js', GOARCH: 'wasm' });
-go(['run', './cmd/precompute-pass-wasm-data/', 'internal/graphdata/edges.json',
-  join(destination, 'pass_graph_data.bin')]);
-go(['run', './cmd/precompute-ticket-wasm-data/', 'internal/graphdata/edges.json',
-  'internal/graphdata/virtual_edges.json', join(destination, 'ticket_graph_data.bin')]);
-const goroot = execFileSync('go', ['env', 'GOROOT'], { encoding: 'utf8' }).trim();
-const runtime = [join(goroot, 'lib/wasm/wasm_exec.js'), join(goroot, 'misc/wasm/wasm_exec.js')]
-  .find(existsSync);
-if (!runtime) throw new Error('Could not find wasm_exec.js in the Go toolchain.');
-copyFileSync(runtime, join(destination, 'wasm_exec.js'));
+cpSync(prepared, destination, { recursive: true });
 
 // Cloudflare Workers does not execute the Pages Functions directory or _routes.json.
 rmSync(join(out, '_routes.json'), { force: true });
@@ -54,7 +43,8 @@ writeFileSync(join(out, '_headers'), headers);
 writeFileSync(join(out, 'deployment.json'), JSON.stringify({
   environment,
   branch: process.env.GITHUB_REF_NAME || 'local',
-  commit: version,
+  commit: process.env.DEPLOY_COMMIT || 'local',
+  engineVersion: version,
   enginePath: `/engine/${version}`,
 }, null, 2) + '\n');
 
