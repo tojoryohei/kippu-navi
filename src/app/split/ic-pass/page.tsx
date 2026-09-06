@@ -1,7 +1,7 @@
 import Form from "@/app/split/components/Form";
 import FormWithSearchParams from "@/app/split/components/FormWithSearchParams";
 import type { Metadata } from "next";
-import { RiScissorsFill, RiErrorWarningLine } from "react-icons/ri";
+import { RiScissorsFill } from "react-icons/ri";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -54,15 +54,6 @@ export default function SplitIcPassPage() {
               <br className="hidden sm:block" />
               {"Kitaca・Suica・ICOCAエリアにおいて最安となる分割パターンを自動で導出します。"}
             </p>
-          </div>
-          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
-            <RiErrorWarningLine className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
-            <div className="text-sm text-amber-800 leading-relaxed">
-              <span className="font-bold block mb-1">【お知らせ】長距離区間の計算制限について</span>
-              <p>
-                システム負荷軽減のため、<strong>発着駅間の駅数が100を超える場合</strong>{"は計算を制限することがあります。"}
-              </p>
-            </div>
           </div>
 
           <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200">
