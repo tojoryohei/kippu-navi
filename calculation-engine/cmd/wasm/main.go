@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"syscall/js"
@@ -1506,6 +1507,9 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 		correctedPath = transformedPath
 	}
 	if err != nil {
+		if errors.Is(err, domain.ErrInvalidPath) {
+			return js.ValueOf(`{"error": "再考：要求区間誤り"}`)
+		}
 		return js.ValueOf(fmt.Sprintf(`{"error": "運賃計算エラー: %v"}`, err))
 	}
 
