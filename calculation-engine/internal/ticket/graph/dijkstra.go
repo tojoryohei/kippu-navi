@@ -100,7 +100,7 @@ func (g *RailwayGraph) FindShortestPathGisei(startID, endID int) (*PathResult, e
 			continue
 		}
 
-		for _, edge := range g.Edges[u.stationID] {
+		for _, edge := range g.GetEdges(u.stationID) {
 			v := edge.ToID
 			alt := dist[u.stationID] + edge.GiseiKilo
 
@@ -162,7 +162,7 @@ func (g *RailwayGraph) FindAllShortestPathsGisei(startID int) ([]domain.DeciKilo
 			continue
 		}
 
-		for _, edge := range g.Edges[u.stationID] {
+		for _, edge := range g.GetEdges(u.stationID) {
 			v := edge.ToID
 			weight := edge.GiseiKilo
 			alt := u.cost + weight
@@ -201,7 +201,7 @@ func (g *RailwayGraph) FindAllShortestPathsEigyo(startID int) ([]domain.DeciKilo
 			continue
 		}
 
-		for _, edge := range g.Edges[u.stationID] {
+		for _, edge := range g.GetEdges(u.stationID) {
 			newCost := dist[u.stationID] + edge.EigyoKilo
 			if dist[edge.ToID] == -1 || newCost < dist[edge.ToID] {
 				dist[edge.ToID] = newCost
@@ -219,7 +219,6 @@ func (g *RailwayGraph) FindAllShortestPathsEigyo(startID int) ([]domain.DeciKilo
 	}
 	return dist, prev
 }
-
 
 func (g *RailwayGraph) getTieBreakerWeight(fromID, toID int) domain.DeciKilo {
 	fromName := g.IDToName[fromID]
@@ -309,7 +308,7 @@ func (g *RailwayGraph) FindShortestPathWithFilter(startID, endID int, weightFunc
 			continue
 		}
 
-		for _, e := range g.Edges[u.stationID] {
+		for _, e := range g.GetEdges(u.stationID) {
 			if !filterFunc(&e.Edge) {
 				continue
 			}
@@ -401,7 +400,7 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 			continue
 		}
 
-		for _, edge := range g.Edges[curr.stationID] {
+		for _, edge := range g.GetEdges(curr.stationID) {
 			next := edge.ToID
 			if next < 0 || next >= numStations {
 				continue
@@ -620,7 +619,7 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratch(startID, endI
 func (g *RailwayGraph) getPathKilos(path []int) (domain.DeciKilo, domain.DeciKilo) {
 	var gisei, eigyo domain.DeciKilo
 	for i := 0; i < len(path)-1; i++ {
-		edges := g.Edges[path[i]]
+		edges := g.GetEdges(path[i])
 		for _, edge := range edges {
 			if edge.ToID == path[i+1] {
 				gisei += edge.GiseiKilo

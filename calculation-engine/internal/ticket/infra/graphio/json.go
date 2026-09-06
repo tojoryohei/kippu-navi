@@ -98,19 +98,24 @@ func (l *JSONLoader) LoadSeparatedGraphs(physicalReaders []io.Reader, virtualRea
 		IDToName: make([]string, 0, capacity),
 	}
 
-	physicalGraph = graph.NewGraphWithMapper(capacity, mapper)
 	fullGraph = graph.NewGraphWithMapper(capacity, mapper)
 
-	// 物理エッジは両方のグラフに追加
+	// 物理エッジを先頭に追加し、駅ごとの境界を記録する
 	for _, re := range physicalEdges {
-		addEdgeToGraph(physicalGraph, re)
 		addEdgeToGraph(fullGraph, re)
+	}
+	fullGraph.PhysicalEdgeCounts = make([]int, len(fullGraph.Edges))
+	for stationID, edges := range fullGraph.Edges {
+		fullGraph.PhysicalEdgeCounts[stationID] = len(edges)
 	}
 
 	// 仮想エッジはフルグラフのみに追加
 	for _, re := range virtualEdges {
 		addEdgeToGraph(fullGraph, re)
 	}
+
+	// 探索用グラフはデータ本体を共有し、物理エッジの範囲だけを公開する
+	physicalGraph = graph.NewPhysicalGraphView(fullGraph)
 
 	return physicalGraph, fullGraph, nil
 }

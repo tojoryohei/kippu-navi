@@ -10,6 +10,7 @@ import (
 
 const physicalEdgeJSON = `[{"line":"在来線","station0":"A","station1":"B","eigyoKilo":10,"giseiKilo":10,"isLocal":false,"company":2,"isTrainSpecificSection":false,"isBoldLineArea":false,"isBarrierFreeSection":false,"isIcPassArea":false,"suburbanArea":0}]`
 const virtualEdgeJSON = `[{"line":"仮想線","station0":"A","station1":"C","eigyoKilo":5,"giseiKilo":5,"isLocal":false,"company":2,"isTrainSpecificSection":false,"isBoldLineArea":false,"isBarrierFreeSection":false,"isIcPassArea":false,"suburbanArea":0}]`
+const virtualShortcutJSON = `[{"line":"仮想線","station0":"A","station1":"C","eigyoKilo":1,"giseiKilo":1,"isLocal":false,"company":2,"isTrainSpecificSection":false,"isBoldLineArea":false,"isBarrierFreeSection":false,"isIcPassArea":false,"suburbanArea":0},{"line":"仮想線","station0":"C","station1":"B","eigyoKilo":1,"giseiKilo":1,"isLocal":false,"company":2,"isTrainSpecificSection":false,"isBoldLineArea":false,"isBarrierFreeSection":false,"isIcPassArea":false,"suburbanArea":0}]`
 
 func TestLoadSeparatedGraphsKeepsVirtualEdgesOutOfSearchGraph(t *testing.T) {
 	loader := &JSONLoader{}
@@ -28,6 +29,47 @@ func TestLoadSeparatedGraphsKeepsVirtualEdgesOutOfSearchGraph(t *testing.T) {
 	}
 	if !hasEdgeTo(fareGraph.GetEdges(aID), cID) {
 		t.Fatal("運賃計算グラフに仮想エッジが含まれていません")
+	}
+
+	searchEdges := searchGraph.GetEdges(aID)
+	fareEdges := fareGraph.GetEdges(aID)
+	if len(searchEdges) == 0 || len(fareEdges) == 0 || &searchEdges[0] != &fareEdges[0] {
+		t.Fatal("探索用グラフと運賃計算グラフが物理エッジを共有していません")
+	}
+}
+
+func TestPhysicalGraphViewExcludesVirtualEdgesFromShortestPath(t *testing.T) {
+	loader := &JSONLoader{}
+	searchGraph, fareGraph, err := loader.LoadSeparatedGraphs(
+		[]io.Reader{strings.NewReader(physicalEdgeJSON)},
+		[]io.Reader{strings.NewReader(virtualShortcutJSON)},
+	)
+	if err != nil {
+		t.Fatalf("グラフのロードに失敗しました: %v", err)
+	}
+	if err := searchGraph.Validate(); err != nil {
+		t.Fatalf("探索用グラフの検証に失敗しました: %v", err)
+	}
+	if err := fareGraph.Validate(); err != nil {
+		t.Fatalf("運賃計算グラフの検証に失敗しました: %v", err)
+	}
+
+	aID, _ := searchGraph.GetID("A")
+	bID, _ := searchGraph.GetID("B")
+	searchPath, err := searchGraph.FindShortestPathGisei(aID, bID)
+	if err != nil {
+		t.Fatalf("物理経路の探索に失敗しました: %v", err)
+	}
+	if len(searchPath.StationIDs) != 2 || searchPath.GiseiKilo != 10 {
+		t.Fatalf("探索用グラフが仮想エッジを使用しました: path=%v, gisei=%d", searchPath.StationIDs, searchPath.GiseiKilo)
+	}
+
+	farePath, err := fareGraph.FindShortestPathGisei(aID, bID)
+	if err != nil {
+		t.Fatalf("完全グラフの探索に失敗しました: %v", err)
+	}
+	if len(farePath.StationIDs) != 3 || farePath.GiseiKilo != 2 {
+		t.Fatalf("完全グラフが仮想エッジを使用していません: path=%v, gisei=%d", farePath.StationIDs, farePath.GiseiKilo)
 	}
 }
 

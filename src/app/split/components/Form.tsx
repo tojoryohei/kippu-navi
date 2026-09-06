@@ -153,7 +153,6 @@ export default function SplitForm({
     const workerRef = useRef<Worker | null>(null);
     const [isWasmReady, setIsWasmReady] = useState(false);
     const isWasmReadyRef = useRef<boolean>(false);
-    const calculationCountRef = useRef<number>(0);
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
     const latestCalcIdRef = useRef<number>(0);
 
@@ -296,7 +295,6 @@ export default function SplitForm({
 
             const worker = new Worker(new URL("../split.worker", import.meta.url));
             workerRef.current = worker;
-            calculationCountRef.current = 0;
 
             worker.onmessage = (e) => {
                 const { type, result, error, requestId } = e.data;
@@ -311,12 +309,6 @@ export default function SplitForm({
                     }
                     setIsCalculating(false);
 
-                    calculationCountRef.current += 1;
-                    // 10回の計算毎にWorkerをリサイクルしてWasmリニアメモリを解放
-                    if (calculationCountRef.current >= 10) {
-                        console.log("Recycling Web Worker to reclaim Wasm linear memory...");
-                        initWorker();
-                    }
                 } else if (type === "error") {
                     setError(error);
                     setIsCalculating(false);

@@ -90,7 +90,7 @@ func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, 
 			for i := 0; i < j; i++ {
 				subPath := path[i : j+1]
 				var cost int
-				
+
 				if u.fares != nil {
 					startSt := subPath[0]
 					endSt := subPath[len(subPath)-1]
@@ -108,7 +108,7 @@ func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, 
 					}
 					cost = res.TotalAmount()
 				}
-				
+
 				// Make a copy of subPath since it's a slice of path
 				subPathCopy := make([]int, len(subPath))
 				copy(subPathCopy, subPath)

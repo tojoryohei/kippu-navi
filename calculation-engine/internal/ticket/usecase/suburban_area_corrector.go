@@ -16,7 +16,6 @@ func NewSuburbanAreaCorrector(fareEval func(path []int) (int, error)) *SuburbanA
 }
 
 func (s *SuburbanAreaCorrector) Correct(path []int, g graph.Graph) ([]int, error) {
-	fmt.Printf("[SuburbanAreaCorrector] Input path length: %d\n", len(path))
 	if len(path) < 2 {
 		return path, nil
 	}
@@ -43,30 +42,24 @@ func (s *SuburbanAreaCorrector) Correct(path []int, g graph.Graph) ([]int, error
 		}
 
 		if edge == nil {
-			fmt.Printf("[SuburbanAreaCorrector] No edge found between %d and %d\n", fromID, toID)
 			continue
 		}
 
 		if edge.Company == domain.Other {
 			hasPrivate = true
-			fmt.Printf("[SuburbanAreaCorrector] Found private company edge between %d and %d\n", fromID, toID)
 		} else {
 			if edge.SuburbanArea == domain.SuburbanAreaNone {
 				isValidSuburban = false
-				fmt.Printf("[SuburbanAreaCorrector] Edge between %d and %d is NOT in suburban area (SuburbanAreaNone)\n", fromID, toID)
 				break
 			}
 			if jrArea == 0 {
 				jrArea = edge.SuburbanArea
 			} else if jrArea != edge.SuburbanArea {
 				isValidSuburban = false
-				fmt.Printf("[SuburbanAreaCorrector] Edge between %d and %d changes suburban area from %d to %d\n", fromID, toID, jrArea, edge.SuburbanArea)
 				break
 			}
 		}
 	}
-
-	fmt.Printf("[SuburbanAreaCorrector] Result: isValidSuburban=%v, jrArea=%v, hasPrivate=%v\n", isValidSuburban, jrArea, hasPrivate)
 
 	if !isValidSuburban || jrArea == 0 || hasPrivate {
 		return path, nil
@@ -157,7 +150,6 @@ func (s *SuburbanAreaCorrector) findShortestPathEigyoTrainSpecific(startID, endI
 // 私鉄（連絡会社線）が含まれていても、JR部分が全て同一の近郊区間内であればtrueを返します。
 // 旅客営業規則第75条の判定（有効期間1日）に使用されます。
 func IsSuburbanAreaComplete(path []int, g graph.Graph) bool {
-	fmt.Printf("[IsSuburbanAreaComplete] Input path length: %d\n", len(path))
 	if len(path) < 2 {
 		return false
 	}
@@ -182,26 +174,22 @@ func IsSuburbanAreaComplete(path []int, g graph.Graph) bool {
 		}
 
 		if edge == nil {
-			fmt.Printf("[IsSuburbanAreaComplete] No edge found between %d and %d\n", fromID, toID)
 			continue
 		}
 
 		if edge.Company != domain.Other {
 			if edge.SuburbanArea == domain.SuburbanAreaNone {
 				isValidSuburban = false
-				fmt.Printf("[IsSuburbanAreaComplete] Edge between %d and %d is NOT in suburban area (SuburbanAreaNone)\n", fromID, toID)
 				break
 			}
 			if jrArea == 0 {
 				jrArea = edge.SuburbanArea
 			} else if jrArea != edge.SuburbanArea {
 				isValidSuburban = false
-				fmt.Printf("[IsSuburbanAreaComplete] Edge between %d and %d changes suburban area from %d to %d\n", fromID, toID, jrArea, edge.SuburbanArea)
 				break
 			}
 		}
 	}
 
-	fmt.Printf("[IsSuburbanAreaComplete] Result: isValidSuburban=%v, jrArea=%d\n", isValidSuburban, jrArea)
 	return isValidSuburban && jrArea != 0
 }

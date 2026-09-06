@@ -7,7 +7,8 @@ import (
 
 // FastGraph は高速な探索に最適化された駅ネットワークを表します。
 type FastGraph struct {
-	Edges [][]ticketdomain.TicketEdge
+	Edges              [][]ticketdomain.TicketEdge
+	PhysicalEdgeCounts []int
 }
 
 // StationNameIDMapper は駅名(文字列)と数値ID間の変換を処理します。
@@ -47,10 +48,20 @@ type Graph interface {
 type RailwayGraph struct {
 	*FastGraph
 	*StationNameIDMapper
-	GroupIDs  []int // 連結成分ごとのグループID
-	PrevGisei []int16
-	DistGisei []int16
-	DistEigyo []int16
+	physicalEdgesOnly bool
+	GroupIDs          []int // 連結成分ごとのグループID
+	PrevGisei         []int16
+	DistGisei         []int16
+	DistEigyo         []int16
+}
+
+// NewPhysicalGraphView はグラフ本体を共有し、物理エッジだけを返す探索用ビューを作成します。
+func NewPhysicalGraphView(fullGraph *RailwayGraph) *RailwayGraph {
+	return &RailwayGraph{
+		FastGraph:           fullGraph.FastGraph,
+		StationNameIDMapper: fullGraph.StationNameIDMapper,
+		physicalEdgesOnly:   true,
+	}
 }
 
 // NewGraph は指定された初期容量で新しいグラフを作成します。
@@ -124,7 +135,14 @@ func (g *RailwayGraph) GetEdges(stationID int) []ticketdomain.TicketEdge {
 	if stationID < 0 || stationID >= len(g.Edges) {
 		return nil
 	}
-	return g.Edges[stationID]
+	edges := g.Edges[stationID]
+	if !g.physicalEdgesOnly {
+		return edges
+	}
+	if stationID >= len(g.PhysicalEdgeCounts) {
+		return nil
+	}
+	return edges[:g.PhysicalEdgeCounts[stationID]]
 }
 
 // Validate はグラフの整合性を検証し、各駅のグループIDを計算します。
@@ -158,7 +176,7 @@ func (g *RailwayGraph) bfsAssignGroup(startNode, groupID int) {
 		node := queue[0]
 		queue = queue[1:]
 
-		for _, edge := range g.Edges[node] {
+		for _, edge := range g.GetEdges(node) {
 			neighbor := edge.ToID
 			if g.GroupIDs[neighbor] == -1 {
 				g.GroupIDs[neighbor] = groupID

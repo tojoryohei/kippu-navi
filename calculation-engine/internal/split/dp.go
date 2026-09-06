@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	INF = 2147483647
+	INF                     = 2147483647
 	DefaultMaxSectionsLimit = 100
 )
 
@@ -182,11 +182,11 @@ func SearchOptimalSplitDPMinimal(startID, endID, maxSections int, candStations [
 				}
 
 				newCost := costU + edgeCost
-				targetIdx := (s + 1) * N + vIdx
+				targetIdx := (s+1)*N + vIdx
 
 				if newCost < scratch.DistTable[targetIdx] {
 					scratch.DistTable[targetIdx] = newCost
-					
+
 					if scratch.NodeCount >= len(scratch.Nodes) {
 						newNodes := make([]StaticListNode, len(scratch.Nodes)*2)
 						copy(newNodes, scratch.Nodes)

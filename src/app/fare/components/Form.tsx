@@ -199,7 +199,6 @@ export default function Form({
     const workerRef = useRef<Worker | null>(null);
     const [isWasmReady, setIsWasmReady] = useState(false);
     const isWasmReadyRef = useRef<boolean>(false);
-    const calculationCountRef = useRef<number>(0);
     const latestCalcIdRef = useRef<number>(0);
     const isPassPage = pathname === "/fare/pass";
     const defaultSearchType = initialSearchType || (isPassPage ? "pass6" : "ticket");
@@ -454,7 +453,6 @@ export default function Form({
 
             const worker = new Worker(new URL("../../split/split.worker.ts", import.meta.url));
             workerRef.current = worker;
-            calculationCountRef.current = 0;
 
             worker.onmessage = (e) => {
                 const { type, result: wResult, error: wError, requestId } = e.data;
@@ -471,11 +469,6 @@ export default function Form({
                     }
                     setIsLoading(false);
 
-                    calculationCountRef.current += 1;
-                    if (calculationCountRef.current >= 10) {
-                        console.log("Recycling Web Worker to reclaim Wasm linear memory...");
-                        initWorker();
-                    }
                 } else if (type === "success_route_ticket") {
                     if (requestId === latestCalcIdRef.current) {
                         setResult(wResult.data);
@@ -483,11 +476,6 @@ export default function Form({
                     }
                     setIsLoading(false);
 
-                    calculationCountRef.current += 1;
-                    if (calculationCountRef.current >= 10) {
-                        console.log("Recycling Web Worker to reclaim Wasm linear memory...");
-                        initWorker();
-                    }
                 } else if (type === "error") {
                     setError(wError);
                     setIsLoading(false);

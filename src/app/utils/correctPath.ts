@@ -7551,8 +7551,6 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
         }
     }
 
-    // console.log(fullPath);
-
     // 特殊経由線も追加したか？
     // ["大沼","鹿部","渡島沼尻","渡島砂原","掛澗","尾白内","東森","森"],
     // ["日暮里","尾久","赤羽"],

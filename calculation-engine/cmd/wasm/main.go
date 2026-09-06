@@ -1328,23 +1328,18 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		nameMap:     nameMap,
 	}
 
-	newTicketGraph := func() *ticketgraph.RailwayGraph {
-		return &ticketgraph.RailwayGraph{
-			FastGraph: &ticketgraph.FastGraph{
-				Edges: make([][]ticketdomain.TicketEdge, numStations),
-			},
-			StationNameIDMapper: &ticketgraph.StationNameIDMapper{
-				NameToID: make(map[string]int, numStations),
-				IDToName: make([]string, numStations),
-			},
-		}
+	ticketFullGraph = &ticketgraph.RailwayGraph{
+		FastGraph: &ticketgraph.FastGraph{
+			Edges:              make([][]ticketdomain.TicketEdge, numStations),
+			PhysicalEdgeCounts: make([]int, numStations),
+		},
+		StationNameIDMapper: &ticketgraph.StationNameIDMapper{
+			NameToID: make(map[string]int, numStations),
+			IDToName: make([]string, numStations),
+		},
 	}
-	ticketSearchGraph = newTicketGraph()
-	ticketFullGraph = newTicketGraph()
 	for i := 0; i < int(numStations); i++ {
 		name := ticketWasmGraph.GetName(i)
-		ticketSearchGraph.IDToName[i] = name
-		ticketSearchGraph.NameToID[name] = i
 		ticketFullGraph.IDToName[i] = name
 		ticketFullGraph.NameToID[name] = i
 		// WasmGraph から PassEdge を取り出し、TicketEdge に変換する
@@ -1356,12 +1351,13 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 				IsBoldLineArea: pe.IsBoldLineArea,
 			}
 		}
-		ticketSearchGraph.Edges[i] = ticketEdges
-		ticketFullGraph.Edges[i] = append([]ticketdomain.TicketEdge(nil), ticketEdges...)
+		ticketFullGraph.Edges[i] = ticketEdges
+		ticketFullGraph.PhysicalEdgeCounts[i] = len(ticketEdges)
 	}
 	if err := (&ticketgraphio.JSONLoader{}).AddVirtualEdges(ticketFullGraph, ticketgraphdata.GetVirtualEdgesReader()); err != nil {
 		return js.ValueOf(fmt.Sprintf("error: failed to add virtual ticket edges: %v", err))
 	}
+	ticketSearchGraph = ticketgraph.NewPhysicalGraphView(ticketFullGraph)
 
 	// 乗車券コンポーネント初期化
 	zoneRoutesBytes, err := io.ReadAll(ticketgraphdata.GetZoneRoutesReader())
@@ -1489,6 +1485,7 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	ticketHandler = tickethandler.NewTicket(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator)
 
 	// 初期化完了に伴い、一時バッファへのピン留めを解除しGCに開放
+	ticketWasmGraph = nil
 	ticketTempBuffer = nil
 
 	return js.ValueOf("ok")
