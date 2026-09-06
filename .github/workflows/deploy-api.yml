@@ -3,7 +3,7 @@ name: Deploy API to Cloud Run
 on:
   push:
     branches:
-      - main
+      - '**'
     paths:
       - 'calculation-engine/**'
       - '.github/workflows/deploy-api.yml'
@@ -12,8 +12,12 @@ on:
 env:
   PROJECT_ID: 'bubbly-trail-470023-e4'
   REGION: 'asia-northeast1'
-  SERVICE_NAME: 'calculation-engine'
+  SERVICE_NAME: ${{ github.ref == 'refs/heads/main' && 'calculation-engine' || 'calculation-engine-staging' }}
   GAR_REPO: 'cloud-run-source-deploy' 
+
+concurrency:
+  group: api-${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+  cancel-in-progress: false
 
 jobs:
   deploy:

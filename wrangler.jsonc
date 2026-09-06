@@ -1,13 +1,21 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "kippu-navi",
+  "main": "workers/frontend.mjs",
   "compatibility_date": "2026-09-05",
   "assets": {
-    "directory": "./out"
+    "directory": "./out",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*"
+    ]
   },
   "env": {
     "staging": {
       "name": "kippu-navi",
+      "vars": {
+        "API_ORIGIN": "https://calculation-engine-staging-198310540092.asia-northeast1.run.app"
+      },
       "routes": [
         {
           "pattern": "stg.kippu-navi.com",
@@ -17,6 +25,9 @@
     },
     "production": {
       "name": "kippu-navi-production",
+      "vars": {
+        "API_ORIGIN": "https://calculation-engine-198310540092.asia-northeast1.run.app"
+      },
       "routes": [
         {
           "pattern": "kippu-navi.com",
