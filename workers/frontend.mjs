@@ -18,14 +18,23 @@ function proxyApi(request, apiOrigin) {
 
 function proxyPostHog(request) {
   const incomingUrl = new URL(request.url);
-  const isStaticAsset = incomingUrl.pathname.startsWith('/ingest/static/');
-  const targetOrigin = isStaticAsset
+  const isAssetRequest =
+    incomingUrl.pathname.startsWith('/ingest/static/') ||
+    incomingUrl.pathname.startsWith('/ingest/array/');
+  const targetOrigin = isAssetRequest
     ? 'https://us-assets.i.posthog.com'
     : 'https://us.i.posthog.com';
   const proxyPath = incomingUrl.pathname.slice('/ingest'.length);
   const targetUrl = new URL(`${proxyPath}${incomingUrl.search}`, targetOrigin);
   const proxyRequest = new Request(targetUrl, request);
   proxyRequest.headers.delete('host');
+  proxyRequest.headers.delete('cookie');
+  proxyRequest.headers.delete('authorization');
+
+  const clientIp = request.headers.get('CF-Connecting-IP');
+  if (clientIp) {
+    proxyRequest.headers.set('X-Forwarded-For', clientIp);
+  }
 
   return fetch(proxyRequest);
 }
