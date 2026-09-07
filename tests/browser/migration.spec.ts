@@ -106,6 +106,13 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
   await page.getByRole("button", { name: "定期券", exact: true }).click();
   await expect(page).toHaveURL(/\/fare\/pass\?/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("定期券");
+  await expect(page.locator(".line-select__control").first()).toHaveCSS(
+    "height",
+    "38px",
+  );
+  await expect(page.locator(".line-select__single-value").first()).toHaveText(
+    "外房",
+  );
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   await page.locator('header a[href="/split/ticket"]').click();

@@ -211,6 +211,24 @@ body {
   box-sizing: border-box;
 }
 
+.station-select__single-value,
+.line-select__single-value {
+  grid-area: 1 / 1 / 2 / 3;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+  margin-left: 2px;
+  margin-right: 2px;
+  box-sizing: border-box;
+}
+
+.station-select__control--is-disabled .station-select__single-value,
+.line-select__control--is-disabled .line-select__single-value {
+  color: hsl(0deg 0% 60%);
+}
+
 .station-select__control--is-disabled .station-select__input-container,
 .line-select__control--is-disabled .line-select__input-container {
   visibility: hidden !important;
