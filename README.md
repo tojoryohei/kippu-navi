@@ -1,66 +1,94 @@
-# JR最安分割乗車券 探索システム（きっぷナビ）
+# きっぷナビ
 
-[![CI](https://github.com/tojoryohei/kippu-navi/actions/workflows/test.yml/badge.svg)](https://github.com/tojoryohei/kippu-navi/actions/workflows/test.yml)
+JR線の運賃、定期券運賃、最安分割きっぷを計算するWebアプリケーションです。
 
-JRの複雑な旅客営業規則を解析し、最も安価な「分割乗車券」の組み合わせを算出するWebアプリケーションです。大学での情報工学の知見を活かし、計算量が増大しがちな経路探索アルゴリズムの最適化と、クラウドインフラを用いた実用的なUX（数ミリ秒〜数秒のレスポンス）の両立をテーマに開発しました。
+- 本番: https://kippu-navi.com
+- ステージング: https://stg.kippu-navi.com
 
-**URL:** [https://kippu-navi.com/split/](https://kippu-navi.com/split/)
+## 構成
 
----
+| 役割 | 実装 |
+| --- | --- |
+| 静的ページ・SEO | Astro、`src/pages`、`src/layouts/Layout.astro` |
+| 計算フォーム | React Islands、`src/app/fare`、`src/app/split` |
+| 計算エンジン | Go / WASM、共有Web Worker |
+| 分割経路探索API | Go、Cloud Run（本番・ステージング別サービス） |
+| 静的配信 | Cloudflare Workers Static Assets |
+| API・PostHogプロキシ | `workers/frontend.mjs` の `/api/*` と `/ingest/*` |
+| フォント | FontsourceのNoto Sans JP・Geist Monoをビルド成果物へ同梱 |
 
-## 💡 背景と課題解決
+全ページにClientRouterを配置し、内部リンクをhover時にプリフェッチします。Footerの細かいリンクはプリフェッチ対象外です。記事ページにはReactのクライアントランタイムを配信しません。
 
-JRの運賃計算において、特定の駅で切符を分割して購入すると、通しの正規運賃よりも安くなるケースが存在します。しかし、無数にある駅の組み合わせから最適な分割点を見つけ出すのは人間には困難です。
+運賃計算と分割計算は別々のIslandを`transition:persist`で保持します。URLが変わればフォームを復元し直し、計算モードを切り替えます。同じURLのフォーム状態は保持します。WorkerはIslandの外で一つだけ共有し、フォームが終了しても再初期化しません。応答をリクエストIDで振り分け、終了済み画面や古い計算の結果を破棄します。
 
-本システムは、出発駅と到着駅を入力するだけで、「グラフ理論」と「動的計画法」を活用して最も安い分割パターンを提示します。最短経路が最安経路とならない「運賃の逆転現象」にも対応する独自の探索ロジックを実装し、正確性と計算速度のトレードオフを解消しています。
+## ローカル開発
 
----
+Node.js 24以上、および`calculation-engine/go.mod`に指定されたGoが必要です。
 
-## ⚙️ コア・アルゴリズム
+```sh
+npm ci
+npm run dev:api
+```
 
-実用的な処理速度と保守性を担保するため、バックエンドの探索ロジックを以下のフェーズに分けて構築しています。
+別のターミナルで:
 
-1. **経路候補の列挙 (Yen's Algorithm の応用)**
-   単一の最短経路だけでなく、K-最短経路アルゴリズムを用いて「遠回りした方が運賃計算の仕様上安くなる」可能性のあるルート候補を複数列挙します。探索空間の爆発を防ぐため、理論上の限界距離（これ以上遠回りすると確実に高くなる閾値）を用いた強力な枝刈り（Pruning）を実施しています。
-2. **最適分割の算出 (1次元動的計画法 - 1D DP)**
-   列挙された各経路に対して部分構造最適性が成り立つ性質を利用し、1次元DPを適用して最安の分割ポイントを計算します。同額となる別の分割パターンが存在する場合も、情報落ちを防ぎすべて保持・提示するロジックを構築しています。
+```sh
+npm run dev
+```
 
----
+`npm run dev`は起動前にWASMと2種類のグラフBINを生成し、http://localhost:3000 を起動します。`/split/ticket`で分割計算できます。`/api/*`はViteからlocalhost:8080へ転送するため、ブラウザ側のCORS設定は不要です。
 
-## 🛠 技術スタックと選定理由
+Goの計算ロジックやグラフを修正した場合は、`npm run dev:engine`で再生成し、ブラウザを再読み込みします。
 
-| 領域 | 技術・ツール | 選定理由・アーキテクチャの意図 |
-| :--- | :--- | :--- |
-| **Frontend** | Next.js (App Router), TypeScript | 静的サイト生成（SSG）による 0ms の初期ロードと、クライアントサイドフェッチ（CSR）によるスムーズなUI体験の両立。 |
-| **Styling** | Tailwind CSS | コンポーネント単位での迅速なスタイリングと、保守性の高いCSS管理のため。 |
-| **Backend / API** | Next.js Route Handlers, Go (WASM) | フロントエンドと同一のリポジトリ（モノレポ構成）での型共有、および Go による超高速計算処理。 |
-| **Database** | Firebase Firestore | 計算コストの重い経路探索結果を非同期でキャッシュし、2回目以降のリクエストを数十ミリ秒で返すためのKVSとして採用。 |
-| **Infrastructure**| Google Cloud Run | スパイクアクセスに対するゼロスケールからのオートスケール機能と、コンテナベースのステートレスな安定稼働のため。 |
-| **CI/CD/DevSecOps**| GitHub Actions, Vitest, Takumi Guard, Cloud Build | ユニットテスト・Strict Lintの自動化、OIDC認証を用いたサプライチェーン攻撃対策、およびプレビュー環境の動的発行を統合した品質保証パイプライン。 |
+分割APIの事前計算ファイルはサーバー専用です。ローカルにない場合、乗車券は次のコマンドで生成できます。
 
----
+```sh
+npm run generate:ticket-fares
+```
 
-## 🔥 アーキテクチャの工夫と最適化
+定期券用の`calculation-engine/internal/pass/graph/data/precomputed_server.bin`は従来どおり別途配置してください。これらの大きなファイルはブラウザへ配信しません。
 
-### 1. 浮動小数点数演算エラーの完全排除（ドメイン駆動のアプローチ）
-運賃計算の要となる「営業キロ」の計算において、JavaScript特有の浮動小数点演算の誤差（IEEE 754）を防ぐための対策を行っています。JRの営業キロは「小数第1位」までと定義されているドメイン知識に基づき、外部のライブラリに依存せず、**計算前にすべての値を10倍して整数（`number`型）として扱うゼロ依存のアーキテクチャ**を採用し、計算速度と堅牢性を両立させています。
+## ビルド・検証
 
-### 2. ノンブロッキングな Fire-and-Forget キャッシュ
-Firestoreへの計算結果の保存時、クライアントへのレスポンス完了を待たずに（`await` によるブロックをせずに）バックグラウンドで非同期書き込みを実行しています。キャッシュの書き込み遅延や万が一の失敗がユーザー体験（UX）の低下に直結しない設計にしています。
+```sh
+npm run typecheck
+npm run lint
+npm run knip
+npm test
+npm run build
+npx playwright install chromium
+npm run test:e2e
+npm start
+```
 
-### 3. DevSecOpsとFinOpsを意識したエンタープライズ水準のCI/CD
-個人の開発にとどまらず、実務を想定した高度なパイプラインを構築しています。GitHub Actions上での自動テスト（Vitest）および静的コード解析（ESLint Strict）に加え、Takumi Guardを導入しnpmのサプライチェーン攻撃を未然に防ぐDevSecOpsを実践。さらに、テストに必要なデータをGitHub上にキャッシュすることで、Cloud Storageの費用を削減し実行時間を短縮するFinOpsの観点も取り入れています。
+既存のVitestテストには非公開の`src/data`が必要です。ブラウザ回帰テストは公開グラフから生成した本物のWASMを使い、APIの探索結果を固定するため、非公開データや稼働中のAPIは不要です。インストール済みChromeを使う場合は`PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`を実行できます。
 
-### 4. プレビュー環境を用いた安全なデプロイメント
-GitHubのRulesetで `main` ブランチを保護し、Pull RequestごとにCloud Buildがコンテナビルドを実行。さらにCloud Runのタグ付きデプロイを利用して**PR専用のプレビューURLを動的に発行**する仕組みを構築し、本番環境の安全性を担保しています。
+`npm run build`はWASM生成、Astroビルド、Cloudflare用の梱包まで行い、`dist`を作ります。通常はステージング向け（noindex）です。本番向けは`DEPLOY_ENVIRONMENT=production npm run build`で生成します。
 
-### 5. UIの完全静的化（SSG）とクライアントフェッチ（CSR）の役割分離
-全計算ツール画面（`/split`, `/fare` 等）のUI枠組み（入力フォームやスケルトン表示）をビルド時にたった1つの静的HTMLとして事前生成（SSG）し、CDNから0msで配信。ユーザーアクセス後にパラメータ検出およびAPI/Workerでの非同期計算（CSR）を行う役割分離設計により、初期表示速度と快適な操作性を両立させています。
+`npm start`は静的成果物のローカルプレビューです。APIプロキシは提供しないので、実APIと一緒に動かす開発には`npm run dev`を使ってください。
 
-### 6. Go + WebAssembly (WASM) / Web Worker によるバックグラウンド高速計算
-複雑な定期券運賃計算やグラフデータ解析処理において、Goで実装された計算ロジックを WebAssembly (WASM) にコンパイルし、Web Worker 上で非同期実行。メインスレッド（UI描画）を一切ブロックしないレスポンシブな動作を実現しています。
+## 環境変数とキャッシュ
 
----
+| 変数 | 用途 |
+| --- | --- |
+| `PUBLIC_POSTHOG_KEY` | PostHogキー。ホストは同一オリジンの`/ingest`固定 |
+| `PUBLIC_GOOGLE_ANALYTICS_ID` | Google Analytics測定ID |
+| `PUBLIC_WASM_VERSION` | ビルドスクリプトが自動生成する内容ハッシュ。手動指定不要 |
+| `DEPLOY_ENVIRONMENT` | `staging`または`production` |
+| `API_ORIGIN` | Cloudflare Workerの転送先。`wrangler.jsonc`で環境別に指定 |
 
-## ライセンス / 著作権
+既存の`.env.local`とGitHub Variablesの`NEXT_PUBLIC_POSTHOG_KEY`、`NEXT_PUBLIC_GOOGLE_ANALYTICS_ID`も移行中は使用できます。Firebaseの変数は不要です。
+
+WASM・Goランタイム・2種類のBINの内容からSHA-256を計算し、`/engine/<hash>/`へまとめて配置します。UIだけの変更ではエンジンURLは変わりません。エンジンは1年間のimmutableキャッシュ、HTMLはStatic Assetsの更新管理を使います。`deployment.json`で環境・コミット・エンジンバージョンを確認できます。
+
+## デプロイ
+
+GitHub Actionsの`deploy-frontend.yml`がフロントエンドを配信します。main以外はステージング、mainは本番に対応します。ただし本番は`CLOUDFLARE_PRODUCTION_ENABLED=true`にするまで自動デプロイされません。
+
+Astro移行後のフロントエンドでは、Next.js用のDockerfile・Cloud Build設定・Pages Functionsは使用しません。既存の本番Cloud Runサービスをこの変更が削除・更新することはありません。切り替え前にGoogle Cloud側の旧フロントエンドCloud Buildトリガーを無効化してください。Go APIのCloud Runデプロイは`deploy-api.yml`で継続します。
+
+本番切り替え前の確認事項は[移行メモ](docs/astro-migration.md)を参照してください。
+
+## 著作権
+
 Copyright © 2025-2026 きっぷナビ. All Rights Reserved.
