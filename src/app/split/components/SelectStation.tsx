@@ -1,111 +1,135 @@
-import Select, { components, type OptionProps, type FilterOptionOption, type InputProps } from "react-select";
+import Select, {
+  components,
+  type OptionProps,
+  type FilterOptionOption,
+  type InputProps,
+} from "react-select";
 import { useState, type FocusEvent, type CSSProperties, useId } from "react";
 import stationDatas from "@/app/split/data/stationDatas.json";
 
-import type { Station, SelectStationProps } from '@/app/types';
+import type { Station, SelectStationProps } from "@/app/types";
 
 const CustomOption = (props: OptionProps<Station>) => (
-    <components.Option {...props}>
-        <div className="leading-tight text-black">
-            <span className="text-xs text-black">{props.data.kana}</span>
-            <br />
-            {props.data.name}
-        </div>
-    </components.Option>
+  <components.Option {...props}>
+    <div className="leading-tight text-black">
+      <span className="text-xs text-black">{props.data.kana}</span>
+      <br />
+      {props.data.name}
+    </div>
+  </components.Option>
 );
 
 const CustomInput = (props: InputProps<Station, false>) => {
-    return (
-        <components.Input
-            {...props}
-            isHidden={false}
-            onFocus={(e: FocusEvent<HTMLInputElement>) => {
-                if (props.onFocus) {
-                    props.onFocus(e);
-                }
-                e.target.select();
-            }}
-        />
-    );
+  return (
+    <components.Input
+      {...props}
+      isHidden={false}
+      onFocus={(e: FocusEvent<HTMLInputElement>) => {
+        if (props.onFocus) {
+          props.onFocus(e);
+        }
+        e.target.select();
+      }}
+    />
+  );
 };
 
-const SelectStation = ({ instanceId, value, onChange, options, isDisabled }: SelectStationProps) => {
-    const stationOptions = options || (stationDatas as Station[]);
-    const [inputValue, setInputValue] = useState<string>(value ? value.name : "");
-    const [prevValue, setPrevValue] = useState(value);
+const SelectStation = ({
+  instanceId,
+  value,
+  onChange,
+  options,
+  isDisabled,
+}: SelectStationProps) => {
+  const stationOptions = options || (stationDatas as Station[]);
+  const [inputValue, setInputValue] = useState<string>(value ? value.name : "");
+  const [prevValue, setPrevValue] = useState(value);
 
-    if (value !== prevValue) {
-        setPrevValue(value);
-        setInputValue(value ? value.name : "");
-    }
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setInputValue(value ? value.name : "");
+  }
 
-    const reactId = useId();
-    const safeInstanceId = instanceId ?? reactId;
+  const reactId = useId();
+  const safeInstanceId = instanceId ?? reactId;
 
-    const filterOption = (option: FilterOptionOption<Station>, rawInput: string) => {
-        const target = option.data;
-        const normalizedInput = rawInput
-            .replace(/[jJｊ]/g, 'Ｊ')
-            .replace(/[rRｒ]/g, 'Ｒ')
-            .replace(/ヶ/g, 'ケ');
-        return target.name.includes(normalizedInput) || target.kana.startsWith(normalizedInput);
-    };
-
+  const filterOption = (
+    option: FilterOptionOption<Station>,
+    rawInput: string,
+  ) => {
+    const target = option.data;
+    const normalizedInput = rawInput
+      .replace(/[jJｊ]/g, "Ｊ")
+      .replace(/[rRｒ]/g, "Ｒ")
+      .replace(/ヶ/g, "ケ");
     return (
-        <div className="my-2 w-full">
-            <Select
-                instanceId={safeInstanceId}
-                value={value}
-                isDisabled={isDisabled}
-                options={stationOptions}
-                menuIsOpen={inputValue.length > 0 ? undefined : false}
-
-                controlShouldRenderValue={false}
-                inputValue={inputValue}
-
-                onInputChange={(newInputValue, { action }) => {
-                    if (action === "input-change") {
-                        setInputValue(newInputValue);
-                        onChange(newInputValue ? { name: newInputValue, kana: newInputValue, lines: [] } : null);
-                    }
-                }}
-
-                onChange={(newValue) => {
-                    if (newValue) {
-                        setInputValue(newValue.name);
-                        onChange(newValue);
-                    } else {
-                        setInputValue("");
-                        onChange(null);
-                    }
-                }}
-
-                isMulti={false}
-                getOptionLabel={(option) => option.name}
-                getOptionValue={(option) => option.name}
-                placeholder="駅名を入力してください"
-                isSearchable={true}
-                filterOption={filterOption}
-                noOptionsMessage={() => (inputValue ? "該当する駅がありません" : null)}
-
-                styles={{
-                    input: (base) => ({
-                        ...base,
-                        opacity: '1 !important' as unknown as number,
-                        visibility: 'visible !important' as unknown as CSSProperties['visibility'],
-                        color: 'inherit'
-                    })
-                }}
-
-                components={{
-                    DropdownIndicator: () => null,
-                    IndicatorSeparator: () => null,
-                    Option: CustomOption,
-                    Input: CustomInput,
-                }}
-            />
-        </div>
+      target.name.includes(normalizedInput) ||
+      target.kana.startsWith(normalizedInput)
     );
+  };
+
+  return (
+    <div className="my-2 w-full">
+      <Select
+        instanceId={safeInstanceId}
+        className="station-select"
+        classNamePrefix="station-select"
+        value={value}
+        isDisabled={isDisabled}
+        options={stationOptions}
+        menuIsOpen={inputValue.length > 0 ? undefined : false}
+
+        controlShouldRenderValue={false}
+        inputValue={inputValue}
+
+        onInputChange={(newInputValue, { action }) => {
+          if (action === "input-change") {
+            setInputValue(newInputValue);
+            onChange(
+              newInputValue
+                ? { name: newInputValue, kana: newInputValue, lines: [] }
+                : null,
+            );
+          }
+        }}
+
+        onChange={(newValue) => {
+          if (newValue) {
+            setInputValue(newValue.name);
+            onChange(newValue);
+          } else {
+            setInputValue("");
+            onChange(null);
+          }
+        }}
+
+        isMulti={false}
+        getOptionLabel={(option) => option.name}
+        getOptionValue={(option) => option.name}
+        placeholder="駅名を入力してください"
+        isSearchable={true}
+        filterOption={filterOption}
+        noOptionsMessage={() => (inputValue ? "該当する駅がありません" : null)}
+
+        styles={{
+          input: (base) => ({
+            ...base,
+            opacity: "1 !important" as unknown as number,
+            visibility:
+              "visible !important" as unknown as CSSProperties["visibility"],
+            color: "inherit",
+          }),
+        }}
+
+        components={{
+          DropdownIndicator: () => null,
+          IndicatorSeparator: () => null,
+          Option: CustomOption,
+          Input: CustomInput,
+        }}
+      />
+    </div>
+  );
 };
 
 export default SelectStation;

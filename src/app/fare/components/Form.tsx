@@ -10,8 +10,8 @@ import { getLineByName, getKana } from '@/app/fare/lib/loadData';
 import SelectStation from "@/app/fare/components/SelectStation";
 import SelectLine from "@/app/fare/components/SelectLine";
 
-import { navigate } from "astro:transitions/client";
 import { replaceCalculatorUrl } from "@/lib/calculator-location";
+import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
 import { stringifyRoute, parseRoute } from "@/app/fare/lib/routeParser";
 
@@ -239,7 +239,7 @@ export default function Form({
         const newUrl = queryString ? `${nextPath}?${queryString}` : nextPath;
 
         if (nextPath !== pathname) {
-            void navigate(newUrl);
+            navigatePreservingScroll(newUrl);
         } else {
             replaceCalculatorUrl(newUrl);
         }

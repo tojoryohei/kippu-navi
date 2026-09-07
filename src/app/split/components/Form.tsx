@@ -2,8 +2,8 @@ import { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import { useForm, Controller, type SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
-import { navigate } from "astro:transitions/client";
 import { replaceCalculatorUrl } from "@/lib/calculator-location";
+import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
 import { analytics as posthog } from "@/lib/analytics";
 
@@ -577,7 +577,7 @@ export default function SplitForm({
         // パスが変わる場合のみ Astroでルーティング遷移
         if (nextPath !== pathname) {
             startTransition(() => {
-                void navigate(newUrl);
+                navigatePreservingScroll(newUrl);
             });
         } else {
             // 同じページ内ならURLバーだけ更新

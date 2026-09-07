@@ -96,10 +96,18 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
     `/fare/ticket?${new URLSearchParams({ route: "新茂原[外房]茂原" })}`,
   );
   await expect(page.getByText("¥160", { exact: true }).first()).toBeVisible();
+  await page.evaluate(() => {
+    const y = Math.min(
+      500,
+      document.documentElement.scrollHeight - innerHeight,
+    );
+    window.scrollTo(0, y);
+  });
   await page.getByRole("button", { name: "定期券", exact: true }).click();
   await expect(page).toHaveURL(/\/fare\/pass\?/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("定期券");
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   await page.locator('header a[href="/split/ticket"]').click();
   await expect(
     page.getByRole("button", { name: "乗車券を計算" }),
@@ -137,6 +145,28 @@ test("初期化中も入力画面が表示され、完了後に計算できる",
   await expectTicket(page);
 });
 
+test("駅入力欄が横幅いっぱいになり候補メニューを表示する", async ({ page }) => {
+  await isolateServices(page);
+  await page.goto("/fare/ticket");
+
+  const input = page.getByRole("combobox").first();
+  await input.fill("鹿島サッカースタジアム");
+  await expect(input).toHaveValue("鹿島サッカースタジアム");
+  const dimensions = await input.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(dimensions.clientWidth).toBeGreaterThan(200);
+  expect(dimensions.clientWidth).toBeGreaterThanOrEqual(dimensions.scrollWidth);
+  await expect(
+    page
+      .locator(".station-select__option")
+      .filter({ hasText: "鹿島サッカースタジアム" })
+      .first(),
+  ).toBeVisible();
+
+});
+
 test("記事ページはReactをhydrateせず、プリフェッチとモバイルメニューが動く", async ({
   page,
 }) => {
@@ -162,6 +192,55 @@ test("記事ページはReactをhydrateせず、プリフェッチとモバイ�
   );
   await page.locator('header a[href="/fare/ticket"]').hover();
   await prefetch;
+});
+
+test("駅候補のアクセシビリティ通知を画面に露出させない", async ({ page }) => {
+  await isolateServices(page);
+  for (const route of ["/fare/ticket", "/split/pass"]) {
+    await page.goto(route);
+    await expect(page.getByRole("combobox").first()).toBeVisible();
+    const placeholder = page
+      .locator(".station-select__placeholder")
+      .first();
+    const beforeStyleRemoval = await placeholder.boundingBox();
+    // ClientRouter遷移でEmotionのstyle要素が失われても表示を維持する。
+    await page.evaluate(() => {
+      document.querySelectorAll("style[data-emotion]").forEach((style) => {
+        style.remove();
+      });
+    });
+    const afterStyleRemoval = await placeholder.boundingBox();
+    expect(beforeStyleRemoval).not.toBeNull();
+    expect(afterStyleRemoval).not.toBeNull();
+    expect(
+      Math.abs(beforeStyleRemoval!.x - afterStyleRemoval!.x),
+    ).toBeLessThanOrEqual(1);
+    if (route === "/fare/ticket") {
+      await expect(
+        page.locator('[class*="__control--is-disabled"]').first(),
+      ).toHaveCSS("background-color", "rgb(242, 242, 242)");
+    }
+    const input = page.getByRole("combobox").first();
+    const inputBox = await input.boundingBox();
+    const placeholderBox = await placeholder.boundingBox();
+    expect(inputBox).not.toBeNull();
+    expect(placeholderBox).not.toBeNull();
+    expect(Math.abs(inputBox!.x - placeholderBox!.x)).toBeLessThan(20);
+    await input.fill("hoge");
+    await input.focus();
+    const noOptions = page
+      .locator(".station-select__menu-notice--no-options")
+      .first();
+    await expect(noOptions).toBeVisible();
+    await expect(noOptions).toHaveCSS("padding", "8px 12px");
+    const liveRegion = page.locator('[aria-live="polite"]').first();
+    await expect(liveRegion).toHaveCSS("width", "1px");
+    await expect(liveRegion).toHaveCSS("height", "1px");
+    expect(await liveRegion.boundingBox()).toMatchObject({
+      width: 1,
+      height: 1,
+    });
+  }
 });
 
 const routes = [
