@@ -126,6 +126,62 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
   expect(errors).toEqual([]);
 });
 
+test("運賃計算の種別切り替えで駅のバリデーションを再実行する", async ({
+  page,
+}) => {
+  await isolateServices(page);
+  const route = "鹿島サッカースタジアム[鹿島]鹿島神宮";
+  await page.goto(`/fare/ticket?route=${encodeURIComponent(route)}`);
+  await expect(page.getByRole("combobox").first()).toHaveValue(
+    "鹿島サッカースタジアム",
+  );
+
+  await page.getByRole("button", { name: "定期券", exact: true }).click();
+  await expect(page).toHaveURL(/\/fare\/pass\?/);
+  await expect(
+    page.getByText("臨時駅発着の定期券は計算できません", { exact: true }).first(),
+  ).toBeVisible();
+});
+
+test("運賃計算の不正な駅名を種別切り替え後も再検証する", async ({ page }) => {
+  await isolateServices(page);
+  await page.goto("/fare/ticket");
+  const input = page.getByRole("combobox").first();
+  await input.fill("存在しない駅");
+  await input.press("Tab");
+  await expect(
+    page.getByText("該当する駅が存在しません", { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "定期券", exact: true }).click();
+  await expect(page).toHaveURL(/\/fare\/pass\?/);
+  await expect(
+    page.getByText("該当する駅が存在しません", { exact: true }),
+  ).toBeVisible();
+});
+
+test("分割計算の期間変更で駅のバリデーションを再実行する", async ({
+  page,
+}) => {
+  await isolateServices(page);
+  await page.goto(
+    `/split/ticket?${new URLSearchParams({
+      from: "鹿島サッカースタジアム",
+      to: "鹿島神宮",
+    })}`,
+  );
+  await page.getByRole("button", { name: "定期券", exact: true }).click();
+  await expect(page).toHaveURL(/\/split\/pass\?/);
+  await expect(
+    page.getByText("臨時駅発着の定期券は計算できません", { exact: true }).first(),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "1箇月", exact: true }).click();
+  await expect(
+    page.getByText("臨時駅発着の定期券は計算できません", { exact: true }).first(),
+  ).toBeVisible();
+});
+
 test("WASMのロード失敗を表示する", async ({ page }) => {
   await isolateServices(page);
   await page.route("**/main.wasm", (route) =>

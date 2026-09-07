@@ -96,12 +96,12 @@ interface FormProps {
     initialCalculationMode?: CalculationMode;
 }
 
-const createApiRequestBody = (data: FormValues, pathname: string) => {
+const createApiRequestBody = (data: FormValues) => {
     if (data.startStation == null) {
         return null;
     }
 
-    if (data.searchType !== "ticket" || pathname.startsWith("/fare/pass")) {
+    if (data.searchType !== "ticket") {
         for (const seg of data.segments) {
             if (seg.viaLine?.name) {
                 if (SHINKANSEN_LINES.has(seg.viaLine.name)) {
@@ -215,6 +215,8 @@ export default function Form({
 
     const updateUrlAndState = useCallback((nextPath: string, nextSearchType: SearchType) => {
         setValue("searchType", nextSearchType, { shouldValidate: true });
+        // 切り替えで変わるモード依存のルール（臨時駅・新幹線など）を即時再評価する。
+        void trigger();
 
         const currentStart = getValues("startStation");
         const currentSegs = getValues("segments");
@@ -243,7 +245,7 @@ export default function Form({
         } else {
             replaceCalculatorUrl(newUrl);
         }
-    }, [setValue, getValues, initialCalculationMode, pathname]);
+    }, [setValue, getValues, trigger, initialCalculationMode, pathname]);
 
     // クライアント側での経路展開 (重複チェック用)
     const getAllStations = useCallback((start: Station | null, segments: IFormInput["segments"]): string[] => {
@@ -348,7 +350,7 @@ export default function Form({
         // 検索実行時に URL にクエリパラメータ route / month を付与・更新
         updateUrlAndState(pathname, data.searchType);
 
-        const apiRequestBody = createApiRequestBody(data, pathname);
+        const apiRequestBody = createApiRequestBody(data);
 
         if (!apiRequestBody) {
             setError("経路が不完全です。");
@@ -563,10 +565,15 @@ export default function Form({
         } else if (initialCalculationMode) {
             setValue("calculationMode", initialCalculationMode);
         }
-        if (startStation && initialSegments[0].destinationStation) {
+        // URLから復元した状態も、入力途中・不正な駅名を含めて再検証する。
+        // ここを完全な経路のときだけにすると、モード切り替え後の再生成で
+        // React Hook Form のエラーが失われる。
+        if (startStation || initialSegments.some(segment => segment.viaLine || segment.destinationStation)) {
             setTimeout(() => {
-                trigger();
+                void trigger();
             }, 100);
+        }
+        if (startStation && initialSegments[0].destinationStation) {
             if (!initialAutoExecutedRef.current) {
                 initialAutoExecutedRef.current = true;
                 if (currentSearchType === "ticket" || isWasmReady) {
@@ -711,7 +718,8 @@ export default function Form({
 
     const handlePeriodChange = (period: "pass1" | "pass3" | "pass6") => {
         setSelectedPeriod(period);
-        setValue("searchType", period);
+        setValue("searchType", period, { shouldValidate: true });
+        void trigger();
         setResult(null);
         setResultPass(null);
         setCorrectedStartPass("");
@@ -975,7 +983,7 @@ export default function Form({
                                             validate: (value) => {
                                                 if (!value || !value.name || value.name.trim() === "") return "経由路線を選択してください";
                                                 const currentSearchType = getValues("searchType");
-                                                const isPass = currentSearchType !== "ticket" || pathname.startsWith("/fare/pass");
+                                                const isPass = currentSearchType !== "ticket";
                                                 const targetBaseName = value.name.split('_')[0];
                                                 if (isPass && SHINKANSEN_LINES.has(value.name)) return "定期券の計算で新幹線は選択できません";
                                                 if (previousStation) {

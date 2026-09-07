@@ -540,7 +540,8 @@ export default function SplitForm({
 
     const handlePeriodChange = (period: "pass1" | "pass3" | "pass6") => {
         setSelectedPeriod(period);
-        setValue("searchType", period);
+        setValue("searchType", period, { shouldValidate: true });
+        void trigger(["startStation", "endStation"]);
         setResult(null);
         setError(null);
         setServerTime(null);

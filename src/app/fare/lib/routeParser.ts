@@ -54,7 +54,9 @@ export function parseRoute(
         if (singleStation) {
             return { startStation: singleStation, segments: [] };
         }
-        return null;
+        // 入力途中の未知の駅名もURL遷移後に保持し、フォーム側で
+        // 「該当する駅が存在しません」を表示できるようにする。
+        return { startStation: { name: trimmed, kana: "" }, segments: [] };
     }
 
     const stationMap = new Map<string, Station>(stationData.map(s => [s.name, s]));
