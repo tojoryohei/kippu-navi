@@ -156,7 +156,9 @@ test("駅入力欄が横幅いっぱいになり候補メニューを表示す�
     clientWidth: element.clientWidth,
     scrollWidth: element.scrollWidth,
   }));
-  expect(dimensions.clientWidth).toBeGreaterThan(200);
+  // React Select sizes the input to its current text. A collapsed 2px input
+  // makes the value appear as a clipped mark even though the control is wide.
+  expect(dimensions.clientWidth).toBeGreaterThan(2);
   expect(dimensions.clientWidth).toBeGreaterThanOrEqual(dimensions.scrollWidth);
   await expect(
     page
@@ -164,6 +166,21 @@ test("駅入力欄が横幅いっぱいになり候補メニューを表示す�
       .filter({ hasText: "鹿島サッカースタジアム" })
       .first(),
   ).toBeVisible();
+
+  // A value restored from the URL must remain visible after a full reload too.
+  await page.goto(
+    `/fare/ticket?route=${encodeURIComponent("茂原[外房]千葉")}`,
+  );
+  const restored = page.getByRole("combobox").first();
+  await expect(restored).toHaveValue("茂原");
+  const restoredDimensions = await restored.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(restoredDimensions.clientWidth).toBeGreaterThan(2);
+  expect(restoredDimensions.clientWidth).toBeGreaterThanOrEqual(
+    restoredDimensions.scrollWidth,
+  );
 
 });
 
@@ -228,6 +245,14 @@ test("駅候補のアクセシビリティ通知を画面に露出させない",
     expect(Math.abs(inputBox!.x - placeholderBox!.x)).toBeLessThan(20);
     await input.fill("hoge");
     await input.focus();
+    const inputDimensions = await input.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }));
+    expect(inputDimensions.clientWidth).toBeGreaterThan(2);
+    expect(inputDimensions.clientWidth).toBeGreaterThanOrEqual(
+      inputDimensions.scrollWidth,
+    );
     const noOptions = page
       .locator(".station-select__menu-notice--no-options")
       .first();
