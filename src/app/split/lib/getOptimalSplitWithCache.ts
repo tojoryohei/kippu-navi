@@ -1,5 +1,5 @@
 import { calcSplit } from '@/app/split/lib/calcSplit';
-import { CacheResult } from '@/app/types';
+import type { CacheResult } from '@/app/types';
 
 export async function getOptimalSplitWithCache(
     startStation: string,

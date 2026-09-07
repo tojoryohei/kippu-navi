@@ -1,10 +1,8 @@
-"use client";
-
-import { useForm, Controller, SubmitHandler, useFieldArray, useWatch } from "react-hook-form";
+import { useForm, Controller, type SubmitHandler, useFieldArray, useWatch } from "react-hook-form";
 import type { SingleValue } from "react-select";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
-import { usePostHog } from "posthog-js/react";
+import { analytics as posthog } from "@/lib/analytics";
 
 import stationData from "@/app/fare/data/stations.json";
 import lineData from "@/app/fare/data/lines.json";
@@ -12,10 +10,12 @@ import { getLineByName, getKana } from '@/app/fare/lib/loadData';
 import SelectStation from "@/app/fare/components/SelectStation";
 import SelectLine from "@/app/fare/components/SelectLine";
 
-import { useRouter, usePathname } from "next/navigation";
+import { navigate } from "astro:transitions/client";
+import { replaceCalculatorUrl } from "@/lib/calculator-location";
+import { createEngineClient, type EngineClient } from "@/lib/engine-client";
 import { stringifyRoute, parseRoute } from "@/app/fare/lib/routeParser";
 
-import { Station, Line, KippuData, IFormInput, PathStep, CalculationMode, SearchType } from "@/app/types";
+import type { Station, Line, KippuData, IFormInput, PathStep, CalculationMode, SearchType } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 const SHINKANSEN_LINES: Set<string> = new Set(["山形新幹線", "北海道新幹", "九州新幹線", "上越新幹線", "新幹線", "東北新幹線", "西九州新幹", "北陸新幹線"]);
@@ -88,6 +88,7 @@ interface FormValues extends IFormInput {
 }
 
 interface FormProps {
+    pathname: string;
     initialRoute?: string;
     initialFrom?: string;
     initialTo?: string;
@@ -166,14 +167,12 @@ const createApiRequestBody = (data: FormValues, pathname: string) => {
 
 export default function Form({
     initialRoute,
+    pathname,
     initialFrom,
     initialTo,
     initialSearchType,
     initialCalculationMode = "normal",
 }: FormProps) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const posthog = usePostHog();
     const lastTrackedSearch = useRef<string | null>(null);
 
     const { register, handleSubmit, control, setValue, getValues, trigger, formState: { isValid } } = useForm<FormValues>({
@@ -196,7 +195,7 @@ export default function Form({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const workerRef = useRef<Worker | null>(null);
+    const workerRef = useRef<EngineClient | null>(null);
     const [isWasmReady, setIsWasmReady] = useState(false);
     const isWasmReadyRef = useRef<boolean>(false);
     const latestCalcIdRef = useRef<number>(0);
@@ -240,11 +239,11 @@ export default function Form({
         const newUrl = queryString ? `${nextPath}?${queryString}` : nextPath;
 
         if (nextPath !== pathname) {
-            router.push(newUrl, { scroll: false });
+            void navigate(newUrl);
         } else {
-            window.history.replaceState(null, "", newUrl);
+            replaceCalculatorUrl(newUrl);
         }
-    }, [setValue, getValues, initialCalculationMode, pathname, router]);
+    }, [setValue, getValues, initialCalculationMode, pathname]);
 
     // クライアント側での経路展開 (重複チェック用)
     const getAllStations = useCallback((start: Station | null, segments: IFormInput["segments"]): string[] => {
@@ -329,7 +328,15 @@ export default function Form({
         return stations;
     }, []);
 
+    const mountedRef = useRef(true);
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
+    }, []);
+
     const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
+        if (!mountedRef.current) return;
+        const calcId = ++latestCalcIdRef.current;
         setIsLoading(true);
         setError(null);
         setResult(null);
@@ -379,7 +386,7 @@ export default function Form({
 
             if (!workerRef.current || !isWasmReadyRef.current) {
                 let waited = 0;
-                while ((!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
+                while (mountedRef.current && (!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
                     await new Promise((resolve) => setTimeout(resolve, 50));
                     waited += 50;
                 }
@@ -391,6 +398,7 @@ export default function Form({
                 return;
             }
 
+            if (!mountedRef.current || calcId !== latestCalcIdRef.current) return;
             const stationNames = apiRequestBody.fullPath
                 .map(p => p.stationName)
                 .filter(name => !TEMPORARY_STATIONS.includes(name));
@@ -398,7 +406,6 @@ export default function Form({
             const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
             const months = monthsMap[data.searchType] || 1;
 
-            const calcId = ++latestCalcIdRef.current;
             workerRef.current.postMessage({
                 type: "calculateRoutePass",
                 payload: {
@@ -415,7 +422,7 @@ export default function Form({
         if (!isPass) {
             if (!workerRef.current || !isWasmReadyRef.current) {
                 let waited = 0;
-                while ((!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
+                while (mountedRef.current && (!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
                     await new Promise((resolve) => setTimeout(resolve, 50));
                     waited += 50;
                 }
@@ -427,7 +434,7 @@ export default function Form({
                 return;
             }
 
-            const calcId = ++latestCalcIdRef.current;
+            if (!mountedRef.current || calcId !== latestCalcIdRef.current) return;
             workerRef.current.postMessage({
                 type: "calculateRouteTicket",
                 payload: {
@@ -451,11 +458,12 @@ export default function Form({
             setIsWasmReady(false);
             isWasmReadyRef.current = false;
 
-            const worker = new Worker(new URL("../../split/split.worker.ts", import.meta.url));
+            const worker = createEngineClient();
             workerRef.current = worker;
 
             worker.onmessage = (e) => {
                 const { type, result: wResult, error: wError, requestId } = e.data;
+                if (requestId !== undefined && requestId !== latestCalcIdRef.current) return;
                 if (type === "ready") {
                     setIsWasmReady(true);
                     isWasmReadyRef.current = true;
@@ -673,7 +681,7 @@ export default function Form({
                 }
             }
         }
-    }, [result, resultPass, error, posthog, getValues]);
+    }, [result, resultPass, error, getValues]);
 
     const currentType = selectedPeriod;
     const isPeriodDisabled = currentType === "ticket";

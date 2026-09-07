@@ -1,7 +1,7 @@
 import { load } from "@/app/utils/load";
 import { applyOneSideCityRule, applyOneSideYamanoteRule, calculateTotalEigyoKilo, calculateTotalGiseiKilo, convertPathStepsToRouteSegments } from "@/app/utils/calc";
 import { applyCityRule, applyYamanoteRule, correctPath } from "@/app/utils/correctPath";
-import { PathStep } from "@/app/types";
+import type { PathStep } from "@/app/types";
 import { calculateFareFromPath } from "@/app/utils/calcFare";
 
 export function cheapestPathAndFare(fullPath: PathStep[]): { path: PathStep[], fare: number } {

@@ -1,7 +1,7 @@
 import { load } from "@/app/utils/load";
 import { calculateTotalEigyoKilo, convertPathStepsToRouteSegments, createRouteKey } from "@/app/utils/calc";
 
-import { PathStep, RouteSegment } from "@/app/types";
+import type { PathStep, RouteSegment } from "@/app/types";
 
 export function correctPath(fullPath: PathStep[]): PathStep[] {
 

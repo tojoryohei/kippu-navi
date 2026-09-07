@@ -1,16 +1,16 @@
-"use client";
-
 import { useState, useTransition, useEffect, useRef, useCallback } from "react";
-import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
+import { useForm, Controller, type SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
-import { useRouter, usePathname } from "next/navigation";
-import { usePostHog } from "posthog-js/react";
+import { navigate } from "astro:transitions/client";
+import { replaceCalculatorUrl } from "@/lib/calculator-location";
+import { createEngineClient, type EngineClient } from "@/lib/engine-client";
+import { analytics as posthog } from "@/lib/analytics";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
 import { getApiUrl } from "@/app/lib/api";
-import { SearchOption, SearchType, SplitApiResponse, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
+import type { SearchOption, SearchType, SplitApiResponse, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
 
 interface ExtendedSplitFormInput {
     startStation: Station | null;
@@ -19,6 +19,7 @@ interface ExtendedSplitFormInput {
 }
 
 interface SplitFormProps {
+    pathname: string;
     initialFrom?: string;
     initialTo?: string;
     initialSearchType?: string;
@@ -111,6 +112,7 @@ function adaptWasmResponseToSplitApiResponse(wasmRes: WasmClientResponse): Split
 }
 
 export default function SplitForm({
+    pathname,
     initialFrom,
     initialTo,
     initialSearchType,
@@ -118,9 +120,6 @@ export default function SplitForm({
     error: initialError,
     serverTime: initialServerTime,
 }: SplitFormProps) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const posthog = usePostHog();
     const [isPending, startTransition] = useTransition();
 
     const isIcPass = pathname === "/split/ic-pass";
@@ -144,14 +143,9 @@ export default function SplitForm({
     );
     const [showAllPatterns, setShowAllPatterns] = useState(false);
 
-    const [versionSkewError, setVersionSkewError] = useState<Error | null>(null);
-    if (versionSkewError) {
-        throw versionSkewError;
-    }
-
     const lastTrackedSearch = useRef<string>("");
 
-    const workerRef = useRef<Worker | null>(null);
+    const workerRef = useRef<EngineClient | null>(null);
     const [isWasmReady, setIsWasmReady] = useState(false);
     const isWasmReadyRef = useRef<boolean>(false);
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
@@ -170,9 +164,23 @@ export default function SplitForm({
         },
     });
 
+    const apiAbortRef = useRef<AbortController | null>(null);
+    useEffect(() => () => apiAbortRef.current?.abort(), []);
+
+    const mountedRef = useRef(true);
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
+    }, []);
+
     const onSubmit: SubmitHandler<ExtendedSplitFormInput> = useCallback(async (data) => {
+        if (!mountedRef.current) return;
+        const calcId = ++latestCalcIdRef.current;
         if (!data.startStation?.name || !data.endStation?.name) return;
 
+        apiAbortRef.current?.abort();
+        const abort = new AbortController();
+        apiAbortRef.current = abort;
         const calculationStartedAt = performance.now();
         setShowAllPatterns(false);
         setError(null);
@@ -201,7 +209,7 @@ export default function SplitForm({
         const nextPath = pathname;
         const newUrl = `${nextPath}?${newParams.toString()}`;
         // URLバーだけ更新
-        window.history.replaceState(null, "", newUrl);
+        replaceCalculatorUrl(newUrl);
 
         // 検索タイプの確定
         setSearchedType(data.searchType);
@@ -223,8 +231,9 @@ export default function SplitForm({
             } else {
                 endpoint = "/api/split-pass";
             }
-            const apiRes = await fetch(`${getApiUrl(endpoint)}?${query.toString()}`);
+            const apiRes = await fetch(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: abort.signal });
             const res = await apiRes.json();
+            if (abort.signal.aborted) return;
             setServerTime(performance.now() - calculationStartedAt);
             if (res.error) {
                 setError(res.error);
@@ -232,7 +241,7 @@ export default function SplitForm({
             } else {
                 if (!workerRef.current || !isWasmReadyRef.current) {
                     let waited = 0;
-                    while ((!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
+                    while (mountedRef.current && (!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
                         await new Promise((resolve) => setTimeout(resolve, 50));
                         waited += 50;
                     }
@@ -251,7 +260,7 @@ export default function SplitForm({
                     ? res.results
                     : [res.normal];
 
-                const calcId = ++latestCalcIdRef.current;
+                if (abort.signal.aborted) return;
                 workerRef.current.postMessage({
                     type: "calculate",
                     payload: {
@@ -264,20 +273,10 @@ export default function SplitForm({
                 });
             }
         } catch (err: unknown) {
+            if (abort.signal.aborted) return;
             const errorInstance = err instanceof Error ? err : new Error(String(err));
-            const isVersionSkew =
-                errorInstance.name === 'ChunkLoadError' ||
-                /Loading chunk .* failed/.test(errorInstance.message) ||
-                errorInstance.message?.includes('Load failed') ||
-                errorInstance.message?.includes('Server Action') ||
-                errorInstance.message?.includes('was not found on the server');
-
-            if (isVersionSkew) {
-                setVersionSkewError(errorInstance);
-            } else {
-                setError(errorInstance.message);
-                setIsCalculating(false);
-            }
+            setError(errorInstance.message);
+            setIsCalculating(false);
         }
     }, [pathname, isIcPass]);
 
@@ -292,11 +291,12 @@ export default function SplitForm({
             setIsWasmReady(false);
             isWasmReadyRef.current = false;
 
-            const worker = new Worker(new URL("../split.worker", import.meta.url));
+            const worker = createEngineClient();
             workerRef.current = worker;
 
             worker.onmessage = (e) => {
                 const { type, result, error, requestId } = e.data;
+                if (requestId !== undefined && requestId !== latestCalcIdRef.current) return;
                 if (type === "ready") {
                     setIsWasmReady(true);
                     isWasmReadyRef.current = true;
@@ -441,7 +441,7 @@ export default function SplitForm({
                 }
             }
         }
-    }, [result, error, posthog, getValues]);
+    }, [result, error, getValues]);
 
     const baseLabel = SEARCH_TYPE_OPTIONS.find(
         o => o.value === searchedType
@@ -574,14 +574,14 @@ export default function SplitForm({
 
         const newUrl = `${nextPath}?${newParams.toString()}`;
 
-        // パスが変わる場合のみ router.push でルーティング遷移
+        // パスが変わる場合のみ Astroでルーティング遷移
         if (nextPath !== pathname) {
             startTransition(() => {
-                router.push(newUrl, { scroll: false });
+                void navigate(newUrl);
             });
         } else {
             // 同じページ内ならURLバーだけ更新
-            window.history.replaceState(null, "", newUrl);
+            replaceCalculatorUrl(newUrl);
         }
     };
 

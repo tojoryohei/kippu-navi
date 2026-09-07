@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
 import { createPairKey, createRouteKey } from '@/app/utils/calc';
-import { City, KippuData, MajorCitySuburbanSection, OuterSection, PathStep, Printing, RouteSegment, Section, SpecificFare, TrainSpecificSection } from '@/app/types';
+import type { City, KippuData, MajorCitySuburbanSection, OuterSection, PathStep, Printing, RouteSegment, Section, SpecificFare, TrainSpecificSection } from '@/app/types';
 
 class Load {
     private adjacentStationsList: Map<string, string[]> = new Map();

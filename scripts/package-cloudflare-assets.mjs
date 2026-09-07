@@ -3,15 +3,15 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const version = process.env.NEXT_PUBLIC_WASM_VERSION;
+const version = process.env.PUBLIC_WASM_VERSION;
 const environment = process.env.DEPLOY_ENVIRONMENT;
 if (!version || !/^[a-f0-9]{64}$/.test(version)) {
-  throw new Error('NEXT_PUBLIC_WASM_VERSION must be the 64-character content hash used for the Next.js build.');
+  throw new Error('PUBLIC_WASM_VERSION must be the 64-character content hash used for the Astro build.');
 }
 if (!['staging', 'production'].includes(environment)) {
   throw new Error('DEPLOY_ENVIRONMENT must be staging or production.');
 }
-const out = join(root, 'out');
+const out = join(root, 'dist');
 if (!existsSync(join(out, 'index.html'))) {
   throw new Error('Run npm run build before packaging Cloudflare assets.');
 }
@@ -29,6 +29,7 @@ cpSync(prepared, destination, { recursive: true });
 
 // Cloudflare Workers does not execute the Pages Functions directory or _routes.json.
 rmSync(join(out, '_routes.json'), { force: true });
+rmSync(join(out, 'wasm'), { recursive: true, force: true });
 const sourceHeaders = join(root, 'public', '_headers');
 let headers = existsSync(sourceHeaders) ? readFileSync(sourceHeaders, 'utf8') : '';
 if (environment === 'staging') {

@@ -1,10 +1,8 @@
-"use client";
-
-import Select, { components, OptionProps, FilterOptionOption, InputProps } from "react-select";
-import { useState, FocusEvent, CSSProperties, useId } from "react";
+import Select, { components, type OptionProps, type FilterOptionOption, type InputProps } from "react-select";
+import { useState, type FocusEvent, type CSSProperties, useId } from "react";
 import stationDatas from "@/app/split/data/stationDatas.json";
 
-import { Station, SelectStationProps } from '@/app/types';
+import type { Station, SelectStationProps } from '@/app/types';
 
 const CustomOption = (props: OptionProps<Station>) => (
     <components.Option {...props}>

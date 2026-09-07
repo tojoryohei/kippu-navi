@@ -1,8 +1,6 @@
-"use client";
+import Select, { components, type OptionProps } from "react-select";
 
-import Select, { components, OptionProps } from "react-select";
-
-import { Line, SelectLineProps } from "@/app/types";
+import type { Line, SelectLineProps } from "@/app/types";
 
 const formatLabel = (option: Line): string => {
     return option.name.split('_')[0];

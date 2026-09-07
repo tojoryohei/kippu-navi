@@ -22,8 +22,9 @@ function getBaseOrigin(): string {
 }
 
 const baseOrigin = getBaseOrigin();
-// CI embeds the same commit version that is used to package all four engine files.
-const wasmVersion = process.env.NEXT_PUBLIC_WASM_VERSION;
+// CI embeds the content hash used to package all four engine files.
+declare const __WASM_VERSION__: string;
+const wasmVersion = __WASM_VERSION__;
 const engineBaseUrl = `${baseOrigin}/engine${wasmVersion ? `/${wasmVersion}` : ''}`;
 importScripts(`${engineBaseUrl}/wasm_exec.js`);
 
@@ -143,7 +144,7 @@ onmessage = async (e: MessageEvent) => {
 
   if (type === 'calculateRoutePass') {
     if (!graphInitialized) {
-      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
+      postMessage({ type: 'error', requestId: payload?.requestId, error: 'Wasm graph not initialized yet' });
       return;
     }
 
@@ -153,16 +154,16 @@ onmessage = async (e: MessageEvent) => {
       const resultJsonStr = workerSelf.calculateRoutePass(stationNamesJson, months, isIc, calculationMode || 'normal');
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
-        postMessage({ type: 'error', error: result.error });
+        postMessage({ type: 'error', requestId: payload?.requestId, error: result.error });
         return;
       }
       postMessage({ type: 'success_route_pass', requestId, result });
     } catch (err) {
-      postMessage({ type: 'error', error: String(err) });
+      postMessage({ type: 'error', requestId: payload?.requestId, error: String(err) });
     }
   } else if (type === 'calculateRouteTicket') {
     if (!graphInitialized) {
-      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
+      postMessage({ type: 'error', requestId: payload?.requestId, error: 'Wasm graph not initialized yet' });
       return;
     }
 
@@ -175,16 +176,16 @@ onmessage = async (e: MessageEvent) => {
       const resultJsonStr = workerSelf.calculateRouteTicket(reqJsonStr);
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
-        postMessage({ type: 'error', error: result.error });
+        postMessage({ type: 'error', requestId: payload?.requestId, error: result.error });
         return;
       }
       postMessage({ type: 'success_route_ticket', requestId, result });
     } catch (err) {
-      postMessage({ type: 'error', error: String(err) });
+      postMessage({ type: 'error', requestId: payload?.requestId, error: String(err) });
     }
   } else if (type === 'calculateOptimalSplitTicket') {
     if (!graphInitialized) {
-      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
+      postMessage({ type: 'error', requestId: payload?.requestId, error: 'Wasm graph not initialized yet' });
       return;
     }
 
@@ -193,16 +194,16 @@ onmessage = async (e: MessageEvent) => {
       const resultJsonStr = workerSelf.calculateOptimalSplitTicket(startStationName, endStationName);
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
-        postMessage({ type: 'error', error: result.error });
+        postMessage({ type: 'error', requestId: payload?.requestId, error: result.error });
         return;
       }
       postMessage({ type: 'success_calculate_optimal_split_ticket', requestId, result });
     } catch (err) {
-      postMessage({ type: 'error', error: String(err) });
+      postMessage({ type: 'error', requestId: payload?.requestId, error: String(err) });
     }
   } else if (type === 'calculate') {
     if (!graphInitialized) {
-      postMessage({ type: 'error', error: 'Wasm graph not initialized yet' });
+      postMessage({ type: 'error', requestId: payload?.requestId, error: 'Wasm graph not initialized yet' });
       return;
     }
 
@@ -224,7 +225,7 @@ onmessage = async (e: MessageEvent) => {
 
         const result = JSON.parse(resultJsonStr);
         if (result.error) {
-          postMessage({ type: 'error', error: result.error });
+          postMessage({ type: 'error', requestId: payload?.requestId, error: result.error });
           return;
         }
 
@@ -253,7 +254,7 @@ onmessage = async (e: MessageEvent) => {
 
       postMessage({ type: 'success', requestId, result: { normal: normalResult, results: uniqueResults } });
     } catch (err) {
-      postMessage({ type: 'error', error: String(err) });
+      postMessage({ type: 'error', requestId: payload?.requestId, error: String(err) });
     }
   }
 };

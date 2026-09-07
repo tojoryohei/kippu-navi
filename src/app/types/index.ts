@@ -1,11 +1,4 @@
-import { IconType } from "react-icons";
-import { SingleValue } from "react-select";
-
-export interface menuItem {
-    href: string;
-    icon: IconType;
-    label: string;
-}
+import type { SingleValue } from "react-select";
 
 export interface Station {
     name: string;

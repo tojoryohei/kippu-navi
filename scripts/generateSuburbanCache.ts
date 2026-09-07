@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
 import { load } from '@/app/utils/load';
-import { KippuData, MajorCitySuburbanSectionFare, PathStep, Section } from '@/app/types';
+import type { KippuData, MajorCitySuburbanSectionFare, PathStep, Section } from '@/app/types';
 import { applyOneSideCityRule, applyOneSideYamanoteRule, calculateTotalEigyoKilo, convertPathStepsToRouteSegments, generatePrintedViaStrings } from '@/app/utils/calc';
 import { calculateFareFromPath } from '@/app/utils/calcFare';
 import { applyBoldLineAreaRule, applyKitashinchiRule, applyOsakaRule } from '@/app/utils/correctPath';

@@ -1,6 +1,6 @@
 import kanaData from '@/app/fare/data/kanas.json';
 import linesData from '@/app/fare/data/lines.json';
-import { Kana, Line } from '@/app/types';
+import type { Kana, Line } from '@/app/types';
 
 function createRouteKey(line: string, station0: string, station1: string): string {
     return [line, ...[station0, station1].sort()].join('-');

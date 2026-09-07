@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calculateFareFromPath } from "@/app/utils/calcFare";
-import { PathStep } from "@/app/types";
+import type { PathStep } from "@/app/types";
 
 describe("第81条 幹線と地方交通線を連続して乗車する場合の大人普通旅客運賃", () => {
     it("広島-あき亀山 18.6キロメートル", () => {

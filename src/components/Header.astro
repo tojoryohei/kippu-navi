@@ -1,0 +1,98 @@
+---
+import { MdHome } from "react-icons/md";
+import { RiBookOpenFill, RiGuideLine, RiScissorsFill } from "react-icons/ri";
+const items = [
+  { href: "/", icon: MdHome, label: "ホーム" },
+  { href: "/guide", icon: RiBookOpenFill, label: "はじめての方へ" },
+  { href: "/fare/ticket", icon: RiGuideLine, label: "運賃計算" },
+  { href: "/split/ticket", icon: RiScissorsFill, label: "分割きっぷ" },
+];
+---
+
+<header
+  class="sticky top-0 z-50 border-b border-slate-200 h-16 bg-white/90 backdrop-blur-md"
+>
+  <site-navigation
+    class="flex items-center justify-between h-full px-4 sm:px-6"
+  >
+    <a
+      href="/"
+      class="text-2xl font-bold tracking-tight text-blue-600 hover:opacity-80 transition-opacity font-logo"
+      >きっぷナビ</a
+    >
+    <button
+      type="button"
+      data-toggle
+      class="relative z-50 md:hidden text-3xl text-slate-700"
+      aria-label="メニューバーを開く"
+      aria-expanded="false"
+      aria-controls="site-menu">☰</button
+    >
+    <button
+      type="button"
+      data-overlay
+      hidden
+      class="fixed top-16 inset-x-0 h-screen bg-slate-900/50 md:hidden"
+      aria-label="メニューを閉じる"></button>
+    <nav
+      id="site-menu"
+      class="max-md:hidden fixed top-16 right-0 h-[calc(100dvh-4rem)] w-64 bg-white shadow-2xl md:relative md:top-auto md:h-auto md:w-auto md:shadow-none md:bg-transparent"
+    >
+      <ul class="flex flex-col md:flex-row gap-2 p-4 md:p-0">
+        {
+          items.map(({ href, icon: Icon, label }) => (
+            <li>
+              <a
+                href={href}
+                data-astro-prefetch="hover"
+                class="group flex items-center px-4 py-3 md:py-2 md:px-3 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                <Icon className="mr-3 md:mr-2 text-xl text-slate-500 group-hover:text-blue-600" />
+                <span class="text-base font-medium text-slate-700 group-hover:text-blue-600">
+                  {label}
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </site-navigation>
+</header>
+<script>
+  class SiteNavigation extends HTMLElement {
+    connectedCallback() {
+      const toggle = this.querySelector<HTMLButtonElement>("[data-toggle]")!;
+      const overlay = this.querySelector<HTMLButtonElement>("[data-overlay]")!;
+      const menu = this.querySelector("nav")!;
+      const setOpen = (open: boolean) => {
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.setAttribute(
+          "aria-label",
+          open ? "メニューバーを閉じる" : "メニューバーを開く",
+        );
+        toggle.textContent = open ? "×" : "☰";
+        overlay.hidden = !open;
+        menu.classList.toggle("max-md:hidden", !open);
+        document.body.style.overflow = open ? "hidden" : "";
+      };
+      toggle.onclick = () =>
+        setOpen(toggle.getAttribute("aria-expanded") !== "true");
+      overlay.onclick = () => setOpen(false);
+      this.querySelectorAll("a").forEach((link) => {
+        link.onclick = () => setOpen(false);
+      });
+      this.onkeydown = (event) => {
+        if (event.key === "Escape") {
+          setOpen(false);
+          toggle.focus();
+        }
+      };
+    }
+    disconnectedCallback() {
+      document.body.style.overflow = "";
+    }
+  }
+  if (!customElements.get("site-navigation"))
+    customElements.define("site-navigation", SiteNavigation);
+</script>

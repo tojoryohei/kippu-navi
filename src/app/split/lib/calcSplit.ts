@@ -1,7 +1,7 @@
 import { load } from '@/app/utils/load';
 import { loadSplit } from '@/app/split/lib/loadSplit';
 import { generateKippu } from '@/app/split/lib/generateKippu';
-import { KippuData, PathStep, SplitApiResponse, SplitKippuData, SplitKippuDatas } from '@/app/types';
+import type { KippuData, PathStep, SplitApiResponse, SplitKippuData, SplitKippuDatas } from '@/app/types';
 import { cheapestPathAndFare } from '@/app/utils/cheapestPath';
 import { calculateTotalGiseiKilo, convertPathStepsToRouteSegments, createPairKey, round1000, round10000, whichMajorCitySuburbanSections } from '@/app/utils/calc';
 import { calculateFareFromPath } from '@/app/utils/calcFare';

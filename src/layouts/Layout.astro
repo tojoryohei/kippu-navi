@@ -1,0 +1,88 @@
+---
+import { ClientRouter } from "astro:transitions";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import ScrollToTopButton from "@/components/ScrollToTopButton.astro";
+import "@fontsource-variable/noto-sans-jp";
+import "@fontsource-variable/geist-mono";
+import "@/app/globals.css";
+
+interface Props {
+  metadata?: {
+    title?: string;
+    description?: string;
+    alternates?: { canonical: string };
+  };
+  noindex?: boolean;
+}
+const { metadata = {}, noindex = false } = Astro.props;
+const title = metadata.title ? `${metadata.title} | きっぷナビ` : "きっぷナビ";
+const description =
+  metadata.description ??
+  "JR在来線の分割きっぷ（乗車券・定期券・IC定期券）の最安組み合わせを自動計算。発駅と着駅を入力するだけで、交通費の節約額がすぐにわかる無料Webツールです。";
+const pathname = Astro.url.pathname
+  .replace(/\/index\.html$/, "/")
+  .replace(/\.html$/, "");
+const canonical = new URL(
+  metadata.alternates?.canonical ?? pathname,
+  Astro.site,
+);
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "きっぷナビ",
+  url: "https://kippu-navi.com/",
+};
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#155dfc" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link
+      rel="apple-touch-icon-precomposed"
+      href="/apple-touch-icon-precomposed.png"
+    />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="きっぷナビ" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:type" content="website" />
+    {
+      (noindex || import.meta.env.DEPLOY_ENVIRONMENT === "staging") && (
+        <meta name="robots" content="noindex, nofollow" />
+      )
+    }
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(jsonLd)}
+    />
+    <script
+      is:inline
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1214458177768834"
+      crossorigin="anonymous"></script>
+    <ClientRouter />
+  </head>
+  <body
+    class="flex flex-col min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden font-sans antialiased"
+  >
+    <Header />
+    <main class="grow"><slot /></main>
+    <Footer />
+    <ScrollToTopButton />
+    <script>
+      import { trackPageView } from "@/lib/analytics";
+      document.addEventListener("astro:page-load", trackPageView);
+    </script>
+  </body>
+</html>

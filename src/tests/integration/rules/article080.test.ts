@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calculateFareFromPath } from "@/app/utils/calcFare";
-import { PathStep } from "@/app/types";
+import type { PathStep } from "@/app/types";
 
 describe("第80条 新幹線の並行区間等における大人普通旅客運賃の特定", () => {
     describe("（1）京都・新大阪間", () => {

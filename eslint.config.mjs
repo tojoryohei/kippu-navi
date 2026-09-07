@@ -1,4 +1,4 @@
-import nextPlugin from "@next/eslint-plugin-next";
+import astroPlugin from "eslint-plugin-astro";
 import reactPlugin from "eslint-plugin-react";
 import hooksPlugin from "eslint-plugin-react-hooks";
 import jsxA11yPlugin from "eslint-plugin-jsx-a11y";
@@ -13,10 +13,16 @@ export default [
             "node_modules/**",
             "out/**",
             "build/**",
+            "dist/**",
+            ".astro/**",
+            ".cloudflare-engine/**",
+            "test-results/**",
+            "playwright-report/**",
             "next-env.d.ts"
         ],
     },
     securityPlugin.configs.recommended,
+    ...astroPlugin.configs.recommended,
     {
         files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
         languageOptions: {
@@ -29,7 +35,6 @@ export default [
             react: reactPlugin,
             "react-hooks": hooksPlugin,
             "jsx-a11y": jsxA11yPlugin,
-            "@next/next": nextPlugin,
             "@typescript-eslint": tsPlugin,
         },
         rules: {
@@ -38,8 +43,6 @@ export default [
             ...reactPlugin.configs["jsx-runtime"].rules,
             ...hooksPlugin.configs.recommended.rules,
             ...jsxA11yPlugin.configs.recommended.rules,
-            ...nextPlugin.configs.recommended.rules,
-            ...nextPlugin.configs["core-web-vitals"].rules,
 
             "@typescript-eslint/no-unused-vars": [
                 "error",

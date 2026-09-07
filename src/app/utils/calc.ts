@@ -1,5 +1,5 @@
 import { load } from '@/app/utils/load';
-import { MajorCitySuburbanSection, PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
+import type { MajorCitySuburbanSection, PathStep, RouteSegment, TrainSpecificSection } from '@/app/types';
 
 export function calculateTotalEigyoKilo(routeSegments: RouteSegment[]): number {
     let totalEigyoKilo: number = 0;

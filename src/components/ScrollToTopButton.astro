@@ -1,0 +1,52 @@
+<scroll-to-top
+  class="fixed right-4 sm:right-8 bottom-8 z-50 pointer-events-none"
+  hidden
+>
+  <button
+    type="button"
+    aria-label="ページの上部へ戻る"
+    class="pointer-events-auto flex items-center justify-center w-12 h-12 bg-blue-600/80 backdrop-blur-sm text-white rounded-full shadow-md hover:bg-blue-600 transition-all"
+  >
+    <svg
+      class="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"></path></svg
+    >
+  </button>
+</scroll-to-top>
+<script>
+  class ScrollToTop extends HTMLElement {
+    controller?: AbortController;
+    frame = 0;
+    connectedCallback() {
+      this.controller = new AbortController();
+      const update = () => {
+        cancelAnimationFrame(this.frame);
+        this.frame = requestAnimationFrame(() => {
+          this.hidden = window.scrollY <= 300;
+          const footer = document.querySelector("footer");
+          const overlap = footer
+            ? Math.max(0, innerHeight - footer.getBoundingClientRect().top)
+            : 0;
+          this.style.transform = `translateY(-${overlap}px)`;
+        });
+      };
+      window.addEventListener("scroll", update, {
+        passive: true,
+        signal: this.controller.signal,
+      });
+      this.querySelector("button")!.onclick = () =>
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      update();
+    }
+    disconnectedCallback() {
+      this.controller?.abort();
+      cancelAnimationFrame(this.frame);
+    }
+  }
+  if (!customElements.get("scroll-to-top"))
+    customElements.define("scroll-to-top", ScrollToTop);
+</script>

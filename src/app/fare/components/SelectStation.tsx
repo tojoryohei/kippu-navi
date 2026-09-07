@@ -1,10 +1,8 @@
-"use client";
-
-import Select, { components, OptionProps, FilterOptionOption, InputProps } from "react-select";
-import { useState, useId, FocusEvent, CSSProperties } from "react";
+import Select, { components, type OptionProps, type FilterOptionOption, type InputProps } from "react-select";
+import { useState, useId, type FocusEvent, type CSSProperties } from "react";
 import stationData from "@/app/fare/data/stations.json";
 
-import { Station, SelectStationProps } from '@/app/types';
+import type { Station, SelectStationProps } from '@/app/types';
 
 interface ExtendedSelectStationProps extends SelectStationProps {
     hideMenuWhenEmpty?: boolean;

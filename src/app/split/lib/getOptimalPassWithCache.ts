@@ -1,4 +1,4 @@
-import { PassCacheResult, SplitPassResult } from '@/app/types';
+import type { PassCacheResult, SplitPassResult } from '@/app/types';
 import { getApiUrl } from '@/app/lib/api';
 
 export async function getOptimalPassWithCache(

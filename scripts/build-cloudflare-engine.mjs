@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync } from 'node:fs';
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,7 +40,8 @@ for (const name of files) {
 const version = hash.digest('hex');
 renameSync(staging, join(outputRoot, version));
 
-const assignment = `NEXT_PUBLIC_WASM_VERSION=${version}\n`;
+writeFileSync(join(outputRoot, 'version.txt'), `${version}\n`);
+const assignment = `PUBLIC_WASM_VERSION=${version}\n`;
 if (process.env.GITHUB_ENV) appendFileSync(process.env.GITHUB_ENV, assignment);
 else process.stdout.write(assignment);
 console.error(`Built engine assets with content version ${version}`);

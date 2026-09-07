@@ -63,3 +63,9 @@ calculation-engine/bin/
 calculation-engine/static/
 calculation-engine/wasm
 .cloudflare-engine/
+
+# Astro and browser tests
+.astro/
+dist/
+playwright-report/
+test-results/

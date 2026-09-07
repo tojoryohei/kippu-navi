@@ -1,4 +1,4 @@
-import { Station, Line } from '@/app/types';
+import type { Station, Line } from '@/app/types';
 
 export interface FormSegmentInput {
     viaLine: Line | null;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateFareFromPath } from '@/app/utils/calcFare';
-import { PathStep } from '@/app/types';
+import type { PathStep } from '@/app/types';
 
 describe('特殊運賃ルール', () => {
     it('異常系: 駅が1つだけの場合はエラー', () => {
