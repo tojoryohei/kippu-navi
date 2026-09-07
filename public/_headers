@@ -6,3 +6,6 @@
 
 /.well-known/apple-app-site-association
   Content-Type: application/json
+
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
