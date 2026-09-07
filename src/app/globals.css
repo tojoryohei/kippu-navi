@@ -118,14 +118,21 @@ body {
 
 /* isSearchable=false still mounts a tiny focusable input for keyboard access. */
 .line-select input {
+  grid-area: 1 / 1 / 2 / 3 !important;
   width: 1px !important;
-  height: auto !important;
+  height: 24px !important;
   margin: 0 !important;
   padding: 0 !important;
+  background: 0 !important;
+  caret-color: transparent !important;
+  color: transparent !important;
   opacity: 0 !important;
   border: 0 !important;
   outline: none !important;
   box-shadow: none !important;
+  left: -100px !important;
+  position: relative !important;
+  transform: scale(0.01) !important;
 }
 
 .station-select input:focus,

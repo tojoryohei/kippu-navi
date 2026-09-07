@@ -233,6 +233,9 @@ test("駅候補のアクセシビリティ通知を画面に露出させない",
       Math.abs(beforeStyleRemoval!.x - afterStyleRemoval!.x),
     ).toBeLessThanOrEqual(1);
     if (route === "/fare/ticket") {
+      const lineControl = page.locator(".line-select__control").first();
+      await expect(lineControl).toBeVisible();
+      await expect(lineControl).toHaveCSS("height", "38px");
       await expect(
         page.locator('[class*="__control--is-disabled"]').first(),
       ).toHaveCSS("background-color", "rgb(242, 242, 242)");
