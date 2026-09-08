@@ -96,6 +96,82 @@ func TestShinkansenOverlapCorrector(t *testing.T) {
 	}
 }
 
+func TestOsakaCityShinOsakaCorrector(t *testing.T) {
+	g := &mockGraphCorrector{
+		names: map[int]string{
+			1: "大阪市内",
+			2: "新大阪",
+			3: "新神戸",
+			4: "大阪",
+			5: "岡山",
+		},
+	}
+
+	c := NewOsakaCityShinOsakaCorrector()
+	tests := []struct {
+		name     string
+		input    []int
+		expected []int
+	}{
+		{
+			name:     "大阪市内発の新幹線接続",
+			input:    []int{1, 2, 3, 5},
+			expected: []int{1, 4, 3, 5},
+		},
+		{
+			name:     "大阪市内着の新幹線接続",
+			input:    []int{5, 3, 2, 1},
+			expected: []int{5, 3, 4, 1},
+		},
+		{
+			name:     "対象外の経路",
+			input:    []int{1, 2, 5},
+			expected: []int{1, 2, 5},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := c.Correct(tt.input, g)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("got %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTicketSegmentEvaluatorPostZoneCorrectionMode(t *testing.T) {
+	g := &mockGraphCorrector{
+		names: map[int]string{
+			1: "大阪市内",
+			2: "新大阪",
+			3: "新神戸",
+			4: "大阪",
+		},
+	}
+	evaluator := &TicketSegmentEvaluator{graph: g}
+	path := []int{1, 2, 3}
+
+	got, err := evaluator.applyPostZoneCorrections(path, true)
+	if err != nil {
+		t.Fatalf("通常モードの補正に失敗しました: %v", err)
+	}
+	if want := []int{1, 4, 3}; !reflect.DeepEqual(got, want) {
+		t.Errorf("通常モードの経路 = %v, want %v", got, want)
+	}
+
+	got, err = evaluator.applyPostZoneCorrections(path, false)
+	if err != nil {
+		t.Fatalf("補正禁止モードの処理に失敗しました: %v", err)
+	}
+	if want := []int{1, 2, 3}; !reflect.DeepEqual(got, want) {
+		t.Errorf("補正禁止モードの経路 = %v, want %v", got, want)
+	}
+}
+
 func TestSpecificSectionCorrector(t *testing.T) {
 	g := &mockGraphCorrector{
 		names: map[int]string{

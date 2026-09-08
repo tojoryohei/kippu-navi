@@ -1502,7 +1502,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 		return js.ValueOf(fmt.Sprintf(`{"error": "経路補正エラー: %v"}`, err))
 	}
 
-	evaluationResult, transformedPath, err := ticketSegmentEvaluator.Execute(correctedPath, 0)
+	evaluationResult, transformedPath, err := ticketSegmentEvaluator.ExecuteWithMode(correctedPath, 0, req.CalculationMode)
 	if err == nil {
 		correctedPath = transformedPath
 	}

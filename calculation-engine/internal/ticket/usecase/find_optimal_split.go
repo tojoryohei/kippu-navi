@@ -39,9 +39,16 @@ func NewTicketSegmentEvaluator(calc *CalculateAmount, applier *SpecialZoneApplie
 	}
 }
 
-// Execute は与えられた物理経路に対して特例適用を試行し、最安（または適切な）運賃結果を返します。
+// Execute は通常モードとして与えられた物理経路を評価します。
 // ※ months は定期券とのインターフェース互換用であり、乗車券では無視されます。
 func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationResult, []int, error) {
+	return e.ExecuteWithMode(path, months, "normal")
+}
+
+// ExecuteWithMode は指定された運賃計算モードで経路を評価します。
+// 補正禁止では入力経路を維持し、それ以外のモードでは特例適用後の
+// 大阪市内→大阪→新神戸の接続補正を適用します。
+func (e *TicketSegmentEvaluator) ExecuteWithMode(path []int, months int, mode string) (*CalculationResult, []int, error) {
 	if len(path) < 2 {
 		return nil, nil, domain.ErrInvalidPath
 	}
@@ -107,12 +114,10 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 		appliedInfo, ok := e.applier.Apply(path, cand.origin, cand.dest)
 		if ok {
 			transformedPath := appliedInfo.TransformedPath
-			if e.postZoneCorrector != nil {
-				var err error
-				transformedPath, err = e.postZoneCorrector.Correct(transformedPath, e.graph)
-				if err != nil {
-					continue
-				}
+			var err error
+			transformedPath, err = e.applyPostZoneCorrections(transformedPath, mode != "uncorrect")
+			if err != nil {
+				continue
 			}
 			// 特例が適用された仮想経路で運賃計算を試みる
 			res, err := e.calc.Execute(transformedPath)
@@ -129,12 +134,10 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 	// 特定都区市内（大阪市内等）が適用されなかった場合（または距離閾値に満たなかった場合）に評価する
 	if osakaInfo, ok := ApplyOsakaShinOsakaException(path, e.graph); ok {
 		transformedPath := osakaInfo.TransformedPath
-		if e.postZoneCorrector != nil {
-			var err error
-			transformedPath, err = e.postZoneCorrector.Correct(transformedPath, e.graph)
-			if err != nil {
-				return nil, nil, err
-			}
+		var err error
+		transformedPath, err = e.applyPostZoneCorrections(transformedPath, mode != "uncorrect")
+		if err != nil {
+			return nil, nil, err
 		}
 		res, err := e.calc.Execute(transformedPath)
 		if err == nil {
@@ -144,15 +147,32 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 
 	// すべての特例適用が失敗（または閾値未達）だった場合は、特例を適用せずに元の物理経路にロールバックして運賃計算
 	transformedPath := path
-	if e.postZoneCorrector != nil {
-		var err error
-		transformedPath, err = e.postZoneCorrector.Correct(transformedPath, e.graph)
-		if err != nil {
-			return nil, nil, err
-		}
+	var err error
+	transformedPath, err = e.applyPostZoneCorrections(transformedPath, mode != "uncorrect")
+	if err != nil {
+		return nil, nil, err
 	}
 	res, err := e.calc.Execute(transformedPath)
 	return res, transformedPath, err
+}
+
+func (e *TicketSegmentEvaluator) applyPostZoneCorrections(path []int, applyOsakaCityCorrection bool) ([]int, error) {
+	correctedPath := path
+	if applyOsakaCityCorrection {
+		var err error
+		correctedPath, err = NewOsakaCityShinOsakaCorrector().Correct(correctedPath, e.graph)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if e.postZoneCorrector != nil {
+		var err error
+		correctedPath, err = e.postZoneCorrector.Correct(correctedPath, e.graph)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return correctedPath, nil
 }
 
 // EvaluatedSegment は、評価済みの区間の経路と結果を保持します。

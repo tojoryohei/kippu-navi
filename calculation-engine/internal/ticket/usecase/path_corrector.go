@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"calculation-engine/internal/ticket/graph"
+	"fmt"
 )
 
 // PathCorrector は経路（駅IDの配列）を受け取り、ルールに従って補正した新しい経路を返します。
@@ -271,6 +272,46 @@ func NewPostZoneCleanupCorrector() *SpecificSectionCorrector {
 			},
 		},
 	}
+}
+
+// OsakaCityShinOsakaCorrector は大阪市内の特例適用後に、
+// 新幹線へ接続する大阪市内の出口駅を大阪駅へ置き換えます。
+// 大阪駅→新神戸駅の仮想エッジを使って運賃を計算するための補正です。
+type OsakaCityShinOsakaCorrector struct{}
+
+func NewOsakaCityShinOsakaCorrector() *OsakaCityShinOsakaCorrector {
+	return &OsakaCityShinOsakaCorrector{}
+}
+
+func (c *OsakaCityShinOsakaCorrector) Correct(path []int, g graph.Graph) ([]int, error) {
+	if len(path) < 3 {
+		return path, nil
+	}
+
+	result := append([]int(nil), path...)
+	forwardMatch := g.GetName(result[0]) == "大阪市内" &&
+		g.GetName(result[1]) == "新大阪" &&
+		g.GetName(result[2]) == "新神戸"
+	last := len(result) - 1
+	reverseMatch := g.GetName(result[last]) == "大阪市内" &&
+		g.GetName(result[last-1]) == "新大阪" &&
+		g.GetName(result[last-2]) == "新神戸"
+	if !forwardMatch && !reverseMatch {
+		return result, nil
+	}
+
+	osakaID, ok := g.GetID("大阪")
+	if !ok {
+		return nil, fmt.Errorf("大阪駅がグラフに存在しません")
+	}
+	if forwardMatch {
+		result[1] = osakaID
+	}
+	if reverseMatch {
+		result[last-1] = osakaID
+	}
+
+	return result, nil
 }
 
 func (c *SpecificSectionCorrector) Correct(path []int, g graph.Graph) ([]int, error) {
