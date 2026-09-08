@@ -1236,7 +1236,7 @@ const metadata = {
                     >CI/CD / DevSecOps</td
                   >
                   <td class="p-3"
-                    >GitHub Actions, Vitest, Takumi Guard, Cloud Build</td
+                    >GitHub Actions, Vitest, Takumi Guard</td
                   >
                   <td class="p-3 text-slate-600"
                     >自動テスト・Strict
@@ -1267,11 +1267,14 @@ const metadata = {
 
             <div>
               <h4 class="text-lg font-semibold text-slate-900 mb-2">
-                ② ノンブロッキングな Fire-and-Forget キャッシュ
+                ② 内容ハッシュ付き静的アセット配信
               </h4>
               <p class="text-sm text-slate-700 leading-relaxed">
                 {
-                  "新規経路探索時の計算結果をFirestoreへキャッシュ保存する際、クライアントへのレスポンス返却処理をブロックすることなく（`await`せずに）バックグラウンドで非同期書き込みを実行します。キャッシュ書き込みの遅延がユーザー体験の低下に直結しないノンブロッキング設計にしています。"
+                  "運賃計算をユーザーの端末で計算させるためにWebAssemblyを採用しています。"
+                }
+                {
+                  "WasmとグラフデータはCloudflare Workers Static Assetsから内容ハッシュ付きURLで配信します。UIだけの更新ではエンジンのimmutableキャッシュを再利用できます。"
                 }
               </p>
             </div>
@@ -1282,27 +1285,10 @@ const metadata = {
               </h4>
               <p class="text-sm text-slate-700 leading-relaxed">
                 {
-                  "GitHub Rulesetによるメインブランチ保護と自動テスト、サプライチェーン攻撃を防ぐセキュリティスキャン（Takumi Guard）を統合。"
+                  "GitHub Rulesetによるメインブランチ保護と自動テスト、サプライチェーン攻撃を防ぐセキュリティスキャン（Takumi Guard）を統合しています。"
                 }
                 {
-                  "また、テストデータをGitHub Actionsでキャッシュし、開発ブランチは共通のステージング環境で確認します。フロントエンドの配信とGo APIのデプロイは別々のワークフローで管理します。"
-                }
-              </p>
-            </div>
-
-            <div>
-              <h4 class="text-lg font-semibold text-slate-900 mb-2">
-                ④ WasmとグラフデータのR2配信による高速化とコスト最適化
-              </h4>
-              <p class="text-sm text-slate-700 leading-relaxed">
-                {
-                  "運賃計算をユーザーの端末で計算させるためにWebAssemblyを採用しています。"
-                }
-                {
-                  "Wasmモジュール（`split_pass.wasm`）および運賃計算に必要なグラフデータ（`graph_data.bin`）は、配信にかかるデータ転送量手数料が発生しない Cloudflare R2 から配信しています。"
-                }
-                {
-                  "これにより、インフラコストを最小限に抑えつつ、ユーザーへのロード時間を大幅に短縮しています。"
+                  "テストデータをGitHub Actionsでキャッシュし、開発ブランチは共通のステージング環境で確認します。フロントエンドの配信とGo APIのデプロイは別々のWorkflowで管理します。"
                 }
               </p>
             </div>
