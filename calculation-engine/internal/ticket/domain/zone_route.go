@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 )
 
 // ZoneRoutes は特定都区市内の中心駅〜出口駅の経路配列を管理します。
@@ -37,4 +38,15 @@ func (zr ZoneRoutes) GetRoute(zoneName, exitStationName string) []string {
 		}
 	}
 	return nil
+}
+
+// ZoneNames は zone_routes.json に定義されたゾーン名を安定した順序で返します。
+// ゾーン自体にグラフのエッジは作らず、運賃計算時の経路展開にだけ利用します。
+func (zr ZoneRoutes) ZoneNames() []string {
+	names := make([]string, 0, len(zr))
+	for name := range zr {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }

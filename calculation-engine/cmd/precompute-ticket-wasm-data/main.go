@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 
+	ticketgraphdata "calculation-engine/internal/graphdata"
+	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/infra/graphio"
 )
 
@@ -55,6 +57,18 @@ func main() {
 	)
 	if err != nil {
 		log.Fatalf("JSONのロードに失敗しました: %v", err)
+	}
+
+	zoneRoutesBytes, err := io.ReadAll(ticketgraphdata.GetZoneRoutesReader())
+	if err != nil {
+		log.Fatalf("zone_routes.jsonの読み込みに失敗しました: %v", err)
+	}
+	zoneRoutes, err := ticketdomain.LoadZoneRoutesFromBytes(zoneRoutesBytes)
+	if err != nil {
+		log.Fatalf("zone_routes.jsonのパースに失敗しました: %v", err)
+	}
+	for _, zoneName := range zoneRoutes.ZoneNames() {
+		g.GetOrAddID(zoneName)
 	}
 
 	numStations := int32(g.NumStations())

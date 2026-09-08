@@ -60,6 +60,9 @@ func run(args []string) error {
 	for _, z := range ticketZoneReg.Zones {
 		ticketFullGraph.GetOrAddID(z.Name)
 	}
+	for _, zoneName := range ticketZoneRoutes.ZoneNames() {
+		ticketFullGraph.GetOrAddID(zoneName)
+	}
 	numStations := ticketFullGraph.NumStations()
 	log.Printf("駅数 = %d (ゾーン含む)", numStations)
 

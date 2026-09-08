@@ -206,6 +206,9 @@ func run() error {
 	for _, z := range ticketZoneReg.Zones {
 		ticketFullGraph.GetOrAddID(z.Name)
 	}
+	for _, zoneName := range ticketZoneRoutes.ZoneNames() {
+		ticketFullGraph.GetOrAddID(zoneName)
+	}
 
 	ticketFareReg := ticketfare.NewRegistry()
 	ticketFareioReg, err := ticketfareio.NewRegistry()

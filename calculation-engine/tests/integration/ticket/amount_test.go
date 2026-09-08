@@ -36,6 +36,17 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 	for _, z := range zoneReg.Zones {
 		g.GetOrAddID(z.Name)
 	}
+	zoneRoutesBytes, err := io.ReadAll(graphdata.GetZoneRoutesReader())
+	if err != nil {
+		t.Fatalf("特例ゾーンルートの読み込みに失敗しました: %v", err)
+	}
+	zoneRoutes, err := domain.LoadZoneRoutesFromBytes(zoneRoutesBytes)
+	if err != nil {
+		t.Fatalf("特例ゾーンルートのロードに失敗しました: %v", err)
+	}
+	for _, zoneName := range zoneRoutes.ZoneNames() {
+		g.GetOrAddID(zoneName)
+	}
 
 	// 2.5 運賃計算レジストリ（各社）
 	reg := fare.NewRegistry()
@@ -86,15 +97,6 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 
 	// 5. 電車特定区間計算
 	trainSpecificCalc := fare.NewTrainSpecificSectionCalculator()
-
-	zrBytes, err := io.ReadAll(graphdata.GetZoneRoutesReader())
-	if err != nil {
-		t.Fatalf("zoneRoutesの読み込みに失敗しました: %v", err)
-	}
-	zoneRoutes, err := domain.LoadZoneRoutesFromBytes(zrBytes)
-	if err != nil {
-		t.Fatalf("zoneRoutesのパースに失敗しました: %v", err)
-	}
 
 	privateReg, err := fareio.NewPrivateFareRegistry()
 	if err != nil {
@@ -242,5 +244,44 @@ func TestTicketAmountCalculation_Integration(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestOsakaShinOsakaException_Integration(t *testing.T) {
+	loader := &graphio.JSONLoader{}
+	_, g, err := loader.LoadSeparatedGraphs(
+		[]io.Reader{graphdata.GetEdgesReader()},
+		[]io.Reader{graphdata.GetVirtualEdgesReader()},
+	)
+	if err != nil {
+		t.Fatalf("乗車券グラフのロードに失敗しました: %v", err)
+	}
+	zoneRoutesBytes, err := io.ReadAll(graphdata.GetZoneRoutesReader())
+	if err != nil {
+		t.Fatalf("特例ゾーンルートの読み込みに失敗しました: %v", err)
+	}
+	zoneRoutes, err := domain.LoadZoneRoutesFromBytes(zoneRoutesBytes)
+	if err != nil {
+		t.Fatalf("特例ゾーンルートのロードに失敗しました: %v", err)
+	}
+	for _, zoneName := range zoneRoutes.ZoneNames() {
+		g.GetOrAddID(zoneName)
+	}
+
+	zoneID, ok := g.GetID("大阪・新大阪")
+	if !ok {
+		t.Fatal("第88条用の仮想駅 大阪・新大阪 がグラフに存在しません")
+	}
+	if edges := g.GetEdges(zoneID); len(edges) != 0 {
+		t.Fatalf("大阪・新大阪に不要な仮想エッジがあります: %v", edges)
+	}
+	osakaID, _ := g.GetID("大阪")
+	himejiID, _ := g.GetID("姫路")
+	info, applied := usecase.ApplyOsakaShinOsakaException([]int{osakaID, himejiID}, g)
+	if !applied {
+		t.Fatal("大阪発・姫路着に第88条特例が適用されませんでした")
+	}
+	if len(info.TransformedPath) != 3 || info.TransformedPath[0] != zoneID || info.TransformedPath[1] != osakaID {
+		t.Fatalf("第88条特例の経路が不正です: %v", info.TransformedPath)
 	}
 }
