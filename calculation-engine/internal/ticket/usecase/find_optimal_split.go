@@ -80,8 +80,7 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 }
 
 // ExecuteWithMode は指定された運賃計算モードで経路を評価します。
-// 補正禁止では第88条特例だけを適用し、それ以外のモードでは特例適用後の
-// 大阪市内→大阪→新神戸の接続補正も適用します。
+// モードごとの特例適用順序はSpecialFareRuleResolverに委譲します。
 func (e *TicketSegmentEvaluator) ExecuteWithMode(path []int, months int, mode string) (*CalculationResult, []int, error) {
 	return e.calculation.ExecuteWithMode(path, months, mode)
 }

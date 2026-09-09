@@ -625,7 +625,9 @@ func (c *ShinkansenOverlapCorrector) Correct(path []int, g graph.Graph) ([]int, 
 	return result, nil
 }
 
-// CorrectPathForMode は補正禁止の場合だけパイプラインを省略します。
+// CorrectPathForMode はモードに応じて、一般的な経路補正パイプラインを選択します。
+// 通常・最安では第69条・第70条などのcorrectorを適用し、補正禁止では省略します。
+// 特定都区市内・東京山手線内・大阪新大阪特例などの運賃特例は、その後SpecialFareRuleResolverがモードごとの順序で適用します。
 func CorrectPathForMode(path []int, g graph.Graph, corrector PathCorrector, mode string) ([]int, error) {
 	if mode == "uncorrect" {
 		return path, nil

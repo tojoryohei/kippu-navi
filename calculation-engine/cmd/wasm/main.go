@@ -997,6 +997,9 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 		}
 		stationIDs[i] = id
 	}
+	if domain.HasDuplicateStation(stationIDs) {
+		return js.ValueOf(fmt.Sprintf(`{"error":%q}`, domain.ErrDuplicateRoute.Error()))
+	}
 
 	var finalPath []int
 	if calculationMode == "uncorrect" {
@@ -1498,6 +1501,9 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 		} else {
 			return js.ValueOf(fmt.Sprintf(`{"error": "駅が見つかりません: %s"}`, p.StationName))
 		}
+	}
+	if domain.HasDuplicateStation(pathIDs) {
+		return js.ValueOf(fmt.Sprintf(`{"error":%q}`, domain.ErrDuplicateRoute.Error()))
 	}
 
 	correctedPath, err := ticketusecase.CorrectPathForMode(pathIDs, ticketFullGraph, ticketCorrector, req.CalculationMode)

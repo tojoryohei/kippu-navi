@@ -15,14 +15,18 @@ type FarePathCandidate struct {
 	CheckThreshold bool
 }
 
-// SpecialFareRuleResolver は運賃計算前に適用する特例経路を、規則で定めた順に解決します。
-// CalculationModeがuncorrectの場合も、第88条特例だけは適用します。
+// SpecialFareRuleResolver は運賃計算前に適用する特例経路を、モードごとの順序で解決します。
 type SpecialFareRuleResolver struct {
 	applier            *SpecialZoneApplier
 	osakaCityCorrector PathCorrector
 	postZoneCorrector  PathCorrector
 	zoneRegistry       *graphio.SpecialZoneRegistry
 	graph              graph.Graph
+}
+
+type zoneCandidate struct {
+	origin *ticketdomain.SpecialZone
+	dest   *ticketdomain.SpecialZone
 }
 
 func NewSpecialFareRuleResolver(applier *SpecialZoneApplier, postZoneCorrector PathCorrector, reg *graphio.SpecialZoneRegistry, g graph.Graph) *SpecialFareRuleResolver {
@@ -37,33 +41,89 @@ func NewSpecialFareRuleResolver(applier *SpecialZoneApplier, postZoneCorrector P
 
 // Resolve は入力経路に適用可能な候補を優先順位順に返します。
 // 候補の運賃や営業キロはここでは計算しません。
+//
+// モードごとの適用順は次のとおりです。
+//
+//   - 通常: 特定都区市内・東京山手線内 → 大阪市内の出口駅補正 → 第88条 → 事後補正 → 元経路
+//   - 最安: 特定都区市内・東京山手線内 → 大阪市内の出口駅補正 → 第88条 → 事後補正 → 元経路
+//   - 補正禁止: 特定都区市内・東京山手線内 → 第88条 → 元経路
+//
+// 通常・最安で行う第69条・第70条などの経路補正は、Resolverへ渡される前に
+// CorrectPathForModeで適用されます。補正禁止ではその経路補正を行わず、
+// 運賃計算上必要な第86条・第87条・第88条だけをここで適用します。
 func (r *SpecialFareRuleResolver) Resolve(path []int, mode string) ([]FarePathCandidate, error) {
 	if len(path) < 2 {
 		return nil, domain.ErrInvalidPath
 	}
-	if mode == "uncorrect" {
-		resolved := make([]FarePathCandidate, 0, 2)
-		if info, ok := ApplyOsakaShinOsakaException(path, r.graph); ok {
-			resolved = append(resolved, FarePathCandidate{
-				Path:           info.TransformedPath,
-				ThresholdKilo:  info.ThresholdKilo,
-				CheckThreshold: false,
-			})
-		}
-		// 第88条が不成立、または運賃計算に失敗した場合は入力経路へ戻します。
-		return append(resolved, FarePathCandidate{Path: path}), nil
+
+	switch mode {
+	case "uncorrect":
+		return r.resolveUncorrect(path), nil
+	case "cheapest":
+		return r.resolveCheapest(path)
+	case "normal":
+		fallthrough
+	default:
+		return r.resolveNormal(path)
+	}
+}
+
+// resolveNormal は通常モードの特例候補を、指定された順序で解決します。
+// 経路補正本体（第69条・第70条など）は呼び出し側で既に適用されています。
+func (r *SpecialFareRuleResolver) resolveNormal(path []int) ([]FarePathCandidate, error) {
+	// 1. 特定都区市内・東京山手線内（第86条・第87条）を適用します。
+	resolved := r.applyNormalZoneCandidates(path)
+
+	// 2. 大阪市内の事後補正後の経路を第88条へ渡します。
+	osakaInput, err := r.applyOsakaCityCorrection(path)
+	if err != nil {
+		return nil, err
 	}
 
+	// 3. 第88条特例の候補と、特例不適用時の経路を平坦な配列で追加します。
+	osakaCandidates, err := r.applyArticle88Candidates(osakaInput)
+	if err != nil {
+		return nil, err
+	}
+	return append(resolved, osakaCandidates...), nil
+}
+
+// resolveCheapest は最安モードの特例候補を、通常モードと同じ順序で解決します。
+// 現在の最安経路の比較は経路補正側で行われるため、ここでは候補順だけを定義します。
+func (r *SpecialFareRuleResolver) resolveCheapest(path []int) ([]FarePathCandidate, error) {
+	// 1. 特定都区市内・東京山手線内（第86条・第87条）を適用します。
+	resolved := r.applyNormalZoneCandidates(path)
+
+	// 2. 大阪市内の事後補正後の経路を第88条へ渡します。
+	osakaInput, err := r.applyOsakaCityCorrection(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. 第88条特例の候補と、特例不適用時の経路を平坦な配列で追加します。
+	osakaCandidates, err := r.applyArticle88Candidates(osakaInput)
+	if err != nil {
+		return nil, err
+	}
+	return append(resolved, osakaCandidates...), nil
+}
+
+// resolveUncorrect は補正禁止モードの特例候補を、指定された順序で解決します。
+// 補正禁止でも第86条・第87条・第88条は運賃計算上の特例として適用します。
+// 第69条・第70条などの一般的な経路補正と、大阪市内の出口駅補正は適用しません。
+func (r *SpecialFareRuleResolver) resolveUncorrect(path []int) []FarePathCandidate {
+	// 1. 特定都区市内・東京山手線内（第86条・第87条）
+	resolved := r.applyUncorrectZoneCandidates(path)
+
+	// 2. 大阪・新大阪特例（第88条）の候補と入力経路を平坦な配列で追加します。
+	return append(resolved, applyArticle88UncorrectCandidates(path, r.graph)...)
+}
+
+func (r *SpecialFareRuleResolver) zoneCandidates(path []int) []zoneCandidate {
 	startName := r.graph.GetName(path[0])
 	endName := r.graph.GetName(path[len(path)-1])
 	originZones := r.zoneRegistry.FindZonesByStation(startName)
 	destZones := r.zoneRegistry.FindZonesByStation(endName)
-
-	type zoneCandidate struct {
-		origin *ticketdomain.SpecialZone
-		dest   *ticketdomain.SpecialZone
-	}
-	var candidates []zoneCandidate
 
 	var originCityZones, originYamanoteZones []*ticketdomain.SpecialZone
 	for i := range originZones {
@@ -82,6 +142,7 @@ func (r *SpecialFareRuleResolver) Resolve(path []int, mode string) ([]FarePathCa
 		}
 	}
 
+	var candidates []zoneCandidate
 	addCandidates := func(origins, dests []*ticketdomain.SpecialZone) {
 		for _, d := range dests {
 			for _, o := range origins {
@@ -95,9 +156,18 @@ func (r *SpecialFareRuleResolver) Resolve(path []int, mode string) ([]FarePathCa
 	}
 	addCandidates(originCityZones, destCityZones)
 	addCandidates(originYamanoteZones, destYamanoteZones)
+	return candidates
+}
 
-	resolved := make([]FarePathCandidate, 0, len(candidates)+2)
-	for _, candidate := range candidates {
+// applyNormalZoneCandidates は第86条・第87条の候補を平坦な配列で返します。
+// 特例が不成立、または候補経路の事後補正に失敗した場合は、その候補だけを返しません。
+func (r *SpecialFareRuleResolver) applyNormalZoneCandidates(path []int) []FarePathCandidate {
+	if r.applier == nil || r.zoneRegistry == nil {
+		return nil
+	}
+
+	resolved := make([]FarePathCandidate, 0, 2)
+	for _, candidate := range r.zoneCandidates(path) {
 		info, ok := r.applier.Apply(path, candidate.origin, candidate.dest)
 		if !ok {
 			continue
@@ -112,31 +182,72 @@ func (r *SpecialFareRuleResolver) Resolve(path []int, mode string) ([]FarePathCa
 			CheckThreshold: true,
 		})
 	}
+	return resolved
+}
 
-	// 第88条の直前に、大阪市内→大阪→新神戸の接続補正を適用します。
-	// この順序により、通常・最安モードでは大阪市内の出口駅を大阪駅として
-	// 評価した経路を第88条候補へ渡せます。
-	osakaInput, err := r.applyOsakaCityCorrection(path)
-	if err == nil {
-		if info, ok := ApplyOsakaShinOsakaException(osakaInput, r.graph); ok {
-			corrected, err := r.applyPostZoneCleanup(info.TransformedPath)
-			if err == nil {
-				resolved = append(resolved, FarePathCandidate{
-					Path:           corrected,
-					ThresholdKilo:  info.ThresholdKilo,
-					CheckThreshold: false,
-				})
-			}
-		}
+// applyUncorrectZoneCandidates は補正禁止モードの第86条・第87条候補を平坦な配列で返します。
+func (r *SpecialFareRuleResolver) applyUncorrectZoneCandidates(path []int) []FarePathCandidate {
+	if r.applier == nil || r.zoneRegistry == nil {
+		return nil
 	}
 
-	// すべての特例が不成立の場合に元の経路を評価する候補を必ず最後に追加します。
-	corrected, err := r.applyPostZoneCorrections(path)
+	resolved := make([]FarePathCandidate, 0, 2)
+	for _, candidate := range r.zoneCandidates(path) {
+		info, ok := r.applier.Apply(path, candidate.origin, candidate.dest)
+		if !ok {
+			continue
+		}
+		resolved = append(resolved, FarePathCandidate{
+			Path:           info.TransformedPath,
+			ThresholdKilo:  info.ThresholdKilo,
+			CheckThreshold: true,
+		})
+	}
+	return resolved
+}
+
+// applyArticle88Candidates は第88条の適用結果と不適用時の経路を平坦な配列で返します。
+// 適用可否を呼び出し側の入れ子で表現せず、候補順（適用経路→フォールバック経路）を
+// この関数の戻り値で表現します。
+func (r *SpecialFareRuleResolver) applyArticle88Candidates(path []int) ([]FarePathCandidate, error) {
+	fallback, err := r.applyPostZoneCleanup(path)
 	if err != nil {
 		return nil, err
 	}
-	resolved = append(resolved, FarePathCandidate{Path: corrected})
-	return resolved, nil
+
+	info, ok := ApplyOsakaShinOsakaException(path, r.graph)
+	if !ok {
+		return []FarePathCandidate{{Path: fallback}}, nil
+	}
+
+	corrected, err := r.applyPostZoneCleanup(info.TransformedPath)
+	if err != nil {
+		return []FarePathCandidate{{Path: fallback}}, nil
+	}
+	return []FarePathCandidate{
+		{
+			Path:           corrected,
+			ThresholdKilo:  info.ThresholdKilo,
+			CheckThreshold: false,
+		},
+		{Path: fallback},
+	}, nil
+}
+
+// applyArticle88UncorrectCandidates は補正禁止モードの第88条候補と入力経路を返します。
+func applyArticle88UncorrectCandidates(path []int, g graph.Graph) []FarePathCandidate {
+	info, ok := ApplyOsakaShinOsakaException(path, g)
+	if !ok {
+		return []FarePathCandidate{{Path: path}}
+	}
+	return []FarePathCandidate{
+		{
+			Path:           info.TransformedPath,
+			ThresholdKilo:  info.ThresholdKilo,
+			CheckThreshold: false,
+		},
+		{Path: path},
+	}
 }
 
 func (r *SpecialFareRuleResolver) applyPostZoneCorrections(path []int) ([]int, error) {

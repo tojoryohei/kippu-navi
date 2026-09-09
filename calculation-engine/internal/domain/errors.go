@@ -21,6 +21,9 @@ var (
 	// ErrInvalidPath は、経路が無効な場合（駅数が足りないなど）のエラーです。
 	ErrInvalidPath = errors.New("経路には少なくとも2つの駅が必要です")
 
+	// ErrDuplicateRoute は、発売不可となる駅重複を含む経路が指定された場合のエラーです。
+	ErrDuplicateRoute = errors.New("経路が重複しています。")
+
 	// ErrUnknownCompany は、指定された会社IDが未知の場合のエラーです。
 	ErrUnknownCompany = errors.New("未知の会社ID")
 

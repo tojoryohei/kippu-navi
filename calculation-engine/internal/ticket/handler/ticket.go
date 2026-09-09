@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"calculation-engine/internal/ticket/domain"
+	"calculation-engine/internal/domain"
+	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/usecase"
 )
@@ -85,6 +86,10 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 		}
 		pathIDs = append(pathIDs, id)
 	}
+	if domain.HasDuplicateStation(pathIDs) {
+		h.writeError(w, http.StatusBadRequest, domain.ErrDuplicateRoute.Error(), start)
+		return
+	}
 
 	// モードに応じて経路補正パイプラインを適用する。
 	correctedPath, err := usecase.CorrectPathForMode(pathIDs, h.graph, h.corrector, req.CalculationMode)
@@ -101,7 +106,7 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 有効日数の計算（JR・他社線の合計営業キロから算出）
-	validDays := domain.CalculateValidDaysFromKilo(res.TotalPathEigyoKilo)
+	validDays := ticketdomain.CalculateValidDaysFromKilo(res.TotalPathEigyoKilo)
 	if usecase.IsSuburbanAreaComplete(correctedPath, h.graph) {
 		validDays = 1 // 大都市近郊区間完結（連絡会社線含む）の場合は1日
 	}
