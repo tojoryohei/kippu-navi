@@ -11,7 +11,7 @@ export default defineConfig({
   trailingSlash: "never",
   build: { format: "file" },
   integrations: [react()],
-  prefetch: { prefetchAll: true, defaultStrategy: "hover" },
+  prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   server: { host: "0.0.0.0", port: 3000 },
   vite: {
     plugins: [tailwindcss()],
