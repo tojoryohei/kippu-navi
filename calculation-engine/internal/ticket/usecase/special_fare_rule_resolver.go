@@ -88,24 +88,9 @@ func (r *SpecialFareRuleResolver) resolveNormal(path []int) ([]FarePathCandidate
 	return append(resolved, osakaCandidates...), nil
 }
 
-// resolveCheapest は最安モードの特例候補を、通常モードと同じ順序で解決します。
-// 現在の最安経路の比較は経路補正側で行われるため、ここでは候補順だけを定義します。
+// resolveCheapest は通常モードの処理に委譲し、同じ特例候補を返します。
 func (r *SpecialFareRuleResolver) resolveCheapest(path []int) ([]FarePathCandidate, error) {
-	// 1. 特定都区市内・東京山手線内（第86条・第87条）を適用します。
-	resolved := r.applyNormalZoneCandidates(path)
-
-	// 2. 大阪市内の事後補正後の経路を第88条へ渡します。
-	osakaInput, err := r.applyOsakaCityCorrection(path)
-	if err != nil {
-		return nil, err
-	}
-
-	// 3. 第88条特例の候補と、特例不適用時の経路を平坦な配列で追加します。
-	osakaCandidates, err := r.applyArticle88Candidates(osakaInput)
-	if err != nil {
-		return nil, err
-	}
-	return append(resolved, osakaCandidates...), nil
+	return r.resolveNormal(path)
 }
 
 // resolveUncorrect は補正禁止モードの特例候補を、指定された順序で解決します。
