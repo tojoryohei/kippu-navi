@@ -155,7 +155,7 @@ export default function SplitForm({
         ? initialSearchType
         : (isIcPass || isPass ? "pass6" : "ticket");
 
-    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, trigger } = useForm<ExtendedSplitFormInput>({
+    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, trigger, clearErrors } = useForm<ExtendedSplitFormInput>({
         mode: "onChange",
         defaultValues: {
             startStation: null,
@@ -163,6 +163,17 @@ export default function SplitForm({
             searchType: defaultSearchType,
         },
     });
+
+    // 種別・期間切り替え時は、入力済みの経路だけ再検証する。
+    // 空フォームではNext.js版と同じくエラーを表示しない。
+    const refreshValidationForTypeChange = useCallback(() => {
+        const hasRouteInput = Boolean(getValues("startStation") || getValues("endStation"));
+        if (hasRouteInput) {
+            void trigger(["startStation", "endStation"]);
+        } else {
+            clearErrors(["startStation", "endStation"]);
+        }
+    }, [clearErrors, getValues, trigger]);
 
     const apiAbortRef = useRef<AbortController | null>(null);
     useEffect(() => () => apiAbortRef.current?.abort(), []);
@@ -540,16 +551,16 @@ export default function SplitForm({
 
     const handlePeriodChange = (period: "pass1" | "pass3" | "pass6") => {
         setSelectedPeriod(period);
-        setValue("searchType", period, { shouldValidate: true });
-        void trigger(["startStation", "endStation"]);
+        setValue("searchType", period);
+        refreshValidationForTypeChange();
         setResult(null);
         setError(null);
         setServerTime(null);
     };
 
     const updateUrlAndState = (nextPath: string, nextSearchType: SearchType) => {
-        setValue("searchType", nextSearchType, { shouldValidate: true });
-        trigger(["startStation", "endStation"]);
+        setValue("searchType", nextSearchType);
+        refreshValidationForTypeChange();
 
         const startStation = getValues("startStation");
         const endStation = getValues("endStation");

@@ -160,6 +160,39 @@ test("運賃計算の不正な駅名を種別切り替え後も再検証する",
   ).toBeVisible();
 });
 
+test("空の運賃フォームで種別・期間を切り替えてもバリデーションエラーを表示しない", async ({
+  page,
+}) => {
+  await isolateServices(page);
+  await page.goto("/fare/ticket");
+
+  const requiredMessages = [
+    "発駅を入力してください",
+    "経由路線を選択してください",
+    "着駅を入力してください",
+  ];
+  const expectNoRequiredMessages = async () => {
+    for (const message of requiredMessages) {
+      await expect(page.getByText(message, { exact: true })).toHaveCount(0);
+    }
+  };
+
+  await page.getByRole("button", { name: "定期券", exact: true }).click();
+  await expect(page).toHaveURL(/\/fare\/pass\?/);
+  await expectNoRequiredMessages();
+
+  await page.getByRole("button", { name: "乗車券", exact: true }).click();
+  await expect(page).toHaveURL(/\/fare\/ticket\?/);
+  await expectNoRequiredMessages();
+
+  await page.getByRole("button", { name: "定期券", exact: true }).click();
+  await expect(page).toHaveURL(/\/fare\/pass\?/);
+  for (const period of ["1箇月", "3箇月", "6箇月"]) {
+    await page.getByRole("button", { name: period, exact: true }).click();
+    await expectNoRequiredMessages();
+  }
+});
+
 test("分割計算の期間変更で駅のバリデーションを再実行する", async ({
   page,
 }) => {

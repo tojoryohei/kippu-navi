@@ -125,7 +125,7 @@ export default function Form({
 }: FormProps) {
     const lastTrackedSearch = useRef<string | null>(null);
 
-    const { register, handleSubmit, control, setValue, getValues, trigger, formState: { isValid } } = useForm<FormValues>({
+    const { register, handleSubmit, control, setValue, getValues, trigger, clearErrors, formState: { isValid } } = useForm<FormValues>({
         mode: 'onChange',
         defaultValues: {
             startStation: null,
@@ -163,10 +163,25 @@ export default function Form({
     const [correctedStartPass, setCorrectedStartPass] = useState<string>("");
     const [correctedEndPass, setCorrectedEndPass] = useState<string>("");
 
+    // 種別・期間切り替え時は、入力済みの経路だけ再検証する。
+    // 空フォームではNext.js版と同じくエラーを表示しない。
+    const refreshValidationForTypeChange = useCallback(() => {
+        const currentStart = getValues("startStation");
+        const currentSegments = getValues("segments") ?? [];
+        const hasRouteInput = Boolean(currentStart) || currentSegments.some(
+            (segment) => Boolean(segment.viaLine || segment.destinationStation),
+        );
+
+        if (hasRouteInput) {
+            void trigger();
+        } else {
+            clearErrors();
+        }
+    }, [clearErrors, getValues, trigger]);
+
     const updateUrlAndState = useCallback((nextPath: string, nextSearchType: SearchType) => {
-        setValue("searchType", nextSearchType, { shouldValidate: true });
-        // 切り替えで変わるモード依存のルール（臨時駅・新幹線など）を即時再評価する。
-        void trigger();
+        setValue("searchType", nextSearchType);
+        refreshValidationForTypeChange();
 
         const currentStart = getValues("startStation");
         const currentSegs = getValues("segments");
@@ -195,7 +210,7 @@ export default function Form({
         } else {
             replaceCalculatorUrl(newUrl);
         }
-    }, [setValue, getValues, trigger, initialCalculationMode, pathname]);
+    }, [setValue, getValues, initialCalculationMode, pathname, refreshValidationForTypeChange]);
 
     const mountedRef = useRef(true);
     useEffect(() => {
@@ -565,8 +580,8 @@ export default function Form({
 
     const handlePeriodChange = (period: "pass1" | "pass3" | "pass6") => {
         setSelectedPeriod(period);
-        setValue("searchType", period, { shouldValidate: true });
-        void trigger();
+        setValue("searchType", period);
+        refreshValidationForTypeChange();
         setResult(null);
         setResultPass(null);
         setCorrectedStartPass("");
