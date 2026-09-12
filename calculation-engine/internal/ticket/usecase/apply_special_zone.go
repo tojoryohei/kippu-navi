@@ -37,8 +37,55 @@ func isStationInSet(stationName string, stations []string) bool {
 }
 
 // Apply は指定された経路に出発地・到着地の特例ゾーンを適用し、成功した場合は仮想経路を返します。
-// TSのアルゴリズム（第86条・第87条）をGoに移植したものです。
 func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomain.SpecialZone) (*AppliedZoneInfo, bool) {
+	return s.apply(path, originZone, destZone, s.osakaZoneChanges)
+}
+
+// ApplyUncorrect は一般的なゾーン境界を使い、大阪市内の市外通過特例を適用しません。
+func (s *SpecialZoneApplier) ApplyUncorrect(path []int, originZone, destZone *ticketdomain.SpecialZone) (*AppliedZoneInfo, bool) {
+	return s.apply(path, originZone, destZone, s.zoneChanges)
+}
+
+// osakaZoneChanges は通常モードの境界を判定し、大阪市内の市外通過特例を適用します。
+func (s *SpecialZoneApplier) osakaZoneChanges(path []int, zone *ticketdomain.SpecialZone) []int {
+	contains := func(name string) bool { return isStationInSet(name, zone.Stations) }
+	if zone.Name == "東京山手線内" {
+		contains = ticketdomain.IsArticle70Station
+	}
+	var changes []int
+	for i := 0; i < len(path)-1; i++ {
+		curr, next := s.graph.GetName(path[i]), s.graph.GetName(path[i+1])
+		if i > 0 && zone.Name == "大阪市内" && isOsakaCityPassage(s.graph.GetName(path[i-1]), curr, next) {
+			if len(changes) > 0 {
+				changes = changes[:len(changes)-1]
+			}
+			continue
+		}
+		if contains(curr) != contains(next) {
+			changes = append(changes, i)
+		}
+	}
+	return changes
+}
+
+func isOsakaCityPassage(prev, curr, next string) bool {
+	return (curr == "尼崎" && ((prev == "加島" && next == "塚本") || (prev == "塚本" && next == "加島"))) ||
+		(curr == "久宝寺" && ((prev == "加美" && next == "新加美") || (prev == "新加美" && next == "加美")))
+}
+
+// zoneChanges は各ゾーンの駅一覧だけを使い、市外通過も境界として数えます。
+func (s *SpecialZoneApplier) zoneChanges(path []int, zone *ticketdomain.SpecialZone) []int {
+	var changes []int
+	for i := 0; i < len(path)-1; i++ {
+		curr, next := s.graph.GetName(path[i]), s.graph.GetName(path[i+1])
+		if isStationInSet(curr, zone.Stations) != isStationInSet(next, zone.Stations) {
+			changes = append(changes, i)
+		}
+	}
+	return changes
+}
+
+func (s *SpecialZoneApplier) apply(path []int, originZone, destZone *ticketdomain.SpecialZone, zoneChanges func([]int, *ticketdomain.SpecialZone) []int) (*AppliedZoneInfo, bool) {
 	if len(path) < 2 {
 		return nil, false
 	}
@@ -54,42 +101,7 @@ func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomai
 		destName := s.graph.GetName(newPath[len(newPath)-1])
 		if isStationInSet(destName, destZone.Stations) {
 
-			boundaryStations := destZone.Stations
-
-			var changingIdx []int
-			for i := 0; i < len(newPath)-1; i++ {
-				currName := s.graph.GetName(newPath[i])
-				prevName := ""
-				if i > 0 {
-					prevName = s.graph.GetName(newPath[i-1])
-				}
-				nextName := s.graph.GetName(newPath[i+1])
-
-				// 大阪市内の特例
-				if i != 0 && destZone.Name == "大阪市内" && prevName == "加島" && currName == "尼崎" && nextName == "塚本" {
-					if len(changingIdx) > 0 {
-						changingIdx = changingIdx[:len(changingIdx)-1]
-					}
-				} else if i != 0 && destZone.Name == "大阪市内" && prevName == "塚本" && currName == "尼崎" && nextName == "加島" {
-					if len(changingIdx) > 0 {
-						changingIdx = changingIdx[:len(changingIdx)-1]
-					}
-				} else if i != 0 && destZone.Name == "大阪市内" && prevName == "加美" && currName == "久宝寺" && nextName == "新加美" {
-					if len(changingIdx) > 0 {
-						changingIdx = changingIdx[:len(changingIdx)-1]
-					}
-				} else if i != 0 && destZone.Name == "大阪市内" && prevName == "新加美" && currName == "久宝寺" && nextName == "加美" {
-					if len(changingIdx) > 0 {
-						changingIdx = changingIdx[:len(changingIdx)-1]
-					}
-				} else {
-					inCurr := isStationInSet(currName, boundaryStations)
-					inNext := isStationInSet(nextName, boundaryStations)
-					if inCurr != inNext {
-						changingIdx = append(changingIdx, i)
-					}
-				}
-			}
+			changingIdx := zoneChanges(newPath, destZone)
 
 			if len(changingIdx) == 1 || len(changingIdx) == 2 {
 				zoneID, ok := s.graph.GetID(destZone.Name)
@@ -97,7 +109,6 @@ func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomai
 					lastChange := changingIdx[len(changingIdx)-1]
 
 					var prefix []int
-					// 全てのゾーンで出口駅を含める
 					prefix = newPath[:lastChange+2]
 
 					temp := make([]int, 0, len(prefix)+1)
@@ -119,42 +130,7 @@ func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomai
 		originName := s.graph.GetName(newPath[0])
 		if isStationInSet(originName, originZone.Stations) {
 
-			boundaryStations := originZone.Stations
-
-			var changingIdx []int
-			for i := 0; i < len(newPath)-1; i++ {
-				currName := s.graph.GetName(newPath[i])
-				prevName := ""
-				if i > 0 {
-					prevName = s.graph.GetName(newPath[i-1])
-				}
-				nextName := s.graph.GetName(newPath[i+1])
-
-				// 大阪市内の特例（加島・塚本、加美・新加美間の市外通過の例外処理）
-				if i != 0 && originZone.Name == "大阪市内" && prevName == "加島" && currName == "尼崎" && nextName == "塚本" {
-					if len(changingIdx) > 0 {
-						changingIdx = changingIdx[:len(changingIdx)-1] // pop
-					}
-				} else if i != 0 && originZone.Name == "大阪市内" && prevName == "塚本" && currName == "尼崎" && nextName == "加島" {
-					if len(changingIdx) > 0 {
-						changingIdx = changingIdx[:len(changingIdx)-1]
-					}
-				} else if i != 0 && originZone.Name == "大阪市内" && prevName == "加美" && currName == "久宝寺" && nextName == "新加美" {
-					if len(changingIdx) > 0 {
-						changingIdx = changingIdx[:len(changingIdx)-1]
-					}
-				} else if i != 0 && originZone.Name == "大阪市内" && prevName == "新加美" && currName == "久宝寺" && nextName == "加美" {
-					if len(changingIdx) > 0 {
-						changingIdx = changingIdx[:len(changingIdx)-1]
-					}
-				} else {
-					inCurr := isStationInSet(currName, boundaryStations)
-					inNext := isStationInSet(nextName, boundaryStations)
-					if inCurr != inNext {
-						changingIdx = append(changingIdx, i)
-					}
-				}
-			}
+			changingIdx := zoneChanges(newPath, originZone)
 
 			if len(changingIdx) == 1 || len(changingIdx) == 2 {
 				zoneID, ok := s.graph.GetID(originZone.Name)
@@ -162,7 +138,6 @@ func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomai
 					firstChange := changingIdx[0]
 
 					var suffix []int
-					// 全てのゾーンで出口駅を含める
 					suffix = newPath[firstChange:]
 
 					temp := make([]int, 0, 1+len(suffix))

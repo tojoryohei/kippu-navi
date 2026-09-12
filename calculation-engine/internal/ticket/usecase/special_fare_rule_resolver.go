@@ -178,7 +178,7 @@ func (r *SpecialFareRuleResolver) applyUncorrectZoneCandidates(path []int) []Far
 
 	resolved := make([]FarePathCandidate, 0, 2)
 	for _, candidate := range r.zoneCandidates(path) {
-		info, ok := r.applier.Apply(path, candidate.origin, candidate.dest)
+		info, ok := r.applier.ApplyUncorrect(path, candidate.origin, candidate.dest)
 		if !ok {
 			continue
 		}

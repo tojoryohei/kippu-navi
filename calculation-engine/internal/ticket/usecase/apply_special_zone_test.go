@@ -125,3 +125,90 @@ func TestSpecialZoneApplier_Apply(t *testing.T) {
 		})
 	}
 }
+
+func TestSpecialZoneApplierModeBoundaries(t *testing.T) {
+	tests := []struct {
+		name      string
+		zone      string
+		stations  []string
+		path      []string
+		boldEdges int
+		normal    []string
+		uncorrect []string
+	}{
+		{"山手線内の出口は通常のみ70条範囲", "東京山手線内",
+			[]string{"東京山手線内", "東京", "秋葉原"},
+			[]string{"東京", "秋葉原", "錦糸町", "亀戸"}, 2,
+			[]string{"東京山手線内", "錦糸町", "亀戸"},
+			[]string{"東京山手線内", "秋葉原", "錦糸町", "亀戸"}},
+		{"70条範囲内でも山手線内発着とはしない", "東京山手線内",
+			[]string{"東京山手線内", "東京", "秋葉原"},
+			[]string{"錦糸町", "亀戸", "平井"}, 1, nil, nil},
+		{"東京都区内は既存の境界を維持", "東京都区内",
+			[]string{"東京都区内", "東京", "秋葉原", "錦糸町", "亀戸"},
+			[]string{"東京", "秋葉原", "錦糸町", "亀戸", "市川"}, 2,
+			[]string{"東京都区内", "亀戸", "市川"},
+			[]string{"東京都区内", "亀戸", "市川"}},
+		{"尼崎通過特例は通常のみ", "大阪市内",
+			[]string{"大阪市内", "加島", "塚本", "大阪"},
+			[]string{"加島", "尼崎", "塚本", "大阪", "市外駅"}, 0,
+			[]string{"大阪市内", "大阪", "市外駅"}, nil},
+		{"久宝寺通過特例は通常のみ", "大阪市内",
+			[]string{"大阪市内", "加美", "新加美", "放出"},
+			[]string{"加美", "久宝寺", "新加美", "放出", "市外駅"}, 0,
+			[]string{"大阪市内", "放出", "市外駅"}, nil},
+	}
+	for _, tt := range tests {
+		for _, reverse := range []bool{false, true} {
+			direction := "発駅"
+			if reverse {
+				direction = "着駅"
+			}
+			t.Run(tt.name+"/"+direction, func(t *testing.T) {
+				g := graph.NewGraph(16)
+				for _, name := range append(append([]string{}, tt.stations...), tt.path...) {
+					g.GetOrAddID(name)
+				}
+				// 太線フラグを意図的に反転し、エッジではなく駅集合で判定することを確認します。
+				for i := 0; i < len(tt.path)-1; i++ {
+					from, _ := g.GetID(tt.path[i])
+					to, _ := g.GetID(tt.path[i+1])
+					g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{FromID: from, ToID: to}, IsBoldLineArea: i >= tt.boldEdges})
+					g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{FromID: to, ToID: from}, IsBoldLineArea: i >= tt.boldEdges})
+				}
+				ids := func(names []string) []int {
+					var result []int
+					for _, name := range names {
+						id, _ := g.GetID(name)
+						result = append(result, id)
+					}
+					if reverse {
+						for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
+							result[i], result[j] = result[j], result[i]
+						}
+					}
+					return result
+				}
+				zone := &ticketdomain.SpecialZone{Name: tt.zone, Stations: tt.stations, MinDistanceDeciKilo: 1000}
+				origin, dest := zone, (*ticketdomain.SpecialZone)(nil)
+				if reverse {
+					origin, dest = dest, origin
+				}
+				applier := usecase.NewSpecialZoneApplier(g, nil)
+				for _, uncorrect := range []bool{false, true} {
+					apply, want := applier.Apply, tt.normal
+					if uncorrect {
+						apply, want = applier.ApplyUncorrect, tt.uncorrect
+					}
+					got, ok := apply(ids(tt.path), origin, dest)
+					if ok != (want != nil) {
+						t.Fatalf("uncorrect=%v: applied=%v, want=%v", uncorrect, ok, want != nil)
+					}
+					if ok && !reflect.DeepEqual(got.TransformedPath, ids(want)) {
+						t.Fatalf("uncorrect=%v: got %v, want %v", uncorrect, got.TransformedPath, ids(want))
+					}
+				}
+			})
+		}
+	}
+}
