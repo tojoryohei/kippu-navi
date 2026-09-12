@@ -126,6 +126,106 @@ func TestSpecialZoneApplier_Apply(t *testing.T) {
 	}
 }
 
+func TestSpecialZoneApplierApplyPartialZone(t *testing.T) {
+	tests := []struct {
+		name       string
+		stations   map[int]string
+		path       []int
+		originZone *ticketdomain.SpecialZone
+		destZone   *ticketdomain.SpecialZone
+		wantPath   []int
+		wantThresh domain.DeciKilo
+	}{
+		{
+			name: "両駅適用",
+			stations: map[int]string{
+				1:  "発駅",
+				2:  "市外駅",
+				3:  "着駅",
+				10: "発ゾーン",
+				11: "着ゾーン",
+			},
+			path: []int{1, 2, 3},
+			originZone: &ticketdomain.SpecialZone{
+				Name:                "発ゾーン",
+				Stations:            []string{"発駅"},
+				MinDistanceDeciKilo: 1000,
+			},
+			destZone: &ticketdomain.SpecialZone{
+				Name:                "着ゾーン",
+				Stations:            []string{"着駅"},
+				MinDistanceDeciKilo: 2000,
+			},
+			wantPath:   []int{10, 1, 2, 3, 11},
+			wantThresh: 2000,
+		},
+		{
+			name: "着駅だけ成功する両駅候補",
+			stations: map[int]string{
+				1:  "発駅",
+				2:  "発駅外1",
+				3:  "発駅内2",
+				4:  "発駅外2",
+				5:  "着駅",
+				11: "着ゾーン",
+			},
+			path: []int{1, 2, 3, 4, 5},
+			originZone: &ticketdomain.SpecialZone{
+				Name:                "発ゾーン",
+				Stations:            []string{"発駅", "発駅内2"},
+				MinDistanceDeciKilo: 1000,
+			},
+			destZone: &ticketdomain.SpecialZone{
+				Name:                "着ゾーン",
+				Stations:            []string{"着駅"},
+				MinDistanceDeciKilo: 2000,
+			},
+			wantPath:   []int{1, 2, 3, 4, 5, 11},
+			wantThresh: 2000,
+		},
+		{
+			name: "発駅だけ成功する両駅候補",
+			stations: map[int]string{
+				1:  "発駅",
+				2:  "発駅外",
+				3:  "着駅内1",
+				4:  "着駅外",
+				5:  "着駅",
+				10: "発ゾーン",
+			},
+			path: []int{1, 2, 3, 4, 5},
+			originZone: &ticketdomain.SpecialZone{
+				Name:                "発ゾーン",
+				Stations:            []string{"発駅"},
+				MinDistanceDeciKilo: 1000,
+			},
+			destZone: &ticketdomain.SpecialZone{
+				Name:                "着ゾーン",
+				Stations:            []string{"着駅内1", "着駅"},
+				MinDistanceDeciKilo: 2000,
+			},
+			wantPath:   []int{10, 1, 2, 3, 4, 5},
+			wantThresh: 1000,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			applier := usecase.NewSpecialZoneApplier(newMockGraph(tt.stations), nil)
+			got, ok := applier.Apply(tt.path, tt.originZone, tt.destZone)
+			if !ok {
+				t.Fatal("ゾーン適用に失敗しました")
+			}
+			if !reflect.DeepEqual(got.TransformedPath, tt.wantPath) {
+				t.Fatalf("変換後経路 = %v, want %v", got.TransformedPath, tt.wantPath)
+			}
+			if got.ThresholdKilo != tt.wantThresh {
+				t.Fatalf("閾値 = %v, want %v", got.ThresholdKilo, tt.wantThresh)
+			}
+		})
+	}
+}
+
 func TestSpecialZoneApplierModeBoundaries(t *testing.T) {
 	tests := []struct {
 		name      string

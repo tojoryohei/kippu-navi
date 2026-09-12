@@ -85,6 +85,87 @@ func (s *SpecialZoneApplier) zoneChanges(path []int, zone *ticketdomain.SpecialZ
 	return changes
 }
 
+type zoneApplicationSide uint8
+
+const (
+	zoneApplicationDestination zoneApplicationSide = iota
+	zoneApplicationOrigin
+)
+
+// applyDestinationZone は着駅側のゾーン適用を行います。
+func (s *SpecialZoneApplier) applyDestinationZone(path []int, zone *ticketdomain.SpecialZone, zoneChanges func([]int, *ticketdomain.SpecialZone) []int) (*AppliedZoneInfo, bool) {
+	return s.applyZone(path, zone, zoneApplicationDestination, zoneChanges)
+}
+
+// applyOriginZone は発駅側のゾーン適用を行います。
+func (s *SpecialZoneApplier) applyOriginZone(path []int, zone *ticketdomain.SpecialZone, zoneChanges func([]int, *ticketdomain.SpecialZone) []int) (*AppliedZoneInfo, bool) {
+	return s.applyZone(path, zone, zoneApplicationOrigin, zoneChanges)
+}
+
+// applyZone は方向に応じたゾーン適用の共通処理です。
+func (s *SpecialZoneApplier) applyZone(path []int, zone *ticketdomain.SpecialZone, side zoneApplicationSide, zoneChanges func([]int, *ticketdomain.SpecialZone) []int) (*AppliedZoneInfo, bool) {
+	if len(path) < 2 || zone == nil {
+		return nil, false
+	}
+
+	switch side {
+	case zoneApplicationDestination:
+		destName := s.graph.GetName(path[len(path)-1])
+		if !isStationInSet(destName, zone.Stations) {
+			return nil, false
+		}
+
+		changingIdx := zoneChanges(path, zone)
+		if len(changingIdx) != 1 && len(changingIdx) != 2 {
+			return nil, false
+		}
+
+		zoneID, ok := s.graph.GetID(zone.Name)
+		if !ok {
+			return nil, false
+		}
+
+		lastChange := changingIdx[len(changingIdx)-1]
+		prefix := path[:lastChange+2]
+		newPath := make([]int, 0, len(prefix)+1)
+		newPath = append(newPath, prefix...)
+		newPath = append(newPath, zoneID)
+		return &AppliedZoneInfo{
+			TransformedPath: newPath,
+			ThresholdKilo:   zone.MinDistanceDeciKilo,
+		}, true
+
+	case zoneApplicationOrigin:
+		originName := s.graph.GetName(path[0])
+		if !isStationInSet(originName, zone.Stations) {
+			return nil, false
+		}
+
+		changingIdx := zoneChanges(path, zone)
+		if len(changingIdx) != 1 && len(changingIdx) != 2 {
+			return nil, false
+		}
+
+		zoneID, ok := s.graph.GetID(zone.Name)
+		if !ok {
+			return nil, false
+		}
+
+		firstChange := changingIdx[0]
+		suffix := path[firstChange:]
+		newPath := make([]int, 0, 1+len(suffix))
+		newPath = append(newPath, zoneID)
+		newPath = append(newPath, suffix...)
+		return &AppliedZoneInfo{
+			TransformedPath: newPath,
+			ThresholdKilo:   zone.MinDistanceDeciKilo,
+		}, true
+
+	default:
+		return nil, false
+	}
+}
+
 func (s *SpecialZoneApplier) apply(path []int, originZone, destZone *ticketdomain.SpecialZone, zoneChanges func([]int, *ticketdomain.SpecialZone) []int) (*AppliedZoneInfo, bool) {
 	if len(path) < 2 {
 		return nil, false
@@ -97,61 +178,21 @@ func (s *SpecialZoneApplier) apply(path []int, originZone, destZone *ticketdomai
 	appliedAny := false
 
 	// 着駅適用
-	if destZone != nil {
-		destName := s.graph.GetName(newPath[len(newPath)-1])
-		if isStationInSet(destName, destZone.Stations) {
-
-			changingIdx := zoneChanges(newPath, destZone)
-
-			if len(changingIdx) == 1 || len(changingIdx) == 2 {
-				zoneID, ok := s.graph.GetID(destZone.Name)
-				if ok {
-					lastChange := changingIdx[len(changingIdx)-1]
-
-					var prefix []int
-					prefix = newPath[:lastChange+2]
-
-					temp := make([]int, 0, len(prefix)+1)
-					temp = append(temp, prefix...)
-					temp = append(temp, zoneID)
-					newPath = temp
-
-					if destZone.MinDistanceDeciKilo > threshold {
-						threshold = destZone.MinDistanceDeciKilo
-					}
-					appliedAny = true
-				}
-			}
+	if info, ok := s.applyDestinationZone(newPath, destZone, zoneChanges); ok {
+		newPath = info.TransformedPath
+		if info.ThresholdKilo > threshold {
+			threshold = info.ThresholdKilo
 		}
+		appliedAny = true
 	}
 
 	// 発駅適用
-	if originZone != nil {
-		originName := s.graph.GetName(newPath[0])
-		if isStationInSet(originName, originZone.Stations) {
-
-			changingIdx := zoneChanges(newPath, originZone)
-
-			if len(changingIdx) == 1 || len(changingIdx) == 2 {
-				zoneID, ok := s.graph.GetID(originZone.Name)
-				if ok {
-					firstChange := changingIdx[0]
-
-					var suffix []int
-					suffix = newPath[firstChange:]
-
-					temp := make([]int, 0, 1+len(suffix))
-					temp = append(temp, zoneID)
-					temp = append(temp, suffix...)
-					newPath = temp
-
-					if originZone.MinDistanceDeciKilo > threshold {
-						threshold = originZone.MinDistanceDeciKilo
-					}
-					appliedAny = true
-				}
-			}
+	if info, ok := s.applyOriginZone(newPath, originZone, zoneChanges); ok {
+		newPath = info.TransformedPath
+		if info.ThresholdKilo > threshold {
+			threshold = info.ThresholdKilo
 		}
+		appliedAny = true
 	}
 
 	if !appliedAny {
