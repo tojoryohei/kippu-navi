@@ -225,13 +225,13 @@ func (g *RailwayGraph) getTieBreakerWeight(fromID, toID int) domain.DeciKilo {
 	toName := g.IDToName[toID]
 
 	if (fromName == "南船橋" && toName == "西船橋") || (fromName == "西船橋" && toName == "南船橋") {
-		return 10 // +1 km (+10 DeciKilo)
+		return 1 // +0.1 km (+1 DeciKilo)
 	}
 	if (fromName == "千葉みなと" && toName == "蘇我") || (fromName == "蘇我" && toName == "千葉みなと") {
-		return 10
+		return 1
 	}
 	if (fromName == "京終" && toName == "奈良") || (fromName == "奈良" && toName == "京終") {
-		return 10
+		return 1
 	}
 	return 0
 }
