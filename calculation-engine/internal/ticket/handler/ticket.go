@@ -8,20 +8,37 @@ import (
 	"calculation-engine/internal/domain"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
+	"calculation-engine/internal/ticket/infra/graphio"
 	"calculation-engine/internal/ticket/usecase"
 )
 
 type Ticket struct {
-	graph     graph.Graph
-	corrector usecase.PathCorrector
-	evaluator *usecase.TicketSegmentEvaluator
+	graph           graph.Graph
+	corrector       usecase.PathCorrector
+	evaluator       *usecase.TicketSegmentEvaluator
+	routeExtensions *usecase.RouteExtensionMatcher
+	zoneRegistry    *graphio.SpecialZoneRegistry
 }
 
 func NewTicket(g graph.Graph, c usecase.PathCorrector, e *usecase.TicketSegmentEvaluator) *Ticket {
+	return NewTicketWithRouteExtensions(g, c, e, nil)
+}
+
+// NewTicketWithRouteExtensions は、第114条などの入力経路延長対応表を
+// 利用する乗車券ハンドラを作成します。
+func NewTicketWithRouteExtensions(g graph.Graph, c usecase.PathCorrector, e *usecase.TicketSegmentEvaluator, extensions *usecase.RouteExtensionMatcher) *Ticket {
+	return NewTicketWithRouteExtensionsAndZones(g, c, e, extensions, nil)
+}
+
+// NewTicketWithRouteExtensionsAndZones は、経路延長対応表と特例ゾーンを
+// 利用する乗車券ハンドラを作成します。
+func NewTicketWithRouteExtensionsAndZones(g graph.Graph, c usecase.PathCorrector, e *usecase.TicketSegmentEvaluator, extensions *usecase.RouteExtensionMatcher, zones *graphio.SpecialZoneRegistry) *Ticket {
 	return &Ticket{
-		graph:     g,
-		corrector: c,
-		evaluator: e,
+		graph:           g,
+		corrector:       c,
+		evaluator:       e,
+		routeExtensions: extensions,
+		zoneRegistry:    zones,
 	}
 }
 
@@ -91,15 +108,29 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// モードに応じて経路補正パイプラインを適用する。
-	correctedPath, err := usecase.CorrectPathForMode(pathIDs, h.graph, h.corrector, req.CalculationMode)
+	// 最安モードは入力経路・対応表経路・逐次延長経路をnormalで比較する。
+	var correctedPath []int
+	evaluationMode := usecase.NormalizeFareEvaluationMode(req.CalculationMode)
+	var err error
+	if req.CalculationMode == "cheapest" {
+		fareEval := func(candidate []int) (int, error) {
+			res, _, evalErr := h.evaluator.ExecuteWithMode(candidate, 0, "normal")
+			if evalErr != nil {
+				return 0, evalErr
+			}
+			return res.TotalAmount(), nil
+		}
+		correctedPath, err = usecase.SelectCheapestPathWithRouteExtensions(pathIDs, h.graph, h.corrector, h.routeExtensions, h.zoneRegistry, fareEval)
+	} else {
+		correctedPath, evaluationMode, err = usecase.CorrectPathForModeWithRouteExtensions(pathIDs, h.graph, h.corrector, h.routeExtensions, req.CalculationMode)
+	}
 	if err != nil {
 		h.writeError(w, http.StatusBadRequest, "経路の補正に失敗しました: "+err.Error(), start)
 		return
 	}
 
 	// 運賃計算（TicketSegmentEvaluator に委譲）
-	res, _, err := h.evaluator.ExecuteWithMode(correctedPath, 0, req.CalculationMode)
+	res, _, err := h.evaluator.ExecuteWithMode(correctedPath, 0, evaluationMode)
 	if err != nil {
 		h.writeError(w, http.StatusInternalServerError, "運賃計算に失敗しました: "+err.Error(), start)
 		return

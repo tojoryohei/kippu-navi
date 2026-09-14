@@ -641,3 +641,20 @@ func CorrectPathForMode(path []int, g graph.Graph, corrector PathCorrector, mode
 	}
 	return corrector.Correct(path, g)
 }
+
+// CorrectPathForModeWithRouteExtensions は、対応表に一致する最安モードの
+// 経路をnormalモードの運賃評価へ渡すための経路と評価モードを返します。
+// 最安候補の運賃比較が必要な呼び出し元は、
+// SelectCheapestPathWithRouteExtensionsを使用します。
+func CorrectPathForModeWithRouteExtensions(path []int, g graph.Graph, corrector PathCorrector, extensions *RouteExtensionMatcher, mode string) ([]int, string, error) {
+	if mode == "cheapest" && extensions != nil {
+		if extended, ok := extensions.MatchEither(path); ok {
+			return extended, "normal", nil
+		}
+	}
+	corrected, err := CorrectPathForMode(path, g, corrector, mode)
+	if err != nil {
+		return nil, NormalizeFareEvaluationMode(mode), err
+	}
+	return corrected, NormalizeFareEvaluationMode(mode), nil
+}

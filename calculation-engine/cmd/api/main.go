@@ -215,6 +215,10 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("乗車券のfareioロードに失敗しました: %w", err)
 	}
+	ticketRouteExtensions, err := ticketusecase.NewRouteExtensionMatcherIDs(ticketfareio.GetGeneratedRouteExtensions(), ticketFullGraph)
+	if err != nil {
+		return fmt.Errorf("乗車券の経路延長対応表初期化に失敗しました: %w", err)
+	}
 
 	ticketSpecificMatcher := ticketfare.NewPathMatcher()
 	for _, f := range ticketFareioReg.GetSpecificFares() {
@@ -289,8 +293,10 @@ func run() error {
 		ticketFullGraph,
 	)
 
+	// 経路補正候補を、運賃特例適用後の通常モードの運賃で比較する。
+	// Correctorには物理経路だけを返すため、評価器が返す変換後経路は破棄する。
 	fareEval := func(path []int) (int, error) {
-		res, err := ticketAmountCalc.Execute(path)
+		res, _, err := ticketSegmentEvaluator.ExecuteWithMode(path, 0, "normal")
 		if err != nil {
 			return 0, err
 		}
@@ -306,7 +312,7 @@ func run() error {
 		ticketusecase.NewArticle70Corrector(ticketArticle70Routes),
 	)
 
-	ticketHandler := tickethandler.NewTicket(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator)
+	ticketHandler := tickethandler.NewTicketWithRouteExtensionsAndZones(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneReg)
 
 	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
 

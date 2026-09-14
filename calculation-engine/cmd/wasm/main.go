@@ -51,6 +51,8 @@ var ticketAmountCalc *ticketusecase.CalculateAmount
 var ticketApplier *ticketusecase.SpecialZoneApplier
 var ticketSegmentEvaluator *ticketusecase.TicketSegmentEvaluator
 var ticketCorrector *ticketusecase.PipelineCorrector
+var ticketRouteExtensions *ticketusecase.RouteExtensionMatcher
+var ticketZoneRegistry *ticketgraphio.SpecialZoneRegistry
 var ticketHandler *tickethandler.Ticket
 
 // 実行中のコンテキスト
@@ -1361,6 +1363,7 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf("error: LoadSpecialZones failed: %v", err))
 	}
+	ticketZoneRegistry = ticketZoneReg
 	for _, z := range ticketZoneReg.Zones {
 		ticketFullGraph.GetOrAddID(z.Name)
 	}
@@ -1372,6 +1375,10 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	ticketFareioReg, err := ticketfareio.NewRegistry()
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf("error: ticket fareio load failed: %v", err))
+	}
+	ticketRouteExtensions, err = ticketusecase.NewRouteExtensionMatcherIDs(ticketfareio.GetGeneratedRouteExtensions(), ticketFullGraph)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: route extension data initialization failed: %v", err))
 	}
 
 	ticketSpecificMatcher := ticketfare.NewPathMatcher()
@@ -1447,8 +1454,10 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketFullGraph,
 	)
 
+	// 経路補正候補を、運賃特例適用後の通常モードの運賃で比較する。
+	// Correctorには物理経路だけを返すため、評価器が返す変換後経路は破棄する。
 	fareEval := func(path []int) (int, error) {
-		res, err := ticketAmountCalc.Execute(path)
+		res, _, err := ticketSegmentEvaluator.ExecuteWithMode(path, 0, "normal")
 		if err != nil {
 			return 0, err
 		}
@@ -1464,7 +1473,7 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketusecase.NewArticle70Corrector(ticketArticle70Routes),
 	)
 
-	ticketHandler = tickethandler.NewTicket(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator)
+	ticketHandler = tickethandler.NewTicketWithRouteExtensionsAndZones(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneReg)
 
 	// 初期化完了に伴い、一時バッファへのピン留めを解除しGCに開放
 	ticketWasmGraph = nil
@@ -1506,12 +1515,26 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 		return js.ValueOf(fmt.Sprintf(`{"error":%q}`, domain.ErrDuplicateRoute.Error()))
 	}
 
-	correctedPath, err := ticketusecase.CorrectPathForMode(pathIDs, ticketFullGraph, ticketCorrector, req.CalculationMode)
+	var correctedPath []int
+	evaluationMode := ticketusecase.NormalizeFareEvaluationMode(req.CalculationMode)
+	var err error
+	if req.CalculationMode == "cheapest" {
+		fareEval := func(candidate []int) (int, error) {
+			res, _, evalErr := ticketSegmentEvaluator.ExecuteWithMode(candidate, 0, "normal")
+			if evalErr != nil {
+				return 0, evalErr
+			}
+			return res.TotalAmount(), nil
+		}
+		correctedPath, err = ticketusecase.SelectCheapestPathWithRouteExtensions(pathIDs, ticketFullGraph, ticketCorrector, ticketRouteExtensions, ticketZoneRegistry, fareEval)
+	} else {
+		correctedPath, evaluationMode, err = ticketusecase.CorrectPathForModeWithRouteExtensions(pathIDs, ticketFullGraph, ticketCorrector, ticketRouteExtensions, req.CalculationMode)
+	}
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf(`{"error": "経路補正エラー: %v"}`, err))
 	}
 
-	evaluationResult, transformedPath, err := ticketSegmentEvaluator.ExecuteWithMode(correctedPath, 0, req.CalculationMode)
+	evaluationResult, transformedPath, err := ticketSegmentEvaluator.ExecuteWithMode(correctedPath, 0, evaluationMode)
 	if err == nil {
 		correctedPath = transformedPath
 	}
