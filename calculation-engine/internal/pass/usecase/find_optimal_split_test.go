@@ -1,13 +1,13 @@
 package usecase_test
 
 import (
-	"reflect"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/fare"
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/optimizer"
 	"calculation-engine/internal/pass/usecase"
+	"reflect"
 	"testing"
 )
 
@@ -76,8 +76,9 @@ func TestFindOptimalSplit_Execute(t *testing.T) {
 		addonFareReg,
 		addonChargeReg,
 		fare.NewTrainSpecificSectionCalculator(dummyTable),
-		fare.NewRouteMatcher(),
-		fare.NewRouteMatcher(),
+		fare.NewPathMatcher(),
+		fare.NewPathMatcher(),
+		nil,
 	)
 
 	opt := optimizer.NewDPOptimizer(calc)
@@ -251,7 +252,7 @@ func TestFindOptimalSplit_Execute_MultipleOptimalPaths(t *testing.T) {
 	calc := usecase.NewCalculateAmount(
 		g, reg, addonFareReg, addonChargeReg,
 		fare.NewTrainSpecificSectionCalculator(dummyTable),
-		fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+		fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
 	)
 
 	opt := optimizer.NewDPOptimizer(calc)

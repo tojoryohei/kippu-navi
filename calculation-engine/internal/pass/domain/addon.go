@@ -3,7 +3,7 @@ package domain
 import (
 	"fmt"
 
-	cDomain "calculation-engine/internal/domain"
+	basedomain "calculation-engine/internal/domain"
 )
 
 type addonDefinition struct {
@@ -65,14 +65,14 @@ func (r *AddonRegistry) ResolveIDs(resolver func(string) (int, bool)) error {
 	for _, def := range r.definitions {
 		idA, okA := resolver(def.StationA)
 		if !okA {
-			return fmt.Errorf("%w: %s", cDomain.ErrStationNotFound, def.StationA)
+			return fmt.Errorf("%w: %s", basedomain.ErrStationNotFound, def.StationA)
 		}
 		idB, okB := resolver(def.StationB)
 		if !okB {
-			return fmt.Errorf("%w: %s", cDomain.ErrStationNotFound, def.StationB)
+			return fmt.Errorf("%w: %s", basedomain.ErrStationNotFound, def.StationB)
 		}
 		if idA == idB {
-			return fmt.Errorf("%w: %s", cDomain.ErrSameStation, def.StationA)
+			return fmt.Errorf("%w: %s", basedomain.ErrSameStation, def.StationA)
 		}
 		key := makePairKey(idA, idB)
 		r.resolved[key] = def.Fare
@@ -107,31 +107,31 @@ func (r *AddonRegistry) GetApplicableAddons(path []int) []PassPrice {
 	_, hasRinkuu := stationSet[r.rinkuuID]
 	_, hasKansai := stationSet[r.kansaiID]
 
-	keyH_K := makePairKey(r.hinenoID, r.kansaiID)
-	keyH_R := makePairKey(r.hinenoID, r.rinkuuID)
-	keyR_K := makePairKey(r.rinkuuID, r.kansaiID)
+	keyHK := makePairKey(r.hinenoID, r.kansaiID)
+	keyHR := makePairKey(r.hinenoID, r.rinkuuID)
+	keyRK := makePairKey(r.rinkuuID, r.kansaiID)
 
 	switch {
 	case hasHineno && hasKansai:
 		// 日根野〜関西空港 通しの加算運賃を優先適用
-		if f, ok := r.resolved[keyH_K]; ok {
+		if f, ok := r.resolved[keyHK]; ok {
 			result = append(result, f)
 		}
 	case hasHineno && hasRinkuu:
 		// 日根野〜りんくうタウンのみ
-		if f, ok := r.resolved[keyH_R]; ok {
+		if f, ok := r.resolved[keyHR]; ok {
 			result = append(result, f)
 		}
 	case hasRinkuu && hasKansai:
 		// りんくうタウン〜関西空港のみ
-		if f, ok := r.resolved[keyR_K]; ok {
+		if f, ok := r.resolved[keyRK]; ok {
 			result = append(result, f)
 		}
 	}
 
 	// 2. その他の加算運賃の判定
 	for key, fare := range r.resolved {
-		if key == keyH_K || key == keyH_R || key == keyR_K {
+		if key == keyHK || key == keyHR || key == keyRK {
 			continue
 		}
 

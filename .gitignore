@@ -36,17 +36,16 @@ yarn-error.log*
 .gitconfig
 
 # secret data
-src/data/*.db
-src/data/*.json
-src/app/fare/data/*.json
-src/app/split/data/*.json
+src/data/*
 
 # wasm and graph data
-public/engine/split_pass.wasm
-public/engine/graph_data.bin
+public/engine/*.wasm
+public/engine/*.bin
+public/wasm/
 
 # calculation-engine large precomputed data
 calculation-engine/internal/pass/graph/data/precomputed_server.bin
+calculation-engine/internal/ticket/data/precomputed_server.bin
 
 # TypeScript build info cache
 tsconfig.tsbuildinfo
@@ -60,3 +59,14 @@ calculation-engine/test.wasm
 
 # Next.js automatic type definitions
 next-env.d.ts
+calculation-engine/bin/
+calculation-engine/static/
+calculation-engine/wasm
+calculation-engine/precompute-*
+.cloudflare-engine/
+
+# Astro and browser tests
+.astro/
+dist/
+playwright-report/
+test-results/

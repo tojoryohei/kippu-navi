@@ -14,8 +14,6 @@ func mmapFile(path string) ([]byte, *os.File, error) {
 		return nil, nil, fmt.Errorf("fallback: ファイルのオープンに失敗しました: %w", err)
 	}
 
-
-
 	data, err := os.ReadFile(path)
 	if err != nil {
 		file.Close()

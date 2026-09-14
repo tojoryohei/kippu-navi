@@ -76,8 +76,9 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		addonFareReg,
 		addonChargeReg,
 		trainSpecificCalc,
-		fare.NewRouteMatcher(),
-		fare.NewRouteMatcher(),
+		fare.NewPathMatcher(),
+		fare.NewPathMatcher(),
+		nil,
 	)
 
 	tests := []struct {

@@ -4,7 +4,7 @@ import { correctPath, uncorrectPath } from '@/app/utils/correctPath';
 import { calculateFareFromPath } from '@/app/utils/calcFare';
 import { cheapestPathAndFare } from '@/app/utils/cheapestPath';
 
-import { RouteRequest, KippuData, PathStep, CalculationMode } from '@/app/types';
+import type { RouteRequest, KippuData, PathStep, CalculationMode } from '@/app/types';
 
 interface GenerateKippuOptions {
     calculationMode?: CalculationMode;

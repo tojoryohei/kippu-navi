@@ -1,12 +1,19 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema-json.json",
   "entry": [
-    "scripts/**/*.ts"
+    "scripts/**/*.{ts,mjs}",
+    "workers/frontend.mjs",
+    "src/lib/analytics.ts",
+    "src/app/fare/lib/generateKippu.ts",
+    "src/app/split/lib/getOptimal*WithCache.ts"
   ],
   "ignore": [
     "public/engine/wasm_exec.js"
   ],
   "ignoreDependencies": [
     "tsx"
+  ],
+  "ignoreBinaries": [
+    "go"
   ]
 }

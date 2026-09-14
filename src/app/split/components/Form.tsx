@@ -1,26 +1,33 @@
-"use client";
-
 import { useState, useTransition, useEffect, useRef, useCallback } from "react";
-import { useForm, Controller, SubmitHandler, useWatch } from "react-hook-form";
+import { useForm, Controller, type SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
-import { useRouter, usePathname } from "next/navigation";
-import { usePostHog } from "posthog-js/react";
+import { replaceCalculatorUrl } from "@/lib/calculator-location";
+import { navigatePreservingScroll } from "@/lib/navigation";
+import { createEngineClient, type EngineClient } from "@/lib/engine-client";
+import { analytics as posthog } from "@/lib/analytics";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
-import { SearchOption, SearchType, SplitApiResponse, SplitPassResult, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
+import AdvancedOptions from "@/app/split/components/AdvancedOptions";
+import { getApiUrl } from "@/app/lib/api";
+import type { SearchOption, SearchType, SplitApiResponse, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
 
 interface ExtendedSplitFormInput {
     startStation: Station | null;
     endStation: Station | null;
+    forbiddenStations: Station[];
+    maxSplits: number;
     searchType: SearchType;
 }
 
 interface SplitFormProps {
+    pathname: string;
     initialFrom?: string;
     initialTo?: string;
     initialSearchType?: string;
+    initialForbiddenStations?: string[];
+    initialMaxSplits?: number;
     result?: SplitApiResponse | null;
     error?: string | null;
     serverTime?: number | null;
@@ -72,8 +79,8 @@ interface WasmClientResponse {
 function adaptWasmResponseToSplitApiResponse(wasmRes: WasmClientResponse): SplitApiResponse {
     const normalSegs = wasmRes.normal?.segments || [];
     const cheapestKippuData: KippuData = {
-        departureStation: normalSegs[0]?.start || "",
-        arrivalStation: normalSegs[normalSegs.length - 1]?.end || "",
+        departureStation: normalSegs[0]?.path ? normalSegs[0].path[0] : (normalSegs[0]?.start || ""),
+        arrivalStation: normalSegs[normalSegs.length - 1]?.path ? normalSegs[normalSegs.length - 1].path[normalSegs[normalSegs.length - 1].path.length - 1] : (normalSegs[normalSegs.length - 1]?.end || ""),
         totalEigyoKilo: normalSegs.reduce((sum: number, s: WasmSegment) => sum + (s.totalEigyoKilo || 0), 0),
         printedViaLines: normalSegs.flatMap((s: WasmSegment) => s.via || []),
         fare: wasmRes.normal?.totalAmount || 0,
@@ -110,16 +117,16 @@ function adaptWasmResponseToSplitApiResponse(wasmRes: WasmClientResponse): Split
 }
 
 export default function SplitForm({
+    pathname,
     initialFrom,
     initialTo,
     initialSearchType,
+    initialForbiddenStations,
+    initialMaxSplits,
     result: initialResult,
     error: initialError,
     serverTime: initialServerTime,
 }: SplitFormProps) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const posthog = usePostHog();
     const [isPending, startTransition] = useTransition();
 
     const isIcPass = pathname === "/split/ic-pass";
@@ -143,17 +150,11 @@ export default function SplitForm({
     );
     const [showAllPatterns, setShowAllPatterns] = useState(false);
 
-    const [versionSkewError, setVersionSkewError] = useState<Error | null>(null);
-    if (versionSkewError) {
-        throw versionSkewError;
-    }
-
     const lastTrackedSearch = useRef<string>("");
 
-    const workerRef = useRef<Worker | null>(null);
+    const workerRef = useRef<EngineClient | null>(null);
     const [isWasmReady, setIsWasmReady] = useState(false);
     const isWasmReadyRef = useRef<boolean>(false);
-    const calculationCountRef = useRef<number>(0);
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
     const latestCalcIdRef = useRef<number>(0);
 
@@ -161,18 +162,46 @@ export default function SplitForm({
         ? initialSearchType
         : (isIcPass || isPass ? "pass6" : "ticket");
 
-    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, trigger } = useForm<ExtendedSplitFormInput>({
+    const { handleSubmit, control, formState: { isValid, errors }, getValues, setValue, trigger, clearErrors } = useForm<ExtendedSplitFormInput>({
         mode: "onChange",
         defaultValues: {
             startStation: null,
             endStation: null,
+            forbiddenStations: [],
+            maxSplits: isIcPass ? 1 : 0,
             searchType: defaultSearchType,
         },
     });
 
+    // 種別・期間切り替え時は、入力済みの経路だけ再検証する。
+    // 空フォームではNext.js版と同じくエラーを表示しない。
+    const refreshValidationForTypeChange = useCallback(() => {
+        const hasRouteInput = Boolean(getValues("startStation") || getValues("endStation"));
+        if (hasRouteInput) {
+            void trigger(["startStation", "endStation"]);
+        } else {
+            clearErrors(["startStation", "endStation"]);
+        }
+    }, [clearErrors, getValues, trigger]);
+
+    const apiAbortRef = useRef<AbortController | null>(null);
+    useEffect(() => () => apiAbortRef.current?.abort(), []);
+
+    const mountedRef = useRef(true);
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
+    }, []);
+
     const onSubmit: SubmitHandler<ExtendedSplitFormInput> = useCallback(async (data) => {
+        if (!mountedRef.current) return;
+        const calcId = ++latestCalcIdRef.current;
         if (!data.startStation?.name || !data.endStation?.name) return;
 
+        apiAbortRef.current?.abort();
+        const abort = new AbortController();
+        apiAbortRef.current = abort;
+        const calculationStartedAt = performance.now();
         setShowAllPatterns(false);
         setError(null);
         setResult(null);
@@ -186,13 +215,17 @@ export default function SplitForm({
         if (data.endStation.name) {
             newParams.set("to", data.endStation.name);
         }
+        newParams.set("maxSplits", String(data.maxSplits));
+        for (const station of data.forbiddenStations) {
+            newParams.append("noSplitStation", station.name);
+        }
         if (data.searchType && data.searchType !== "ticket") {
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
             const mVal = monthsMap[data.searchType] || "6";
             newParams.set("month", mVal);
         }
         new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").forEach((val, key) => {
-            if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType") {
+            if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType" && key !== "noSplitStation" && key !== "maxSplits") {
                 newParams.set(key, val);
             }
         });
@@ -200,29 +233,43 @@ export default function SplitForm({
         const nextPath = pathname;
         const newUrl = `${nextPath}?${newParams.toString()}`;
         // URLバーだけ更新
-        window.history.replaceState(null, "", newUrl);
+        replaceCalculatorUrl(newUrl);
 
         // 検索タイプの確定
         setSearchedType(data.searchType);
 
         try {
+            const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
+            const months = data.searchType !== "ticket" ? (monthsMap[data.searchType] || "6") : "6";
+
             const query = new URLSearchParams({
                 from: data.startStation.name,
                 to: data.endStation.name,
-                searchType: data.searchType,
-                isIc: isIcPass ? "true" : "false",
+                months: months,
+                maxSplits: String(data.maxSplits),
             });
-            const apiRes = await fetch(`/api/split?${query.toString()}`);
+            for (const station of data.forbiddenStations) {
+                query.append("noSplitStation", station.name);
+            }
+            let endpoint = "";
+            if (data.searchType === "ticket") {
+                endpoint = "/api/split-ticket";
+            } else if (isIcPass) {
+                endpoint = "/api/split-icpass";
+            } else {
+                endpoint = "/api/split-pass";
+            }
+            const apiRes = await fetch(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: abort.signal });
             const res = await apiRes.json();
+            if (abort.signal.aborted) return;
+            setServerTime(performance.now() - calculationStartedAt);
             if (res.error) {
                 setError(res.error);
                 setIsCalculating(false);
-            } else if (res.result && "passStations" in res.result) {
-                const { passStations } = res.result as SplitPassResult;
-
+            } else {
                 if (!workerRef.current || !isWasmReadyRef.current) {
                     let waited = 0;
-                    while ((!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
+                    while (mountedRef.current && (!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
                         await new Promise((resolve) => setTimeout(resolve, 50));
                         waited += 50;
                     }
@@ -237,43 +284,27 @@ export default function SplitForm({
                 const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
                 const months = monthsMap[data.searchType] || 1;
 
-                const splitPaths = (passStations.splitPatterns && passStations.splitPatterns.length > 0)
-                    ? passStations.splitPatterns
-                    : [passStations.normal];
+                const splitPaths = (res.results && res.results.length > 0)
+                    ? res.results
+                    : [res.normal];
 
-                const calcId = ++latestCalcIdRef.current;
+                if (abort.signal.aborted) return;
                 workerRef.current.postMessage({
                     type: "calculate",
                     payload: {
                         splitPaths,
                         months,
                         isIc: isIcPass,
+                        isTicket: data.searchType === "ticket",
                         requestId: calcId,
                     }
                 });
-
-                // APIの応答時間をサーバー時間として設定
-                setServerTime(res.serverTime || null);
-            } else {
-                setResult(res.result || null);
-                setServerTime(res.serverTime || null);
-                setIsCalculating(false);
             }
         } catch (err: unknown) {
+            if (abort.signal.aborted) return;
             const errorInstance = err instanceof Error ? err : new Error(String(err));
-            const isVersionSkew =
-                errorInstance.name === 'ChunkLoadError' ||
-                /Loading chunk .* failed/.test(errorInstance.message) ||
-                errorInstance.message?.includes('Load failed') ||
-                errorInstance.message?.includes('Server Action') ||
-                errorInstance.message?.includes('was not found on the server');
-
-            if (isVersionSkew) {
-                setVersionSkewError(errorInstance);
-            } else {
-                setError(errorInstance.message);
-                setIsCalculating(false);
-            }
+            setError(errorInstance.message);
+            setIsCalculating(false);
         }
     }, [pathname, isIcPass]);
 
@@ -288,12 +319,12 @@ export default function SplitForm({
             setIsWasmReady(false);
             isWasmReadyRef.current = false;
 
-            const worker = new Worker(new URL("../split-pass.worker.ts", import.meta.url));
+            const worker = createEngineClient();
             workerRef.current = worker;
-            calculationCountRef.current = 0;
 
             worker.onmessage = (e) => {
                 const { type, result, error, requestId } = e.data;
+                if (requestId !== undefined && requestId !== latestCalcIdRef.current) return;
                 if (type === "ready") {
                     setIsWasmReady(true);
                     isWasmReadyRef.current = true;
@@ -305,12 +336,6 @@ export default function SplitForm({
                     }
                     setIsCalculating(false);
 
-                    calculationCountRef.current += 1;
-                    // 10回の計算毎にWorkerをリサイクルしてWasmリニアメモリを解放
-                    if (calculationCountRef.current >= 10) {
-                        console.log("Recycling Web Worker to reclaim Wasm linear memory...");
-                        initWorker();
-                    }
                 } else if (type === "error") {
                     setError(error);
                     setIsCalculating(false);
@@ -330,6 +355,7 @@ export default function SplitForm({
     }, []);
 
     const initialAutoExecutedRef = useRef(false);
+    const initialForbiddenStationsKey = initialForbiddenStations?.join("\u0000") ?? "";
 
     useEffect(() => {
         const fromVal = initialFrom ?? null;
@@ -345,6 +371,16 @@ export default function SplitForm({
 
         setValue("startStation", startStation);
         setValue("endStation", endStation);
+        const forbiddenNames = initialForbiddenStationsKey
+            ? initialForbiddenStationsKey.split("\u0000")
+            : TEMPORARY_STATIONS;
+        const stationList = stationDatas as Station[];
+        const forbiddenStations = forbiddenNames
+            .map(name => stationList.find(s => s.name === name))
+            .filter((station): station is Station => Boolean(station));
+        const selectedMaxSplits = initialMaxSplits ?? (isIcPass ? 1 : 0);
+        setValue("forbiddenStations", forbiddenStations);
+        setValue("maxSplits", selectedMaxSplits);
         setValue("searchType", currentSearchType);
         setTimeout(() => { setSelectedPeriod(currentSearchType); }, 0);
 
@@ -363,6 +399,8 @@ export default function SplitForm({
                         onSubmit({
                             startStation,
                             endStation,
+                            forbiddenStations,
+                            maxSplits: selectedMaxSplits,
                             searchType: currentSearchType,
                         });
                     }
@@ -373,7 +411,7 @@ export default function SplitForm({
                 trigger(["startStation", "endStation"]);
             }, 0);
         }
-    }, [initialFrom, initialTo, initialSearchType, isIcPass, isPass, setValue, trigger, onSubmit]);
+    }, [initialFrom, initialTo, initialSearchType, initialForbiddenStationsKey, initialMaxSplits, isIcPass, isPass, setValue, trigger, onSubmit]);
 
     // GA4 & PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
     useEffect(() => {
@@ -444,7 +482,7 @@ export default function SplitForm({
                 }
             }
         }
-    }, [result, error, posthog, getValues]);
+    }, [result, error, getValues]);
 
     const baseLabel = SEARCH_TYPE_OPTIONS.find(
         o => o.value === searchedType
@@ -454,6 +492,8 @@ export default function SplitForm({
     const startStationVal = useWatch({ control, name: "startStation" });
     const endStationVal = useWatch({ control, name: "endStation" });
     const currentType = useWatch({ control, name: "searchType" }) ?? selectedPeriod;
+    const forbiddenStations = useWatch({ control, name: "forbiddenStations" }) ?? [];
+    const maxSplits = useWatch({ control, name: "maxSplits" }) ?? (isIcPass ? 1 : 0);
 
     const canSwap = !!startStationVal || !!endStationVal;
     const isPeriodDisabled = pathname === "/split/ticket";
@@ -483,12 +523,6 @@ export default function SplitForm({
         const endVal = getValues("endStation");
         if (startVal?.name && endVal?.name && startVal.name === endVal.name) {
             return "発駅と着駅には異なる駅を指定してください";
-        }
-
-        const currentSearchType = getValues("searchType");
-        const isPassOption = isIcPass || isPass || (currentSearchType !== "ticket");
-        if (isPassOption && TEMPORARY_STATIONS.includes(value.name)) {
-            return "臨時駅発着の定期券は計算できません";
         }
 
         // IC定期券の時のエリアバリデーション
@@ -537,6 +571,9 @@ export default function SplitForm({
             nextPath = "/split/ic-pass";
         }
 
+        if (tab === "icpass" && maxSplits !== 1) {
+            setValue("maxSplits", 1);
+        }
         setSelectedPeriod(nextSearchType);
         updateUrlAndState(nextPath, nextSearchType);
     };
@@ -544,17 +581,20 @@ export default function SplitForm({
     const handlePeriodChange = (period: "pass1" | "pass3" | "pass6") => {
         setSelectedPeriod(period);
         setValue("searchType", period);
+        refreshValidationForTypeChange();
         setResult(null);
         setError(null);
         setServerTime(null);
     };
 
     const updateUrlAndState = (nextPath: string, nextSearchType: SearchType) => {
-        setValue("searchType", nextSearchType, { shouldValidate: true });
-        trigger(["startStation", "endStation"]);
+        setValue("searchType", nextSearchType);
+        refreshValidationForTypeChange();
 
         const startStation = getValues("startStation");
         const endStation = getValues("endStation");
+        const currentForbiddenStations = getValues("forbiddenStations") ?? [];
+        const currentMaxSplits = getValues("maxSplits") ?? (nextPath === "/split/ic-pass" ? 1 : 0);
 
         // クエリパラメータをマージ (from, to, month の順に並び替え)
         const newParams = new URLSearchParams();
@@ -569,22 +609,26 @@ export default function SplitForm({
             const mVal = monthsMap[nextSearchType] || "6";
             newParams.set("month", mVal);
         }
+        newParams.set("maxSplits", String(nextPath === "/split/ic-pass" ? 1 : currentMaxSplits));
+        for (const station of currentForbiddenStations) {
+            newParams.append("noSplitStation", station.name);
+        }
         new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").forEach((val, key) => {
-            if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType") {
+            if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType" && key !== "noSplitStation" && key !== "maxSplits") {
                 newParams.set(key, val);
             }
         });
 
         const newUrl = `${nextPath}?${newParams.toString()}`;
 
-        // パスが変わる場合のみ router.push でルーティング遷移
+        // パスが変わる場合のみ Astroでルーティング遷移
         if (nextPath !== pathname) {
             startTransition(() => {
-                router.push(newUrl, { scroll: false });
+                navigatePreservingScroll(newUrl);
             });
         } else {
             // 同じページ内ならURLバーだけ更新
-            window.history.replaceState(null, "", newUrl);
+            replaceCalculatorUrl(newUrl);
         }
     };
 
@@ -739,6 +783,19 @@ export default function SplitForm({
                             )}
                         </div>
                     </div>
+
+                    <AdvancedOptions
+                        isIcPass={isIcPass}
+                        maxSplits={maxSplits}
+                        onMaxSplitsChange={(value) => setValue("maxSplits", value)}
+                        stations={forbiddenStations.filter((station) =>
+                            station.name !== startStationVal?.name && station.name !== endStationVal?.name
+                        )}
+                        options={(stationDatas as Station[]).filter((station) =>
+                            station.name !== startStationVal?.name && station.name !== endStationVal?.name
+                        )}
+                        onStationsChange={(value) => setValue("forbiddenStations", value)}
+                    />
 
                     <div className="w-full">
                         <button

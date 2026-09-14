@@ -15,15 +15,24 @@ var (
 	// ErrNegativeDistance は、距離に負の値が指定された場合のエラーです。
 	ErrNegativeDistance = errors.New("距離は0以上でなければなりません")
 
-	// ErrNoRouteType は、幹線も地方交通線も含まれていない場合のエラーです。
-	ErrNoRouteType = errors.New("幹線も地方交通線も含まれていません")
+	// ErrNoLineType は、幹線も地方交通線も含まれていない場合のエラーです。
+	ErrNoLineType = errors.New("幹線も地方交通線も含まれていません")
 
 	// ErrInvalidPath は、経路が無効な場合（駅数が足りないなど）のエラーです。
 	ErrInvalidPath = errors.New("経路には少なくとも2つの駅が必要です")
+
+	// ErrDuplicateRoute は、発売不可となる駅重複を含む経路が指定された場合のエラーです。
+	ErrDuplicateRoute = errors.New("経路が重複しています。")
 
 	// ErrUnknownCompany は、指定された会社IDが未知の場合のエラーです。
 	ErrUnknownCompany = errors.New("未知の会社ID")
 
 	// ErrNoValidPattern は、有効な分割パターンが見つからなかった場合のエラーです。
 	ErrNoValidPattern = errors.New("有効な分割パターンが見つかりませんでした")
+
+	// ErrEmptyGraph は、グラフが空（駅やエッジが存在しない）の場合のエラーです。
+	ErrEmptyGraph = errors.New("グラフが空です")
+
+	// ErrNoPathExists は、指定された2点間に経路が存在しない場合のエラーです。
+	ErrNoPathExists = errors.New("経路が存在しません")
 )

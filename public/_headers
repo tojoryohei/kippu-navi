@@ -1,0 +1,11 @@
+/*
+  Link: </guide>; rel="service-doc", </sitemap.xml>; rel="sitemap"
+
+/.well-known/traffic-advice
+  Content-Type: application/trafficadvice+json
+
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable

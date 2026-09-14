@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calculateFareFromPath } from "@/app/utils/calcFare";
-import { PathStep } from "@/app/types";
+import type { PathStep } from "@/app/types";
 
 describe("第78条 電車特定区間内の大人普通旅客運賃", () => {
     describe("300 キロメートル以下の営業キロ", () => {

@@ -115,6 +115,35 @@ jobs:
         if: steps.cache.outputs.cache-hit == 'true' || github.actor != 'dependabot[bot]'
         run: npm run test
 
+  frontend-regression:
+    name: Build Astro and test browser navigation
+    runs-on: ubuntu-latest
+    env:
+      ASTRO_TELEMETRY_DISABLED: '1'
+      DEPLOY_ENVIRONMENT: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: calculation-engine/go.mod
+          cache: false
+      - uses: flatt-security/setup-takumi-guard-npm@v1
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: test-results/
+          retention-days: 7
+
   # ===================================================
   # [Backend] Go 環境のジョブ
   # ===================================================
