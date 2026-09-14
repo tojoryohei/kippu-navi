@@ -84,7 +84,7 @@ func run() error {
 	ticketLoader := &ticketgraphio.JSONLoader{}
 	ticketSearchGraph, ticketFullGraph, err := ticketLoader.LoadSeparatedGraphs(
 		[]io.Reader{graphdata.GetEdgesReader()},
-		[]io.Reader{graphdata.GetVirtualEdgesReader()},
+		graphdata.GetFareGraphEdgeReaders(),
 	)
 	if err != nil {
 		return fmt.Errorf("乗車券グラフのロードに失敗しました: %w", err)

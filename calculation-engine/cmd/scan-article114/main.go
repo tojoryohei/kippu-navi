@@ -16,7 +16,7 @@ import (
 
 func init() {
 	ticketDataReader = func() io.Reader { return graphdata.GetEdgesReader() }
-	virtualDataReader = func() io.Reader { return graphdata.GetVirtualEdgesReader() }
+	fareDataReaders = graphdata.GetFareGraphEdgeReaders
 	graphdataSpecialZonesReader = func() io.Reader { return graphdata.GetSpecialZonesReader() }
 	readZoneRoutesBytes = func() []byte {
 		b, _ := io.ReadAll(graphdata.GetZoneRoutesReader())

@@ -3,13 +3,17 @@ package graphdata
 import (
 	"bytes"
 	_ "embed"
+	"io"
 )
 
 //go:embed edges.json
 var edgesJSON []byte
 
-//go:embed virtual_edges.json
-var virtualEdgesJSON []byte
+//go:embed shinkansen_edges.json
+var shinkansenEdgesJSON []byte
+
+//go:embed connecting_edges.json
+var connectingEdgesJSON []byte
 
 //go:embed special_zones.json
 var specialZonesJSON []byte
@@ -22,9 +26,19 @@ func GetEdgesReader() *bytes.Reader {
 	return bytes.NewReader(edgesJSON)
 }
 
-// GetVirtualEdgesReader は仮想エッジデータ(virtual_edges.json)のReaderを返すゲッターメソッドです。
-func GetVirtualEdgesReader() *bytes.Reader {
-	return bytes.NewReader(virtualEdgesJSON)
+// GetShinkansenEdgesReader は新幹線の運賃計算用エッジデータ(shinkansen_edges.json)のReaderを返します。
+func GetShinkansenEdgesReader() *bytes.Reader {
+	return bytes.NewReader(shinkansenEdgesJSON)
+}
+
+// GetConnectingEdgesReader は連絡会社線・私鉄の運賃計算用エッジデータ(connecting_edges.json)のReaderを返します。
+func GetConnectingEdgesReader() *bytes.Reader {
+	return bytes.NewReader(connectingEdgesJSON)
+}
+
+// GetFareGraphEdgeReaders は運賃計算用フルグラフへ追加するエッジを、元データと同じ順序で返します。
+func GetFareGraphEdgeReaders() []io.Reader {
+	return []io.Reader{GetShinkansenEdgesReader(), GetConnectingEdgesReader()}
 }
 
 // GetSpecialZonesReader は特定都区市内データ(special_zones.json)のReaderを返すゲッターメソッドです。

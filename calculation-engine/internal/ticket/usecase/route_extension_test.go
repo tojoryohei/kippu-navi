@@ -257,7 +257,7 @@ func TestRouteExtensionRegistryIsEmptyAfterRemovingArticle114Routes(t *testing.T
 
 func TestEmbeddedRouteExtensionsUsePhysicalJRPaths(t *testing.T) {
 	loader := &ticketgraphio.JSONLoader{}
-	_, g, err := loader.LoadSeparatedGraphs([]io.Reader{graphdata.GetEdgesReader()}, []io.Reader{graphdata.GetVirtualEdgesReader()})
+	_, g, err := loader.LoadSeparatedGraphs([]io.Reader{graphdata.GetEdgesReader()}, graphdata.GetFareGraphEdgeReaders())
 	if err != nil {
 		t.Fatalf("グラフの読み込みに失敗しました: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestEmbeddedRouteExtensionsUsePhysicalJRPaths(t *testing.T) {
 
 func TestGeneratedRouteExtensionsUsePhysicalPaths(t *testing.T) {
 	loader := &ticketgraphio.JSONLoader{}
-	_, g, err := loader.LoadSeparatedGraphs([]io.Reader{graphdata.GetEdgesReader()}, []io.Reader{graphdata.GetVirtualEdgesReader()})
+	_, g, err := loader.LoadSeparatedGraphs([]io.Reader{graphdata.GetEdgesReader()}, graphdata.GetFareGraphEdgeReaders())
 	if err != nil {
 		t.Fatalf("グラフの読み込みに失敗しました: %v", err)
 	}

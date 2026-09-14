@@ -14,7 +14,7 @@ func TestPathCorrectorIntegration(t *testing.T) {
 	loader := &graphio.JSONLoader{}
 	_, fullGraph, err := loader.LoadSeparatedGraphs(
 		[]io.Reader{graphdata.GetEdgesReader()},
-		[]io.Reader{graphdata.GetVirtualEdgesReader()},
+		graphdata.GetFareGraphEdgeReaders(),
 	)
 	if err != nil {
 		t.Fatalf("グラフのロードに失敗しました: %v", err)

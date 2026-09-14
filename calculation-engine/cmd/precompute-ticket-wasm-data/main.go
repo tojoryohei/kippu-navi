@@ -29,12 +29,12 @@ type EdgeBinary struct {
 
 func main() {
 	if len(os.Args) < 4 {
-		log.Fatalf("使用法: precompute-ticket-wasm-data <入力edges.json> <入力virtual_edges.json> <出力WASM_BIN>")
+		log.Fatalf("使用法: precompute-ticket-wasm-data <入力edges.json> <入力運賃計算用エッジ.json>... <出力WASM_BIN>")
 	}
 
 	inputEdgesJSON := os.Args[1]
-	inputVirtualEdgesJSON := os.Args[2]
-	outputWasmBin := os.Args[3]
+	inputFareEdgesJSON := os.Args[2 : len(os.Args)-1]
+	outputWasmBin := os.Args[len(os.Args)-1]
 
 	log.Printf("edges.jsonを読み込んでいます: %s", inputEdgesJSON)
 	inEdgesFile, err := os.Open(inputEdgesJSON)
@@ -43,17 +43,27 @@ func main() {
 	}
 	defer inEdgesFile.Close()
 
-	log.Printf("virtual_edges.jsonを読み込んでいます: %s", inputVirtualEdgesJSON)
-	inVirtualEdgesFile, err := os.Open(inputVirtualEdgesJSON)
-	if err != nil {
-		log.Fatalf("virtual_edges.jsonのオープンに失敗しました: %v", err)
+	inFareEdgesFiles := make([]*os.File, 0, len(inputFareEdgesJSON))
+	inFareEdgesReaders := make([]io.Reader, 0, len(inputFareEdgesJSON))
+	for _, path := range inputFareEdgesJSON {
+		log.Printf("運賃計算用エッジを読み込んでいます: %s", path)
+		file, err := os.Open(path)
+		if err != nil {
+			log.Fatalf("運賃計算用エッジのオープンに失敗しました (%s): %v", path, err)
+		}
+		inFareEdgesFiles = append(inFareEdgesFiles, file)
+		inFareEdgesReaders = append(inFareEdgesReaders, file)
 	}
-	defer inVirtualEdgesFile.Close()
+	defer func() {
+		for _, file := range inFareEdgesFiles {
+			_ = file.Close()
+		}
+	}()
 
 	ticketLoader := &graphio.JSONLoader{}
 	g, _, err := ticketLoader.LoadSeparatedGraphs(
 		[]io.Reader{inEdgesFile},
-		[]io.Reader{inVirtualEdgesFile},
+		inFareEdgesReaders,
 	)
 	if err != nil {
 		log.Fatalf("JSONのロードに失敗しました: %v", err)

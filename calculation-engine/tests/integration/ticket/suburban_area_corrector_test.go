@@ -15,7 +15,7 @@ func TestSuburbanAreaCorrector_Integration(t *testing.T) {
 	loader := &graphio.JSONLoader{}
 	_, g, err := loader.LoadSeparatedGraphs(
 		[]io.Reader{graphdata.GetEdgesReader()},
-		[]io.Reader{graphdata.GetVirtualEdgesReader()},
+		graphdata.GetFareGraphEdgeReaders(),
 	)
 	if err != nil {
 		t.Fatalf("グラフデータのロードに失敗しました: %v", err)

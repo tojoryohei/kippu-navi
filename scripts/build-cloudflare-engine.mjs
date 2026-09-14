@@ -22,7 +22,8 @@ go(['build', '-trimpath', '-o', join(staging, 'main.wasm'), './cmd/wasm/'],
 go(['run', './cmd/precompute-pass-wasm-data/', 'internal/graphdata/edges.json',
   join(staging, 'pass_graph_data.bin')]);
 go(['run', './cmd/precompute-ticket-wasm-data/', 'internal/graphdata/edges.json',
-  'internal/graphdata/virtual_edges.json', join(staging, 'ticket_graph_data.bin')]);
+  'internal/graphdata/shinkansen_edges.json',
+  'internal/graphdata/connecting_edges.json', join(staging, 'ticket_graph_data.bin')]);
 
 const goroot = execFileSync('go', ['env', 'GOROOT'], { encoding: 'utf8' }).trim();
 const runtime = [join(goroot, 'lib/wasm/wasm_exec.js'), join(goroot, 'misc/wasm/wasm_exec.js')]

@@ -2,6 +2,7 @@ package main
 
 import (
 	"calculation-engine/internal/domain"
+	"calculation-engine/internal/graphdata"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/fare"
 	"calculation-engine/internal/ticket/graph"
@@ -794,7 +795,7 @@ func buildEvaluator(full *graph.RailwayGraph, zones *ticketgraphio.SpecialZoneRe
 
 func newScanData() (*scanData, error) {
 	loader := &ticketgraphio.JSONLoader{}
-	physical, full, err := loader.LoadSeparatedGraphs([]io.Reader{ticketDataReader()}, []io.Reader{virtualDataReader()})
+	physical, full, err := loader.LoadSeparatedGraphs([]io.Reader{ticketDataReader()}, fareDataReaders())
 	if err != nil {
 		return nil, err
 	}
@@ -841,7 +842,7 @@ func newScanData() (*scanData, error) {
 // The following indirections live in main.go so the scanner remains easy to
 // test with synthetic readers without exposing embedded data from graphdata.
 var ticketDataReader func() io.Reader
-var virtualDataReader func() io.Reader
+var fareDataReaders func() []io.Reader
 var readZoneRoutesBytes func() []byte
 var ticketFareRegistry func() (*ticketfareio.Registry, error)
 
@@ -850,12 +851,13 @@ func scannerDataHashes(reg *ticketfareio.Registry) map[string]string {
 	read := func(r io.Reader) []byte { b, _ := io.ReadAll(r); return b }
 	marshal := func(v any) []byte { b, _ := json.Marshal(v); return b }
 	return map[string]string{
-		"edges.json":         hashBytes(read(ticketDataReader())),
-		"virtual_edges.json": hashBytes(read(virtualDataReader())),
-		"special_zones.json": hashBytes(read(graphdataSpecialZonesReader())),
-		"zone_routes.json":   hashBytes(readZoneRoutesBytes()),
-		"specificFares.json": hashBytes(marshal(reg.GetSpecificFares())),
-		"adjustedFares.json": hashBytes(marshal(reg.GetAdjustedFares())),
+		"edges.json":            hashBytes(read(ticketDataReader())),
+		"shinkansen_edges.json": hashBytes(read(graphdata.GetShinkansenEdgesReader())),
+		"connecting_edges.json": hashBytes(read(graphdata.GetConnectingEdgesReader())),
+		"special_zones.json":    hashBytes(read(graphdataSpecialZonesReader())),
+		"zone_routes.json":      hashBytes(readZoneRoutesBytes()),
+		"specificFares.json":    hashBytes(marshal(reg.GetSpecificFares())),
+		"adjustedFares.json":    hashBytes(marshal(reg.GetAdjustedFares())),
 	}
 }
 

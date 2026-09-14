@@ -1335,7 +1335,7 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketFullGraph.Edges[i] = ticketEdges
 		ticketFullGraph.PhysicalEdgeCounts[i] = len(ticketEdges)
 	}
-	if err := (&ticketgraphio.JSONLoader{}).AddVirtualEdges(ticketFullGraph, ticketgraphdata.GetVirtualEdgesReader()); err != nil {
+	if err := (&ticketgraphio.JSONLoader{}).AddVirtualEdges(ticketFullGraph, ticketgraphdata.GetFareGraphEdgeReaders()...); err != nil {
 		return js.ValueOf(fmt.Sprintf("error: failed to add virtual ticket edges: %v", err))
 	}
 	ticketSearchGraph = ticketgraph.NewPhysicalGraphView(ticketFullGraph)

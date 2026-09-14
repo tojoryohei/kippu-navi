@@ -17,11 +17,11 @@ import (
 func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 	t.Helper()
 
-	// 1. グラフのロード（edges.json と virtual_edges.json の両方をロード）
+	// 1. グラフのロード（edges.json と運賃計算用補助エッジ の両方をロード）
 	loader := &graphio.JSONLoader{}
 	_, g, err := loader.LoadSeparatedGraphs(
 		[]io.Reader{graphdata.GetEdgesReader()},
-		[]io.Reader{graphdata.GetVirtualEdgesReader()},
+		graphdata.GetFareGraphEdgeReaders(),
 	)
 	if err != nil {
 		t.Fatalf("グラフデータのロードに失敗しました: %v", err)
@@ -295,7 +295,7 @@ func TestOsakaShinOsakaException_Integration(t *testing.T) {
 	loader := &graphio.JSONLoader{}
 	_, g, err := loader.LoadSeparatedGraphs(
 		[]io.Reader{graphdata.GetEdgesReader()},
-		[]io.Reader{graphdata.GetVirtualEdgesReader()},
+		graphdata.GetFareGraphEdgeReaders(),
 	)
 	if err != nil {
 		t.Fatalf("乗車券グラフのロードに失敗しました: %v", err)

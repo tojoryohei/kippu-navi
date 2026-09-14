@@ -41,7 +41,7 @@ func run(args []string) error {
 	ticketLoader := &ticketgraphio.JSONLoader{}
 	ticketSearchGraph, ticketFullGraph, err := ticketLoader.LoadSeparatedGraphs(
 		[]io.Reader{ticketgraphdata.GetEdgesReader()},
-		[]io.Reader{ticketgraphdata.GetVirtualEdgesReader()},
+		ticketgraphdata.GetFareGraphEdgeReaders(),
 	)
 	if err != nil {
 		return fmt.Errorf("JSONの読み込みに失敗しました: %w", err)
