@@ -143,6 +143,31 @@ func (g *RailwayGraph) GetEdges(stationID int) []ticketdomain.TicketEdge {
 	return edges[:g.PhysicalEdgeCounts[stationID]]
 }
 
+// getSearchEdges は経路探索で使用する物理エッジだけを返します。
+// 運賃計算用のフルグラフを受け取った場合でも、virtual_edge.json の
+// 仮想エッジを探索候補に含めないようにします。
+func (g *RailwayGraph) getSearchEdges(stationID int) []ticketdomain.TicketEdge {
+	if stationID < 0 || stationID >= len(g.Edges) {
+		return nil
+	}
+
+	edges := g.Edges[stationID]
+	// 物理エッジだけで構築されたグラフ（テスト用の NewGraph など）には
+	// 境界情報がないため、登録済みの全エッジを探索対象にします。
+	if g.PhysicalEdgeCounts == nil {
+		return edges
+	}
+	if stationID >= len(g.PhysicalEdgeCounts) {
+		return nil
+	}
+
+	count := g.PhysicalEdgeCounts[stationID]
+	if count > len(edges) {
+		count = len(edges)
+	}
+	return edges[:count]
+}
+
 // Validate はグラフの整合性を検証し、各駅のグループIDを計算します。
 func (g *RailwayGraph) Validate() error {
 	numStations := len(g.IDToName)
@@ -174,7 +199,7 @@ func (g *RailwayGraph) bfsAssignGroup(startNode, groupID int) {
 		node := queue[0]
 		queue = queue[1:]
 
-		for _, edge := range g.GetEdges(node) {
+		for _, edge := range g.getSearchEdges(node) {
 			neighbor := edge.ToID
 			if g.GroupIDs[neighbor] == -1 {
 				g.GroupIDs[neighbor] = groupID

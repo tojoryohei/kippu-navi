@@ -38,7 +38,7 @@ func TestLoadSeparatedGraphsKeepsVirtualEdgesOutOfSearchGraph(t *testing.T) {
 	}
 }
 
-func TestPhysicalGraphViewExcludesVirtualEdgesFromShortestPath(t *testing.T) {
+func TestDijkstraExcludesVirtualEdgesFromShortestPath(t *testing.T) {
 	loader := &JSONLoader{}
 	searchGraph, fareGraph, err := loader.LoadSeparatedGraphs(
 		[]io.Reader{strings.NewReader(physicalEdgeJSON)},
@@ -66,10 +66,10 @@ func TestPhysicalGraphViewExcludesVirtualEdgesFromShortestPath(t *testing.T) {
 
 	farePath, err := fareGraph.FindShortestPathGisei(aID, bID)
 	if err != nil {
-		t.Fatalf("完全グラフの探索に失敗しました: %v", err)
+		t.Fatalf("運賃計算グラフの探索に失敗しました: %v", err)
 	}
-	if len(farePath.StationIDs) != 3 || farePath.GiseiKilo != 2 {
-		t.Fatalf("完全グラフが仮想エッジを使用していません: path=%v, gisei=%d", farePath.StationIDs, farePath.GiseiKilo)
+	if len(farePath.StationIDs) != 2 || farePath.GiseiKilo != 10 {
+		t.Fatalf("運賃計算グラフの探索が仮想エッジを使用しました: path=%v, gisei=%d", farePath.StationIDs, farePath.GiseiKilo)
 	}
 }
 
