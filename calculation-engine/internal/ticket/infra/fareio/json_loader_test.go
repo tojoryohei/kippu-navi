@@ -15,22 +15,22 @@ import (
 
 func TestRouteExtensionJSONContainsPathsOnly(t *testing.T) {
 	var records []map[string]json.RawMessage
-	decoder := json.NewDecoder(bytes.NewReader(routeExtensionsJSON))
+	decoder := json.NewDecoder(bytes.NewReader(routeMappingsJSON))
 	if err := decoder.Decode(&records); err != nil {
-		t.Fatalf("routeExtensions.jsonの読み込みに失敗しました: %v", err)
+		t.Fatalf("routeMappings.jsonの読み込みに失敗しました: %v", err)
 	}
 	if len(records) != 0 {
-		t.Fatalf("削除済みの経路延長対応表にレコードが残っています: got=%d", len(records))
+		t.Fatalf("空の経路対応表にレコードが残っています: got=%d", len(records))
 	}
 	for i, record := range records {
 		if len(record) != 2 {
-			t.Fatalf("経路延長対応表[%d]に経路以外の項目があります: %v", i, record)
+			t.Fatalf("経路対応表[%d]に経路以外の項目があります: %v", i, record)
 		}
 		if _, ok := record["inputPath"]; !ok {
-			t.Fatalf("経路延長対応表[%d]にinputPathがありません", i)
+			t.Fatalf("経路対応表[%d]にinputPathがありません", i)
 		}
 		if _, ok := record["outputPath"]; !ok {
-			t.Fatalf("経路延長対応表[%d]にoutputPathがありません", i)
+			t.Fatalf("経路対応表[%d]にoutputPathがありません", i)
 		}
 	}
 }
@@ -41,12 +41,12 @@ func TestGeneratedRouteExtensionsMatchSourceJSON(t *testing.T) {
 		t.Fatalf("経路延長対応表の読み込みに失敗しました: %v", err)
 	}
 	loader := &ticketgraphio.JSONLoader{}
-	_, g, err := loader.LoadSeparatedGraphs([]io.Reader{graphdata.GetEdgesReader()}, []io.Reader{graphdata.GetVirtualEdgesReader()})
+	_, g, err := loader.LoadSeparatedGraphs([]io.Reader{graphdata.GetEdgesReader()}, graphdata.GetFareGraphEdgeReaders())
 	if err != nil {
 		t.Fatalf("グラフの読み込みに失敗しました: %v", err)
 	}
-	if len(generatedRouteExtensions) != len(registry.GetRouteExtensions()) {
-		t.Fatalf("生成済み対応表の件数が一致しません: generated=%d source=%d", len(generatedRouteExtensions), len(registry.GetRouteExtensions()))
+	if len(generatedRouteMappings) != len(registry.GetRouteExtensions()) {
+		t.Fatalf("生成済み対応表の件数が一致しません: generated=%d source=%d", len(generatedRouteMappings), len(registry.GetRouteExtensions()))
 	}
 	for i, source := range registry.GetRouteExtensions() {
 		input, err := resolvePathForGeneratedTest(source.InputPath, g)
@@ -57,7 +57,7 @@ func TestGeneratedRouteExtensionsMatchSourceJSON(t *testing.T) {
 		if err != nil {
 			t.Fatalf("対応表[%d]出力経路: %v", i, err)
 		}
-		generated := generatedRouteExtensions[i]
+		generated := generatedRouteMappings[i]
 		if !reflect.DeepEqual(generated.InputPath, toInt32PathForGeneratedTest(input)) || !reflect.DeepEqual(generated.OutputPath, toInt32PathForGeneratedTest(output)) {
 			t.Fatalf("生成済み対応表[%d]が元JSONと一致しません", i)
 		}
