@@ -61,8 +61,18 @@ jobs:
           if [ -z "$TICKET_MD5" ]; then
             TICKET_MD5="missing-${{ github.sha }}"
           fi
+          if [ -f ./calculation-engine/internal/graphdata/edges.json ]; then
+            GRAPH_PATH=./calculation-engine/internal/graphdata/edges.json
+          else
+            GRAPH_PATH=./calculation-engine/internal/pass/graph/data/edges.json
+          fi
+          GRAPH_HASH=$(sha256sum "$GRAPH_PATH" | cut -c1-16)
+          GRAPH_STATIONS=$(jq -r '.[].station0, .[].station1' "$GRAPH_PATH" | sort -u | wc -l | tr -d ' ')
           echo "pass_md5=$PASS_MD5" >> $GITHUB_OUTPUT
           echo "ticket_md5=$TICKET_MD5" >> $GITHUB_OUTPUT
+          echo "graph_hash=$GRAPH_HASH" >> $GITHUB_OUTPUT
+          echo "graph_path=$GRAPH_PATH" >> $GITHUB_OUTPUT
+          echo "graph_stations=$GRAPH_STATIONS" >> $GITHUB_OUTPUT
 
       - name: Cache Precomputed Server Binary
         id: cache-bin
@@ -71,7 +81,7 @@ jobs:
           path: |
             ./calculation-engine/internal/pass/graph/data/precomputed_server.bin
             ./calculation-engine/internal/ticket/data/precomputed_server.bin
-          key: precomputed-server-${{ steps.gcs-meta.outputs.pass_md5 }}-${{ steps.gcs-meta.outputs.ticket_md5 }}
+          key: precomputed-server-${{ env.SERVICE_NAME }}-${{ steps.gcs-meta.outputs.pass_md5 }}-${{ steps.gcs-meta.outputs.ticket_md5 }}-${{ steps.gcs-meta.outputs.graph_hash }}
 
       - name: Download Precomputed Server Binary
         if: steps.cache-bin.outputs.cache-hit != 'true'
@@ -84,6 +94,37 @@ jobs:
             )
             gcloud storage cp ./calculation-engine/internal/ticket/data/precomputed_server.bin gs://kippu-navi-build-secrets/data/ticket_precomputed_server_v2.bin
           fi
+
+      - name: Validate or regenerate pass precomputed binary
+        run: |
+          BINARY_PATH=./calculation-engine/internal/pass/graph/data/precomputed_server.bin
+          EXPECTED_STATIONS="${{ steps.gcs-meta.outputs.graph_stations }}"
+          ACTUAL_STATIONS=$(od -An -t u4 -j8 -N4 "$BINARY_PATH" | tr -d ' ')
+
+          if [ "$EXPECTED_STATIONS" = "$ACTUAL_STATIONS" ]; then
+            echo "定期券事前計算データを検証しました: ${ACTUAL_STATIONS}駅"
+            exit 0
+          fi
+
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "本番用事前計算データの駅数がグラフと一致しません: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
+            exit 1
+          fi
+
+          GRAPH_INPUT="${{ steps.gcs-meta.outputs.graph_path }}"
+          GRAPH_INPUT="${GRAPH_INPUT#./calculation-engine/}"
+          echo "ステージング用事前計算データを現行グラフから再生成します: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
+          (
+            cd calculation-engine
+            go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./internal/pass/graph/data/precomputed_server.bin
+          )
+
+          ACTUAL_STATIONS=$(od -An -t u4 -j8 -N4 "$BINARY_PATH" | tr -d ' ')
+          if [ "$EXPECTED_STATIONS" != "$ACTUAL_STATIONS" ]; then
+            echo "再生成後も駅数が一致しません: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
+            exit 1
+          fi
+          echo "ステージング用事前計算データを検証しました: ${ACTUAL_STATIONS}駅"
 
       - name: Build and Push Docker Image
         run: |
