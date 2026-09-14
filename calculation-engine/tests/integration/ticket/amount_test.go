@@ -247,6 +247,50 @@ func TestTicketAmountCalculation_Integration(t *testing.T) {
 	}
 }
 
+func TestTicketAmountCalculation_TemporaryStationEndpoints(t *testing.T) {
+	if testing.Short() {
+		t.Skip("統合テストをスキップします")
+	}
+
+	u, g := setupTicketAmount(t)
+	getPath := func(names ...string) []int {
+		path := make([]int, len(names))
+		for i, name := range names {
+			id, ok := g.GetID(name)
+			if !ok {
+				t.Fatalf("駅名が見つかりません: %s", name)
+			}
+			path[i] = id
+		}
+		return path
+	}
+
+	tests := []struct {
+		name string
+		path []int
+	}{
+		{name: "偕楽園発", path: getPath("偕楽園", "水戸")},
+		{name: "偕楽園着", path: getPath("水戸", "偕楽園")},
+		{name: "ガーラ湯沢発", path: getPath("ガーラ湯沢", "越後湯沢")},
+		{name: "ガーラ湯沢着", path: getPath("越後湯沢", "ガーラ湯沢")},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := u.Execute(tt.path)
+			if err != nil {
+				t.Fatalf("臨時駅発着の運賃計算が失敗しました: %v", err)
+			}
+			if result == nil || result.TotalEigyoKilo <= 0 || result.TotalPathEigyoKilo <= 0 {
+				t.Fatalf("臨時駅発着の運賃計算結果が不正です: %+v", result)
+			}
+			if len(result.FinalPath) != len(tt.path) || result.FinalPath[0] != tt.path[0] || result.FinalPath[len(result.FinalPath)-1] != tt.path[len(tt.path)-1] {
+				t.Fatalf("発着駅が計算結果で維持されていません: got=%v want=%v", result.FinalPath, tt.path)
+			}
+		})
+	}
+}
+
 func TestOsakaShinOsakaException_Integration(t *testing.T) {
 	loader := &graphio.JSONLoader{}
 	_, g, err := loader.LoadSeparatedGraphs(
