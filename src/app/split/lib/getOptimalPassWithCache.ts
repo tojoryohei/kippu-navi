@@ -5,7 +5,9 @@ export async function getOptimalPassWithCache(
     startStation: string,
     endStation: string,
     months: number,
-    isIc: boolean
+    isIc: boolean,
+    noSplitStations: string[] = [],
+    maxSplits = isIc ? 1 : 0,
 ): Promise<PassCacheResult | null> {
     const startTime = performance.now();
 
@@ -13,7 +15,11 @@ export async function getOptimalPassWithCache(
         from: startStation,
         to: endStation,
         months: months.toString(),
+        maxSplits: maxSplits.toString(),
     });
+    for (const station of noSplitStations) {
+        params.append("noSplitStation", station);
+    }
 
     const endpoint = isIc
         ? "/api/split-icpass"

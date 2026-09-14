@@ -46,7 +46,7 @@ interface WorkerGlobalScope {
   reconstructAndCalculateTicket(splitStationsJson: string): string;
   calculateRoutePass(stationNamesJson: string, months: number, isIc: boolean, calculationMode: string): string;
   calculateRouteTicket(jsonStr: string): string;
-  calculateOptimalSplitTicket(startStationName: string, endStationName: string): string;
+  calculateOptimalSplitTicket(startStationName: string, endStationName: string, maxSplits?: number, noSplitStationsJson?: string): string;
 }
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
 
@@ -189,9 +189,14 @@ onmessage = async (e: MessageEvent) => {
       return;
     }
 
-    const { startStationName, endStationName, requestId } = payload;
+    const { startStationName, endStationName, maxSplits, noSplitStations, requestId } = payload;
     try {
-      const resultJsonStr = workerSelf.calculateOptimalSplitTicket(startStationName, endStationName);
+      const resultJsonStr = workerSelf.calculateOptimalSplitTicket(
+        startStationName,
+        endStationName,
+        maxSplits,
+        JSON.stringify(noSplitStations || []),
+      );
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
         postMessage({ type: 'error', requestId: payload?.requestId, error: result.error });

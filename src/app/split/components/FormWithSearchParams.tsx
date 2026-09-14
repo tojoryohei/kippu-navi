@@ -12,6 +12,11 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
     const searchParams = url.searchParams;
     const month = searchParams.get("month");
     const initialSearchType: SearchType = activePathname.endsWith("/ticket") ? "ticket" : month === "1" ? "pass1" : month === "3" ? "pass3" : "pass6";
+    const parsedMaxSplits = searchParams.get("maxSplits");
+    const parsedMaxSplitsValue = parsedMaxSplits !== null && /^(?:[0-9]|10)$/.test(parsedMaxSplits)
+        ? Number(parsedMaxSplits)
+        : 0;
+    const initialMaxSplits = activePathname.endsWith("/ic-pass") ? 1 : parsedMaxSplitsValue;
     return (
         <CalculatorErrorBoundary key={location}>
             <Form
@@ -19,6 +24,8 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
                 initialFrom={searchParams.get("from") || undefined}
                 initialTo={searchParams.get("to") || undefined}
                 initialSearchType={initialSearchType}
+                initialForbiddenStations={searchParams.getAll("noSplitStation")}
+                initialMaxSplits={initialMaxSplits}
             />
         </CalculatorErrorBoundary>
     );
