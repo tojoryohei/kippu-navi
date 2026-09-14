@@ -45,10 +45,9 @@ func NewSpecialFareRuleResolver(applier *SpecialZoneApplier, postZoneCorrector P
 // モードごとの適用順は次のとおりです。
 //
 //   - 通常: 特定都区市内・東京山手線内 → 大阪市内の出口駅補正 → 第88条 → 事後補正 → 元経路
-//   - 最安: 特定都区市内・東京山手線内 → 大阪市内の出口駅補正 → 第88条 → 事後補正 → 元経路
 //   - 補正禁止: 特定都区市内・東京山手線内 → 第88条 → 元経路
 //
-// 通常・最安で行う第69条・第70条などの経路補正は、Resolverへ渡される前に
+// 第69条・第70条などの経路補正は、Resolverへ渡される前に
 // CorrectPathForModeで適用されます。補正禁止ではその経路補正を行わず、
 // 運賃計算上必要な第86条・第87条・第88条だけをここで適用します。
 func (r *SpecialFareRuleResolver) Resolve(path []int, mode string) ([]FarePathCandidate, error) {
@@ -59,8 +58,6 @@ func (r *SpecialFareRuleResolver) Resolve(path []int, mode string) ([]FarePathCa
 	switch mode {
 	case "uncorrect":
 		return r.resolveUncorrect(path), nil
-	case "cheapest":
-		return r.resolveCheapest(path)
 	case "normal":
 		fallthrough
 	default:
@@ -72,7 +69,15 @@ func (r *SpecialFareRuleResolver) Resolve(path []int, mode string) ([]FarePathCa
 // 経路補正本体（第69条・第70条など）は呼び出し側で既に適用されています。
 func (r *SpecialFareRuleResolver) resolveNormal(path []int) ([]FarePathCandidate, error) {
 	// 1. 特定都区市内・東京山手線内（第86条・第87条）を適用します。
-	resolved := r.applyNormalZoneCandidates(path)
+	var resolved []FarePathCandidate
+	if areaID, ok := pureJRSuburbanArea(path, r.graph); ok {
+		// 純粋なJR近郊区間内完結経路は、キャッシュ生成と同じく中心駅までの
+		// 最短擬制キロ経路を使った片側適用だけを候補にします。
+		resolved = r.applySuburbanZoneCandidate(path, areaID)
+	} else {
+		// 私鉄を含む経路などは、従来の経路全体に対する特例判定を維持します。
+		resolved = r.applyNormalZoneCandidates(path)
+	}
 
 	// 2. 大阪市内の事後補正後の経路を第88条へ渡します。
 	osakaInput, err := r.applyOsakaCityCorrection(path)
@@ -88,9 +93,25 @@ func (r *SpecialFareRuleResolver) resolveNormal(path []int) ([]FarePathCandidate
 	return append(resolved, osakaCandidates...), nil
 }
 
-// resolveCheapest は通常モードの処理に委譲し、同じ特例候補を返します。
-func (r *SpecialFareRuleResolver) resolveCheapest(path []int) ([]FarePathCandidate, error) {
-	return r.resolveNormal(path)
+// applySuburbanZoneCandidate は純粋なJR近郊区間内完結経路の片側ゾーン候補を返します。
+// 中心駅までの距離で適用可否を事前に判定するため、通常の閾値再判定は行いません。
+func (r *SpecialFareRuleResolver) applySuburbanZoneCandidate(path []int, areaID domain.SuburbanAreaID) []FarePathCandidate {
+	if r.applier == nil {
+		return nil
+	}
+	info, ok := r.applier.applySuburban(path, areaID)
+	if !ok {
+		return nil
+	}
+	corrected, err := r.applyPostZoneCorrections(info.TransformedPath)
+	if err != nil {
+		return nil
+	}
+	return []FarePathCandidate{{
+		Path:           corrected,
+		ThresholdKilo:  info.ThresholdKilo,
+		CheckThreshold: false,
+	}}
 }
 
 // resolveUncorrect は補正禁止モードの特例候補を、指定された順序で解決します。

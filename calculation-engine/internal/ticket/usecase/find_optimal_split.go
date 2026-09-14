@@ -33,6 +33,9 @@ func (u *TicketCalculationUseCase) Execute(path []int, months int) (*Calculation
 }
 
 func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode string) (*CalculationResult, []int, error) {
+	// cheapest は物理経路補正側だけで使い、運賃評価は通常モードで行います。
+	// 既存の呼び出し元との互換性のため、ここでも防御的に正規化します。
+	mode = NormalizeFareEvaluationMode(mode)
 	candidates, err := u.resolver.Resolve(path, mode)
 	if err != nil {
 		return nil, nil, err
@@ -79,10 +82,20 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 	return e.calculation.Execute(path, months)
 }
 
-// ExecuteWithMode は指定された運賃計算モードで経路を評価します。
-// モードごとの特例適用順序はSpecialFareRuleResolverに委譲します。
+// ExecuteWithMode は通常または補正禁止の運賃評価モードで経路を評価します。
+// 経路補正用のcheapestはNormalizeFareEvaluationModeでnormalへ変換されます。
 func (e *TicketSegmentEvaluator) ExecuteWithMode(path []int, months int, mode string) (*CalculationResult, []int, error) {
 	return e.calculation.ExecuteWithMode(path, months, mode)
+}
+
+// NormalizeFareEvaluationMode は、経路補正モードを運賃評価モードへ変換します。
+// cheapest は経路補正で最安候補を選ぶためのモードであり、運賃評価では
+// normal と同じ特例適用を使います。
+func NormalizeFareEvaluationMode(mode string) string {
+	if mode == "uncorrect" {
+		return "uncorrect"
+	}
+	return "normal"
 }
 
 func (e *TicketSegmentEvaluator) applyPostZoneCorrections(path []int, applyOsakaCityCorrection bool) ([]int, error) {

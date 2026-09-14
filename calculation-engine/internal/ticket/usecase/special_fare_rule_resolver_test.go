@@ -1,9 +1,11 @@
 package usecase
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
+	"calculation-engine/internal/domain"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/graphio"
@@ -142,5 +144,136 @@ func TestSpecialFareRuleResolverAppliesOsakaCityCorrectionBeforeArticle88(t *tes
 	wantArticle88Path := []int{5, 3, 4}
 	if !reflect.DeepEqual(candidates[0].Path, wantArticle88Path) {
 		t.Fatalf("事後補正後に第88条が適用されていません: got %v, want %v", candidates[0].Path, wantArticle88Path)
+	}
+}
+
+type suburbanResolverGraph struct {
+	graph.Graph
+	names       map[int]string
+	ids         map[string]int
+	edges       map[int][]ticketdomain.TicketEdge
+	shortest    map[[2]int]*graph.PathResult
+	lookupCount int
+}
+
+func (g *suburbanResolverGraph) GetName(id int) string { return g.names[id] }
+func (g *suburbanResolverGraph) GetID(name string) (int, bool) {
+	id, ok := g.ids[name]
+	return id, ok
+}
+func (g *suburbanResolverGraph) GetEdges(id int) []ticketdomain.TicketEdge { return g.edges[id] }
+func (g *suburbanResolverGraph) FindShortestPathGiseiSuburban(startID, endID int, _ domain.SuburbanAreaID) (*graph.PathResult, error) {
+	g.lookupCount++
+	if result, ok := g.shortest[[2]int{startID, endID}]; ok {
+		return result, nil
+	}
+	return nil, fmt.Errorf("path not found")
+}
+
+type noopPathCorrector struct{}
+
+func (noopPathCorrector) Correct(path []int, _ graph.Graph) ([]int, error) { return path, nil }
+
+func TestSpecialFareRuleResolverUsesOneSideZoneForPureJRSuburbanPath(t *testing.T) {
+	g := &suburbanResolverGraph{
+		names: map[int]string{1: "立川", 2: "新宿", 3: "東京", 4: "東京山手線内"},
+		ids:   map[string]int{"立川": 1, "新宿": 2, "東京": 3, "東京山手線内": 4},
+		edges: map[int][]ticketdomain.TicketEdge{
+			1: {{Edge: domain.Edge{FromID: 1, ToID: 2, Company: domain.JREast, SuburbanArea: domain.SuburbanAreaTokyo}}, {Edge: domain.Edge{FromID: 1, ToID: 3, Company: domain.JREast, SuburbanArea: domain.SuburbanAreaTokyo}}},
+		},
+		shortest: map[[2]int]*graph.PathResult{
+			{1, 3}: {StationIDs: []int{1, 3}, EigyoKilo: 1500},
+		},
+	}
+	zone := ticketdomain.SpecialZone{
+		Name:                "東京山手線内",
+		MinDistanceDeciKilo: 1000,
+		MaxDistanceDeciKilo: 2000,
+		Stations:            []string{"東京", "新宿"},
+	}
+	registry := &graphio.SpecialZoneRegistry{
+		Zones:          []ticketdomain.SpecialZone{zone},
+		StationToZones: map[string][]ticketdomain.SpecialZone{"新宿": {zone}},
+	}
+	resolver := &SpecialFareRuleResolver{
+		applier:            NewSpecialZoneApplier(g, registry),
+		osakaCityCorrector: noopPathCorrector{},
+		zoneRegistry:       registry,
+		graph:              g,
+	}
+
+	candidates, err := resolver.Resolve([]int{1, 2}, "normal")
+	if err != nil {
+		t.Fatalf("通常モードの解決に失敗しました: %v", err)
+	}
+	if len(candidates) == 0 || !reflect.DeepEqual(candidates[0].Path, []int{1, 3, 4}) {
+		t.Fatalf("片側ゾーン候補が先頭にありません: %+v", candidates)
+	}
+	if candidates[0].CheckThreshold {
+		t.Fatal("中心駅までの距離を事前判定した候補で閾値再判定が有効です")
+	}
+}
+
+func TestNormalizeFareEvaluationMode(t *testing.T) {
+	tests := map[string]string{
+		"normal":    "normal",
+		"cheapest":  "normal",
+		"uncorrect": "uncorrect",
+		"unknown":   "normal",
+	}
+	for input, want := range tests {
+		if got := NormalizeFareEvaluationMode(input); got != want {
+			t.Fatalf("運賃評価モードの正規化が不正です: input=%q got=%q want=%q", input, got, want)
+		}
+	}
+}
+
+func TestSpecialFareRuleResolverSkipsOneSideZoneForMixedPath(t *testing.T) {
+	g := &suburbanResolverGraph{
+		names: map[int]string{1: "立川", 2: "私鉄接続", 3: "私鉄終点", 4: "新宿"},
+		ids:   map[string]int{"立川": 1, "私鉄接続": 2, "私鉄終点": 3, "新宿": 4, "東京山手線内": 5},
+		edges: map[int][]ticketdomain.TicketEdge{
+			1: {{Edge: domain.Edge{FromID: 1, ToID: 2, Company: domain.JREast, SuburbanArea: domain.SuburbanAreaTokyo}}},
+			2: {{Edge: domain.Edge{FromID: 2, ToID: 3, Company: domain.Other}}},
+			3: {{Edge: domain.Edge{FromID: 3, ToID: 4, Company: domain.JREast, SuburbanArea: domain.SuburbanAreaTokyo}}},
+		},
+	}
+	zone := ticketdomain.SpecialZone{Name: "東京山手線内", Stations: []string{"新宿", "東京"}, MinDistanceDeciKilo: 1000, MaxDistanceDeciKilo: 2000}
+	registry := &graphio.SpecialZoneRegistry{Zones: []ticketdomain.SpecialZone{zone}, StationToZones: map[string][]ticketdomain.SpecialZone{"新宿": {zone}}}
+	resolver := &SpecialFareRuleResolver{applier: NewSpecialZoneApplier(g, registry), osakaCityCorrector: noopPathCorrector{}, zoneRegistry: registry, graph: g}
+	if _, err := resolver.Resolve([]int{1, 2, 3, 4}, "normal"); err != nil {
+		t.Fatalf("混在経路の解決に失敗しました: %v", err)
+	}
+	if g.lookupCount != 0 {
+		t.Fatalf("混在経路で片側ゾーン用の中心駅探索が呼ばれました: %d", g.lookupCount)
+	}
+}
+
+func TestSpecialZoneApplierSuburbanYamanoteThreshold(t *testing.T) {
+	for _, tc := range []struct {
+		distance domain.DeciKilo
+		want     bool
+	}{
+		{distance: 1000, want: false},
+		{distance: 1001, want: true},
+		{distance: 2000, want: true},
+		{distance: 2001, want: false},
+	} {
+		t.Run(fmt.Sprintf("営業キロ%d", tc.distance), func(t *testing.T) {
+			g := &suburbanResolverGraph{
+				names: map[int]string{1: "立川", 2: "新宿", 3: "東京", 4: "東京山手線内"},
+				ids:   map[string]int{"立川": 1, "新宿": 2, "東京": 3, "東京山手線内": 4},
+				edges: map[int][]ticketdomain.TicketEdge{
+					1: {{Edge: domain.Edge{FromID: 1, ToID: 2, Company: domain.JREast, SuburbanArea: domain.SuburbanAreaTokyo}}, {Edge: domain.Edge{FromID: 1, ToID: 3, Company: domain.JREast, SuburbanArea: domain.SuburbanAreaTokyo}}},
+				},
+				shortest: map[[2]int]*graph.PathResult{{1, 3}: {StationIDs: []int{1, 3}, EigyoKilo: tc.distance}},
+			}
+			zone := ticketdomain.SpecialZone{Name: "東京山手線内", MinDistanceDeciKilo: 1000, MaxDistanceDeciKilo: 2000, Stations: []string{"東京"}}
+			registry := &graphio.SpecialZoneRegistry{Zones: []ticketdomain.SpecialZone{zone}}
+			info, got := NewSpecialZoneApplier(g, registry).applySuburban([]int{1, 2}, domain.SuburbanAreaTokyo)
+			if got != tc.want {
+				t.Fatalf("適用 = %v, want %v (info=%+v)", got, tc.want, info)
+			}
+		})
 	}
 }
