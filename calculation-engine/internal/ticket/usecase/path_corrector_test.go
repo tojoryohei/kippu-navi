@@ -96,6 +96,43 @@ func TestShinkansenOverlapCorrector(t *testing.T) {
 	}
 }
 
+type fixedPathCorrector struct {
+	path []int
+}
+
+func (c fixedPathCorrector) Correct(_ []int, _ graph.Graph) ([]int, error) {
+	return append([]int(nil), c.path...), nil
+}
+
+func TestPipelineCorrectorCapturesPathBeforeShinkansenExpansion(t *testing.T) {
+	g := &mockGraphCorrector{
+		names: map[int]string{
+			1: "姫路",
+			2: "手柄山平和公園",
+			3: "英賀保",
+			4: "はりま勝原",
+			5: "網干",
+			6: "竜野",
+			7: "相生",
+		},
+	}
+	pipeline := NewPipelineCorrector(
+		fixedPathCorrector{path: []int{1, 7}},
+		NewShinkansenOverlapCorrector(),
+	)
+
+	corrected, before, err := pipeline.CorrectWithPreShinkansenPath([]int{99}, g)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := []int{1, 2, 3, 4, 5, 6, 7}; !reflect.DeepEqual(corrected, want) {
+		t.Fatalf("corrected path = %v, want %v", corrected, want)
+	}
+	if want := []int{1, 7}; !reflect.DeepEqual(before, want) {
+		t.Fatalf("pre-Shinkansen path = %v, want %v", before, want)
+	}
+}
+
 func TestOsakaCityShinOsakaCorrector(t *testing.T) {
 	g := &mockGraphCorrector{
 		names: map[int]string{

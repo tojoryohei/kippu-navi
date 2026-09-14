@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"calculation-engine/internal/domain"
-	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/graphio"
 	"calculation-engine/internal/ticket/usecase"
@@ -108,8 +107,10 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 最安モードは入力経路・対応表経路・逐次延長経路をnormalで比較する。
+	// 最安モードは対応表に一致した場合は出力経路を採用し、
+	// 一致しない場合は入力経路と逐次延長経路をnormalで比較する。
 	var correctedPath []int
+	var suburbanPath []int
 	evaluationMode := usecase.NormalizeFareEvaluationMode(req.CalculationMode)
 	var err error
 	if req.CalculationMode == "cheapest" {
@@ -120,9 +121,9 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 			}
 			return res.TotalAmount(), nil
 		}
-		correctedPath, err = usecase.SelectCheapestPathWithRouteExtensions(pathIDs, h.graph, h.corrector, h.routeExtensions, h.zoneRegistry, fareEval)
+		correctedPath, suburbanPath, err = usecase.SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(pathIDs, h.graph, h.corrector, h.routeExtensions, h.zoneRegistry, fareEval)
 	} else {
-		correctedPath, evaluationMode, err = usecase.CorrectPathForModeWithRouteExtensions(pathIDs, h.graph, h.corrector, h.routeExtensions, req.CalculationMode)
+		correctedPath, evaluationMode, suburbanPath, err = usecase.CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(pathIDs, h.graph, h.corrector, h.routeExtensions, req.CalculationMode)
 	}
 	if err != nil {
 		h.writeError(w, http.StatusBadRequest, "経路の補正に失敗しました: "+err.Error(), start)
@@ -137,10 +138,7 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 有効日数の計算（JR・他社線の合計営業キロから算出）
-	validDays := ticketdomain.CalculateValidDaysFromKilo(res.TotalPathEigyoKilo)
-	if usecase.IsSuburbanAreaComplete(correctedPath, h.graph) {
-		validDays = 1 // 大都市近郊区間完結（連絡会社線含む）の場合は1日
-	}
+	validDays := usecase.CalculateTicketValidDays(res.TotalPathEigyoKilo, suburbanPath, h.graph)
 
 	kippuData := KippuData{
 		TotalEigyoKilo:   int(res.TotalEigyoKilo),

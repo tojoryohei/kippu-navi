@@ -142,6 +142,25 @@ func TestIsSuburbanAreaComplete(t *testing.T) {
 	}
 }
 
+func TestCalculateTicketValidDaysUsesPreShinkansenPath(t *testing.T) {
+	g := &mockSuburbanGraph{
+		edges: map[int][]ticketdomain.TicketEdge{
+			1: {{Edge: domain.Edge{ToID: 2, SuburbanArea: domain.SuburbanAreaTokyo, Company: domain.JREast}}},
+			2: {{Edge: domain.Edge{ToID: 3, SuburbanArea: domain.SuburbanAreaNone, Company: domain.JREast}}},
+		},
+	}
+
+	got := CalculateTicketValidDays(2500, []int{1, 2}, g)
+	if got != 1 {
+		t.Fatalf("展開前の近郊区間経路は1日であるべきです: got=%d", got)
+	}
+
+	got = CalculateTicketValidDays(2500, []int{1, 2, 3}, g)
+	if got != 3 {
+		t.Fatalf("近郊区間外経路は距離計算へ戻るべきです: got=%d", got)
+	}
+}
+
 func TestSuburbanAreaCorrectorKeepsPrivateSectionAndChoosesCheapestPerJRSegment(t *testing.T) {
 	g := &mockSuburbanGraph{
 		edges: map[int][]ticketdomain.TicketEdge{

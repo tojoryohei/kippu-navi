@@ -1516,6 +1516,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 	}
 
 	var correctedPath []int
+	var suburbanPath []int
 	evaluationMode := ticketusecase.NormalizeFareEvaluationMode(req.CalculationMode)
 	var err error
 	if req.CalculationMode == "cheapest" {
@@ -1526,9 +1527,9 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 			}
 			return res.TotalAmount(), nil
 		}
-		correctedPath, err = ticketusecase.SelectCheapestPathWithRouteExtensions(pathIDs, ticketFullGraph, ticketCorrector, ticketRouteExtensions, ticketZoneRegistry, fareEval)
+		correctedPath, suburbanPath, err = ticketusecase.SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(pathIDs, ticketFullGraph, ticketCorrector, ticketRouteExtensions, ticketZoneRegistry, fareEval)
 	} else {
-		correctedPath, evaluationMode, err = ticketusecase.CorrectPathForModeWithRouteExtensions(pathIDs, ticketFullGraph, ticketCorrector, ticketRouteExtensions, req.CalculationMode)
+		correctedPath, evaluationMode, suburbanPath, err = ticketusecase.CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(pathIDs, ticketFullGraph, ticketCorrector, ticketRouteExtensions, req.CalculationMode)
 	}
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf(`{"error": "経路補正エラー: %v"}`, err))
@@ -1551,10 +1552,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 	arrStation := ticketFullGraph.GetName(evaluationResult.FinalPath[len(evaluationResult.FinalPath)-1])
 
 	// 有効日数の計算（JR・他社線の合計営業キロから算出）
-	validDays := ticketdomain.CalculateValidDaysFromKilo(evaluationResult.TotalPathEigyoKilo)
-	if ticketusecase.IsSuburbanAreaComplete(correctedPath, ticketFullGraph) {
-		validDays = 1 // 旅客営業規則第75条により、大都市近郊区間完結（連絡会社線含む）の場合は1日
-	}
+	validDays := ticketusecase.CalculateTicketValidDays(evaluationResult.TotalPathEigyoKilo, suburbanPath, ticketFullGraph)
 
 	var elapsed float64
 	if perf := js.Global().Get("performance"); perf.Truthy() {

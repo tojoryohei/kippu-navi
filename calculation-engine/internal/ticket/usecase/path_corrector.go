@@ -10,6 +10,13 @@ type PathCorrector interface {
 	Correct(path []int, g graph.Graph) ([]int, error)
 }
 
+// preShinkansenPathCorrector は、通常の経路補正結果と、
+// 新幹線展開直前の経路を返す内部インターフェースです。
+// 有効日数の大都市近郊区間判定では、後段の新幹線展開後の経路を使いません。
+type preShinkansenPathCorrector interface {
+	correctWithPreShinkansenPath(path []int, g graph.Graph) (corrected []int, before []int, found bool, err error)
+}
+
 // PipelineCorrector は複数の Corrector を順番に適用します。
 type PipelineCorrector struct {
 	correctors []PathCorrector
@@ -29,6 +36,47 @@ func (p *PipelineCorrector) Correct(path []int, g graph.Graph) ([]int, error) {
 		}
 	}
 	return currentPath, nil
+}
+
+// correctWithPreShinkansenPath はパイプラインを実行しながら、
+// ShinkansenOverlapCorrectorの直前の経路を記録します。
+// 同じ処理を含む入れ子のパイプラインにも対応します。
+func (p *PipelineCorrector) correctWithPreShinkansenPath(path []int, g graph.Graph) (corrected []int, before []int, found bool, err error) {
+	currentPath := append([]int(nil), path...)
+	before = append([]int(nil), path...)
+
+	for _, c := range p.correctors {
+		if traced, ok := c.(preShinkansenPathCorrector); ok {
+			var childBefore []int
+			var childFound bool
+			currentPath, childBefore, childFound, err = traced.correctWithPreShinkansenPath(currentPath, g)
+			if err != nil {
+				return nil, nil, false, err
+			}
+			if childFound && !found {
+				before = append([]int(nil), childBefore...)
+				found = true
+			}
+			continue
+		}
+
+		if _, ok := c.(*ShinkansenOverlapCorrector); ok && !found {
+			before = append([]int(nil), currentPath...)
+			found = true
+		}
+		currentPath, err = c.Correct(currentPath, g)
+		if err != nil {
+			return nil, nil, false, err
+		}
+	}
+
+	return currentPath, before, found, nil
+}
+
+// CorrectWithPreShinkansenPath は経路補正結果と、新幹線展開直前の経路を返します。
+func (p *PipelineCorrector) CorrectWithPreShinkansenPath(path []int, g graph.Graph) ([]int, []int, error) {
+	corrected, before, _, err := p.correctWithPreShinkansenPath(path, g)
+	return corrected, before, err
 }
 
 // --- SpecificSectionCorrector ---
@@ -642,19 +690,47 @@ func CorrectPathForMode(path []int, g graph.Graph, corrector PathCorrector, mode
 	return corrector.Correct(path, g)
 }
 
+// correctPathForModeWithPreShinkansenPath は、一般的な経路補正結果と
+// 大都市近郊区間判定に使う新幹線展開直前の経路を返します。
+func correctPathForModeWithPreShinkansenPath(path []int, g graph.Graph, corrector PathCorrector, mode string) (corrected []int, before []int, err error) {
+	if mode == "uncorrect" {
+		return path, append([]int(nil), path...), nil
+	}
+
+	if traced, ok := corrector.(preShinkansenPathCorrector); ok {
+		corrected, before, _, err = traced.correctWithPreShinkansenPath(path, g)
+		return corrected, before, err
+	}
+
+	corrected, err = corrector.Correct(path, g)
+	if err != nil {
+		return nil, nil, err
+	}
+	// 新幹線展開位置を追跡できないCorrectorでは、入力経路を
+	// 展開前の経路として扱います。
+	return corrected, append([]int(nil), path...), nil
+}
+
 // CorrectPathForModeWithRouteExtensions は、対応表に一致する最安モードの
 // 経路をnormalモードの運賃評価へ渡すための経路と評価モードを返します。
 // 最安候補の運賃比較が必要な呼び出し元は、
 // SelectCheapestPathWithRouteExtensionsを使用します。
 func CorrectPathForModeWithRouteExtensions(path []int, g graph.Graph, corrector PathCorrector, extensions *RouteExtensionMatcher, mode string) ([]int, string, error) {
+	corrected, evaluationMode, _, err := CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(path, g, corrector, extensions, mode)
+	return corrected, evaluationMode, err
+}
+
+// CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath は、対応表に一致する
+// 最安モードの経路、運賃評価モード、新幹線展開直前の判定経路を返します。
+func CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(path []int, g graph.Graph, corrector PathCorrector, extensions *RouteExtensionMatcher, mode string) ([]int, string, []int, error) {
 	if mode == "cheapest" && extensions != nil {
 		if extended, ok := extensions.MatchEither(path); ok {
-			return extended, "normal", nil
+			return extended, "normal", append([]int(nil), extended...), nil
 		}
 	}
-	corrected, err := CorrectPathForMode(path, g, corrector, mode)
+	corrected, before, err := correctPathForModeWithPreShinkansenPath(path, g, corrector, mode)
 	if err != nil {
-		return nil, NormalizeFareEvaluationMode(mode), err
+		return nil, NormalizeFareEvaluationMode(mode), nil, err
 	}
-	return corrected, NormalizeFareEvaluationMode(mode), nil
+	return corrected, NormalizeFareEvaluationMode(mode), before, nil
 }
