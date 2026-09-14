@@ -86,7 +86,7 @@ func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
 	// 4. 加算運賃の登録
 	addonReg := fare.NewAddonRegistry()
 	addonReg.Register("南千歳", "新千歳空港", 20)
-	addonReg.Register("日根野", "りんくうタウン", 150)
+	addonReg.Register("日根野", "りんくうタウン", 160)
 	addonReg.Register("りんくうタウン", "関西空港", 170)
 	addonReg.Register("日根野", "関西空港", 220)
 	addonReg.Register("児島", "宇多津", 110)
@@ -202,7 +202,7 @@ func TestTicketAmountCalculation_Integration(t *testing.T) {
 			name: "日根野〜りんくうタウン（加算運賃の重複適用防止の検証）",
 			path: getIDs("日根野", "りんくうタウン"),
 			want: usecase.CalculationResult{
-				Fare:           320, // 基本160 + 加算160
+				Fare:           330, // 基本170 + 加算160
 				BarrierFreeFee: 10,
 				TotalEigyoKilo: 42,
 			},

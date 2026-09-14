@@ -250,7 +250,7 @@ func run() error {
 
 	ticketAddonFareReg := ticketfare.NewAddonRegistry()
 	ticketAddonFareReg.Register("南千歳", "新千歳空港", 20)
-	ticketAddonFareReg.Register("日根野", "りんくうタウン", 150)
+	ticketAddonFareReg.Register("日根野", "りんくうタウン", 160)
 	ticketAddonFareReg.Register("りんくうタウン", "関西空港", 170)
 	ticketAddonFareReg.Register("日根野", "関西空港", 220)
 	ticketAddonFareReg.Register("児島", "宇多津", 110)
