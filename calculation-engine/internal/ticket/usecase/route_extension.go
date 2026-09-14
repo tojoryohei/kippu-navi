@@ -203,8 +203,8 @@ type extensionSearchState struct {
 }
 
 // SelectCheapestPathWithRouteExtensions は、最安モードの物理経路候補を
-// normalで評価し、最安の経路を返します。入力経路は常に候補に含めます。
-// 対応表に一致した場合は逐次探索を行わず、対応表の出力経路だけを追加します。
+// normalで評価し、最安の経路を返します。対応表に一致した場合は
+// 運賃比較を行わず、対応表の出力経路を採用します。
 func SelectCheapestPathWithRouteExtensions(
 	path []int,
 	g graph.Graph,
@@ -213,11 +213,34 @@ func SelectCheapestPathWithRouteExtensions(
 	zones *graphio.SpecialZoneRegistry,
 	fareEval RouteExtensionFareEvaluator,
 ) ([]int, error) {
+	selected, _, err := SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(path, g, corrector, extensions, zones, fareEval)
+	return selected, err
+}
+
+// SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath は、最安モードの
+// 採用経路と、大都市近郊区間判定に使う新幹線展開直前の経路を返します。
+func SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(
+	path []int,
+	g graph.Graph,
+	corrector PathCorrector,
+	extensions *RouteExtensionMatcher,
+	zones *graphio.SpecialZoneRegistry,
+	fareEval RouteExtensionFareEvaluator,
+) ([]int, []int, error) {
 	if len(path) < 2 {
-		return nil, domain.ErrInvalidPath
+		return nil, nil, domain.ErrInvalidPath
 	}
 	if fareEval == nil {
-		return CorrectPathForMode(path, g, corrector, "cheapest")
+		corrected, before, err := correctPathForModeWithPreShinkansenPath(path, g, corrector, "cheapest")
+		return corrected, before, err
+	}
+
+	if extensions != nil {
+		if extended, ok := extensions.MatchEither(path); ok {
+			// 対応表は事前に定義された経路変換です。入力経路との運賃差や
+			// 同額判定を行わず、出力経路を通常モードの最終評価へ渡します。
+			return append([]int(nil), extended...), append([]int(nil), extended...), nil
+		}
 	}
 
 	candidates := make([][]int, 0, 8)
@@ -235,15 +258,13 @@ func SelectCheapestPathWithRouteExtensions(
 	}
 	addCandidate(path)
 
-	matched := false
 	if extensions != nil {
-		if extended, ok := extensions.MatchEither(path); ok {
-			matched = true
-			addCandidate(extended)
+		if zones != nil {
+			for _, extended := range sequentialRouteExtensions(path, g, zones) {
+				addCandidate(extended)
+			}
 		}
-	}
-	// 対応表がnilの場合だけでなく、対応表に一致しなかった場合に逐次探索します。
-	if !matched && zones != nil {
+	} else if zones != nil {
 		for _, extended := range sequentialRouteExtensions(path, g, zones) {
 			addCandidate(extended)
 		}
@@ -264,18 +285,18 @@ func SelectCheapestPathWithRouteExtensions(
 		}
 	}
 	if best != nil {
-		return best, nil
+		return best, append([]int(nil), best...), nil
 	}
 
 	// 候補の評価がすべて失敗した場合は、既存の最安モード補正へ戻します。
-	corrected, err := CorrectPathForMode(path, g, corrector, "cheapest")
+	corrected, before, err := correctPathForModeWithPreShinkansenPath(path, g, corrector, "cheapest")
 	if err != nil {
 		if lastErr != nil {
-			return nil, lastErr
+			return nil, nil, lastErr
 		}
-		return nil, err
+		return nil, nil, err
 	}
-	return corrected, nil
+	return corrected, before, nil
 }
 
 func sequentialRouteExtensions(path []int, g graph.Graph, zones *graphio.SpecialZoneRegistry) [][]int {
@@ -335,7 +356,7 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 	if spec.direction == extendOrigin {
 		endpoint = path[0]
 	}
-	initialDistance, ok := centerDistanceOnPathOrShortest(path, centerID, endpoint, physical)
+	initialDistance, ok := centerDistanceOnPathOrShortestWithFallback(path, centerID, endpoint, physical, g)
 	if !ok || initialDistance > spec.zone.MinDistanceDeciKilo {
 		return nil
 	}
@@ -349,7 +370,7 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 		if spec.direction == extendOrigin {
 			currentEndpoint = state.path[0]
 		}
-		distance, ok := centerDistanceOnPathOrShortest(state.path, centerID, currentEndpoint, physical)
+		distance, ok := centerDistanceOnPathOrShortestWithFallback(state.path, centerID, currentEndpoint, physical, g)
 		if !ok {
 			continue
 		}
@@ -362,9 +383,6 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 		}
 
 		for _, edge := range physical.GetEdges(currentEndpoint) {
-			if containsStation(state.path, edge.ToID) {
-				continue
-			}
 			var next []int
 			if spec.direction == extendOrigin {
 				next = make([]int, 0, len(state.path)+1)
@@ -373,22 +391,20 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 			} else {
 				next = append(append([]int(nil), state.path...), edge.ToID)
 			}
+			if domain.HasDuplicateStation(next) {
+				continue
+			}
 			queue = append(queue, extensionSearchState{path: next, depth: state.depth + 1})
 		}
 	}
 	return result
 }
 
-func containsStation(path []int, stationID int) bool {
-	for _, id := range path {
-		if id == stationID {
-			return true
-		}
-	}
-	return false
+func centerDistanceOnPathOrShortest(path []int, centerID, endpointID int, g graph.Graph) (domain.DeciKilo, bool) {
+	return centerDistanceOnPathOrShortestWithFallback(path, centerID, endpointID, g, nil)
 }
 
-func centerDistanceOnPathOrShortest(path []int, centerID, endpointID int, g graph.Graph) (domain.DeciKilo, bool) {
+func centerDistanceOnPathOrShortestWithFallback(path []int, centerID, endpointID int, pathGraph, fallbackGraph graph.Graph) (domain.DeciKilo, bool) {
 	if centerID == endpointID {
 		return 0, true
 	}
@@ -408,15 +424,30 @@ func centerDistanceOnPathOrShortest(path []int, centerID, endpointID int, g grap
 			start, end = end, start
 		}
 		// 入力経路には臨時駅などの仮想エッジが含まれる場合があります。
-		// 距離計算は、前後駅を結ぶ物理エッジを使って行います。
-		return pathEigyoKilo(g, path[start:end+1])
+		// まず物理エッジで距離を計算し、物理経路だけでは解決できない
+		// 既存の仮想区間がある場合だけフルグラフへフォールバックします。
+		segment := path[start : end+1]
+		if distance, ok := pathEigyoKiloStrict(pathGraph, segment); ok {
+			return distance, true
+		}
+		if fallbackGraph != nil {
+			if distance, ok := pathEigyoKiloStrict(fallbackGraph, segment); ok {
+				return distance, true
+			}
+		}
+		// 既存の一時駅など、隣接駅間を物理ショートカットで表す入力は
+		// 従来の距離解決へ戻します。
+		if distance, ok := pathEigyoKilo(pathGraph, segment); ok {
+			return distance, true
+		}
+		return 0, false
 	}
 
-	shortest, err := g.FindShortestPathGisei(centerID, endpointID)
+	shortest, err := pathGraph.FindShortestPathGisei(centerID, endpointID)
 	if err != nil || shortest == nil || len(shortest.StationIDs) == 0 {
 		return 0, false
 	}
-	return pathEigyoKilo(g, shortest.StationIDs)
+	return pathEigyoKilo(pathGraph, shortest.StationIDs)
 }
 
 func pathEigyoKilo(g graph.TopologyProvider, path []int) (domain.DeciKilo, bool) {
@@ -437,6 +468,24 @@ func pathEigyoKilo(g graph.TopologyProvider, path []int) (domain.DeciKilo, bool)
 				break
 			}
 			if found {
+				break
+			}
+		}
+		if !found {
+			return 0, false
+		}
+	}
+	return total, true
+}
+
+func pathEigyoKiloStrict(g graph.TopologyProvider, path []int) (domain.DeciKilo, bool) {
+	var total domain.DeciKilo
+	for i := 0; i+1 < len(path); i++ {
+		found := false
+		for _, edge := range g.GetEdges(path[i]) {
+			if edge.ToID == path[i+1] {
+				total += edge.EigyoKilo
+				found = true
 				break
 			}
 		}

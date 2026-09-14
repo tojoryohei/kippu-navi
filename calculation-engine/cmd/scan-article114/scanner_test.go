@@ -6,6 +6,7 @@ import (
 	"calculation-engine/internal/ticket/graph"
 	ticketgraphio "calculation-engine/internal/ticket/infra/graphio"
 	ticketusecase "calculation-engine/internal/ticket/usecase"
+	"reflect"
 	"testing"
 )
 
@@ -214,6 +215,64 @@ func TestArticle114RegressionRoutes(t *testing.T) {
 		if !ok {
 			t.Errorf("既存調整運賃経路が検証行に含まれていません: %s", key)
 		}
+	}
+}
+
+func TestCheapestShapeRegressionRoutes(t *testing.T) {
+	data, err := newScanData()
+	if err != nil {
+		t.Fatalf("実データの初期化に失敗しました: %v", err)
+	}
+	names := []string{
+		"奥新川", "作並", "熊ケ根", "陸前白沢", "愛子", "陸前落合", "葛岡", "国見", "東北福祉大前", "北山", "北仙台", "東照宮", "仙台",
+		"榴ケ岡", "宮城野原", "陸前原ノ町", "苦竹", "小鶴新田", "福田町", "陸前高砂", "中野栄", "多賀城", "下馬", "西塩釜", "本塩釜", "東塩釜", "陸前浜田", "松島海岸", "高城町", "手樽", "陸前富山", "陸前大塚", "東名", "野蒜", "陸前小野", "鹿妻", "矢本", "東矢本", "陸前赤井", "石巻あゆみ野", "蛇田", "陸前山下", "石巻",
+		"曽波神", "鹿又", "佳景山", "前谷地", "涌谷", "上涌谷", "小牛田",
+		"田尻", "瀬峰", "梅ケ沢", "（北）新田", "石越", "油島", "花泉", "清水原", "有壁", "一ノ関", "山ノ目", "平泉", "前沢", "陸中折居", "水沢", "金ケ崎", "六原", "北上",
+		"新花巻", "似内", "花巻", "村崎野",
+	}
+	path := make([]int, len(names))
+	for i, name := range names {
+		id, ok := data.full.GetID(name)
+		if !ok {
+			t.Fatalf("駅が見つかりません: %s", name)
+		}
+		path[i] = id
+	}
+
+	fareEval := func(candidate []int) (int, error) {
+		result, _, evalErr := data.current.ExecuteWithMode(candidate, 0, "normal")
+		if evalErr != nil {
+			return 0, evalErr
+		}
+		return result.TotalAmount(), nil
+	}
+	selected, err := ticketusecase.SelectCheapestPathWithRouteExtensions(path, data.full, nil, nil, data.zones, fareEval)
+	if err != nil {
+		t.Fatalf("順方向の最安経路計算に失敗しました: %v", err)
+	}
+	forwardResult, _, err := data.current.ExecuteWithMode(selected, 0, "normal")
+	if err != nil {
+		t.Fatalf("順方向の選択経路評価に失敗しました: %v", err)
+	}
+	wantForward := append(append([]int(nil), path...), data.full.GetOrAddID("北上"))
+	if !reflect.DeepEqual(selected, wantForward) || forwardResult.TotalAmount() != 3850 {
+		t.Fatalf("6の字経路の選択結果が不正です: fare=%d path=%v", forwardResult.TotalAmount(), selected)
+	}
+
+	reverse := append([]int(nil), path...)
+	for i, j := 0, len(reverse)-1; i < j; i, j = i+1, j-1 {
+		reverse[i], reverse[j] = reverse[j], reverse[i]
+	}
+	selected, err = ticketusecase.SelectCheapestPathWithRouteExtensions(reverse, data.full, nil, nil, data.zones, fareEval)
+	if err != nil {
+		t.Fatalf("逆方向の最安経路計算に失敗しました: %v", err)
+	}
+	reverseResult, _, err := data.current.ExecuteWithMode(selected, 0, "normal")
+	if err != nil {
+		t.Fatalf("逆方向の選択経路評価に失敗しました: %v", err)
+	}
+	if !reflect.DeepEqual(selected, reverse) || reverseResult.TotalAmount() != 4180 {
+		t.Fatalf("9の字経路の除外結果が不正です: fare=%d path=%v", reverseResult.TotalAmount(), selected)
 	}
 }
 

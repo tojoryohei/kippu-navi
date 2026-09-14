@@ -90,6 +90,10 @@ func TestCorrectPathForModeWithRouteExtensions(t *testing.T) {
 	if !reflect.DeepEqual(got, []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C")}) || evalMode != "normal" {
 		t.Fatalf("対応表経路または評価モードが不正です: path=%v mode=%s", got, evalMode)
 	}
+	got, evalMode, before, err := CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(input, g, corrector, matcher, "cheapest")
+	if err != nil || evalMode != "normal" || !reflect.DeepEqual(got, before) {
+		t.Fatalf("対応表経路が有効日数判定経路として返されませんでした: path=%v before=%v mode=%s err=%v", got, before, evalMode, err)
+	}
 
 	got, evalMode, err = CorrectPathForModeWithRouteExtensions(input, g, corrector, matcher, "normal")
 	if err != nil || !reflect.DeepEqual(got, []int{99}) || evalMode != "normal" {
@@ -131,6 +135,153 @@ func TestSelectCheapestPathWithRouteExtensionsSequentiallyExtendsUntilThreshold(
 	want := []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C"), g.GetOrAddID("D"), g.GetOrAddID("E"), g.GetOrAddID("F"), g.GetOrAddID("G")}
 	if !reflect.DeepEqual(corrected, want) {
 		t.Fatalf("5駅延長の候補が選択されませんでした: got=%v want=%v", corrected, want)
+	}
+}
+
+func TestSelectCheapestPathWithRouteExtensionsAllowsSixShapeOnlyForward(t *testing.T) {
+	g := graph.NewGraph(16)
+	names := []string{"奥新川", "仙台", "石巻", "小牛田", "北上", "新花巻", "花巻", "村崎野"}
+	for i := 0; i+1 < len(names); i++ {
+		addFareExtensionEdge(g, names[i], names[i+1], 100, domain.JREast)
+	}
+	// 既存の北上を終端にもう一度通過する6の字経路です。
+	addFareExtensionEdge(g, "村崎野", "北上", 400, domain.JREast)
+	zone := ticketdomain.SpecialZone{
+		Name:                "仙台市内",
+		MinDistanceDeciKilo: 700,
+		MaxDistanceDeciKilo: 1 << 30,
+		Stations:            []string{"奥新川"},
+	}
+	zones := &ticketgraphio.SpecialZoneRegistry{
+		Zones:          []ticketdomain.SpecialZone{zone},
+		StationToZones: map[string][]ticketdomain.SpecialZone{"奥新川": {zone}},
+	}
+	input := make([]int, len(names))
+	for i, name := range names {
+		input[i] = g.GetOrAddID(name)
+	}
+	wantExtended := append(append([]int(nil), input...), g.GetOrAddID("北上"))
+
+	selected, err := SelectCheapestPathWithRouteExtensions(input, g, nil, nil, zones, func(candidate []int) (int, error) {
+		if reflect.DeepEqual(candidate, wantExtended) {
+			return 3850, nil
+		}
+		return 4180, nil
+	})
+	if err != nil {
+		t.Fatalf("順方向の6の字経路選択に失敗しました: %v", err)
+	}
+	if !reflect.DeepEqual(selected, wantExtended) {
+		t.Fatalf("北上まで延長した6の字経路が選択されませんでした: got=%v want=%v", selected, wantExtended)
+	}
+}
+
+func TestSelectCheapestPathWithRouteExtensionsRejectsNineShapeReverse(t *testing.T) {
+	g := graph.NewGraph(16)
+	names := []string{"奥新川", "仙台", "石巻", "小牛田", "北上", "新花巻", "花巻", "村崎野"}
+	for i := 0; i+1 < len(names); i++ {
+		addFareExtensionEdge(g, names[i], names[i+1], 100, domain.JREast)
+	}
+	addFareExtensionEdge(g, "村崎野", "北上", 400, domain.JREast)
+	zone := ticketdomain.SpecialZone{
+		Name:                "仙台市内",
+		MinDistanceDeciKilo: 700,
+		MaxDistanceDeciKilo: 1 << 30,
+		Stations:            []string{"奥新川"},
+	}
+	zones := &ticketgraphio.SpecialZoneRegistry{
+		Zones:          []ticketdomain.SpecialZone{zone},
+		StationToZones: map[string][]ticketdomain.SpecialZone{"奥新川": {zone}},
+	}
+	input := make([]int, len(names))
+	for i, name := range names {
+		input[len(names)-1-i] = g.GetOrAddID(name)
+	}
+	var evaluated [][]int
+	selected, err := SelectCheapestPathWithRouteExtensions(input, g, nil, nil, zones, func(candidate []int) (int, error) {
+		evaluated = append(evaluated, append([]int(nil), candidate...))
+		return 4180, nil
+	})
+	if err != nil {
+		t.Fatalf("逆方向の経路選択に失敗しました: %v", err)
+	}
+	if !reflect.DeepEqual(selected, input) {
+		t.Fatalf("9の字経路を除外して元の経路を選択しませんでした: got=%v want=%v", selected, input)
+	}
+	if len(evaluated) != 1 || !reflect.DeepEqual(evaluated[0], input) {
+		t.Fatalf("9の字経路が運賃評価されました: evaluated=%v", evaluated)
+	}
+}
+
+func TestSelectCheapestPathWithRouteExtensionsSkipsSequentialExtensionsOnMatch(t *testing.T) {
+	g := graph.NewGraph(8)
+	addFareExtensionEdge(g, "東京", "A", 100, domain.JREast)
+	addFareExtensionEdge(g, "A", "B", 100, domain.JREast)
+	addFareExtensionEdge(g, "B", "C", 200, domain.JREast)
+	addFareExtensionEdge(g, "B", "X", 200, domain.JREast)
+	addFareExtensionEdge(g, "X", "Y", 200, domain.JREast)
+	zone := extensionTestZones("東京", "A", 400)
+	matcher, err := NewRouteExtensionMatcher([]ticketdomain.RouteExtension{{
+		InputPath:  []string{"A", "B"},
+		OutputPath: []string{"A", "B", "X"},
+	}}, g)
+	if err != nil {
+		t.Fatalf("対応表の初期化に失敗しました: %v", err)
+	}
+	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
+	output := []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("X")}
+	var evaluated [][]int
+	selected, err := SelectCheapestPathWithRouteExtensions(input, g, nil, matcher, zone, func(candidate []int) (int, error) {
+		evaluated = append(evaluated, append([]int(nil), candidate...))
+		if reflect.DeepEqual(candidate, output) {
+			return 900, nil
+		}
+		return 1000, nil
+	})
+	if err != nil {
+		t.Fatalf("対応表一致時の経路選択に失敗しました: %v", err)
+	}
+	if !reflect.DeepEqual(selected, output) {
+		t.Fatalf("対応表の出力経路が選択されませんでした: got=%v want=%v", selected, output)
+	}
+	if len(evaluated) != 0 {
+		t.Fatalf("対応表一致時に運賃比較を行いました: evaluated=%v", evaluated)
+	}
+}
+
+func TestSelectCheapestPathWithRouteExtensionsSkipsSequentialExtensionsOnReverseMatch(t *testing.T) {
+	g := graph.NewGraph(8)
+	addFareExtensionEdge(g, "東京", "A", 100, domain.JREast)
+	addFareExtensionEdge(g, "A", "B", 100, domain.JREast)
+	addFareExtensionEdge(g, "B", "C", 200, domain.JREast)
+	addFareExtensionEdge(g, "B", "X", 200, domain.JREast)
+	addFareExtensionEdge(g, "X", "Y", 200, domain.JREast)
+	zone := extensionTestZones("東京", "A", 400)
+	matcher, err := NewRouteExtensionMatcher([]ticketdomain.RouteExtension{{
+		InputPath:  []string{"A", "B"},
+		OutputPath: []string{"A", "B", "X"},
+	}}, g)
+	if err != nil {
+		t.Fatalf("対応表の初期化に失敗しました: %v", err)
+	}
+	input := []int{g.GetOrAddID("B"), g.GetOrAddID("A")}
+	output := []int{g.GetOrAddID("X"), g.GetOrAddID("B"), g.GetOrAddID("A")}
+	var evaluated [][]int
+	selected, err := SelectCheapestPathWithRouteExtensions(input, g, nil, matcher, zone, func(candidate []int) (int, error) {
+		evaluated = append(evaluated, append([]int(nil), candidate...))
+		if reflect.DeepEqual(candidate, output) {
+			return 900, nil
+		}
+		return 1000, nil
+	})
+	if err != nil {
+		t.Fatalf("逆方向の対応表一致時の経路選択に失敗しました: %v", err)
+	}
+	if !reflect.DeepEqual(selected, output) {
+		t.Fatalf("逆方向の対応表出力経路が選択されませんでした: got=%v want=%v", selected, output)
+	}
+	if len(evaluated) != 0 {
+		t.Fatalf("逆方向の対応表一致時に運賃比較を行いました: evaluated=%v", evaluated)
 	}
 }
 
@@ -183,6 +334,32 @@ func TestSequentialRouteExtensionsMeasuresVirtualInputEdges(t *testing.T) {
 	want := []int{g.GetOrAddID("A"), g.GetOrAddID("東京"), g.GetOrAddID("B"), virtualStation, virtualTo, g.GetOrAddID("Y")}
 	if len(candidates) != 1 || !reflect.DeepEqual(candidates[0], want) {
 		t.Fatalf("仮想入力エッジを含む逐次延長が生成されませんでした: got=%v want=%v", candidates, want)
+	}
+}
+
+func TestSequentialRouteExtensionsNeverUsesVirtualEdges(t *testing.T) {
+	g := graph.NewGraph(8)
+	addFareExtensionEdge(g, "東京", "A", 100, domain.JREast)
+	addFareExtensionEdge(g, "A", "B", 100, domain.JREast)
+	virtualFrom := g.GetOrAddID("B")
+	virtualTo := g.GetOrAddID("仮想駅")
+	for _, edge := range []domain.Edge{
+		{FromID: virtualFrom, ToID: virtualTo, EigyoKilo: 200, GiseiKilo: 200, Company: domain.JREast},
+		{FromID: virtualTo, ToID: virtualFrom, EigyoKilo: 200, GiseiKilo: 200, Company: domain.JREast},
+	} {
+		g.AddEdge(ticketdomain.TicketEdge{Edge: edge})
+	}
+	g.PhysicalEdgeCounts = make([]int, len(g.Edges))
+	for i, edges := range g.Edges {
+		g.PhysicalEdgeCounts[i] = len(edges)
+	}
+	g.PhysicalEdgeCounts[virtualFrom]--
+	g.PhysicalEdgeCounts[virtualTo]--
+
+	zones := extensionTestZones("東京", "A", 200)
+	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
+	if candidates := sequentialRouteExtensions(input, g, zones); len(candidates) != 0 {
+		t.Fatalf("仮想エッジを延長候補に含めました: %v", candidates)
 	}
 }
 
@@ -251,7 +428,7 @@ func TestRouteExtensionRegistryIsEmptyAfterRemovingArticle114Routes(t *testing.T
 		t.Fatalf("対応表の読み込みに失敗しました: %v", err)
 	}
 	if got := len(registry.GetRouteExtensions()); got != 0 {
-		t.Fatalf("削除済みの対応表にレコードが残っています: got=%d", got)
+		t.Fatalf("空の経路対応表にレコードが残っています: got=%d", got)
 	}
 }
 
