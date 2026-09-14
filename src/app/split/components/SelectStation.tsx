@@ -4,10 +4,17 @@ import Select, {
   type FilterOptionOption,
   type InputProps,
 } from "react-select";
-import { useState, type FocusEvent, type CSSProperties, useId } from "react";
+import { useState, type FocusEvent, useId } from "react";
 import stationDatas from "@/app/split/data/stationDatas.json";
 
 import type { Station, SelectStationProps } from "@/app/types";
+import { stationSelectStyles } from "./stationSelectStyles";
+
+interface StationInputProps extends SelectStationProps {
+  mode?: "input" | "add";
+  describedBy?: string;
+  className?: string;
+}
 
 const CustomOption = (props: OptionProps<Station>) => (
   <components.Option {...props}>
@@ -40,7 +47,10 @@ const SelectStation = ({
   onChange,
   options,
   isDisabled,
-}: SelectStationProps) => {
+  mode = "input",
+  describedBy,
+  className = "",
+}: StationInputProps) => {
   const stationOptions = options || (stationDatas as Station[]);
   const [inputValue, setInputValue] = useState<string>(value ? value.name : "");
   const [prevValue, setPrevValue] = useState(value);
@@ -72,7 +82,9 @@ const SelectStation = ({
     <div className="my-2 w-full">
       <Select
         instanceId={safeInstanceId}
-        className="station-select"
+        inputId={safeInstanceId}
+        aria-describedby={describedBy}
+        className={`station-select ${className}`}
         classNamePrefix="station-select"
         value={value}
         isDisabled={isDisabled}
@@ -85,7 +97,7 @@ const SelectStation = ({
         onInputChange={(newInputValue, { action }) => {
           if (action === "input-change") {
             setInputValue(newInputValue);
-            onChange(
+            if (mode === "input") onChange(
               newInputValue
                 ? { name: newInputValue, kana: newInputValue, lines: [] }
                 : null,
@@ -95,7 +107,7 @@ const SelectStation = ({
 
         onChange={(newValue) => {
           if (newValue) {
-            setInputValue(newValue.name);
+            setInputValue(mode === "add" ? "" : newValue.name);
             onChange(newValue);
           } else {
             setInputValue("");
@@ -111,15 +123,7 @@ const SelectStation = ({
         filterOption={filterOption}
         noOptionsMessage={() => (inputValue ? "該当する駅がありません" : null)}
 
-        styles={{
-          input: (base) => ({
-            ...base,
-            opacity: "1 !important" as unknown as number,
-            visibility:
-              "visible !important" as unknown as CSSProperties["visibility"],
-            color: "inherit",
-          }),
-        }}
+        styles={stationSelectStyles<Station, false>()}
 
         components={{
           DropdownIndicator: () => null,

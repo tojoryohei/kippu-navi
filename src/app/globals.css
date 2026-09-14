@@ -116,6 +116,19 @@ body {
   box-shadow: none;
 }
 
+/* Keep the non-searchable split selector's keyboard input out of the layout,
+ * including after navigation removes react-select's injected styles. */
+.split-count-select input {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  caret-color: transparent !important;
+  pointer-events: none;
+}
+
 /* isSearchable=false still mounts a tiny focusable input for keyboard access. */
 .line-select input {
   grid-area: 1 / 1 / 2 / 3 !important;

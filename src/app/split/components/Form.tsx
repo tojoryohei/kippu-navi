@@ -9,7 +9,7 @@ import { analytics as posthog } from "@/lib/analytics";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
-import SelectStations from "@/app/split/components/SelectStations";
+import AdvancedOptions from "@/app/split/components/AdvancedOptions";
 import { getApiUrl } from "@/app/lib/api";
 import type { SearchOption, SearchType, SplitApiResponse, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
 
@@ -149,7 +149,6 @@ export default function SplitForm({
             : (isIcPass || isPass ? "pass6" : "ticket")
     );
     const [showAllPatterns, setShowAllPatterns] = useState(false);
-    const [showDetails, setShowDetails] = useState(false);
 
     const lastTrackedSearch = useRef<string>("");
 
@@ -785,51 +784,18 @@ export default function SplitForm({
                         </div>
                     </div>
 
-                    <details
-                        className="rounded-lg border border-slate-200 bg-slate-50"
-                        open={showDetails}
-                        onToggle={(event) => setShowDetails(event.currentTarget.open)}
-                    >
-                        <summary className="cursor-pointer select-none px-4 py-3 font-medium text-slate-700">
-                            詳細オプション
-                        </summary>
-                        <div className="space-y-4 border-t border-slate-200 px-4 py-4">
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="no-split-stations">
-                                    分割禁止駅
-                                </label>
-                                <SelectStations
-                                    instanceId="no-split-stations"
-                                    value={forbiddenStations.filter((station) =>
-                                        station.name !== startStationVal?.name && station.name !== endStationVal?.name
-                                    )}
-                                    onChange={(value) => setValue("forbiddenStations", value)}
-                                    options={(stationDatas as Station[]).filter((station) =>
-                                        station.name !== startStationVal?.name && station.name !== endStationVal?.name
-                                    )}
-                                />
-                                <p className="mt-1 text-xs text-slate-500">選択した駅では分割しません。臨時駅は初期選択されています。</p>
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="max-splits">
-                                    最大分割数
-                                </label>
-                                <select
-                                    id="max-splits"
-                                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
-                                    value={maxSplits}
-                                    onChange={(event) => setValue("maxSplits", Number(event.target.value))}
-                                >
-                                    {!isIcPass && <option value={0}>制限なし</option>}
-                                    {!isIcPass && Array.from({ length: 10 }, (_, index) => index + 1).map((value) => (
-                                        <option key={value} value={value}>{value}回</option>
-                                    ))}
-                                    {isIcPass && <option value={1}>1回</option>}
-                                </select>
-                                {isIcPass && <p className="mt-1 text-xs text-slate-500">IC定期券は1回分割まで指定できます。</p>}
-                            </div>
-                        </div>
-                    </details>
+                    <AdvancedOptions
+                        isIcPass={isIcPass}
+                        maxSplits={maxSplits}
+                        onMaxSplitsChange={(value) => setValue("maxSplits", value)}
+                        stations={forbiddenStations.filter((station) =>
+                            station.name !== startStationVal?.name && station.name !== endStationVal?.name
+                        )}
+                        options={(stationDatas as Station[]).filter((station) =>
+                            station.name !== startStationVal?.name && station.name !== endStationVal?.name
+                        )}
+                        onStationsChange={(value) => setValue("forbiddenStations", value)}
+                    />
 
                     <div className="w-full">
                         <button
