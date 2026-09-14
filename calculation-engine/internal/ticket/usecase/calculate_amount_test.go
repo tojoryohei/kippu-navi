@@ -77,6 +77,36 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("北新地置換後も営業キロは物理経路を使う", func(t *testing.T) {
+		kitashinchiPath := []string{"北新地", "新福島", "海老江", "御幣島", "加島", "尼崎"}
+		originalDistances := []domain.DeciKilo{12, 12, 26, 17, 22}
+		for i, distance := range originalDistances {
+			g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{
+				FromID: id(kitashinchiPath[i]), ToID: id(kitashinchiPath[i+1]),
+				EigyoKilo: distance, GiseiKilo: distance, IsLocal: false, Company: domain.JRCentral,
+			}})
+		}
+		g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{
+			FromID: id("大阪"), ToID: id("塚本"), EigyoKilo: 34, GiseiKilo: 34,
+			IsLocal: false, Company: domain.JRCentral,
+		}})
+		g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{
+			FromID: id("塚本"), ToID: id("尼崎"), EigyoKilo: 43, GiseiKilo: 43,
+			IsLocal: false, Company: domain.JRCentral,
+		}})
+
+		res, err := calc.Execute([]int{id("北新地"), id("新福島"), id("海老江"), id("御幣島"), id("加島"), id("尼崎")})
+		if err != nil {
+			t.Fatalf("Execute() error = %v", err)
+		}
+		if res.TotalEigyoKilo != 89 {
+			t.Errorf("expected physical JR total eigyo kilo 89, got %d", res.TotalEigyoKilo)
+		}
+		if res.TotalPathEigyoKilo != 89 {
+			t.Errorf("expected physical total path eigyo kilo 89, got %d", res.TotalPathEigyoKilo)
+		}
+	})
+
 	t.Run("通過連絡運輸（私鉄区間を含む）", func(t *testing.T) {
 		res, err := calc.Execute([]int{id("A"), id("河原田"), id("津"), id("D")})
 		if err != nil {

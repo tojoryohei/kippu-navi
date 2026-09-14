@@ -12,8 +12,8 @@ import (
 type CalculationResult struct {
 	Fare               int
 	BarrierFreeFee     int
-	TotalEigyoKilo     domain.DeciKilo // JRの合計（運賃計算用）
-	TotalPathEigyoKilo domain.DeciKilo // 私鉄を含めた全経路の合計（有効日数計算用）
+	TotalEigyoKilo     domain.DeciKilo // 物理経路におけるJRの合計（表示・閾値判定用）
+	TotalPathEigyoKilo domain.DeciKilo // 物理経路における全経路の合計（有効日数計算用）
 	FinalPath          []int
 }
 
@@ -139,12 +139,20 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 		return nil, fmt.Errorf("CalculateAmount.Execute: %w", domain.ErrInvalidPath)
 	}
 
-	// 特例運賃計算用の仮想経路を構築（北新地→大阪・塚本などの置換）
-	farePath := u.buildFarePath(path)
+	// 特例運賃計算用の仮想経路を構築する。
+	// 北新地の置換は運賃計算だけに使い、営業キロは置換前の物理経路から求める。
+	farePathBeforeKitashinchi, farePath := u.buildFarePaths(path)
 
 	summary, err := u.analyzePath(farePath)
 	if err != nil {
 		return nil, err
+	}
+	physicalSummary := summary
+	if !sameIntPath(farePathBeforeKitashinchi, farePath) {
+		physicalSummary, err = u.analyzePath(farePathBeforeKitashinchi)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var totalFare int
@@ -277,15 +285,22 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 	return &CalculationResult{
 		Fare:               totalFare,
 		BarrierFreeFee:     barrierFreeFee,
-		TotalEigyoKilo:     summary.totalEigyo,
-		TotalPathEigyoKilo: summary.totalPathEigyo,
+		TotalEigyoKilo:     physicalSummary.totalEigyo,
+		TotalPathEigyoKilo: physicalSummary.totalPathEigyo,
 		FinalPath:          path,
 	}, nil
 }
 
 func (u *CalculateAmount) buildFarePath(path []int) []int {
+	_, farePath := u.buildFarePaths(path)
+	return farePath
+}
+
+// buildFarePaths はゾーンの仮想駅を物理経路へ展開し、
+// 北新地置換前の経路と運賃計算用の置換後経路を返します。
+func (u *CalculateAmount) buildFarePaths(path []int) ([]int, []int) {
 	if len(path) == 0 {
-		return path
+		return path, path
 	}
 	farePath := make([]int, 0, len(path)*2)
 
@@ -300,9 +315,9 @@ func (u *CalculateAmount) buildFarePath(path []int) []int {
 			if i+1 < len(path) {
 				nextName := u.graph.GetName(path[i+1])
 				if route := u.zoneRoutes.GetRoute(name, nextName); route != nil {
-					// 旅客営業規則: 東京都区内・東京山手線内から品川(出口)経由で新横浜へ向かう場合
+					// 旅客営業規則: 東京都区内・東京山手線内から品川経由で新横浜へ向かう場合
 					// 東京・品川間は東海道本線（新幹線）として計算する。
-					// 東京→品川の直接辺は新幹線のみ存在するため、["東京","品川"]と展開するだけで自動的にJRCentral辺が選ばれる。
+					// 東京→品川の直接辺は新幹線のみ存在するため、["東京","品川"]と展開するだけで自動的に新幹線エッジが選ばれる。
 					if (name == "東京都区内" || name == "東京山手線内") && nextName == "品川" && i+2 < len(path) {
 						if u.graph.GetName(path[i+2]) == "新横浜" {
 							if tokyoID, ok := u.graph.GetID("東京"); ok {
@@ -311,7 +326,7 @@ func (u *CalculateAmount) buildFarePath(path []int) []int {
 							}
 						}
 					}
-					// 通常のゾーンルート展開（最後の駅（出口駅）を除いた駅名を追加）
+					// 通常のゾーンルート展開
 					for j, rName := range route {
 						if j < len(route)-1 {
 							if rID, ok := u.graph.GetID(rName); ok {
@@ -325,9 +340,9 @@ func (u *CalculateAmount) buildFarePath(path []int) []int {
 			if i > 0 {
 				prevName := u.graph.GetName(path[i-1])
 				if route := u.zoneRoutes.GetRoute(name, prevName); route != nil {
-					// 旅客営業規則: 新横浜から品川(入口)経由で東京都区内・東京山手線内へ入る場合
+					// 旅客営業規則: 新横浜から品川経由で東京都区内・東京山手線内へ入る場合
 					// 品川・東京間は東海道本線（新幹線）として計算する。
-					// 品川→東京の直接辺は新幹線のみ存在するため、["品川","東京"]と展開するだけで自動的にJRCentral辺が選ばれる。
+					// 品川→東京の直接辺は新幹線のみ存在するため、["品川","東京"]と展開するだけで自動的に新幹線エッジが選ばれる。
 					if (name == "東京都区内" || name == "東京山手線内") && prevName == "品川" && i >= 2 {
 						if u.graph.GetName(path[i-2]) == "新横浜" {
 							if tokyoID, ok := u.graph.GetID("東京"); ok {
@@ -336,7 +351,7 @@ func (u *CalculateAmount) buildFarePath(path []int) []int {
 							}
 						}
 					}
-					// 通常のゾーンルート展開（逆方向: 先頭の駅から颮list[1]まで追加）
+					// 通常のゾーンルート展開
 					for j := len(route) - 2; j >= 0; j-- {
 						if rID, ok := u.graph.GetID(route[j]); ok {
 							farePath = append(farePath, rID)
@@ -349,7 +364,19 @@ func (u *CalculateAmount) buildFarePath(path []int) []int {
 		farePath = append(farePath, id)
 	}
 
-	return u.applyKitashinchiReplacement(farePath)
+	return farePath, u.applyKitashinchiReplacement(farePath)
+}
+
+func sameIntPath(left, right []int) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for i := range left {
+		if left[i] != right[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (u *CalculateAmount) applyKitashinchiReplacement(path []int) []int {
