@@ -180,19 +180,26 @@ func run(args []string) error {
 
 	var wg sync.WaitGroup
 
-	// 経路復元用データの同時保持によるメモリ不足を防ぐ
-	numWorkers := 2
+	// 定期券側の事前計算と同じく、利用可能なCPUコアをすべて使う。
+	numWorkers := runtime.NumCPU()
+	log.Printf("並列ワーカー数: %d", numWorkers)
 	sem := make(chan struct{}, numWorkers)
+	var completedPaths int32
 
 	for i := 0; i < numStations; i++ {
-		if i >= len(ticketFullGraph.Edges) || len(ticketFullGraph.Edges[i]) == 0 {
-			continue
-		}
 		wg.Add(1)
 		sem <- struct{}{}
 		go func(startID int) {
 			defer wg.Done()
 			defer func() { <-sem }()
+
+			if startID >= len(ticketFullGraph.Edges) || len(ticketFullGraph.Edges[startID]) == 0 {
+				current := atomic.AddInt32(&completedPaths, 1)
+				if current%50 == 0 || current == int32(numStations) {
+					log.Printf("経路計算: %d/%d 駅完了", current, numStations)
+				}
+				return
+			}
 
 			// 分割候補の経路探索には物理エッジだけを使う。
 			// 特例ゾーンなどの仮想エッジは、復元した経路を evaluator で運賃評価するときに適用される。
@@ -210,6 +217,11 @@ func run(args []string) error {
 					physicalDistGisei[rowOffset+endID] = uint16(distance)
 				}
 			}
+
+			current := atomic.AddInt32(&completedPaths, 1)
+			if current%50 == 0 || current == int32(numStations) {
+				log.Printf("経路計算: %d/%d 駅完了", current, numStations)
+			}
 		}(i)
 	}
 	wg.Wait()
@@ -222,16 +234,22 @@ func run(args []string) error {
 
 	var wgFares sync.WaitGroup
 	var completedCount int32
+	totalFareTasks := int32(numStations)
 
 	for i := 0; i < numStations; i++ {
-		if i >= len(ticketFullGraph.Edges) || len(ticketFullGraph.Edges[i]) == 0 {
-			continue
-		}
 		wgFares.Add(1)
 		sem <- struct{}{}
 		go func(startID int) {
 			defer wgFares.Done()
 			defer func() { <-sem }()
+
+			if startID >= len(ticketFullGraph.Edges) || len(ticketFullGraph.Edges[startID]) == 0 {
+				current := atomic.AddInt32(&completedCount, 1)
+				if current%50 == 0 || current == totalFareTasks {
+					log.Printf("運賃計算: %d/%d タスク完了", current, totalFareTasks)
+				}
+				return
+			}
 
 			for endID := 0; endID < numStations; endID++ {
 				if startID == endID {
@@ -287,9 +305,8 @@ func run(args []string) error {
 			}
 
 			current := atomic.AddInt32(&completedCount, 1)
-			if current%50 == 0 {
-				log.Printf("進行状況: %d/%d 駅完了", current, numStations)
-				runtime.GC() // Force GC to prevent OOM
+			if current%50 == 0 || current == totalFareTasks {
+				log.Printf("運賃計算: %d/%d タスク完了", current, totalFareTasks)
 			}
 		}(i)
 	}

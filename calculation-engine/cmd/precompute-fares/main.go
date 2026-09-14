@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"sync/atomic"
 
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
@@ -115,6 +116,8 @@ func run(args []string) error {
 	}
 
 	log.Println("全点対最短経路を事前計算しています...")
+	numWorkers := runtime.NumCPU()
+	log.Printf("並列ワーカー数: %d", numWorkers)
 	// Base & IC の Gisei/Eigyo 最短経路前移行配列および距離を計算
 	basePrevGisei := make([][]int, numStations)
 	basePrevEigyo := make([][]int, numStations)
@@ -127,7 +130,8 @@ func run(args []string) error {
 	icDistEigyo := make([][]domain.DeciKilo, numStations)
 
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, runtime.NumCPU())
+	sem := make(chan struct{}, numWorkers)
+	var completedPaths int32
 
 	for i := 0; i < numStations; i++ {
 		wg.Add(1)
@@ -153,6 +157,11 @@ func run(args []string) error {
 				icDistGisei[startID] = dG
 				icDistEigyo[startID] = dE
 			}
+
+			current := atomic.AddInt32(&completedPaths, 1)
+			if current%50 == 0 || current == int32(numStations) {
+				log.Printf("経路計算: %d/%d 駅完了", current, numStations)
+			}
 		}(i)
 	}
 	wg.Wait()
@@ -162,6 +171,8 @@ func run(args []string) error {
 	icFares := make([]int32, 3*numStations*numStations)
 
 	months := []int{1, 3, 6}
+	var completedFareTasks int32
+	totalFareTasks := int32(len(months) * numStations * 2)
 
 	// Base グラフの運賃計算
 	var wgFares sync.WaitGroup
@@ -191,6 +202,11 @@ func run(args []string) error {
 						idx := int32(mIdx)*int32(numStations)*int32(numStations) + int32(startID)*int32(numStations) + int32(endID)
 						baseFares[idx] = int32(fareVal)
 					}
+				}
+
+				current := atomic.AddInt32(&completedFareTasks, 1)
+				if current%50 == 0 || current == totalFareTasks {
+					log.Printf("運賃計算: %d/%d タスク完了", current, totalFareTasks)
 				}
 			}(mIdx, month, i)
 		}
@@ -223,6 +239,11 @@ func run(args []string) error {
 						idx := int32(mIdx)*int32(numStations)*int32(numStations) + int32(startID)*int32(numStations) + int32(endID)
 						icFares[idx] = int32(fareVal)
 					}
+				}
+
+				current := atomic.AddInt32(&completedFareTasks, 1)
+				if current%50 == 0 || current == totalFareTasks {
+					log.Printf("運賃計算: %d/%d タスク完了", current, totalFareTasks)
 				}
 			}(mIdx, month, i)
 		}
