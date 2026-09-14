@@ -14,3 +14,17 @@ type PathAndFare struct {
 	Path []string
 	Fare int
 }
+
+// RouteExtension は、入力経路と、それに対応する延長経路を保持します。
+// 経路は駅名で保持し、実行時にグラフの駅IDへ解決します。
+type RouteExtension struct {
+	InputPath  []string `json:"inputPath"`
+	OutputPath []string `json:"outputPath"`
+}
+
+// RouteExtensionIDs は、WASM実行時に利用する駅IDベースの経路延長対応表です。
+// 駅名JSONを実行バイナリへ埋め込まず、グラフの駅IDだけを保持します。
+type RouteExtensionIDs struct {
+	InputPath  []int32
+	OutputPath []int32
+}
