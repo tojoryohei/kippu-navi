@@ -27,7 +27,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) < 3 {
-		return fmt.Errorf("使用法: precompute-fares <入力JSON> <出力SERVER_BIN>")
+		return fmt.Errorf("使用法: precompute-pass-fares <入力JSON> <出力SERVER_BIN>")
 	}
 
 	inputJSON := args[1]
