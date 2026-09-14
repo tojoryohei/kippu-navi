@@ -4,8 +4,10 @@ import (
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/usecase"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -90,7 +92,27 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	optResult, err := h.search.Execute(startID, endID, reqMonths)
+	maxSections, err := parseMaxSectionsOrSplits(query)
+	if err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if h.search.MaxSectionsLimit() > 0 && query.Has("maxSplits") {
+		if maxSections == 0 || maxSections > h.search.MaxSectionsLimit() {
+			writeErrorResponse(w, http.StatusBadRequest, "IC定期券の最大分割数は1回まで指定できます")
+			return
+		}
+	}
+	if h.search.MaxSectionsLimit() > 0 && !query.Has("maxSplits") && maxSections > h.search.MaxSectionsLimit() {
+		writeErrorResponse(w, http.StatusBadRequest, "IC定期券の最大区間数を超えています")
+		return
+	}
+	lockedStations, err := parseLockedStationIDs(query, h.graph)
+	if err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	optResult, err := h.search.ExecuteWithOptions(startID, endID, reqMonths, maxSections, lockedStations)
 	if err != nil {
 		log.Printf("分割定期券の計算エラー: %v", err)
 
@@ -127,6 +149,56 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}); err != nil {
 		log.Printf("レスポンスのエンコードエラー: %v", err)
 	}
+}
+
+// parseMaxSectionsOrSplits は分割回数指定を内部の最大区間数へ変換します。
+// maxSplits が指定された場合は maxSections より優先します。
+func parseMaxSectionsOrSplits(query url.Values) (int, error) {
+	if query.Has("maxSplits") {
+		raw := query.Get("maxSplits")
+		maxSplits, err := strconv.Atoi(raw)
+		if err != nil || maxSplits < 0 || maxSplits > 10 {
+			return 0, fmt.Errorf("maxSplitsは0以上10以下の整数で指定してください")
+		}
+		if maxSplits == 0 {
+			return 0, nil
+		}
+		return maxSplits + 1, nil
+	}
+	if !query.Has("maxSections") {
+		return 0, nil
+	}
+	raw := query.Get("maxSections")
+	maxSections, err := strconv.Atoi(raw)
+	if err != nil || maxSections < 1 {
+		return 0, fmt.Errorf("maxSectionsは1以上の整数で指定してください")
+	}
+	return maxSections, nil
+}
+
+func parseLockedStationIDs(query url.Values, stations graph.StationProvider) ([]int, error) {
+	values, ok := query["noSplitStation"]
+	if !ok {
+		return nil, nil
+	}
+	ids := make([]int, 0, len(values))
+	seen := make(map[int]struct{}, len(values))
+	for _, name := range values {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			return nil, fmt.Errorf("noSplitStationに空の駅名は指定できません")
+		}
+		id, exists := stations.GetID(name)
+		if !exists {
+			return nil, fmt.Errorf("存在しない分割禁止駅名が含まれています: %s", name)
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }
 
 func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {

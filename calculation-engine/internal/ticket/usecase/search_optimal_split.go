@@ -39,9 +39,16 @@ func (u *SearchOptimalSplit) SetPrecomputedFares(fares []int32) {
 
 // Execute は指定された区間における乗車券の最適な分割パターンを探索します。
 func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, error) {
+	return u.ExecuteWithOptions(startID, endID, maxSections, nil)
+}
+
+// ExecuteWithOptions は分割禁止駅を考慮して、指定された区間の最適分割を探索します。
+// lockedStations に含まれる駅は、経路上に存在しても分割境界として使用しません。
+func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int, lockedStations []int) ([][]int, error) {
 	if startID == endID {
 		return nil, domain.ErrInvalidPath
 	}
+	locked := makeLockedStationSet(lockedStations)
 
 	// 1. 候補駅（candStations）の抽出
 	// 最短経路から駅を抽出します。
@@ -64,7 +71,7 @@ func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, 
 		path := pr.StationIDs
 		n := len(path)
 		if maxSections <= 0 {
-			minCostToEnd, splitPaths := u.searchUnlimitedSplit(path)
+			minCostToEnd, splitPaths := u.searchUnlimitedSplitWithLocks(path, locked)
 			if minCostToEnd < minTotalFare {
 				minTotalFare = minCostToEnd
 				bestResultPaths = nil
@@ -98,7 +105,13 @@ func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, 
 		cache := make([]evalRes, n*n)
 
 		for j := 1; j < n; j++ {
+			if j < n-1 && isLockedStation(path[j], locked) {
+				continue
+			}
 			for i := 0; i < j; i++ {
+				if i > 0 && isLockedStation(path[i], locked) {
+					continue
+				}
 				subPath := path[i : j+1]
 				var cost int
 
@@ -203,6 +216,10 @@ func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, 
 // searchUnlimitedSplit は区間数無制限の最適分割を O(n²) で探索し、
 // 最安運賃となる分割を区間数にかかわらずすべて返します。
 func (u *SearchOptimalSplit) searchUnlimitedSplit(path []int) (int, [][]int) {
+	return u.searchUnlimitedSplitWithLocks(path, nil)
+}
+
+func (u *SearchOptimalSplit) searchUnlimitedSplitWithLocks(path []int, locked map[int]struct{}) (int, [][]int) {
 	n := len(path)
 	dp := make([]int, n)
 	prev := make([][]int, n)
@@ -212,7 +229,13 @@ func (u *SearchOptimalSplit) searchUnlimitedSplit(path []int) (int, [][]int) {
 	dp[0] = 0
 
 	for j := 1; j < n; j++ {
+		if j < n-1 && isLockedStation(path[j], locked) {
+			continue
+		}
 		for i := 0; i < j; i++ {
+			if i > 0 && isLockedStation(path[i], locked) {
+				continue
+			}
 			if dp[i] == math.MaxInt {
 				continue
 			}
@@ -259,6 +282,25 @@ func (u *SearchOptimalSplit) searchUnlimitedSplit(path []int) (int, [][]int) {
 	backtrack(n-1, nil)
 
 	return dp[n-1], results
+}
+
+func makeLockedStationSet(stations []int) map[int]struct{} {
+	if len(stations) == 0 {
+		return nil
+	}
+	locked := make(map[int]struct{}, len(stations))
+	for _, station := range stations {
+		locked[station] = struct{}{}
+	}
+	return locked
+}
+
+func isLockedStation(stationID int, locked map[int]struct{}) bool {
+	if len(locked) == 0 {
+		return false
+	}
+	_, ok := locked[stationID]
+	return ok
 }
 
 func (u *SearchOptimalSplit) segmentFare(path []int) (int, bool) {

@@ -56,3 +56,29 @@ func TestParseMaxSections(t *testing.T) {
 		})
 	}
 }
+
+func TestParseMaxSectionsOrSplits(t *testing.T) {
+	tests := []struct {
+		name    string
+		query   url.Values
+		want    int
+		wantErr bool
+	}{
+		{name: "分割回数0は無制限", query: url.Values{"maxSplits": {"0"}}, want: 0},
+		{name: "分割回数を区間数へ変換", query: url.Values{"maxSplits": {"3"}}, want: 4},
+		{name: "10回まで指定可能", query: url.Values{"maxSplits": {"10"}}, want: 11},
+		{name: "11回はエラー", query: url.Values{"maxSplits": {"11"}}, wantErr: true},
+		{name: "従来の指定を維持", query: url.Values{"maxSections": {"5"}}, want: 5},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseMaxSectionsOrSplits(tt.query)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseMaxSectionsOrSplits() error = %v, wantErr = %v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("parseMaxSectionsOrSplits() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}

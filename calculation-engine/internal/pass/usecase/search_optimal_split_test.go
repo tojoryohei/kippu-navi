@@ -185,6 +185,18 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			t.Fatalf("Execute(1) が失敗しました: %v", err1)
 		}
 
+		lockedResult, errLocked := search0.ExecuteWithOptions(id2("A"), id2("D"), 1, 0, []int{id2("B")})
+		if errLocked != nil {
+			t.Fatalf("分割禁止駅を指定した ExecuteWithOptions が失敗しました: %v", errLocked)
+		}
+		for _, path := range lockedResult {
+			for _, station := range path[1 : len(path)-1] {
+				if station == id2("B") {
+					t.Errorf("分割禁止駅Bが境界に含まれています: %v", path)
+				}
+			}
+		}
+
 		// maxSections=0 の場合は A-B-C-D (長さ4) が含まれるはず
 		hasLength4 := false
 		for _, path := range got0 {

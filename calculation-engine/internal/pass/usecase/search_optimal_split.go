@@ -50,6 +50,13 @@ func NewSearchOptimalSplit(
 
 // Execute は指定された発着駅間の最安分割結果を探索します。
 func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([][]int, error) {
+	return u.ExecuteWithOptions(startID, endID, months, 0, nil)
+}
+
+// ExecuteWithOptions は最大区間数と分割禁止駅を指定して、最適な分割を探索します。
+// maxSections が0以下の場合は、コンストラクタで設定された既定値を使用します。
+func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, months, maxSections int, lockedStations []int) ([][]int, error) {
+	locked := makeLockedStationSet(lockedStations)
 	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
 	if err != nil {
 		return nil, fmt.Errorf("searchOptimalSplit: 最短経路の検索に失敗: %w", err)
@@ -93,7 +100,11 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([][]int, error
 	// 候補駅決定および探索用のスクラッチバッファをプールから調達
 	numStations := int(u.numStations)
 	scratch := dpScratchPool.Get().(*dpScratch)
-	scratch.ensureSize(numStations, u.maxSections, numStations)
+	effectiveMaxSections := maxSections
+	if effectiveMaxSections <= 0 {
+		effectiveMaxSections = u.maxSections
+	}
+	scratch.ensureSize(numStations, effectiveMaxSections, numStations)
 
 	// candFlags の初期化 (Zero-allocation)
 	for i := 0; i < numStations; i++ {
@@ -144,7 +155,7 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([][]int, error
 	}
 	candStations := scratch.candStationsBuf[:candLen]
 
-	_, optimalPaths, err := u.searchOptimalSplitDPMinimal(startID, endID, months, u.maxSections, candStations, scratch)
+	_, optimalPaths, err := u.searchOptimalSplitDPMinimalWithLocks(startID, endID, months, effectiveMaxSections, candStations, scratch, locked)
 
 	// プールへの返却
 	dpScratchPool.Put(scratch)
@@ -167,6 +178,31 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([][]int, error
 	}
 
 	return results, nil
+}
+
+// MaxSectionsLimit はコンストラクタで設定された既定の最大区間数を返します。
+// 0は無制限を表します。
+func (u *SearchOptimalSplit) MaxSectionsLimit() int {
+	return u.maxSections
+}
+
+func makeLockedStationSet(stations []int) map[int]struct{} {
+	if len(stations) == 0 {
+		return nil
+	}
+	locked := make(map[int]struct{}, len(stations))
+	for _, station := range stations {
+		locked[station] = struct{}{}
+	}
+	return locked
+}
+
+func isLockedStation(stationID int, locked map[int]struct{}) bool {
+	if len(locked) == 0 {
+		return false
+	}
+	_, ok := locked[stationID]
+	return ok
 }
 
 type staticListNode struct {
@@ -263,6 +299,10 @@ func monthToIndex(months int) int {
 }
 
 func (u *SearchOptimalSplit) searchOptimalSplitDP(startID, endID, months, maxSections int, candStations []int, scratch *dpScratch) ([]SplitResult, error) {
+	return u.searchOptimalSplitDPWithLocks(startID, endID, months, maxSections, candStations, scratch, nil)
+}
+
+func (u *SearchOptimalSplit) searchOptimalSplitDPWithLocks(startID, endID, months, maxSections int, candStations []int, scratch *dpScratch, locked map[int]struct{}) ([]SplitResult, error) {
 	numStations := int(u.numStations)
 
 	maxK := maxSections
@@ -330,6 +370,9 @@ func (u *SearchOptimalSplit) searchOptimalSplitDP(startID, endID, months, maxSec
 	// 多ステージ DP 遷移 (Dense Local Matrix 形式)
 	for s := 0; s < maxK; s++ {
 		for uIdx := 0; uIdx < N; uIdx++ {
+			if uIdx != startIdx && isLockedStation(candStations[uIdx], locked) {
+				continue
+			}
 			currCost := scratch.distTable[s*N+uIdx]
 			if currCost == INF {
 				continue
@@ -337,6 +380,9 @@ func (u *SearchOptimalSplit) searchOptimalSplitDP(startID, endID, months, maxSec
 
 			uOffset := uIdx * N
 			for vIdx := 0; vIdx < N; vIdx++ {
+				if vIdx != endIdx && isLockedStation(candStations[vIdx], locked) {
+					continue
+				}
 				fareVal := scratch.localFares[uOffset+vIdx]
 				if fareVal <= 0 {
 					continue
@@ -848,6 +894,10 @@ func GetCandStationsBufForTest(scratch interface{}) []int {
 }
 
 func (u *SearchOptimalSplit) searchOptimalSplitDPMinimal(startID, endID, months, maxSections int, candStations []int, scratch *dpScratch) (int, [][]int, error) {
+	return u.searchOptimalSplitDPMinimalWithLocks(startID, endID, months, maxSections, candStations, scratch, nil)
+}
+
+func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID, months, maxSections int, candStations []int, scratch *dpScratch, locked map[int]struct{}) (int, [][]int, error) {
 	numStations := int(u.numStations)
 
 	maxK := maxSections
@@ -915,6 +965,9 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPMinimal(startID, endID, months,
 	// 多ステージ DP 遷移 (Dense Local Matrix 形式)
 	for s := 0; s < maxK; s++ {
 		for uIdx := 0; uIdx < N; uIdx++ {
+			if uIdx != startIdx && isLockedStation(candStations[uIdx], locked) {
+				continue
+			}
 			currCost := scratch.distTable[s*N+uIdx]
 			if currCost == INF {
 				continue
@@ -922,6 +975,9 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPMinimal(startID, endID, months,
 
 			uOffset := uIdx * N
 			for vIdx := 0; vIdx < N; vIdx++ {
+				if vIdx != endIdx && isLockedStation(candStations[vIdx], locked) {
+					continue
+				}
 				fareVal := scratch.localFares[uOffset+vIdx]
 				if fareVal <= 0 {
 					continue

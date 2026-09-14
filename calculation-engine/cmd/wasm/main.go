@@ -1584,6 +1584,22 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 	startName := args[0].String()
 	endName := args[1].String()
+	maxSections := 0
+	if len(args) > 2 && args[2].Type() == js.TypeNumber {
+		maxSplits := args[2].Int()
+		if maxSplits < 0 || maxSplits > 10 {
+			return js.ValueOf(`{"error":"maxSplitsは0以上10以下で指定してください"}`)
+		}
+		if maxSplits > 0 {
+			maxSections = maxSplits + 1
+		}
+	}
+	var lockedNames []string
+	if len(args) > 3 && args[3].Type() == js.TypeString && args[3].String() != "" {
+		if err := json.Unmarshal([]byte(args[3].String()), &lockedNames); err != nil {
+			return js.ValueOf(fmt.Sprintf(`{"error":"noSplitStationの解析に失敗しました: %v"}`, err))
+		}
+	}
 
 	startID, ok := ticketFullGraph.GetID(startName)
 	if !ok {
@@ -1593,10 +1609,23 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 	if !ok {
 		return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, endName))
 	}
+	lockedStations := make([]int, 0, len(lockedNames))
+	seenLocked := make(map[int]struct{}, len(lockedNames))
+	for _, name := range lockedNames {
+		id, exists := ticketFullGraph.GetID(name)
+		if !exists {
+			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
+		}
+		if _, exists := seenLocked[id]; exists {
+			continue
+		}
+		seenLocked[id] = struct{}{}
+		lockedStations = append(lockedStations, id)
+	}
 
 	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
 
-	bestResultPaths, err := search.Execute(startID, endID, 0)
+	bestResultPaths, err := search.ExecuteWithOptions(startID, endID, maxSections, lockedStations)
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf(`{"error":"failed to search optimal split: %v"}`, err))
 	}
