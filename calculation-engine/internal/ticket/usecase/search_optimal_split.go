@@ -391,31 +391,3 @@ func containsPath(paths [][]int, path []int) bool {
 	}
 	return false
 }
-
-func generateCombinations(candidates [][]TicketSplitSegment) [][]TicketSplitSegment {
-	if len(candidates) == 0 {
-		return nil
-	}
-
-	var results [][]TicketSplitSegment
-	var current []TicketSplitSegment
-
-	var backtrack func(depth int)
-	backtrack = func(depth int) {
-		if depth == len(candidates) {
-			combo := make([]TicketSplitSegment, len(current))
-			copy(combo, current)
-			results = append(results, combo)
-			return
-		}
-
-		for _, seg := range candidates[depth] {
-			current = append(current, seg)
-			backtrack(depth + 1)
-			current = current[:len(current)-1]
-		}
-	}
-
-	backtrack(0)
-	return results
-}

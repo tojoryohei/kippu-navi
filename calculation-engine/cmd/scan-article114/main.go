@@ -42,7 +42,7 @@ func run() error {
 	return runScan(scanOptions{CSVPath: *csvPath, JSONPath: *jsonPath, ApplicableOnly: *applicableOnly})
 }
 
-func runScan(options scanOptions) error {
+func runScan(options scanOptions) (runErr error) {
 	if options.CSVPath == "" || options.JSONPath == "" {
 		return fmt.Errorf("出力先を指定してください")
 	}
@@ -60,7 +60,11 @@ func runScan(options scanOptions) error {
 	if err != nil {
 		return err
 	}
-	defer csvFile.Close()
+	defer func() {
+		if closeErr := csvFile.Close(); closeErr != nil && runErr == nil {
+			runErr = fmt.Errorf("候補CSVファイルのクローズに失敗しました: %w", closeErr)
+		}
+	}()
 	w := csv.NewWriter(csvFile)
 	header := []string{"source", "zone", "center", "origin_station", "boundary_station", "outside_station", "direction", "threshold_deci_kilo", "center_b_eigyo", "center_c_eigyo", "center_b_gisei", "center_c_gisei", "ab_eigyo", "ab_gisei", "registered_fare", "raw_ab_fare", "raw_center_c_fare", "current_ab_fare", "current_center_c_fare", "raw_saving", "current_saving", "classification", "adjusted_match", "path_ab", "path_ac", "center_path_c", "error"}
 	if err := w.Write(header); err != nil {

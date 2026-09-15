@@ -893,10 +893,6 @@ func GetCandStationsBufForTest(scratch interface{}) []int {
 	return scratch.(*dpScratch).candStationsBuf
 }
 
-func (u *SearchOptimalSplit) searchOptimalSplitDPMinimal(startID, endID, months, maxSections int, candStations []int, scratch *dpScratch) (int, [][]int, error) {
-	return u.searchOptimalSplitDPMinimalWithLocks(startID, endID, months, maxSections, candStations, scratch, nil)
-}
-
 func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID, months, maxSections int, candStations []int, scratch *dpScratch, locked map[int]struct{}) (int, [][]int, error) {
 	numStations := int(u.numStations)
 

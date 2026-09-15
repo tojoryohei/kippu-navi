@@ -80,7 +80,7 @@ func ClosePrecomputedFares() {
 		mmapData = nil
 	}
 	if mmapFileObj != nil {
-		mmapFileObj.Close()
+		_ = mmapFileObj.Close()
 		mmapFileObj = nil
 	}
 }

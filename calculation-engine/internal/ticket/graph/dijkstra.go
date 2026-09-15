@@ -13,6 +13,7 @@ type PathResult struct {
 	StationIDs []int
 	GiseiKilo  domain.DeciKilo
 	EigyoKilo  domain.DeciKilo
+	pathBuffer *[]int
 }
 
 // node はダイクストラ法で用いる優先度付きキューの要素です。
@@ -437,9 +438,11 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 	for i := endID; i != -1; i = prev[i] {
 		pathLen++
 	}
-	path := pathSlicePool.Get().([]int)[:0]
+	pathBuffer := pathSlicePool.Get().(*[]int)
+	path := (*pathBuffer)[:0]
 	if cap(path) < pathLen {
-		path = make([]int, 0, pathLen)
+		*pathBuffer = make([]int, 0, pathLen)
+		path = *pathBuffer
 	}
 	path = path[:pathLen]
 	curr := endID
@@ -452,13 +455,23 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 		StationIDs: path,
 		GiseiKilo:  dist[endID],
 		EigyoKilo:  eigyoDist[endID],
+		pathBuffer: pathBuffer,
 	}, nil
 }
 
 var pathSlicePool = sync.Pool{
 	New: func() interface{} {
-		return make([]int, 0, 128)
+		path := make([]int, 0, 128)
+		return &path
 	},
+}
+
+func putPathBuffer(pathBuffer *[]int) {
+	if pathBuffer == nil {
+		return
+	}
+	*pathBuffer = (*pathBuffer)[:0]
+	pathSlicePool.Put(pathBuffer)
 }
 
 // YenScratch はYen's Algorithm用の再利用バッファです
@@ -567,16 +580,18 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratch(startID, endI
 			if err == nil {
 				// ルートパスと分岐パスの結合
 				combinedLen := len(rootPath) + len(spurPathResult.StationIDs) - 1
-				combinedIDs := pathSlicePool.Get().([]int)[:0]
+				combinedBuffer := pathSlicePool.Get().(*[]int)
+				combinedIDs := (*combinedBuffer)[:0]
 				if cap(combinedIDs) < combinedLen {
-					combinedIDs = make([]int, 0, combinedLen)
+					*combinedBuffer = make([]int, 0, combinedLen)
+					combinedIDs = *combinedBuffer
 				}
 				combinedIDs = combinedIDs[:combinedLen]
 				copy(combinedIDs, rootPath)
 				copy(combinedIDs[len(rootPath):], spurPathResult.StationIDs[1:])
 
 				// 不要になったspurPathResultのStationIDsをプールに返却
-				pathSlicePool.Put(spurPathResult.StationIDs[:0])
+				putPathBuffer(spurPathResult.pathBuffer)
 
 				// 経路の擬制キロと営業キロの計算
 				giseiVal, eigyoVal := g.getPathKilos(combinedIDs)
@@ -587,9 +602,12 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratch(startID, endI
 							StationIDs: combinedIDs,
 							GiseiKilo:  giseiVal,
 							EigyoKilo:  eigyoVal,
+							pathBuffer: combinedBuffer,
 						})
+						combinedBuffer = nil
 					}
 				}
+				putPathBuffer(combinedBuffer)
 			}
 		}
 
@@ -609,7 +627,7 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratch(startID, endI
 
 	// Bに残った不要なパススライスをプールに返却
 	for _, pr := range B {
-		pathSlicePool.Put(pr.StationIDs[:0])
+		putPathBuffer(pr.pathBuffer)
 	}
 
 	return A, nil

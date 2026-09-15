@@ -400,10 +400,6 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 	return result
 }
 
-func centerDistanceOnPathOrShortest(path []int, centerID, endpointID int, g graph.Graph) (domain.DeciKilo, bool) {
-	return centerDistanceOnPathOrShortestWithFallback(path, centerID, endpointID, g, nil)
-}
-
 func centerDistanceOnPathOrShortestWithFallback(path []int, centerID, endpointID int, pathGraph, fallbackGraph graph.Graph) (domain.DeciKilo, bool) {
 	if centerID == endpointID {
 		return 0, true

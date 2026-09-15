@@ -291,11 +291,6 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 	}, nil
 }
 
-func (u *CalculateAmount) buildFarePath(path []int) []int {
-	_, farePath := u.buildFarePaths(path)
-	return farePath
-}
-
 // buildFarePaths はゾーンの仮想駅を物理経路へ展開し、
 // 北新地置換前の経路と運賃計算用の置換後経路を返します。
 func (u *CalculateAmount) buildFarePaths(path []int) ([]int, []int) {

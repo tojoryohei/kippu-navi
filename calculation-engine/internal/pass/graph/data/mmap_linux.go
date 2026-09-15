@@ -17,19 +17,19 @@ func mmapFile(path string) ([]byte, *os.File, error) {
 
 	fi, err := file.Stat()
 	if err != nil {
-		file.Close()
+		_ = file.Close()
 		return nil, nil, fmt.Errorf("mmap: ファイル情報の取得に失敗しました: %w", err)
 	}
 
 	size := fi.Size()
 	if size == 0 {
-		file.Close()
+		_ = file.Close()
 		return nil, nil, fmt.Errorf("mmap: 空のファイルはマッピングできません")
 	}
 
 	data, err := syscall.Mmap(int(file.Fd()), 0, int(size), syscall.PROT_READ, syscall.MAP_SHARED)
 	if err != nil {
-		file.Close()
+		_ = file.Close()
 		return nil, nil, fmt.Errorf("mmap: メモリマッピングに失敗しました: %w", err)
 	}
 

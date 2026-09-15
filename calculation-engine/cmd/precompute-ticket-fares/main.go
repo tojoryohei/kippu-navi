@@ -27,7 +27,7 @@ func main() {
 	log.Println("事前計算が完了しました。")
 }
 
-func run(args []string) error {
+func run(args []string) (runErr error) {
 	if len(args) < 2 {
 		return fmt.Errorf("使用法: precompute-ticket-fares <出力SERVER_BIN>")
 	}
@@ -317,11 +317,15 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("出力SERVER_BINファイルの作成に失敗しました: %w", err)
 	}
-	defer outServerFile.Close()
+	defer func() {
+		if closeErr := outServerFile.Close(); closeErr != nil && runErr == nil {
+			runErr = fmt.Errorf("出力SERVER_BINファイルのクローズに失敗しました: %w", closeErr)
+		}
+	}()
 
 	magic := [8]byte{'T', 'K', 'S', 'R', 'V', '2', 0, 0}
 	if _, err := outServerFile.Write(magic[:]); err != nil {
-		return fmt.Errorf("Magicの書き込みに失敗しました: %w", err)
+		return fmt.Errorf("magicの書き込みに失敗しました: %w", err)
 	}
 
 	if err := binary.Write(outServerFile, binary.LittleEndian, int32(numStations)); err != nil {
@@ -330,7 +334,7 @@ func run(args []string) error {
 
 	padding := [4]byte{0, 0, 0, 0}
 	if _, err := outServerFile.Write(padding[:]); err != nil {
-		return fmt.Errorf("Paddingの書き込みに失敗しました: %w", err)
+		return fmt.Errorf("paddingの書き込みに失敗しました: %w", err)
 	}
 
 	if err := binary.Write(outServerFile, binary.LittleEndian, baseFares); err != nil {

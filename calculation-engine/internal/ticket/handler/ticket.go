@@ -156,14 +156,18 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		return
+	}
 }
 
 func (h *Ticket) writeError(w http.ResponseWriter, statusCode int, message string, start time.Time) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(ErrorResponse{
+	if err := json.NewEncoder(w).Encode(ErrorResponse{
 		Error: message,
 		Time:  float64(time.Since(start).Nanoseconds()) / 1000000.0,
-	})
+	}); err != nil {
+		return
+	}
 }

@@ -861,8 +861,6 @@ func scannerDataHashes(reg *ticketfareio.Registry) map[string]string {
 	}
 }
 
-func classifyCandidate(c article114Candidate) string { return c.classification }
-
 func isApplicableCandidate(c article114Candidate) bool {
 	return c.classification == classificationUncovered || c.classification == classificationCovered
 }

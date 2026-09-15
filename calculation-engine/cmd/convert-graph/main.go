@@ -27,7 +27,7 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("JSONファイルのオープンに失敗しました: %w", err)
 	}
-	defer inFile.Close()
+	defer func() { _ = inFile.Close() }()
 
 	jsonLoader := &graphio.JSONLoader{}
 	g, err := jsonLoader.Load(inFile)
@@ -40,10 +40,12 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("バイナリファイルの作成に失敗しました: %w", err)
 	}
-	defer outGobFile.Close()
 
 	if err := graphio.SaveBinary(g, outGobFile); err != nil {
 		return fmt.Errorf("バイナリの保存に失敗しました: %w", err)
+	}
+	if err := outGobFile.Close(); err != nil {
+		return fmt.Errorf("バイナリファイルのクローズに失敗しました: %w", err)
 	}
 
 	log.Printf("検証のためにバイナリを再読み込みします...")
@@ -51,7 +53,7 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("バイナリファイルのオープンに失敗しました: %w", err)
 	}
-	defer outFile.Close()
+	defer func() { _ = outFile.Close() }()
 
 	gobLoader := &graphio.GobLoader{}
 	g2, err := gobLoader.Load(outFile)

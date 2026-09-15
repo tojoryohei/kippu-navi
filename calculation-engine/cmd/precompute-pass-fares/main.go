@@ -25,7 +25,7 @@ func main() {
 	log.Println("事前計算が完了しました。")
 }
 
-func run(args []string) error {
+func run(args []string) (runErr error) {
 	if len(args) < 3 {
 		return fmt.Errorf("使用法: precompute-pass-fares <入力JSON> <出力SERVER_BIN>")
 	}
@@ -38,7 +38,7 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("JSONファイルのオープンに失敗しました: %w", err)
 	}
-	defer inFile.Close()
+	defer func() { _ = inFile.Close() }()
 
 	jsonLoader := &graphio.JSONLoader{}
 	baseGraph, err := jsonLoader.Load(inFile)
@@ -255,12 +255,16 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("出力SERVER_BINファイルの作成に失敗しました: %w", err)
 	}
-	defer outServerFile.Close()
+	defer func() {
+		if closeErr := outServerFile.Close(); closeErr != nil && runErr == nil {
+			runErr = fmt.Errorf("出力SERVER_BINファイルのクローズに失敗しました: %w", closeErr)
+		}
+	}()
 
 	// Magic: 8 bytes ("SRVRBIN\0" アライメント調整済)
 	magic := [8]byte{'S', 'R', 'V', 'R', 'B', 'I', 'N', 0}
 	if _, err := outServerFile.Write(magic[:]); err != nil {
-		return fmt.Errorf("Magicの書き込みに失敗しました: %w", err)
+		return fmt.Errorf("magicの書き込みに失敗しました: %w", err)
 	}
 
 	// NumStations: 4 bytes (int32)
@@ -271,7 +275,7 @@ func run(args []string) error {
 	// Padding: 4 bytes (アライメント調整用)
 	padding := [4]byte{0, 0, 0, 0}
 	if _, err := outServerFile.Write(padding[:]); err != nil {
-		return fmt.Errorf("Paddingの書き込みに失敗しました: %w", err)
+		return fmt.Errorf("paddingの書き込みに失敗しました: %w", err)
 	}
 
 	// これにより、マジック(8) + 駅数(4) + パディング(4) = 16バイトのオフセットから int32 データが始まるため、

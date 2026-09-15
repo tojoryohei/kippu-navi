@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("JSONのオープンに失敗しました: %v", err)
 	}
-	defer inFile.Close()
+	defer func() { _ = inFile.Close() }()
 
 	jsonLoader := &graphio.JSONLoader{}
 	g, err := jsonLoader.Load(inFile)
@@ -92,8 +92,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("出力ファイルの作成に失敗しました: %v", err)
 	}
-	defer outFile.Close()
-
 	// 1. Magic Header: 8 bytes
 	magic := [8]byte{'W', 'A', 'S', 'M', 'G', 'R', 'A', 0}
 	if _, err := outFile.Write(magic[:]); err != nil {
@@ -135,6 +133,9 @@ func main() {
 	// 8. namesBlob: string length bytes
 	if _, err := outFile.Write(namesBlob.Bytes()); err != nil {
 		log.Fatalf("namesBlobの書き込みに失敗しました: %v", err)
+	}
+	if err := outFile.Close(); err != nil {
+		log.Fatalf("出力ファイルのクローズに失敗しました: %v", err)
 	}
 
 	log.Println("Wasm用事前計算データが完了しました。")

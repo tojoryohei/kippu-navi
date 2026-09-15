@@ -525,6 +525,10 @@ export default function SplitForm({
             return "発駅と着駅には異なる駅を指定してください";
         }
 
+        if ((isPass || isIcPass) && TEMPORARY_STATIONS.includes(value.name)) {
+            return "臨時駅発着の定期券は計算できません";
+        }
+
         // IC定期券の時のエリアバリデーション
         if (isIcPass) {
             const startVal = getValues("startStation");
