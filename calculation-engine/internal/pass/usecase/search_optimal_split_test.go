@@ -1,14 +1,14 @@
 package usecase_test
 
 import (
-	"fmt"
-	"math"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/fare"
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/optimizer"
 	"calculation-engine/internal/pass/usecase"
+	"fmt"
+	"math"
 	"testing"
 )
 
@@ -45,7 +45,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 	calcAmount := usecase.NewCalculateAmount(
 		g, reg, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
 		fare.NewTrainSpecificSectionCalculator(dummyTable),
-		fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+		fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
 	)
 
 	split := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount), calcAmount)
@@ -144,7 +144,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		calcAmount2 := usecase.NewCalculateAmount(
 			g2, reg2, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
 			fare.NewTrainSpecificSectionCalculator(dummyTable2),
-			fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+			fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
 		)
 		split2 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount2), calcAmount2)
 		fares2 := precomputeFaresForTest(g2, calcAmount2, nil)
@@ -183,6 +183,18 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		got1, err1 := search1.Execute(id2("A"), id2("D"), 1)
 		if err1 != nil {
 			t.Fatalf("Execute(1) が失敗しました: %v", err1)
+		}
+
+		lockedResult, errLocked := search0.ExecuteWithOptions(id2("A"), id2("D"), 1, 0, []int{id2("B")})
+		if errLocked != nil {
+			t.Fatalf("分割禁止駅を指定した ExecuteWithOptions が失敗しました: %v", errLocked)
+		}
+		for _, path := range lockedResult {
+			for _, station := range path[1 : len(path)-1] {
+				if station == id2("B") {
+					t.Errorf("分割禁止駅Bが境界に含まれています: %v", path)
+				}
+			}
 		}
 
 		// maxSections=0 の場合は A-B-C-D (長さ4) が含まれるはず
@@ -241,7 +253,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		calcAmount3 := usecase.NewCalculateAmount(
 			g3, reg3, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
 			fare.NewTrainSpecificSectionCalculator(dummyTable3),
-			fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+			fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
 		)
 		split3 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount3), calcAmount3)
 		fares3 := precomputeFaresForTest(g3, calcAmount3, nil)
@@ -308,7 +320,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		calcAmount4 := usecase.NewCalculateAmount(
 			g4, reg4, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
 			fare.NewTrainSpecificSectionCalculator(dummyTable4),
-			fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+			fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
 		)
 		split4 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount4), calcAmount4)
 		fares4 := precomputeFaresForTest(g4, calcAmount4, nil)
@@ -383,7 +395,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		calcAmount5 := usecase.NewCalculateAmount(
 			g5, reg5, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
 			fare.NewTrainSpecificSectionCalculator(dummyTable5),
-			fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+			fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
 		)
 		split5 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount5), calcAmount5)
 		fares5 := precomputeFaresForTest(g5, calcAmount5, rules)
@@ -441,7 +453,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		calcAmount6 := usecase.NewCalculateAmount(
 			g6, reg6, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
 			fare.NewTrainSpecificSectionCalculator(dummyTable6),
-			fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+			fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
 		)
 		split6 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount6), calcAmount6)
 		fares6 := precomputeFaresForTest(g6, calcAmount6, nil)
@@ -505,7 +517,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		calcAmount7 := usecase.NewCalculateAmount(
 			g7, reg7, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
 			fare.NewTrainSpecificSectionCalculator(dummyTable7),
-			fare.NewRouteMatcher(), fare.NewRouteMatcher(),
+			fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
 		)
 		split7 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount7), calcAmount7)
 		fares7 := precomputeFaresForTest(g7, calcAmount7, rules)

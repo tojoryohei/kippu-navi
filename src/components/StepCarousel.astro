@@ -1,0 +1,53 @@
+<step-carousel class="block relative mt-4 max-w-sm mx-auto">
+  <div
+    data-track
+    class="flex overflow-x-auto snap-x snap-mandatory scroll-smooth rounded-2xl border border-slate-200 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+  >
+    <slot />
+  </div>
+  <div class="flex justify-between mt-2 px-1">
+    <button
+      type="button"
+      data-prev
+      disabled
+      aria-label="前のステップへ"
+      class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-600 disabled:opacity-30"
+      >← 前へ</button
+    >
+    <button
+      type="button"
+      data-next
+      aria-label="次のステップへ"
+      class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-600 disabled:opacity-30"
+      >次へ →</button
+    >
+  </div>
+</step-carousel>
+<script>
+  class StepCarousel extends HTMLElement {
+    observer?: ResizeObserver;
+    connectedCallback() {
+      const track = this.querySelector<HTMLDivElement>("[data-track]")!;
+      const prev = this.querySelector<HTMLButtonElement>("[data-prev]")!;
+      const next = this.querySelector<HTMLButtonElement>("[data-next]")!;
+      const update = () => {
+        prev.disabled = track.scrollLeft < 10;
+        next.disabled =
+          track.scrollLeft + track.clientWidth >= track.scrollWidth - 10;
+      };
+      prev.onclick = () =>
+        track.scrollBy({ left: -track.clientWidth, behavior: "smooth" });
+      next.onclick = () =>
+        track.scrollBy({ left: track.clientWidth, behavior: "smooth" });
+      track.onscroll = update;
+      this.observer = new ResizeObserver(update);
+      this.observer.observe(track);
+      update();
+    }
+    disconnectedCallback() {
+      this.observer?.disconnect();
+    }
+  }
+  if (!customElements.get("step-carousel"))
+    customElements.define("step-carousel", StepCarousel);
+</script>

@@ -1,7 +1,7 @@
 import { load } from "@/app/utils/load";
 import { calculateTotalEigyoKilo, convertPathStepsToRouteSegments, createRouteKey } from "@/app/utils/calc";
 
-import { PathStep, RouteSegment } from "@/app/types";
+import type { PathStep, RouteSegment } from "@/app/types";
 
 export function correctPath(fullPath: PathStep[]): PathStep[] {
 
@@ -7550,8 +7550,6 @@ function correctSpecificSections(fullPath: PathStep[]): PathStep[] {
             }
         }
     }
-
-    // console.log(fullPath);
 
     // 特殊経由線も追加したか？
     // ["大沼","鹿部","渡島沼尻","渡島砂原","掛澗","尾白内","東森","森"],

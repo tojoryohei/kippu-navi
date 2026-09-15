@@ -3,7 +3,7 @@ package domain
 import (
 	"fmt"
 
-	cDomain "calculation-engine/internal/domain"
+	basedomain "calculation-engine/internal/domain"
 )
 
 // PassPrice は各月数（1, 3, 6ヶ月）の定期運賃を保持します。
@@ -23,20 +23,20 @@ func (f PassPrice) GetByMonths(months int) (int, error) {
 	case 6:
 		return f.SixMonth, nil
 	default:
-		return 0, fmt.Errorf("domain: %w: %d", cDomain.ErrInvalidMonths, months)
+		return 0, fmt.Errorf("domain: %w: %d", basedomain.ErrInvalidMonths, months)
 	}
 }
 
-// RouteAndFare は経路完全一致で適用される特定区間運賃や調整区間運賃を保持します。
-type RouteAndFare struct {
-	Route []string
-	Fare  PassPrice
+// PathAndFare は経路完全一致で適用される特定区間運賃や調整区間運賃を保持します。
+type PathAndFare struct {
+	Path []string
+	Fare PassPrice
 }
 
 // PassFareParams は定期運賃計算の入力パラメータです。
 type PassFareParams struct {
-	RouteType cDomain.RouteType
-	EigyoKilo cDomain.DeciKilo
-	GiseiKilo cDomain.DeciKilo
+	LineType  basedomain.LineType
+	EigyoKilo basedomain.DeciKilo
+	GiseiKilo basedomain.DeciKilo
 	Months    int
 }

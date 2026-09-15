@@ -1,8 +1,8 @@
 package graph
 
 import (
-	"fmt"
 	passdomain "calculation-engine/internal/pass/domain"
+	"fmt"
 )
 
 // NewIcPassGraph はベースとなるグラフから IC定期券対応区間のみを抽出した新しいグラフを生成します。

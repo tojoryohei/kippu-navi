@@ -1,8 +1,8 @@
 package fare
 
 import (
-	"fmt"
 	"calculation-engine/internal/domain"
+	"fmt"
 )
 
 // IsAllBarrierFreeFeeApplicable は指定された全区間がバリアフリー対象エリアに収まっているかを判定します。

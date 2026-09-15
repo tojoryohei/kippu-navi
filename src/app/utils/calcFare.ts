@@ -1,7 +1,7 @@
 import { load } from '@/app/utils/load';
 import { createRouteKey, calculateTotalEigyoKilo, calculateTotalGiseiKilo, isAllTrainSpecificSections, round1000, ceil1000, round10000 } from '@/app/utils/calc';
 
-import { PathStep, RouteSegment } from '@/app/types';
+import type { PathStep, RouteSegment } from '@/app/types';
 
 export function calculateFareFromPath(fullPath: PathStep[]): number {
     if (fullPath.length < 2) throw new Error(`calculateFareFromPath: 経路が不正です。運賃計算には2駅以上の経路が必要です。`);
