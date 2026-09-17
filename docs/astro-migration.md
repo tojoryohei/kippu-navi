@@ -23,17 +23,14 @@
 
 1. 旧フロントエンドのCloudflare Buildsは無効化した状態を維持する。
 2. Google Cloudの旧フロントエンドCloud Buildトリガーが残っていれば無効化する。Go APIのトリガーは別管理。
-3. GitHubのstaging Environmentに既存のCloudflare Secretsを維持する。計測IDは従来の`NEXT_PUBLIC_*` Variablesでも使用可能。Firebase変数は不要。
-4. `CLOUDFLARE_PRODUCTION_ENABLED`は有効化しない。
-5. pushが明示的に許可された段階で開発ブランチへpushする。main以外のブランチは同じステージングへ配信される。
-6. `staging.kippu-navi.com/deployment.json`の環境・コミット・enginePathを確認する。
-7. 実Cloud Run APIによる計算、PostHogのページビューと計算イベント、ブラウザ履歴、モバイル表示を確認する。
-8. Cache Everythingなどの既存Cache RulesがステージングのHTMLを上書きキャッシュしていないことを確認する。Static Assetsの更新管理とは別のルールに注意する。
+3. GitHub Repository SecretsにCloudflareの認証情報を、Repository Variablesに`PUBLIC_*`の計測IDを登録する。Firebase変数は不要。
+4. pushが明示的に許可された段階で開発ブランチへpushする。main以外のブランチは同じステージングへ配信される。
+5. `staging.kippu-navi.com/deployment.json`の環境・コミット・enginePathを確認する。
+6. 実Cloud Run APIによる計算、PostHogのページビューと計算イベント、ブラウザ履歴、モバイル表示を確認する。
+7. Cache Everythingなどの既存Cache RulesがステージングのHTMLを上書きキャッシュしていないことを確認する。Static Assetsの更新管理とは別のルールに注意する。
 
 APIの事前計算データはGitHub Actions上でGCSから取得します。取得後はGCSオブジェクトのMD5と生成元ソースのフィンガープリントを検証し、駅数・バイナリ形式も補助的に確認します。stagingでデータが不足・不一致の場合は現行ソースから生成してDockerイメージへ含めますが、共有GCSは更新しません。
 
-この実装作業ではpush・ステージング配信・本番切り替えを行わない。稼働中のCloud Runサービスも変更しない。
-
 ## 本番切り替え
 
-ステージング確認後に別途実施する。production WorkerのAPI_ORIGIN、ドメインの割り当て、旧Cloud Runへ向くDNS・ルート、Cache Rules、Google Search ConsoleでのURLを確認する。事前計算データが不足・不一致の場合はmainのGitHub Actions上で生成・検証し、Docker build前に共有GCSへ保存します。本番用GCSの更新はmainのWorkflowだけが行います。実装済みの本番自動デプロイ抑止を解除するのは、切り替えを明示的に承認したときだけとする。
+ステージング確認後にmainへマージして本番切り替えを実施する。production WorkerのAPI_ORIGIN、ドメインの割り当て、旧Cloud Runへ向くDNS・ルート、Cache Rules、Google Search ConsoleでのURLを確認する。事前計算データが不足・不一致の場合はmainのGitHub Actions上で生成・検証し、Docker build前に共有GCSへ保存します。本番用GCSの更新はmainのWorkflowだけが行います。

@@ -16,10 +16,8 @@ concurrency:
 
 jobs:
   deploy:
-    # Production stays on Cloud Run until the migration is explicitly enabled.
-    if: >-
-      github.ref_type == 'branch' &&
-      (github.ref != 'refs/heads/main' || vars.CLOUDFLARE_PRODUCTION_ENABLED == 'true')
+    # main deploys production; all other branches share staging.
+    if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
@@ -27,8 +25,8 @@ jobs:
       DEPLOY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
       DEPLOY_COMMIT: ${{ github.sha }}
       ASTRO_TELEMETRY_DISABLED: 1
-      PUBLIC_GOOGLE_ANALYTICS_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID }}
-      PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+      PUBLIC_GOOGLE_ANALYTICS_ID: ${{ vars.PUBLIC_GOOGLE_ANALYTICS_ID }}
+      PUBLIC_POSTHOG_KEY: ${{ vars.PUBLIC_POSTHOG_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

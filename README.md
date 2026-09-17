@@ -79,13 +79,13 @@ npm start
 | `DEPLOY_ENVIRONMENT` | `staging`または`production` |
 | `API_ORIGIN` | Cloudflare Workerの転送先。`wrangler.jsonc`で環境別に指定 |
 
-既存の`.env.local`とGitHub Variablesの`NEXT_PUBLIC_POSTHOG_KEY`、`NEXT_PUBLIC_GOOGLE_ANALYTICS_ID`も移行中は使用できます。Firebaseの変数は不要です。
+`.env.local`とGitHub Repository Variablesには`PUBLIC_POSTHOG_KEY`、`PUBLIC_GOOGLE_ANALYTICS_ID`を設定します。Firebaseの変数は不要です。
 
 WASM・Goランタイム・2種類のBINの内容からSHA-256を計算し、`/engine/<hash>/`へまとめて配置します。UIだけの変更ではエンジンURLは変わりません。エンジンは1年間のimmutableキャッシュ、HTMLはStatic Assetsの更新管理を使います。`deployment.json`で環境・コミット・エンジンバージョンを確認できます。
 
 ## デプロイ
 
-GitHub Actionsの`deploy-frontend.yml`がフロントエンドを配信します。main以外はステージング、mainは本番に対応します。ただし本番は`CLOUDFLARE_PRODUCTION_ENABLED=true`にするまで自動デプロイされません。
+GitHub Actionsの`deploy-frontend.yml`がフロントエンドを配信します。main以外はステージング、mainは本番に対応します。
 
 Astro移行後のフロントエンドでは、Next.js用のDockerfile・Cloud Build設定・Pages Functionsは使用しません。既存の本番Cloud Runサービスをこの変更が削除・更新することはありません。切り替え前にGoogle Cloud側の旧フロントエンドCloud Buildトリガーを無効化してください。Go APIのCloud Runデプロイは`deploy-api.yml`で継続します。
 

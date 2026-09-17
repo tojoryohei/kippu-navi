@@ -18,14 +18,11 @@ export default defineConfig({
     define: {
       // Classic Workers cannot evaluate import.meta, including during Vite dev.
       __WASM_VERSION__: JSON.stringify(env.PUBLIC_WASM_VERSION || ""),
-      // Existing GitHub/local variable names remain usable during migration.
       "import.meta.env.PUBLIC_POSTHOG_KEY": JSON.stringify(
-        env.PUBLIC_POSTHOG_KEY || env.NEXT_PUBLIC_POSTHOG_KEY || "",
+        env.PUBLIC_POSTHOG_KEY || "",
       ),
       "import.meta.env.PUBLIC_GOOGLE_ANALYTICS_ID": JSON.stringify(
-        env.PUBLIC_GOOGLE_ANALYTICS_ID ||
-          env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID ||
-          "",
+        env.PUBLIC_GOOGLE_ANALYTICS_ID || "",
       ),
     },
     server: {
