@@ -85,7 +85,7 @@ WASM・Goランタイム・2種類のBINの内容からSHA-256を計算し、`/e
 
 ## デプロイ
 
-GitHub Actionsの`deploy-frontend.yml`がフロントエンドを配信します。main以外はステージング、mainは本番に対応します。
+GitHub Actionsの`deploy-frontend.yml`がフロントエンドを配信します。通常はmain以外がステージング、mainが本番に対応します。`workflow_dispatch`でproductionを選択すると、`kippu-navi.com`へ接続せず`workers.dev`で本番Workerを検証できます。
 
 Astro移行後のフロントエンドでは、Next.js用のDockerfile・Cloud Build設定・Pages Functionsは使用しません。既存の本番Cloud Runサービスをこの変更が削除・更新することはありません。切り替え前にGoogle Cloud側の旧フロントエンドCloud Buildトリガーを無効化してください。Go APIのCloud Runデプロイは`deploy-api.yml`で継続します。
 

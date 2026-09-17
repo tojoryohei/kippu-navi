@@ -5,24 +5,35 @@ on:
     branches:
       - '**'
   workflow_dispatch:
+    inputs:
+      deploy_environment:
+        description: 'デプロイ先。productionは一時URLでの検証に使用します。'
+        required: true
+        type: choice
+        default: staging
+        options:
+          - staging
+          - production
 
 permissions:
   contents: read
 
-# All development branches share one staging deployment. Do not run uploads in parallel.
+# All development branches share one staging deployment. A manual production run
+# is available for pre-cutover verification while the custom domain remains on proxy.
 concurrency:
-  group: frontend-${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+  group: frontend-${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
   cancel-in-progress: false
 
 jobs:
   deploy:
-    # main deploys production; all other branches share staging.
+    # Pushes deploy main to production and all other branches to staging.
+    # workflow_dispatch can explicitly deploy the current branch to production.
     if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
     env:
-      DEPLOY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      DEPLOY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
       DEPLOY_COMMIT: ${{ github.sha }}
       ASTRO_TELEMETRY_DISABLED: 1
       PUBLIC_GOOGLE_ANALYTICS_ID: ${{ vars.PUBLIC_GOOGLE_ANALYTICS_ID }}
@@ -70,7 +81,7 @@ jobs:
           DEPLOY_SHA: ${{ github.sha }}
         run: |
           if [ "$DEPLOY_ENVIRONMENT" = production ]; then
-            DEPLOY_URL="https://kippu-navi.com"
+            DEPLOY_URL="Cloudflare Worker production（Custom Domain未接続。workers.devで確認）"
           else
             DEPLOY_URL="https://staging.kippu-navi.com"
           fi

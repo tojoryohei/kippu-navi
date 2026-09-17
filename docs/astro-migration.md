@@ -33,4 +33,4 @@ APIの事前計算データはGitHub Actions上でGCSから取得します。取
 
 ## 本番切り替え
 
-ステージング確認後にmainへマージして本番切り替えを実施する。production WorkerのAPI_ORIGIN、ドメインの割り当て、旧Cloud Runへ向くDNS・ルート、Cache Rules、Google Search ConsoleでのURLを確認する。事前計算データが不足・不一致の場合はmainのGitHub Actions上で生成・検証し、Docker build前に共有GCSへ保存します。本番用GCSの更新はmainのWorkflowだけが行います。
+ステージング確認後、`workflow_dispatch`でproduction Workerを`workers.dev`へ一時デプロイして動作確認する。その後、production WorkerのAPI_ORIGIN、`proxy`からの`kippu-navi.com` Custom Domain移行、旧Cloud Runへ向くDNS・ルート、Cache Rules、Google Search ConsoleでのURLを確認する。事前計算データが不足・不一致の場合はmainのGitHub Actions上で生成・検証し、Docker build前に共有GCSへ保存します。本番用GCSの更新はmainのWorkflowだけが行います。

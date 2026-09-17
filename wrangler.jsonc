@@ -26,15 +26,10 @@
     },
     "production": {
       "name": "production",
+      "workers_dev": true,
       "vars": {
         "API_ORIGIN": "https://calculation-engine-198310540092.asia-northeast1.run.app"
-      },
-      "routes": [
-        {
-          "pattern": "kippu-navi.com",
-          "custom_domain": true
-        }
-      ]
+      }
     }
   },
   "observability": {
