@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.7...kippu-navi-v2.22.0) (2026-09-17)
+
+
+### Features
+
+* 計算ロジック書き換え ([#687](https://github.com/tojoryohei/kippu-navi/issues/687)) ([1a31c6f](https://github.com/tojoryohei/kippu-navi/commit/1a31c6fecc56c5911de3352a43ffaf00bf5bfba0))
+
 ## [2.21.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.6...kippu-navi-v2.21.7) (2026-08-15)
 
 
