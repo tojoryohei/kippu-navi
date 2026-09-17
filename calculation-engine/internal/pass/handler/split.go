@@ -92,19 +92,9 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	maxSections, err := parseMaxSectionsOrSplits(query)
+	maxSections, err := resolveMaxSections(query, h.search.MaxSectionsLimit())
 	if err != nil {
 		writeErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if h.search.MaxSectionsLimit() > 0 && query.Has("maxSplits") {
-		if maxSections == 0 || maxSections > h.search.MaxSectionsLimit() {
-			writeErrorResponse(w, http.StatusBadRequest, "IC定期券の最大分割数は1回まで指定できます")
-			return
-		}
-	}
-	if h.search.MaxSectionsLimit() > 0 && !query.Has("maxSplits") && maxSections > h.search.MaxSectionsLimit() {
-		writeErrorResponse(w, http.StatusBadRequest, "IC定期券の最大区間数を超えています")
 		return
 	}
 	lockedStations, err := parseLockedStationIDs(query, h.graph)
@@ -151,29 +141,30 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// parseMaxSectionsOrSplits は分割回数指定を内部の最大区間数へ変換します。
-// maxSplits が指定された場合は maxSections より優先します。
-func parseMaxSectionsOrSplits(query url.Values) (int, error) {
-	if query.Has("maxSplits") {
-		raw := query.Get("maxSplits")
-		maxSplits, err := strconv.Atoi(raw)
-		if err != nil || maxSplits < 0 || maxSplits > 10 {
-			return 0, fmt.Errorf("maxSplitsは0以上10以下の整数で指定してください")
-		}
-		if maxSplits == 0 {
-			return 0, nil
-		}
-		return maxSplits + 1, nil
-	}
-	if !query.Has("maxSections") {
+// parseMaxSplits は分割回数指定を内部の最大区間数へ変換します。
+// 省略または0の場合は0（無制限）を返します。
+func parseMaxSplits(query url.Values) (int, error) {
+	if !query.Has("maxSplits") {
 		return 0, nil
 	}
-	raw := query.Get("maxSections")
-	maxSections, err := strconv.Atoi(raw)
-	if err != nil || maxSections < 1 {
-		return 0, fmt.Errorf("maxSectionsは1以上の整数で指定してください")
+	raw := query.Get("maxSplits")
+	maxSplits, err := strconv.Atoi(raw)
+	if err != nil || maxSplits < 0 || maxSplits > 10 {
+		return 0, fmt.Errorf("maxSplitsは0以上10以下の整数で指定してください")
 	}
-	return maxSections, nil
+	if maxSplits == 0 {
+		return 0, nil
+	}
+	return maxSplits + 1, nil
+}
+
+// resolveMaxSections は固定上限がある場合にクエリ指定を無視します。
+// IC定期券では固定上限の2区間（1分割）が常に使用されます。
+func resolveMaxSections(query url.Values, fixedLimit int) (int, error) {
+	if fixedLimit > 0 {
+		return fixedLimit, nil
+	}
+	return parseMaxSplits(query)
 }
 
 func parseLockedStationIDs(query url.Values, stations graph.StationProvider) ([]int, error) {

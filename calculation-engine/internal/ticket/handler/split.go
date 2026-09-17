@@ -84,7 +84,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	maxSections, err := parseMaxSectionsOrSplits(query)
+	maxSections, err := parseMaxSplits(query)
 	if err != nil {
 		writeErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
@@ -129,36 +129,21 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// parseMaxSections は省略時に0（無制限）を返します。
-// 指定する場合は、分割後の最大区間数を1以上の整数で渡します。
-func parseMaxSections(query url.Values) (int, error) {
-	if !query.Has("maxSections") {
+// parseMaxSplits は分割回数指定を内部の最大区間数へ変換します。
+// 省略または0の場合は0（無制限）を返します。
+func parseMaxSplits(query url.Values) (int, error) {
+	if !query.Has("maxSplits") {
 		return 0, nil
 	}
-
-	raw := query.Get("maxSections")
-	maxSections, err := strconv.Atoi(raw)
-	if err != nil || maxSections < 1 {
-		return 0, fmt.Errorf("maxSectionsは1以上の整数で指定してください")
+	raw := query.Get("maxSplits")
+	maxSplits, err := strconv.Atoi(raw)
+	if err != nil || maxSplits < 0 || maxSplits > 10 {
+		return 0, fmt.Errorf("maxSplitsは0以上10以下の整数で指定してください")
 	}
-	return maxSections, nil
-}
-
-// parseMaxSectionsOrSplits は新しい分割回数指定を区間数へ変換します。
-// maxSplits が指定された場合は maxSections より優先します。
-func parseMaxSectionsOrSplits(query url.Values) (int, error) {
-	if query.Has("maxSplits") {
-		raw := query.Get("maxSplits")
-		maxSplits, err := strconv.Atoi(raw)
-		if err != nil || maxSplits < 0 || maxSplits > 10 {
-			return 0, fmt.Errorf("maxSplitsは0以上10以下の整数で指定してください")
-		}
-		if maxSplits == 0 {
-			return 0, nil
-		}
-		return maxSplits + 1, nil
+	if maxSplits == 0 {
+		return 0, nil
 	}
-	return parseMaxSections(query)
+	return maxSplits + 1, nil
 }
 
 func parseLockedStationIDs(query url.Values, stations graph.StationProvider) ([]int, error) {
