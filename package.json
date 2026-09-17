@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "astro dev",
     "dev:api": "cd calculation-engine && go run ./cmd/api",
-    "generate:ticket-fares": "cd calculation-engine && go run ./cmd/precompute-ticket-fares ./internal/ticket/data/precomputed_server.bin",
+    "generate:pass-fares": "cd calculation-engine && mkdir -p data/precomputed && go run ./cmd/precompute-pass-fares internal/graphdata/edges.json ./data/precomputed/pass.bin",
+    "generate:ticket-fares": "cd calculation-engine && mkdir -p data/precomputed && go run ./cmd/precompute-ticket-fares ./data/precomputed/ticket.bin",
     "build": "node scripts/build-frontend.mjs",
     "start": "astro preview",
     "lint": "eslint .",

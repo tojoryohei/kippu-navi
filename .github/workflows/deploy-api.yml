@@ -175,8 +175,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ./calculation-engine/internal/pass/graph/data/precomputed_server.bin
-            ./calculation-engine/internal/ticket/data/precomputed_server.bin
+            ./calculation-engine/data/precomputed/pass.bin
+            ./calculation-engine/data/precomputed/ticket.bin
           key: precomputed-server-${{ env.SERVICE_NAME }}-${{ steps.gcs-meta.outputs.pass_checksum_type }}-${{ steps.gcs-meta.outputs.pass_checksum }}-${{ steps.gcs-meta.outputs.ticket_checksum_type }}-${{ steps.gcs-meta.outputs.ticket_checksum }}-${{ steps.gcs-meta.outputs.pass_source_hash }}-${{ steps.gcs-meta.outputs.ticket_source_hash }}
 
       - name: Download or generate Precomputed Server Binary
@@ -204,11 +204,13 @@ jobs:
             fi
             (
               cd calculation-engine
-              go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./internal/pass/graph/data/precomputed_server.bin
+              mkdir -p data/precomputed
+              go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./data/precomputed/pass.bin
             )
             PASS_GENERATED=true
           else
-            gcloud storage cp "$PASS_OBJECT" ./calculation-engine/internal/pass/graph/data/
+            mkdir -p ./calculation-engine/data/precomputed
+            gcloud storage cp "$PASS_OBJECT" ./calculation-engine/data/precomputed/pass.bin
           fi
 
           if [ "$TICKET_MISSING" = true ] || [ "$TICKET_NEEDS_GENERATION" = true ]; then
@@ -219,11 +221,13 @@ jobs:
             fi
             (
               cd calculation-engine
-              go run ./cmd/precompute-ticket-fares ./internal/ticket/data/precomputed_server.bin
+              mkdir -p data/precomputed
+              go run ./cmd/precompute-ticket-fares ./data/precomputed/ticket.bin
             )
             TICKET_GENERATED=true
           else
-            gcloud storage cp "$TICKET_OBJECT" ./calculation-engine/internal/ticket/data/precomputed_server.bin
+            mkdir -p ./calculation-engine/data/precomputed
+            gcloud storage cp "$TICKET_OBJECT" ./calculation-engine/data/precomputed/ticket.bin
           fi
 
           echo "pass_generated=$PASS_GENERATED" >> "$GITHUB_OUTPUT"
@@ -284,8 +288,8 @@ jobs:
             fi
           }
 
-          PASS_BINARY_PATH=./calculation-engine/internal/pass/graph/data/precomputed_server.bin
-          TICKET_BINARY_PATH=./calculation-engine/internal/ticket/data/precomputed_server.bin
+          PASS_BINARY_PATH=./calculation-engine/data/precomputed/pass.bin
+          TICKET_BINARY_PATH=./calculation-engine/data/precomputed/ticket.bin
           if [ "$PASS_NEEDS_GENERATION" = false ]; then
             verify_checksum "$PASS_BINARY_PATH" "$PASS_OBJECT_CHECKSUM_TYPE" "$PASS_OBJECT_CHECKSUM"
           fi
@@ -313,7 +317,7 @@ jobs:
           fi
           (
             cd calculation-engine
-            go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./internal/pass/graph/data/precomputed_server.bin
+            go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./data/precomputed/pass.bin
           )
 
           ACTUAL_STATIONS=$(od -An -t u4 -j8 -N4 "$BINARY_PATH" | tr -d ' ')
@@ -396,13 +400,13 @@ jobs:
 
           if [ "$PASS_GENERATED_ON_FETCH" = true ] || [ "$PASS_GENERATED_ON_VALIDATE" = true ]; then
             publish_and_verify \
-              ./calculation-engine/internal/pass/graph/data/precomputed_server.bin \
+              ./calculation-engine/data/precomputed/pass.bin \
               "$PASS_OBJECT" \
               "$PASS_SOURCE_HASH"
           fi
           if [ "$TICKET_GENERATED" = true ]; then
             publish_and_verify \
-              ./calculation-engine/internal/ticket/data/precomputed_server.bin \
+              ./calculation-engine/data/precomputed/ticket.bin \
               "$TICKET_OBJECT" \
               "$TICKET_SOURCE_HASH"
           fi

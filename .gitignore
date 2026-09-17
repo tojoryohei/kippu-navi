@@ -44,8 +44,7 @@ public/engine/*.bin
 public/wasm/
 
 # calculation-engine large precomputed data
-calculation-engine/internal/pass/graph/data/precomputed_server.bin
-calculation-engine/internal/ticket/data/precomputed_server.bin
+calculation-engine/data/precomputed/*.bin
 
 # TypeScript build info cache
 tsconfig.tsbuildinfo

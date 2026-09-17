@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -33,6 +34,8 @@ import (
 const (
 	// shutdownTimeout はgraceful shutdownの最大待機時間です
 	shutdownTimeout = 10 * time.Second
+	// defaultPrecomputedDataDir はサーバー専用の事前計算データの既定配置です。
+	defaultPrecomputedDataDir = "./data/precomputed"
 )
 
 var localDevelopmentOrigins = map[string]struct{}{
@@ -72,6 +75,10 @@ func run() error {
 		port = "8080" // デフォルト値
 	}
 	listenAddr := ":" + port
+	precomputedDataDir := os.Getenv("PRECOMPUTED_DATA_DIR")
+	if precomputedDataDir == "" {
+		precomputedDataDir = defaultPrecomputedDataDir
+	}
 
 	// グラフの初期化
 	loader := &passgraphio.JSONLoader{}
@@ -156,7 +163,7 @@ func run() error {
 	passSplitUseCase := passusecase.NewFindOptimalSplit(passOptimizer, passAmountCalc)
 
 	// 事前計算された運賃および経路データのロード
-	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := passdata.LoadPrecomputedFares("./internal/pass/graph/data/precomputed_server.bin")
+	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := passdata.LoadPrecomputedFares(filepath.Join(precomputedDataDir, "pass.bin"))
 	if err != nil {
 		return fmt.Errorf("事前計算された運賃データのロードに失敗しました: %w", err)
 	}
@@ -316,7 +323,7 @@ func run() error {
 
 	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
 
-	ticketFares, ticketDistGisei, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares("./internal/ticket/data/precomputed_server.bin")
+	ticketFares, ticketDistGisei, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares(filepath.Join(precomputedDataDir, "ticket.bin"))
 	if err != nil {
 		log.Printf("事前計算された乗車券運賃データのロードに失敗しました: %v", err)
 		// 失敗しても起動できるようにする（データが存在しない初期時などのため）
