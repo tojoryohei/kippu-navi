@@ -1,13 +1,20 @@
 # Changelog
 
-## [2.22.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.22.0...kippu-navi-v2.22.1) (2026-09-17)
+## [3.1.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.0.1...kippu-navi-v3.1.0) (2026-09-17)
+
+
+### Features
+
+* PostHogの検索イベント情報を拡充 ([#696](https://github.com/tojoryohei/kippu-navi/issues/696)) ([8fce801](https://github.com/tojoryohei/kippu-navi/commit/8fce801b2997e8ac27069f17998d6a0683098768))
+
+## [3.0.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.0.0...kippu-navi-v3.0.1) (2026-09-17)
 
 
 ### Bug Fixes
 
 * 第157条補正の重複を修正 ([#694](https://github.com/tojoryohei/kippu-navi/issues/694)) ([9c9df7f](https://github.com/tojoryohei/kippu-navi/commit/9c9df7fa7d5be5190e7920016307e8c6baeb8298))
 
-## [2.22.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.7...kippu-navi-v2.22.0) (2026-09-17)
+## [3.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.7...kippu-navi-v3.0.0) (2026-09-17)
 
 
 ### Features
