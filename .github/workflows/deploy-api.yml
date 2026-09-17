@@ -91,16 +91,23 @@ jobs:
           lookup_metadata() {
             local object="$1"
             local error_file="$RUNNER_TEMP/gcs-describe-$(basename "$object").log"
-            local metadata_json md5 source_hash
+            local metadata_json md5 crc32c checksum_type checksum source_hash
 
             if metadata_json=$(gcloud storage objects describe "$object" --format=json 2>"$error_file"); then
-              md5=$(jq -r '.md5Hash // empty' <<< "$metadata_json")
+              md5=$(jq -r '.md5_hash // empty' <<< "$metadata_json")
+              crc32c=$(jq -r '.crc32c_hash // empty' <<< "$metadata_json")
               source_hash=$(jq -r '(.metadata // {})["precompute-source-sha256"] // empty' <<< "$metadata_json")
-              if [ -z "$md5" ]; then
-                echo "GCSオブジェクトのmd5Hashを取得できません: $object" >&2
+              if [ -n "$md5" ]; then
+                checksum_type=md5
+                checksum="$md5"
+              elif [ -n "$crc32c" ]; then
+                checksum_type=crc32c
+                checksum="$crc32c"
+              else
+                echo "GCSオブジェクトのMD5・CRC32Cを取得できません: $object" >&2
                 return 1
               fi
-              printf '%s\t%s\n' "$md5" "$source_hash"
+              printf '%s\t%s\t%s\n' "$checksum_type" "$checksum" "$source_hash"
               return 0
             fi
 
@@ -112,12 +119,13 @@ jobs:
           }
 
           if PASS_METADATA=$(lookup_metadata "$PASS_OBJECT"); then
-            IFS=$'\t' read -r PASS_MD5 PASS_SOURCE_METADATA <<< "$PASS_METADATA"
+            IFS=$'\t' read -r PASS_CHECKSUM_TYPE PASS_CHECKSUM PASS_SOURCE_METADATA <<< "$PASS_METADATA"
             PASS_MISSING=false
           else
             STATUS=$?
             if [ "$STATUS" -eq 2 ]; then
-              PASS_MD5="missing-${GITHUB_SHA}"
+              PASS_CHECKSUM_TYPE=missing
+              PASS_CHECKSUM="missing-${GITHUB_SHA}"
               PASS_SOURCE_METADATA=""
               PASS_MISSING=true
             else
@@ -126,12 +134,13 @@ jobs:
           fi
 
           if TICKET_METADATA=$(lookup_metadata "$TICKET_OBJECT"); then
-            IFS=$'\t' read -r TICKET_MD5 TICKET_SOURCE_METADATA <<< "$TICKET_METADATA"
+            IFS=$'\t' read -r TICKET_CHECKSUM_TYPE TICKET_CHECKSUM TICKET_SOURCE_METADATA <<< "$TICKET_METADATA"
             TICKET_MISSING=false
           else
             STATUS=$?
             if [ "$STATUS" -eq 2 ]; then
-              TICKET_MD5="missing-${GITHUB_SHA}"
+              TICKET_CHECKSUM_TYPE=missing
+              TICKET_CHECKSUM="missing-${GITHUB_SHA}"
               TICKET_SOURCE_METADATA=""
               TICKET_MISSING=true
             else
@@ -147,8 +156,10 @@ jobs:
           GRAPH_STATIONS=$(jq -r '.[].station0, .[].station1' "$GRAPH_PATH" | sort -u | wc -l | tr -d ' ')
           PASS_NEEDS_GENERATION=$([ "$PASS_SOURCE_METADATA" = "$PASS_SOURCE_HASH" ] && echo false || echo true)
           TICKET_NEEDS_GENERATION=$([ "$TICKET_SOURCE_METADATA" = "$TICKET_SOURCE_HASH" ] && echo false || echo true)
-          echo "pass_md5=$PASS_MD5" >> $GITHUB_OUTPUT
-          echo "ticket_md5=$TICKET_MD5" >> $GITHUB_OUTPUT
+          echo "pass_checksum_type=$PASS_CHECKSUM_TYPE" >> $GITHUB_OUTPUT
+          echo "pass_checksum=$PASS_CHECKSUM" >> $GITHUB_OUTPUT
+          echo "ticket_checksum_type=$TICKET_CHECKSUM_TYPE" >> $GITHUB_OUTPUT
+          echo "ticket_checksum=$TICKET_CHECKSUM" >> $GITHUB_OUTPUT
           echo "pass_missing=$PASS_MISSING" >> $GITHUB_OUTPUT
           echo "ticket_missing=$TICKET_MISSING" >> $GITHUB_OUTPUT
           echo "pass_source_hash=$PASS_SOURCE_HASH" >> $GITHUB_OUTPUT
@@ -166,7 +177,7 @@ jobs:
           path: |
             ./calculation-engine/internal/pass/graph/data/precomputed_server.bin
             ./calculation-engine/internal/ticket/data/precomputed_server.bin
-          key: precomputed-server-${{ env.SERVICE_NAME }}-${{ steps.gcs-meta.outputs.pass_md5 }}-${{ steps.gcs-meta.outputs.ticket_md5 }}-${{ steps.gcs-meta.outputs.pass_source_hash }}-${{ steps.gcs-meta.outputs.ticket_source_hash }}
+          key: precomputed-server-${{ env.SERVICE_NAME }}-${{ steps.gcs-meta.outputs.pass_checksum_type }}-${{ steps.gcs-meta.outputs.pass_checksum }}-${{ steps.gcs-meta.outputs.ticket_checksum_type }}-${{ steps.gcs-meta.outputs.ticket_checksum }}-${{ steps.gcs-meta.outputs.pass_source_hash }}-${{ steps.gcs-meta.outputs.ticket_source_hash }}
 
       - name: Download or generate Precomputed Server Binary
         id: prepare-data
@@ -221,8 +232,10 @@ jobs:
       - name: Validate or regenerate precomputed binaries
         id: validate-data
         env:
-          PASS_OBJECT_MD5: ${{ steps.gcs-meta.outputs.pass_md5 }}
-          TICKET_OBJECT_MD5: ${{ steps.gcs-meta.outputs.ticket_md5 }}
+          PASS_OBJECT_CHECKSUM_TYPE: ${{ steps.gcs-meta.outputs.pass_checksum_type }}
+          PASS_OBJECT_CHECKSUM: ${{ steps.gcs-meta.outputs.pass_checksum }}
+          TICKET_OBJECT_CHECKSUM_TYPE: ${{ steps.gcs-meta.outputs.ticket_checksum_type }}
+          TICKET_OBJECT_CHECKSUM: ${{ steps.gcs-meta.outputs.ticket_checksum }}
           PASS_NEEDS_GENERATION: ${{ steps.gcs-meta.outputs.pass_needs_generation }}
           TICKET_NEEDS_GENERATION: ${{ steps.gcs-meta.outputs.ticket_needs_generation }}
         run: |
@@ -231,13 +244,31 @@ jobs:
             openssl dgst -md5 -binary "$1" | base64 -w0
           }
 
-          verify_hash() {
+          crc32c_base64() {
+            gcloud storage hash --skip-md5 "$1" | awk -F': ' '$1 == "crc32c_hash" { print $2 }'
+          }
+
+          checksum_file() {
+            local checksum_type="$1"
+            local path="$2"
+            case "$checksum_type" in
+              md5) md5_base64 "$path" ;;
+              crc32c) crc32c_base64 "$path" ;;
+              *)
+                echo "未対応の事前計算データチェックサム形式です: $checksum_type" >&2
+                return 1
+                ;;
+            esac
+          }
+
+          verify_checksum() {
             local path="$1"
-            local expected="$2"
+            local checksum_type="$2"
+            local expected="$3"
             local actual
-            actual=$(md5_base64 "$path")
+            actual=$(checksum_file "$checksum_type" "$path")
             if [ "$actual" != "$expected" ]; then
-              echo "事前計算データのMD5が一致しません: $path (GCS=$expected, local=$actual)" >&2
+              echo "事前計算データのチェックサムが一致しません: $path (形式=$checksum_type, GCS=$expected, local=$actual)" >&2
               return 1
             fi
           }
@@ -256,10 +287,10 @@ jobs:
           PASS_BINARY_PATH=./calculation-engine/internal/pass/graph/data/precomputed_server.bin
           TICKET_BINARY_PATH=./calculation-engine/internal/ticket/data/precomputed_server.bin
           if [ "$PASS_NEEDS_GENERATION" = false ]; then
-            verify_hash "$PASS_BINARY_PATH" "$PASS_OBJECT_MD5"
+            verify_checksum "$PASS_BINARY_PATH" "$PASS_OBJECT_CHECKSUM_TYPE" "$PASS_OBJECT_CHECKSUM"
           fi
           if [ "$TICKET_NEEDS_GENERATION" = false ]; then
-            verify_hash "$TICKET_BINARY_PATH" "$TICKET_OBJECT_MD5"
+            verify_checksum "$TICKET_BINARY_PATH" "$TICKET_OBJECT_CHECKSUM_TYPE" "$TICKET_OBJECT_CHECKSUM"
           fi
           verify_magic "$PASS_BINARY_PATH" "5352565242494e00"
           verify_magic "$TICKET_BINARY_PATH" "544b535256320000"
@@ -313,19 +344,52 @@ jobs:
             openssl dgst -md5 -binary "$1" | base64 -w0
           }
 
+          crc32c_base64() {
+            gcloud storage hash --skip-md5 "$1" | awk -F': ' '$1 == "crc32c_hash" { print $2 }'
+          }
+
+          checksum_file() {
+            local checksum_type="$1"
+            local path="$2"
+            case "$checksum_type" in
+              md5) md5_base64 "$path" ;;
+              crc32c) crc32c_base64 "$path" ;;
+              *)
+                echo "未対応の事前計算データチェックサム形式です: $checksum_type" >&2
+                return 1
+                ;;
+            esac
+          }
+
+          object_checksum() {
+            local object="$1"
+            local metadata_json md5 crc32c
+            metadata_json=$(gcloud storage objects describe "$object" --format=json)
+            md5=$(jq -r '.md5_hash // empty' <<< "$metadata_json")
+            crc32c=$(jq -r '.crc32c_hash // empty' <<< "$metadata_json")
+            if [ -n "$md5" ]; then
+              printf '%s\t%s\n' md5 "$md5"
+            elif [ -n "$crc32c" ]; then
+              printf '%s\t%s\n' crc32c "$crc32c"
+            else
+              echo "アップロード後のGCSオブジェクトにMD5・CRC32Cがありません: $object" >&2
+              return 1
+            fi
+          }
+
           publish_and_verify() {
             local path="$1"
             local object="$2"
             local source_hash="$3"
-            local local_md5 uploaded_md5
+            local local_checksum uploaded_checksum checksum_type uploaded_checksum_type
 
             gcloud storage cp "$path" "$object"
             gcloud storage objects update "$object" \
               --update-custom-metadata="precompute-source-sha256=${source_hash}"
-            local_md5=$(md5_base64 "$path")
-            uploaded_md5=$(gcloud storage objects describe "$object" --format='value(md5Hash)')
-            if [ "$local_md5" != "$uploaded_md5" ]; then
-              echo "GCSへアップロードした事前計算データのMD5が一致しません: $object (local=$local_md5, GCS=$uploaded_md5)" >&2
+            IFS=$'\t' read -r uploaded_checksum_type uploaded_checksum <<< "$(object_checksum "$object")"
+            local_checksum=$(checksum_file "$uploaded_checksum_type" "$path")
+            if [ "$local_checksum" != "$uploaded_checksum" ]; then
+              echo "GCSへアップロードした事前計算データのチェックサムが一致しません: $object (形式=$uploaded_checksum_type, local=$local_checksum, GCS=$uploaded_checksum)" >&2
               return 1
             fi
           }

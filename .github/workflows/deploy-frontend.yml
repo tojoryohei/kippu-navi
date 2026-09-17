@@ -48,13 +48,6 @@ jobs:
           node-version: '24'
           cache: npm
 
-      - name: Verify staging domain isolation
-        if: env.DEPLOY_ENVIRONMENT == 'staging'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: node scripts/check-staging-target.mjs
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -63,6 +56,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Verify staging domain isolation
+        if: env.DEPLOY_ENVIRONMENT == 'staging'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/check-staging-target.mjs
 
       - name: Build frontend
         run: npm run build

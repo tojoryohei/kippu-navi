@@ -1,6 +1,100 @@
 import { readFileSync } from 'node:fs';
 
-const config = JSON.parse(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+function parseJsonc(source) {
+  let withoutComments = '';
+  let inString = false;
+  let escaped = false;
+  let lineComment = false;
+  let blockComment = false;
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    const nextCharacter = source[index + 1];
+
+    if (lineComment) {
+      if (character === '\n') {
+        lineComment = false;
+        withoutComments += character;
+      }
+      continue;
+    }
+
+    if (blockComment) {
+      if (character === '*' && nextCharacter === '/') {
+        blockComment = false;
+        index += 1;
+      } else if (character === '\n') {
+        withoutComments += character;
+      }
+      continue;
+    }
+
+    if (inString) {
+      withoutComments += character;
+      if (escaped) {
+        escaped = false;
+      } else if (character === '\\') {
+        escaped = true;
+      } else if (character === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (character === '"') {
+      inString = true;
+      withoutComments += character;
+    } else if (character === '/' && nextCharacter === '/') {
+      lineComment = true;
+      index += 1;
+    } else if (character === '/' && nextCharacter === '*') {
+      blockComment = true;
+      index += 1;
+    } else {
+      withoutComments += character;
+    }
+  }
+
+  let json = '';
+  inString = false;
+  escaped = false;
+  for (let index = 0; index < withoutComments.length; index += 1) {
+    const character = withoutComments[index];
+
+    if (inString) {
+      json += character;
+      if (escaped) {
+        escaped = false;
+      } else if (character === '\\') {
+        escaped = true;
+      } else if (character === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (character === '"') {
+      inString = true;
+      json += character;
+      continue;
+    }
+
+    if (character === ',') {
+      let nextIndex = index + 1;
+      while (/\s/.test(withoutComments[nextIndex] ?? '')) nextIndex += 1;
+      if (withoutComments[nextIndex] === '}' || withoutComments[nextIndex] === ']') {
+        index = nextIndex - 1;
+        continue;
+      }
+    }
+
+    json += character;
+  }
+
+  return JSON.parse(json);
+}
+
+const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
 const target = config.env.staging.name;
 const account = process.env.CLOUDFLARE_ACCOUNT_ID;
 const token = process.env.CLOUDFLARE_API_TOKEN;
