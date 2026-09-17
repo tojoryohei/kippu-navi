@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.1...kippu-navi-v3.1.2) (2026-09-17)
+
+
+### Bug Fixes
+
+* 無制限時の分割数パラメーターを省略 ([#700](https://github.com/tojoryohei/kippu-navi/issues/700)) ([fee2aca](https://github.com/tojoryohei/kippu-navi/commit/fee2acaaef203d42a60f9b3e0545d934d22a4f2b))
+
 ## [3.1.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.0...kippu-navi-v3.1.1) (2026-09-17)
 
 
