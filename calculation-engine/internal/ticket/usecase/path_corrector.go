@@ -207,7 +207,7 @@ func NewRule157Corrector() *SpecificSectionCorrector {
 			{
 				// （41）居能以遠（宇部新川方面）の各駅と、小野田以遠（厚狭方面）の各駅との相互間（宇部線及び山陽本線経由、小野田線経由）
 				from:        []string{"居能", "妻崎", "長門長沢", "雀田", "小野田港", "南小野田", "南中川", "目出", "小野田"},
-				to:          []string{"居能", "岩鼻", "宇部", "小野田", "厚狭"},
+				to:          []string{"居能", "岩鼻", "宇部", "小野田"},
 				validBefore: []string{"宇部新川"},
 				validAfter:  []string{"厚狭"},
 			},
