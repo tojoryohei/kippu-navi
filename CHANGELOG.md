@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.2...kippu-navi-v3.1.3) (2026-09-17)
+
+
+### Bug Fixes
+
+* 偕楽園経由区間をIC定期券の対象に修正 ([#702](https://github.com/tojoryohei/kippu-navi/issues/702)) ([aa0a170](https://github.com/tojoryohei/kippu-navi/commit/aa0a170e87afd16f5bc83ebed112072a186dd923))
+
 ## [3.1.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.1...kippu-navi-v3.1.2) (2026-09-17)
 
 
