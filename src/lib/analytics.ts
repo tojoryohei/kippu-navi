@@ -39,6 +39,12 @@ export const analytics = {
   },
 };
 
+const DUPLICATE_ROUTE_ERROR = "経路が重複しています。";
+
+export function getCalculationErrorType(error: string) {
+  return error === DUPLICATE_ROUTE_ERROR ? "duplicate_route" : "calculation_error";
+}
+
 // ClientRouterの初回表示・遷移完了ごとに一度呼ぶ。URLだけの更新は計算イベントで記録する。
 export function trackPageView() {
   initialize();

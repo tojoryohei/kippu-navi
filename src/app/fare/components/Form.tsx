@@ -2,7 +2,7 @@ import { useForm, Controller, type SubmitHandler, useFieldArray, useWatch } from
 import type { SingleValue } from "react-select";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
-import { analytics as posthog } from "@/lib/analytics";
+import { analytics as posthog, getCalculationErrorType } from "@/lib/analytics";
 
 import stationData from "@/app/fare/data/stations.json";
 import lineData from "@/app/fare/data/lines.json";
@@ -510,7 +510,7 @@ export default function Form({
                         search_type: currentSearchType,
                         calculation_mode: calculationMode,
                         route,
-                        error_type: "calculation_error",
+                        error_type: getCalculationErrorType(error),
                         error_message: error,
                     };
 
