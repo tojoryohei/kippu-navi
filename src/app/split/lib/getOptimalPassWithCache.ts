@@ -1,4 +1,4 @@
-import type { PassCacheResult, SplitPassResult } from '@/app/types';
+import type { SplitCacheResult, SplitStationResponse } from '@/app/types';
 import { getApiUrl } from '@/app/lib/api';
 
 export async function getOptimalPassWithCache(
@@ -8,7 +8,7 @@ export async function getOptimalPassWithCache(
     isIc: boolean,
     noSplitStations: string[] = [],
     maxSplits = isIc ? 1 : 0,
-): Promise<PassCacheResult | null> {
+): Promise<SplitCacheResult | null> {
     const startTime = performance.now();
 
     const params = new URLSearchParams({
@@ -36,22 +36,15 @@ export async function getOptimalPassWithCache(
         throw new Error(errData.error || "サーバー内部でエラーが発生しました。");
     }
 
-    const data = await response.json();
+    const data: SplitStationResponse = await response.json();
 
     if (data.error) {
         throw new Error(data.error);
     }
 
-    const result: SplitPassResult = {
-        passStations: {
-            normal: data.normal || [],
-            splitPatterns: data.splitPatterns || data.results || []
-        }
-    };
-
     const endTime = performance.now();
     return {
-        data: result,
+        data,
         isCacheHit: false,
         time: endTime - startTime,
     };

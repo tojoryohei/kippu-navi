@@ -1,4 +1,27 @@
 /// <reference lib="webworker.importscripts" />
+interface SplitCalculationSegment {
+  start: string;
+  end: string;
+  path: string[];
+  via: string[];
+  totalEigyoKilo: number;
+  result?: {
+    Fare: number;
+    BarrierFreeFee: number;
+    Charge?: number;
+  };
+}
+
+interface SplitCalculationResult {
+  totalAmount: number;
+  segments: SplitCalculationSegment[];
+}
+
+interface SplitCalculationResponse {
+  normal: SplitCalculationResult | null;
+  results: SplitCalculationResult[];
+}
+
 // Blob Worker環境でも正しいオリジンを抽出するヘルパー関数
 function getBaseOrigin(): string {
   if (typeof self === 'undefined' || !self.location) return '';
@@ -49,24 +72,6 @@ interface WorkerGlobalScope {
   calculateOptimalSplitTicket(startStationName: string, endStationName: string, maxSplits?: number, noSplitStationsJson?: string): string;
 }
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
-
-interface WasmSegment {
-  start: string;
-  end: string;
-  path: string[];
-  via: string[];
-  totalEigyoKilo?: number;
-  result?: {
-    Fare: number;
-    BarrierFreeFee: number;
-    Charge: number;
-  };
-}
-
-interface WasmResultResponse {
-  totalAmount: number;
-  segments: WasmSegment[];
-}
 
 const go = new Go();
 let wasmInstance: WebAssembly.Instance | null = null;
@@ -214,8 +219,8 @@ onmessage = async (e: MessageEvent) => {
 
     const { splitPaths, months, isIc, isTicket, requestId } = payload;
     try {
-      const combinedResults: WasmResultResponse[] = [];
-      let normalResult: WasmResultResponse | null = null;
+      const combinedResults: SplitCalculationResult[] = [];
+      let normalResult: SplitCalculationResult | null = null;
 
       for (const path of splitPaths) {
         // splitStations は JSON 文字列として Go に渡す
@@ -245,10 +250,10 @@ onmessage = async (e: MessageEvent) => {
 
       // 重複する経路（同一 segments）がある場合は排除しつつ、最安順にソート
       const seenPaths = new Set<string>();
-      const uniqueResults: WasmResultResponse[] = [];
+      const uniqueResults: SplitCalculationResult[] = [];
 
       for (const res of combinedResults) {
-        const pathKey = res.segments.map((seg: WasmSegment) => `${seg.start}-${seg.end}:${seg.path.join(',')}`).join('|');
+        const pathKey = res.segments.map((seg: SplitCalculationSegment) => `${seg.start}-${seg.end}:${seg.path.join(',')}`).join('|');
         if (!seenPaths.has(pathKey)) {
           seenPaths.add(pathKey);
           uniqueResults.push(res);
@@ -257,7 +262,11 @@ onmessage = async (e: MessageEvent) => {
 
       uniqueResults.sort((a, b) => a.totalAmount - b.totalAmount);
 
-      postMessage({ type: 'success', requestId, result: { normal: normalResult, results: uniqueResults } });
+      const response: SplitCalculationResponse = {
+        normal: normalResult,
+        results: uniqueResults,
+      };
+      postMessage({ type: 'success', requestId, result: response });
     } catch (err) {
       postMessage({ type: 'error', requestId: payload?.requestId, error: String(err) });
     }

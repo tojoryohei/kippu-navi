@@ -14,9 +14,10 @@ const version = readFileSync(
 ).trim();
 const destination = join(root, "public/engine");
 mkdirSync(destination, { recursive: true });
+// wasm_exec.js is kept as a checked-in local runtime. Deployment packaging
+// uses the generated runtime directly from .cloudflare-engine instead.
 for (const file of [
   "main.wasm",
-  "wasm_exec.js",
   "pass_graph_data.bin",
   "ticket_graph_data.bin",
 ]) {

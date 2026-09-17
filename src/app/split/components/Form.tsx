@@ -11,7 +11,19 @@ import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
 import AdvancedOptions from "@/app/split/components/AdvancedOptions";
 import { getApiUrl } from "@/app/lib/api";
-import type { SearchOption, SearchType, SplitApiResponse, Station, KippuData, SplitKippuData, SplitKippuDatas } from "@/app/types";
+import type {
+    SearchOption,
+    SearchType,
+    SplitFareResult,
+    Station,
+    SplitFareSummary,
+    SplitFareSegment,
+    SplitFarePlan,
+    SplitStationResponse,
+    SplitCalculationResponse,
+    SplitCalculationResult,
+    SplitCalculationSegment,
+} from "@/app/types";
 
 interface ExtendedSplitFormInput {
     startStation: Station | null;
@@ -28,7 +40,7 @@ interface SplitFormProps {
     initialSearchType?: string;
     initialForbiddenStations?: string[];
     initialMaxSplits?: number;
-    result?: SplitApiResponse | null;
+    result?: SplitFareResult | null;
     error?: string | null;
     serverTime?: number | null;
 }
@@ -40,66 +52,41 @@ const SEARCH_TYPE_OPTIONS: SearchOption[] = [
     { value: "pass6", label: "定期券６箇月" },
 ];
 
-interface WasmSegment {
-    start: string;
-    end: string;
-    path: string[];
-    via: string[];
-    totalEigyoKilo?: number;
-    result?: {
-        Fare: number;
-        BarrierFreeFee: number;
-        Charge: number;
-    };
-}
-
-interface WasmResultResponse {
-    totalAmount: number;
-    segments: WasmSegment[];
-}
-
-interface WasmClientResponse {
-    normal: WasmResultResponse;
-    results: WasmResultResponse[];
-}
-
-function adaptWasmResponseToSplitApiResponse(wasmRes: WasmClientResponse): SplitApiResponse {
+function adaptWasmResponseToSplitFareResult(wasmRes: SplitCalculationResponse): SplitFareResult {
     const normalSegs = wasmRes.normal?.segments || [];
-    const cheapestKippuData: KippuData = {
+    const normal: SplitFareSummary = {
         departureStation: normalSegs[0]?.path ? normalSegs[0].path[0] : (normalSegs[0]?.start || ""),
         arrivalStation: normalSegs[normalSegs.length - 1]?.path ? normalSegs[normalSegs.length - 1].path[normalSegs[normalSegs.length - 1].path.length - 1] : (normalSegs[normalSegs.length - 1]?.end || ""),
-        totalEigyoKilo: normalSegs.reduce((sum: number, s: WasmSegment) => sum + (s.totalEigyoKilo || 0), 0),
-        printedViaLines: normalSegs.flatMap((s: WasmSegment) => s.via || []),
+        totalEigyoKilo: normalSegs.reduce((sum: number, s: SplitCalculationSegment) => sum + (s.totalEigyoKilo || 0), 0),
+        printedViaLines: normalSegs.flatMap((s: SplitCalculationSegment) => s.via || []),
         fare: wasmRes.normal?.totalAmount || 0,
-        validDays: 0,
     };
 
-    const splitKippuDatasList: SplitKippuDatas[] = (wasmRes.results || []).map((res: WasmResultResponse) => {
-        const splitKippuDatas: SplitKippuData[] = (res.segments || []).map((seg: WasmSegment) => {
+    const results: SplitFarePlan[] = (wasmRes.results || []).map((res: SplitCalculationResult) => {
+        const segments: SplitFareSegment[] = (res.segments || []).map((seg: SplitCalculationSegment) => {
             const segFare = (seg.result?.Fare || 0) + (seg.result?.BarrierFreeFee || 0) + (seg.result?.Charge || 0);
             return {
                 departureStation: seg.start,
                 arrivalStation: seg.end,
-                kippuData: {
+                fare: {
                     departureStation: seg.path[0],
                     arrivalStation: seg.path[seg.path.length - 1],
                     totalEigyoKilo: seg.totalEigyoKilo || 0,
                     printedViaLines: seg.via || [],
                     fare: segFare,
-                    validDays: 0,
                 }
             };
         });
 
         return {
             totalFare: res.totalAmount || 0,
-            splitKippuDatas
+            segments,
         };
     });
 
     return {
-        cheapestKippuData,
-        splitKippuDatasList
+        normal,
+        results,
     };
 }
 
@@ -121,7 +108,7 @@ export default function SplitForm({
 
     // ローカルでの計算結果・エラー・計測時間および検索タイプの管理State
     const [isCalculating, setIsCalculating] = useState(false);
-    const [result, setResult] = useState<SplitApiResponse | null>(initialResult || null);
+    const [result, setResult] = useState<SplitFareResult | null>(initialResult || null);
     const [error, setError] = useState<string | null>(initialError || null);
     const [serverTime, setServerTime] = useState<number | null>(initialServerTime || null);
     const [searchedType, setSearchedType] = useState<SearchType>(
@@ -247,7 +234,7 @@ export default function SplitForm({
                 endpoint = "/api/split-pass";
             }
             const apiRes = await fetch(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: abort.signal });
-            const res = await apiRes.json();
+            const res: SplitStationResponse = await apiRes.json();
             if (abort.signal.aborted) return;
             setServerTime(performance.now() - calculationStartedAt);
             if (res.error) {
@@ -318,7 +305,7 @@ export default function SplitForm({
                 } else if (type === "success") {
                     // 最新のリクエストIDと一致する場合のみ結果を反映（古い計算結果を破棄）
                     if (requestId === latestCalcIdRef.current) {
-                        const adaptedResult = adaptWasmResponseToSplitApiResponse(result);
+                        const adaptedResult = adaptWasmResponseToSplitFareResult(result);
                         setResult(adaptedResult);
                     }
                     setIsCalculating(false);
@@ -415,9 +402,9 @@ export default function SplitForm({
             if (lastTrackedSearch.current !== currentSearchKey) {
                 // 1. 正常に計算結果が返ってきた場合
                 if (result) {
-                    const normalFare = result.cheapestKippuData?.fare || 0;
-                    const bestFare = result.splitKippuDatasList?.length > 0
-                        ? result.splitKippuDatasList[0].totalFare
+                    const normalFare = result.normal?.fare || 0;
+                    const bestFare = result.results?.length > 0
+                        ? result.results[0].totalFare
                         : normalFare;
 
                     const savedAmount = Math.max(0, normalFare - bestFare);
@@ -815,30 +802,30 @@ export default function SplitForm({
                             <div className="flex justify-between items-center">
                                 <div>
                                     <div className="text-lg font-bold">
-                                        <span>{result.cheapestKippuData.departureStation}</span>
+                                        <span>{result.normal.departureStation}</span>
                                         <span className="text-gray-400 mx-2">{searchedTypeLabel === "乗車券" ? "→" : "↔"}</span>
-                                        <span>{result.cheapestKippuData.arrivalStation}</span>
-                                        {result.cheapestKippuData.totalEigyoKilo > 0 && (
+                                        <span>{result.normal.arrivalStation}</span>
+                                        {result.normal.totalEigyoKilo > 0 && (
                                             <span className="text-sm font-normal text-gray-600 ml-1">
-                                                （{(result.cheapestKippuData.totalEigyoKilo / 10).toFixed(1)}km）
+                                                （{(result.normal.totalEigyoKilo / 10).toFixed(1)}km）
                                             </span>
                                         )}
                                     </div>
                                     <div className="text-sm text-gray-600 mt-1">
-                                        経由：{result.cheapestKippuData.printedViaLines.join("・") || "---"}
+                                        経由：{result.normal.printedViaLines.join("・") || "---"}
                                     </div>
                                 </div>
                                 <div className="text-3xl font-bold text-gray-800">
-                                    ¥{result.cheapestKippuData.fare.toLocaleString()}
+                                    ¥{result.normal.fare.toLocaleString()}
                                 </div>
                             </div>
                         </section>
 
-                        {result.splitKippuDatasList.length > 0 ? (
+                        {result.results.length > 0 ? (
                             <div className="space-y-6">
                                 {(() => {
-                                    const bestFare = result.splitKippuDatasList[0].totalFare;
-                                    const diff = result.cheapestKippuData.fare - bestFare;
+                                    const bestFare = result.results[0].totalFare;
+                                    const diff = result.normal.fare - bestFare;
                                     const isCheaper = diff > 0;
 
                                     return (
@@ -865,7 +852,7 @@ export default function SplitForm({
                                 })()}
 
                                 <div className="space-y-6">
-                                    {result.splitKippuDatasList.map((splitPlan, planIndex) => {
+                                    {result.results.map((splitPlan, planIndex) => {
                                         if (!showAllPatterns && planIndex > 1) return null;
 
                                         const isFadedItem = !showAllPatterns && planIndex === 1;
@@ -877,14 +864,14 @@ export default function SplitForm({
                                                     }`}
                                             >
                                                 <div className={isFadedItem ? "p-4" : ""}>
-                                                    {result.splitKippuDatasList.length > 1 && (
+                                                    {result.results.length > 1 && (
                                                         <h4 className="font-bold text-gray-700 mb-3 ml-1">
                                                             パターン {planIndex + 1}
                                                         </h4>
                                                     )}
 
                                                     <div className="flex flex-col gap-3">
-                                                        {splitPlan.splitKippuDatas.map((segment, segIndex) => (
+                                                        {splitPlan.segments.map((segment, segIndex) => (
                                                             <div key={segIndex} className="bg-white p-4 rounded border border-gray-200 shadow-sm relative">
                                                                 <div className="text-sm text-gray-500 mb-1 flex items-center">
                                                                     <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs mr-2">利用区間</span>
@@ -895,21 +882,21 @@ export default function SplitForm({
                                                                     <div className="flex-1">
                                                                         <div className="text-lg font-bold text-gray-800 flex items-center flex-wrap gap-2">
                                                                             <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">切符</span>
-                                                                            <span>{segment.kippuData.departureStation}</span>
+                                                                            <span>{segment.fare.departureStation}</span>
                                                                             <span className="text-gray-400">{searchedTypeLabel === "乗車券" ? "→" : "↔"}</span>
-                                                                            <span>{segment.kippuData.arrivalStation}</span>
-                                                                            {segment.kippuData.totalEigyoKilo > 0 && (
+                                                                            <span>{segment.fare.arrivalStation}</span>
+                                                                            {segment.fare.totalEigyoKilo > 0 && (
                                                                                 <span className="text-sm font-normal text-gray-600 ml-1">
-                                                                                    （{(segment.kippuData.totalEigyoKilo / 10).toFixed(1)}km）
+                                                                                    （{(segment.fare.totalEigyoKilo / 10).toFixed(1)}km）
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                         <div className="text-xs text-gray-500 mt-1 ml-10">
-                                                                            経由：{segment.kippuData.printedViaLines.length === 0 ? "---" : segment.kippuData.printedViaLines.join("・")}
+                                                                            経由：{segment.fare.printedViaLines.length === 0 ? "---" : segment.fare.printedViaLines.join("・")}
                                                                         </div>
                                                                     </div>
                                                                     <div className="font-bold text-xl ml-4">
-                                                                        ¥{segment.kippuData.fare.toLocaleString()}
+                                                                        ¥{segment.fare.fare.toLocaleString()}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -934,7 +921,7 @@ export default function SplitForm({
                                         );
                                     })}
 
-                                    {showAllPatterns && result.splitKippuDatasList.length > 1 && (
+                                    {showAllPatterns && result.results.length > 1 && (
                                         <div className="flex justify-center mt-8 pb-4">
                                             <button
                                                 type="button"

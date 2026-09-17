@@ -15,7 +15,7 @@ import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
 import { stringifyRoute, parseRoute } from "@/app/fare/lib/routeParser";
 
-import type { Station, Line, KippuData, IFormInput, PathStep, CalculationMode, SearchType } from "@/app/types";
+import type { Station, Line, TicketFareResult, PassFareResult, TicketFareResponse, IFormInput, PathStep, CalculationMode, SearchType } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 const SHINKANSEN_LINES: Set<string> = new Set(["山形新幹線", "北海道新幹", "九州新幹線", "上越新幹線", "新幹線", "東北新幹線", "西九州新幹", "北陸新幹線"]);
@@ -128,7 +128,7 @@ export default function Form({
     const formValues = useWatch({ control }) as FormValues;
 
     // React state hooks defined before workerRef / useEffect to satisfy ESLint variable declaration order
-    const [result, setResult] = useState<KippuData | null>(null);
+    const [result, setResult] = useState<TicketFareResult | null>(null);
     const [serverTime, setServerTime] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -141,13 +141,7 @@ export default function Form({
     const defaultSearchType = initialSearchType || (isPassPage ? "pass6" : "ticket");
     const [selectedPeriod, setSelectedPeriod] = useState<SearchType>(defaultSearchType);
 
-    const [resultPass, setResultPass] = useState<{
-        fare: number;
-        barrierFreeFee: number;
-        charge: number;
-        totalEigyoKilo: number;
-        printedViaLines?: string[];
-    } | null>(null);
+    const [resultPass, setResultPass] = useState<PassFareResult | null>(null);
     const [correctedStartPass, setCorrectedStartPass] = useState<string>("");
     const [correctedEndPass, setCorrectedEndPass] = useState<string>("");
 
@@ -318,7 +312,7 @@ export default function Form({
                     isWasmReadyRef.current = true;
                 } else if (type === "success_route_pass") {
                     if (requestId === latestCalcIdRef.current) {
-                        setResultPass(wResult);
+                        setResultPass(wResult as PassFareResult);
                         if (wResult.correctedPath) {
                             setCorrectedStartPass(wResult.correctedPath[0] || "");
                             setCorrectedEndPass(wResult.correctedPath[wResult.correctedPath.length - 1] || "");
@@ -328,8 +322,9 @@ export default function Form({
 
                 } else if (type === "success_route_ticket") {
                     if (requestId === latestCalcIdRef.current) {
-                        setResult(wResult.data);
-                        setServerTime(wResult.time);
+                        const ticketResult = wResult as TicketFareResponse;
+                        setResult(ticketResult.data);
+                        setServerTime(ticketResult.time);
                     }
                     setIsLoading(false);
 
