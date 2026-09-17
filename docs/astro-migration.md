@@ -26,7 +26,7 @@
 3. GitHubのstaging Environmentに既存のCloudflare Secretsを維持する。計測IDは従来の`NEXT_PUBLIC_*` Variablesでも使用可能。Firebase変数は不要。
 4. `CLOUDFLARE_PRODUCTION_ENABLED`は有効化しない。
 5. pushが明示的に許可された段階で開発ブランチへpushする。main以外のブランチは同じステージングへ配信される。
-6. `stg.kippu-navi.com/deployment.json`の環境・コミット・enginePathを確認する。
+6. `staging.kippu-navi.com/deployment.json`の環境・コミット・enginePathを確認する。
 7. 実Cloud Run APIによる計算、PostHogのページビューと計算イベント、ブラウザ履歴、モバイル表示を確認する。
 8. Cache Everythingなどの既存Cache RulesがステージングのHTMLを上書きキャッシュしていないことを確認する。Static Assetsの更新管理とは別のルールに注意する。
 

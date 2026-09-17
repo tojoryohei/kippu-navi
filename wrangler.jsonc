@@ -13,19 +13,19 @@
   },
   "env": {
     "staging": {
-      "name": "kippu-navi",
+      "name": "staging",
       "vars": {
         "API_ORIGIN": "https://calculation-engine-staging-198310540092.asia-northeast1.run.app"
       },
       "routes": [
         {
-          "pattern": "stg.kippu-navi.com",
+          "pattern": "staging.kippu-navi.com",
           "custom_domain": true
         }
       ]
     },
     "production": {
-      "name": "kippu-navi-production",
+      "name": "production",
       "vars": {
         "API_ORIGIN": "https://calculation-engine-198310540092.asia-northeast1.run.app"
       },
@@ -39,8 +39,13 @@
   },
   "observability": {
     "logs": {
-      "enabled": false,
-      "invocation_logs": true
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
     }
   }
 }

@@ -18,9 +18,9 @@ async function get(path) {
 }
 
 const domains = await get(`accounts/${account}/workers/domains`);
-const staging = domains.find(domain => domain.hostname === 'stg.kippu-navi.com');
+const staging = domains.find(domain => domain.hostname === 'staging.kippu-navi.com');
 if (!staging || staging.service !== target) {
-  throw new Error(`stg.kippu-navi.com must already belong to ${target}; stop before changing a domain assignment.`);
+  throw new Error(`staging.kippu-navi.com must already belong to ${target}; stop before changing a domain assignment.`);
 }
 const otherDomains = domains.filter(domain => domain.service === target && domain.hostname !== staging.hostname);
 if (otherDomains.length) {
@@ -28,7 +28,7 @@ if (otherDomains.length) {
 }
 const routes = await get(`zones/${staging.zone_id}/workers/routes`);
 const otherRoutes = routes.filter(route => route.script === target &&
-  !route.pattern.replace(/^https?:\/\//, '').startsWith('stg.kippu-navi.com/'));
+  !route.pattern.replace(/^https?:\/\//, '').startsWith('staging.kippu-navi.com/'));
 if (otherRoutes.length) {
   throw new Error(`Refusing to deploy to a Worker with other routes: ${otherRoutes.map(route => route.pattern).join(', ')}`);
 }

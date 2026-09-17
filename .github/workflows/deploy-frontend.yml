@@ -74,7 +74,7 @@ jobs:
           if [ "$DEPLOY_ENVIRONMENT" = production ]; then
             DEPLOY_URL="https://kippu-navi.com"
           else
-            DEPLOY_URL="https://stg.kippu-navi.com"
+            DEPLOY_URL="https://staging.kippu-navi.com"
           fi
           {
             printf 'Environment: `%s`\n\n' "$DEPLOY_ENVIRONMENT"

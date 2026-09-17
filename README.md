@@ -3,7 +3,7 @@
 JR線の運賃、定期券運賃、最安分割きっぷを計算するWebアプリケーションです。
 
 - 本番: https://kippu-navi.com
-- ステージング: https://stg.kippu-navi.com
+- ステージング: https://staging.kippu-navi.com
 
 ## 構成
 
