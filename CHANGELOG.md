@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.22.0...kippu-navi-v2.22.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* 第157条補正の重複を修正 ([#694](https://github.com/tojoryohei/kippu-navi/issues/694)) ([9c9df7f](https://github.com/tojoryohei/kippu-navi/commit/9c9df7fa7d5be5190e7920016307e8c6baeb8298))
+
 ## [2.22.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.21.7...kippu-navi-v2.22.0) (2026-09-17)
 
 
