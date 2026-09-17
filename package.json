@@ -13,7 +13,6 @@
     "start": "astro preview",
     "lint": "eslint .",
     "typecheck": "astro check",
-    "test": "vitest run",
     "knip": "knip",
     "test:e2e": "playwright test",
     "predev": "node scripts/prepare-local-engine.mjs",
@@ -24,7 +23,6 @@
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@fontsource-variable/noto-sans-jp": "^5.3.0",
     "astro": "^7.3.1",
-    "better-sqlite3": "^13.0.2",
     "posthog-js": "^1.429.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -36,7 +34,6 @@
     "@astrojs/check": "^0.9.10",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.5.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -50,13 +47,9 @@
     "eslint-plugin-security": "^4.0.1",
     "knip": "^6.35.1",
     "tailwindcss": "^4",
-    "tsx": "^4.23.13",
-    "typescript": "^5.9.3",
-    "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^5.0.0"
+    "typescript": "^5.9.3"
   },
   "allowScripts": {
-    "better-sqlite3@13.0.3": true,
     "core-js@3.50.0": true,
     "esbuild@0.28.2": true,
     "fsevents@2.3.3": true,

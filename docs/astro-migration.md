@@ -13,7 +13,7 @@
 
 ## ローカルでの回帰確認
 
-`npm run typecheck`、`npm run lint`、`npm run knip`、`npm test`、`npm run build`、`npm run test:e2e`を実行する。
+`npm run typecheck`、`npm run lint`、`npm run knip`、`npm run build`、`npm run test:e2e`を実行する。
 
 ブラウザテストはビルド済み成果物と本物のWASMを使い、外部計測送信を遮断し、APIの探索結果を固定する。URL直接入力、再読み込み、同一画面の異なるクエリ、5画面間の遷移、戻る・進む、Workerの共有、初期化待ち・失敗、モバイルメニュー、プリフェッチ、全既存URLとSEO情報を対象にする。
 

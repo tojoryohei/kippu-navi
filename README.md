@@ -56,14 +56,13 @@ npm run generate:ticket-fares
 npm run typecheck
 npm run lint
 npm run knip
-npm test
 npm run build
 npx playwright install chromium
 npm run test:e2e
 npm start
 ```
 
-既存のVitestテストには非公開の`src/data`が必要です。ブラウザ回帰テストは公開グラフから生成した本物のWASMを使い、APIの探索結果を固定するため、非公開データや稼働中のAPIは不要です。インストール済みChromeを使う場合は`PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`を実行できます。
+ブラウザ回帰テストは公開グラフから生成した本物のWASMを使い、APIの探索結果を固定します。非公開データや稼働中のAPIは不要です。インストール済みChromeを使う場合は`PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`を実行できます。
 
 `npm run build`はWASM生成、Astroビルド、Cloudflare用の梱包まで行い、`dist`を作ります。通常はステージング向け（noindex）です。本番向けは`DEPLOY_ENVIRONMENT=production npm run build`で生成します。
 

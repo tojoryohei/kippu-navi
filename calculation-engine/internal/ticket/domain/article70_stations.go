@@ -2,7 +2,7 @@ package domain
 
 import "slices"
 
-// article70Stations はsrc/data/yamanote.jsonの「電車大環状線」と同じ駅一覧です。
+// article70Stations は「電車大環状線」に該当する駅一覧です。
 // 太線エッジの接続有無ではなく、駅名で東京山手線内特例の境界を判定します。
 var article70Stations = []string{
 	"大崎",
