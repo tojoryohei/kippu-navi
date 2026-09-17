@@ -189,7 +189,9 @@ export default function SplitForm({
         if (data.endStation.name) {
             newParams.set("to", data.endStation.name);
         }
-        newParams.set("maxSplits", String(data.maxSplits));
+        if (data.maxSplits > 0) {
+            newParams.set("maxSplits", String(data.maxSplits));
+        }
         for (const station of data.forbiddenStations) {
             newParams.append("noSplitStation", station.name);
         }
@@ -220,8 +222,10 @@ export default function SplitForm({
                 from: data.startStation.name,
                 to: data.endStation.name,
                 months: months,
-                maxSplits: String(data.maxSplits),
             });
+            if (data.maxSplits > 0) {
+                query.set("maxSplits", String(data.maxSplits));
+            }
             for (const station of data.forbiddenStations) {
                 query.append("noSplitStation", station.name);
             }
@@ -596,7 +600,10 @@ export default function SplitForm({
             const mVal = monthsMap[nextSearchType] || "6";
             newParams.set("month", mVal);
         }
-        newParams.set("maxSplits", String(nextPath === "/split/ic-pass" ? 1 : currentMaxSplits));
+        const nextMaxSplits = nextPath === "/split/ic-pass" ? 1 : currentMaxSplits;
+        if (nextMaxSplits > 0) {
+            newParams.set("maxSplits", String(nextMaxSplits));
+        }
         for (const station of currentForbiddenStations) {
             newParams.append("noSplitStation", station.name);
         }
@@ -606,7 +613,8 @@ export default function SplitForm({
             }
         });
 
-        const newUrl = `${nextPath}?${newParams.toString()}`;
+        const queryString = newParams.toString();
+        const newUrl = queryString ? `${nextPath}?${queryString}` : nextPath;
 
         // パスが変わる場合のみ Astroでルーティング遷移
         if (nextPath !== pathname) {

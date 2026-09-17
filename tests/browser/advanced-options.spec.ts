@@ -62,6 +62,7 @@ test("券種切り替え・URL復元・計算要求の設定を維持", async ({
   await page.getByLabel("分割禁止駅", { exact: true }).fill("");
   await page.locator("form summary").click();
   await page.getByRole("button", { name: "IC定期券", exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("maxSplits")).toBe("1");
   await page.locator("form summary").click();
   await expect(page.getByLabel("最大分割数", { exact: true })).toHaveCount(0);
   await expect(page.getByText("1回（固定）", { exact: true })).toBeVisible();
@@ -73,6 +74,21 @@ test("未指定の分割しない駅をURLへ追加しない", async ({ page }) 
   await page.goto("/split/ticket?from=新茂原&to=茂原&maxSplits=2");
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
   expect(new URL(page.url()).searchParams.getAll("noSplitStation")).toEqual([]);
+});
+
+test("無制限のmaxSplitsをURLとAPIリクエストから省略する", async ({ page }) => {
+  const request = page.waitForRequest(req => req.url().includes("/api/split-ticket"));
+  await page.goto("/split/ticket?from=新茂原&to=茂原&maxSplits=0");
+  await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
+
+  expect(new URL((await request).url()).searchParams.has("maxSplits")).toBe(false);
+  expect(new URL(page.url()).searchParams.has("maxSplits")).toBe(false);
+  await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("制限なし");
+
+  const passRequest = page.waitForRequest(req => req.url().includes("/api/split-pass"));
+  await page.getByRole("button", { name: "定期券", exact: true }).click();
+  expect(new URL((await passRequest).url()).searchParams.has("maxSplits")).toBe(false);
+  expect(new URL(page.url()).searchParams.has("maxSplits")).toBe(false);
 });
 
 for (const width of [320, 390, 1280]) {
