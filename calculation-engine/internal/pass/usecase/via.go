@@ -195,7 +195,7 @@ func GetVia(
 			if i < len(path)-2 {
 				via = append(via, stationNameList[i+1])
 			} else {
-				if i > 0 && !(len(g.GetEdges(path[i-1])) > 2) {
+				if i > 0 && len(g.GetEdges(path[i-1])) <= 2 {
 					via = append(via, stationNameList[i])
 				} else if i == 0 {
 					via = append(via, stationNameList[i])

@@ -8,11 +8,246 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-noto-sans-jp);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Noto Sans JP Variable", sans-serif;
+  --font-mono: "Geist Mono Variable", monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/*
+ * react-select normally supplies these rules through Emotion. Astro's
+ * ClientRouter can remove dynamically inserted style tags during a page
+ * transition, so keep the control usable even when those tags are absent.
+ */
+[class*="a11yText"],
+[class$="__a11yText"] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(1px, 1px, 1px, 1px) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.station-select,
+.line-select {
+  width: 100%;
+  position: relative;
+}
+
+.station-select__control,
+.line-select__control {
+  min-height: 38px;
+  align-items: center;
+  display: flex;
+  position: relative;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  background: #fff;
+}
+
+.station-select__control--is-disabled,
+.line-select__control--is-disabled {
+  border-color: hsl(0deg 0% 90%);
+  background: hsl(0deg 0% 95%);
+}
+
+.station-select__control--is-focused,
+.line-select__control--is-focused {
+  border-color: #2684ff;
+  box-shadow: 0 0 0 1px #2684ff;
+}
+
+.station-select__value-container,
+.line-select__value-container {
+  align-items: center;
+  display: grid !important;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+  min-height: 34px;
+  position: relative;
+  overflow: hidden;
+  padding: 2px 8px;
+  box-sizing: border-box;
+}
+
+.station-select__input-container,
+.line-select__input-container {
+  visibility: visible !important;
+  flex: 1 1 auto;
+  display: inline-grid !important;
+  grid-area: 1 / 1 / 2 / 3;
+  grid-template-columns: 0 min-content;
+  margin: 2px;
+  padding: 2px 0;
+  color: inherit;
+  box-sizing: border-box;
+  opacity: 1 !important;
+}
+
+.station-select__input-container input,
+.line-select__input-container input {
+  width: 100%;
+  grid-area: 1 / 2;
+  font: inherit;
+  min-width: 2px;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit;
+  border: 0 !important;
+  outline: 0 !important;
+  background: 0 center;
+  box-sizing: border-box;
+}
+
+.station-select__input-container input:focus,
+.station-select__input-container input:focus-visible,
+.line-select__input-container input:focus,
+.line-select__input-container input:focus-visible {
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+/* Keep the non-searchable split selector's keyboard input out of the layout,
+ * including after navigation removes react-select's injected styles. */
+.split-count-select input {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  caret-color: transparent !important;
+  pointer-events: none;
+}
+
+/* isSearchable=false still mounts a tiny focusable input for keyboard access. */
+.line-select input {
+  grid-area: 1 / 1 / 2 / 3 !important;
+  width: 1px !important;
+  height: 24px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: 0 !important;
+  caret-color: transparent !important;
+  color: transparent !important;
+  opacity: 0 !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  left: -100px !important;
+  position: relative !important;
+  transform: scale(0.01) !important;
+}
+
+.station-select input:focus,
+.station-select input:focus-visible,
+.line-select input:focus,
+.line-select input:focus-visible {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.station-select__input-container::after,
+.line-select__input-container::after {
+  content: attr(data-value) " ";
+  visibility: hidden;
+  white-space: pre;
+  grid-area: 1 / 2;
+  font: inherit;
+  min-width: 2px;
+  border: 0;
+  margin: 0;
+  outline: 0;
+  padding: 0;
+}
+
+.station-select__menu,
+.line-select__menu {
+  position: absolute;
+  z-index: 10;
+  width: 100%;
+  margin-top: 4px;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.station-select__menu-list,
+.line-select__menu-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.station-select__menu-notice,
+.line-select__menu-notice {
+  padding: 8px 12px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.station-select__option,
+.line-select__option {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.station-select__option--is-focused,
+.line-select__option--is-focused {
+  background: #deebff;
+}
+
+.station-select__option--is-selected,
+.line-select__option--is-selected {
+  background: #2684ff;
+  color: #fff;
+}
+
+.station-select__placeholder,
+.line-select__placeholder {
+  grid-area: 1 / 1 / 2 / 3;
+  pointer-events: none;
+  color: hsl(0deg 0% 50%);
+  margin-left: 2px;
+  margin-right: 2px;
+  box-sizing: border-box;
+}
+
+.station-select__single-value,
+.line-select__single-value {
+  grid-area: 1 / 1 / 2 / 3;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+  margin-left: 2px;
+  margin-right: 2px;
+  box-sizing: border-box;
+}
+
+.station-select__control--is-disabled .station-select__single-value,
+.line-select__control--is-disabled .line-select__single-value {
+  color: hsl(0deg 0% 60%);
+}
+
+.station-select__control--is-disabled .station-select__input-container,
+.line-select__control--is-disabled .line-select__input-container {
+  visibility: hidden !important;
+}
+
+.station-select__control--is-disabled .station-select__placeholder,
+.line-select__control--is-disabled .line-select__placeholder {
+  color: hsl(0deg 0% 50%);
 }

@@ -1,22 +1,9 @@
-import { IconType } from "react-icons";
-import { SingleValue } from "react-select";
-
-export interface menuItem {
-    href: string;
-    icon: IconType;
-    label: string;
-}
+import type { SingleValue } from "react-select";
 
 export interface Station {
     name: string;
     kana: string;
     lines?: string[]
-}
-
-export interface MajorCitySuburbanSectionFare {
-    startStation: string;
-    endStation: string;
-    kippuData: KippuData;
 }
 
 export interface SelectStationProps {
@@ -53,100 +40,87 @@ export interface PathStep {
     lineName: string | null;
 }
 
-export interface RouteRequest {
-    fullPath: PathStep[];
-    calculationMode: CalculationMode;
-    searchType?: SearchType;
+interface FareCalculationSummary {
+    totalEigyoKilo: number;
+    printedViaLines: string[];
 }
 
-export interface KippuData {
-    totalEigyoKilo: number;
+export interface TicketFareResult extends FareCalculationSummary {
     departureStation: string;
     arrivalStation: string;
-    printedViaLines: string[];
     fare: number;
     validDays: number;
 }
 
-export interface SplitKippuData {
+export interface PassFareResult extends FareCalculationSummary {
+    fare: number;
+    barrierFreeFee: number;
+    charge: number;
+    correctedPath: string[];
+}
+
+export interface TicketFareResponse {
+    data: TicketFareResult;
+    time: number;
+}
+
+export interface SplitFareSummary extends FareCalculationSummary {
     departureStation: string;
     arrivalStation: string;
-    kippuData: KippuData;
-}
-
-export interface SplitKippuDatas {
-    splitKippuDatas: SplitKippuData[];
-    totalFare: number;
-}
-
-export interface SplitApiResponse {
-    cheapestKippuData: KippuData;
-    splitKippuDatasList: SplitKippuDatas[];
-}
-
-export interface CacheResult {
-    data: SplitApiResponse;
-    isCacheHit: boolean;
-    time: number;
-}
-
-export interface SplitPassResult {
-    passStations: {
-        normal: string[];
-        splitPatterns: string[][];
-    };
-}
-
-export interface PassCacheResult {
-    data: SplitPassResult;
-    isCacheHit: boolean;
-    time: number;
-}
-
-export interface RouteSegment {
-    line: string;
-    station0: string;
-    station1: string;
-    eigyoKilo: number;
-    giseiKilo: number;
-    isLocal: boolean;
-    company: number;
-}
-
-export interface SpecificFare {
-    sections: PathStep[];
     fare: number;
 }
 
-export interface Section {
-    line: string;
-    station0: string;
-    station1: string;
+export interface SplitFareSegment {
+    departureStation: string;
+    arrivalStation: string;
+    fare: SplitFareSummary;
 }
 
-export interface TrainSpecificSection {
-    電車特定区間: Set<string>;
-    名古屋附近: Set<string>;
-    電車大環状線: Set<string>;
+export interface SplitFarePlan {
+    segments: SplitFareSegment[];
+    totalFare: number;
 }
 
-export interface MajorCitySuburbanSection {
-    東京近郊区間: Set<string>;
-    大阪近郊区間: Set<string>;
-    福岡近郊区間: Set<string>;
-    新潟近郊区間: Set<string>;
-    仙台近郊区間: Set<string>;
+export interface SplitFareResult {
+    normal: SplitFareSummary;
+    results: SplitFarePlan[];
 }
 
-
-export interface City {
-    name: string;
-    stations: string[];
+export interface SplitStationResponse {
+    normal: string[];
+    results: string[][];
+    error?: string;
 }
 
-export interface Printing {
-    kana: string;
-    print: string;
+export interface SplitCacheResult {
+    data: SplitStationResponse;
+    isCacheHit: boolean;
+    time: number;
+}
+
+interface SplitCalculationBreakdown {
+    Fare: number;
+    BarrierFreeFee: number;
+    Charge?: number;
+}
+
+export interface SplitCalculationSegment {
+    start: string;
+    end: string;
+    path: string[];
+    via: string[];
+    totalEigyoKilo: number;
+    result?: SplitCalculationBreakdown;
+}
+
+export interface SplitCalculationResult {
+    totalAmount: number;
+    segments: SplitCalculationSegment[];
+}
+
+export interface SplitCalculationResponse {
+    normal: SplitCalculationResult | null;
+    results: SplitCalculationResult[];
 }
 
 export interface Kana {
@@ -154,11 +128,6 @@ export interface Kana {
     kana: string;
     station0: string;
     station1: string;
-}
-
-export interface OuterSection {
-    stations: string[];
-    routes: PathStep[];
 }
 
 export type CalculationMode = "normal" | "cheapest" | "uncorrect";

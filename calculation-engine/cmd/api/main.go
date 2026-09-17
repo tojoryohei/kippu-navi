@@ -8,23 +8,59 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
+	"calculation-engine/internal/graphdata"
 	passdomain "calculation-engine/internal/pass/domain"
-	"calculation-engine/internal/pass/graph"
-	"calculation-engine/internal/pass/graph/data"
-	"calculation-engine/internal/handler"
-	"calculation-engine/internal/infra/fareio"
-	"calculation-engine/internal/infra/graphio"
-	"calculation-engine/internal/pass/optimizer"
-	"calculation-engine/internal/pass/usecase"
+	passgraph "calculation-engine/internal/pass/graph"
+	passdata "calculation-engine/internal/pass/graph/data"
+	passhandler "calculation-engine/internal/pass/handler"
+	passfareio "calculation-engine/internal/pass/infra/fareio"
+	passgraphio "calculation-engine/internal/pass/infra/graphio"
+	passopt "calculation-engine/internal/pass/optimizer"
+	passusecase "calculation-engine/internal/pass/usecase"
+	ticketdata "calculation-engine/internal/ticket/data"
+	ticketdomain "calculation-engine/internal/ticket/domain"
+	ticketfare "calculation-engine/internal/ticket/fare"
+	tickethandler "calculation-engine/internal/ticket/handler"
+	ticketfareio "calculation-engine/internal/ticket/infra/fareio"
+	ticketgraphio "calculation-engine/internal/ticket/infra/graphio"
+	ticketusecase "calculation-engine/internal/ticket/usecase"
+	"io"
 )
 
 const (
 	// shutdownTimeout はgraceful shutdownの最大待機時間です
 	shutdownTimeout = 10 * time.Second
+	// defaultPrecomputedDataDir はサーバー専用の事前計算データの既定配置です。
+	defaultPrecomputedDataDir = "./data/precomputed"
 )
+
+var localDevelopmentOrigins = map[string]struct{}{
+	"http://localhost:3000": {},
+	"http://127.0.0.1:3000": {},
+}
+
+func allowLocalDevelopmentCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if _, allowed := localDevelopmentOrigins[origin]; allowed {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Add("Vary", "Origin")
+		}
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -39,95 +75,95 @@ func run() error {
 		port = "8080" // デフォルト値
 	}
 	listenAddr := ":" + port
+	precomputedDataDir := os.Getenv("PRECOMPUTED_DATA_DIR")
+	if precomputedDataDir == "" {
+		precomputedDataDir = defaultPrecomputedDataDir
+	}
 
 	// グラフの初期化
-	loader := &graphio.JSONLoader{}
-	g, loadErr := loader.Load(data.GetEdgesReader())
+	loader := &passgraphio.JSONLoader{}
+	g, loadErr := loader.Load(passdata.GetEdgesReader())
 	if loadErr != nil {
 		return fmt.Errorf("JSONの読み込みに失敗しました: %w", loadErr)
 	}
 
-	// 運賃計算レジストリの初期化
-	calcs, err := fareio.InitRegistry(g)
+	// 乗車券グラフの初期化
+	ticketLoader := &ticketgraphio.JSONLoader{}
+	ticketSearchGraph, ticketFullGraph, err := ticketLoader.LoadSeparatedGraphs(
+		[]io.Reader{graphdata.GetEdgesReader()},
+		graphdata.GetFareGraphEdgeReaders(),
+	)
+	if err != nil {
+		return fmt.Errorf("乗車券グラフのロードに失敗しました: %w", err)
+	}
+
+	// 定期券の運賃計算レジストリの初期化
+	passCalcs, err := passfareio.InitRegistry(g)
 	if err != nil {
 		return fmt.Errorf("運賃計算機の初期化に失敗しました: %w", err)
 	}
 
-	// 特定区間加算運賃の設定
-	addonFareReg := passdomain.NewAddonRegistry()
-	addonFareReg.Register("南千歳", "新千歳空港", passdomain.PassPrice{OneMonth: 660, ThreeMonth: 1880, SixMonth: 3180})
-	addonFareReg.Register("日根野", "りんくうタウン", passdomain.PassPrice{OneMonth: 4690, ThreeMonth: 13320, SixMonth: 22440})
-	addonFareReg.Register("日根野", "関西空港", passdomain.PassPrice{OneMonth: 6640, ThreeMonth: 18900, SixMonth: 31820})
-	addonFareReg.Register("りんくうタウン", "関西空港", passdomain.PassPrice{OneMonth: 5010, ThreeMonth: 14250, SixMonth: 24000})
-	addonFareReg.Register("児島", "宇多津", passdomain.PassPrice{OneMonth: 1610, ThreeMonth: 4600, SixMonth: 8170})
-	addonFareReg.Register("田吉", "宮崎空港", passdomain.PassPrice{OneMonth: 3840, ThreeMonth: 10960, SixMonth: 18680})
+	// 定期券の特定区間加算運賃の設定
+	passAddonFareReg := passdomain.NewAddonRegistry()
+	passAddonFareReg.Register("南千歳", "新千歳空港", passdomain.PassPrice{OneMonth: 660, ThreeMonth: 1880, SixMonth: 3180})
+	passAddonFareReg.Register("日根野", "りんくうタウン", passdomain.PassPrice{OneMonth: 4690, ThreeMonth: 13320, SixMonth: 22440})
+	passAddonFareReg.Register("日根野", "関西空港", passdomain.PassPrice{OneMonth: 6640, ThreeMonth: 18900, SixMonth: 31820})
+	passAddonFareReg.Register("りんくうタウン", "関西空港", passdomain.PassPrice{OneMonth: 5010, ThreeMonth: 14250, SixMonth: 24000})
+	passAddonFareReg.Register("児島", "宇多津", passdomain.PassPrice{OneMonth: 1610, ThreeMonth: 4600, SixMonth: 8170})
+	passAddonFareReg.Register("田吉", "宮崎空港", passdomain.PassPrice{OneMonth: 3840, ThreeMonth: 10960, SixMonth: 18680})
 
 	// IDを解決
-	if err := addonFareReg.ResolveIDs(func(name string) (int, bool) {
+	if err := passAddonFareReg.ResolveIDs(func(name string) (int, bool) {
 		return g.GetID(name)
 	}); err != nil {
 		return fmt.Errorf("加算運賃のID解決に失敗しました: %w", err)
 	}
 
 	// 特急料金の設定
-	addonChargeReg := passdomain.NewAddonRegistry()
-	addonChargeReg.Register("博多", "博多南", passdomain.PassPrice{OneMonth: 4680, ThreeMonth: 13340, SixMonth: 25270})
+	passAddonChargeReg := passdomain.NewAddonRegistry()
+	passAddonChargeReg.Register("博多", "博多南", passdomain.PassPrice{OneMonth: 4680, ThreeMonth: 13340, SixMonth: 25270})
 
 	// IDを解決
-	if err := addonChargeReg.ResolveIDs(func(name string) (int, bool) {
+	if err := passAddonChargeReg.ResolveIDs(func(name string) (int, bool) {
 		return g.GetID(name)
 	}); err != nil {
 		return fmt.Errorf("特急料金のID解決に失敗しました: %w", err)
 	}
 
 	// 旅客営業規則 第69条 特例区間の設定
-	bypassReg := passdomain.NewBypassRegistry()
-	// (1) 大沼以遠の各駅と、森以遠の各駅との相互間
-	bypassReg.Register(
-		[]string{"大沼", "大沼公園", "赤井川", "駒ケ岳", "森"},
-		[]string{"大沼", "鹿部", "渡島沼尻", "渡島砂原", "掛澗", "尾白内", "東森", "森"},
-	)
-	// (2) 日暮里以遠の各駅と、赤羽以遠の各駅との相互間
-	bypassReg.Register(
-		[]string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"},
-		[]string{"日暮里", "尾久", "赤羽"},
-	)
-	// (3) 赤羽以遠の各駅と、大宮以遠の各駅との相互間
-	bypassReg.Register(
-		[]string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"},
-		[]string{"赤羽", "北赤羽", "浮間舟渡", "戸田公園", "（北）戸田", "北戸田", "武蔵浦和", "中浦和", "南与野", "与野本町", "北与野", "大宮"},
-	)
-	// (4) 品川以遠の各駅と、鶴見以遠の各駅との相互間
-	bypassReg.Register(
-		[]string{"品川", "大井町", "大森", "蒲田", "川崎", "鶴見"},
-		[]string{"品川", "西大井", "武蔵小杉", "新川崎", "鶴見"},
-	)
+	passBypassReg := passdomain.NewDefaultBypassRegistry()
 	// (5) 東京以遠（品川、有楽町又は神田方面）の各駅と、蘇我以遠（鎌取又は浜野方面）の各駅との相互間
 	// 旅客営業規則上は補正する必要がありますが、営業キロが等しく実際の定期券でも補正が行われていないため、特例区間として定義しません。
 
 	// IDを解決
-	bypassRules, err := bypassReg.ResolveIDs(func(name string) (int, bool) {
+	passBypassRules, err := passBypassReg.ResolveIDs(func(name string) (int, bool) {
 		return g.GetID(name)
 	})
 	if err != nil {
 		return fmt.Errorf("特例ルールのID解決に失敗しました: %w", err)
 	}
 
-	amountCalc := usecase.NewCalculateAmount(
+	passPrivateFareReg, err := passfareio.NewPrivateFareRegistry()
+	if err != nil {
+		return fmt.Errorf("定期券用私鉄運賃データの読み込みに失敗しました: %w", err)
+	}
+
+	passAmountCalc := passusecase.NewCalculateAmount(
 		g,
-		calcs.Registry,
-		addonFareReg,
-		addonChargeReg,
-		calcs.TrainSpecific,
-		calcs.SpecificRoute,
-		calcs.AdjustedRoute,
+		passCalcs.Registry,
+		passAddonFareReg,
+		passAddonChargeReg,
+		passCalcs.TrainSpecific,
+		passCalcs.SpecificRoute,
+		passCalcs.AdjustedRoute,
+		passPrivateFareReg,
 	)
 
-	opt := optimizer.NewDPOptimizer(amountCalc)
-	splitUseCase := usecase.NewFindOptimalSplit(opt, amountCalc)
+	passOptimizer := passopt.NewDPOptimizer(passAmountCalc)
+	passSplitUseCase := passusecase.NewFindOptimalSplit(passOptimizer, passAmountCalc)
 
 	// 事前計算された運賃および経路データのロード
-	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := data.LoadPrecomputedFares("./internal/pass/graph/data/precomputed_server.bin")
+	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := passdata.LoadPrecomputedFares(filepath.Join(precomputedDataDir, "pass.bin"))
 	if err != nil {
 		return fmt.Errorf("事前計算された運賃データのロードに失敗しました: %w", err)
 	}
@@ -139,28 +175,185 @@ func run() error {
 	g.DistGisei = baseDistGisei
 
 	// 磁気定期券用: 区間数無制限 (0)
-	searchUseCase := usecase.NewSearchOptimalSplit(g, splitUseCase, bypassRules, 0, baseFares, numStations)
+	passSearchUseCase := passusecase.NewSearchOptimalSplit(g, passSplitUseCase, passBypassRules, 0, baseFares, numStations)
 
 	// IC分割乗車券用
-	icGraph, err := graph.NewIcPassGraph(g)
+	icGraph, err := passgraph.NewIcPassGraph(g)
 	if err != nil {
 		return fmt.Errorf("ICグラフの生成に失敗しました: %w", err)
 	}
 	icGraph.DistGisei = icDistGisei
 
-	icSearchUseCase := usecase.NewSearchOptimalSplit(icGraph, splitUseCase, bypassRules, 2, icFares, numStations)
+	icPassSearchUseCase := passusecase.NewSearchOptimalSplit(icGraph, passSplitUseCase, passBypassRules, 2, icFares, numStations)
+
+	// 乗車券用コンポーネント初期化
+	zoneRoutesBytes, err := io.ReadAll(graphdata.GetZoneRoutesReader())
+	if err != nil {
+		return fmt.Errorf("乗車券の特例ゾーンルート読み込みに失敗しました: %w", err)
+	}
+	ticketZoneRoutes, err := ticketdomain.LoadZoneRoutesFromBytes(zoneRoutesBytes)
+	if err != nil {
+		return fmt.Errorf("乗車券の特例ゾーンルートロードに失敗しました: %w", err)
+	}
+
+	arBytes, err := io.ReadAll(graphdata.GetArticle70RoutesReader())
+	if err != nil {
+		return fmt.Errorf("article70Routesの読み込みに失敗しました: %w", err)
+	}
+	ticketArticle70Routes, err := ticketdomain.LoadArticle70RoutesFromBytes(arBytes)
+	if err != nil {
+		return fmt.Errorf("article70Routesのパースに失敗しました: %w", err)
+	}
+
+	ticketZoneReg, err := ticketgraphio.LoadSpecialZones()
+	if err != nil {
+		return fmt.Errorf("乗車券の特例ゾーンロードに失敗しました: %w", err)
+	}
+
+	for _, z := range ticketZoneReg.Zones {
+		ticketFullGraph.GetOrAddID(z.Name)
+	}
+	for _, zoneName := range ticketZoneRoutes.ZoneNames() {
+		ticketFullGraph.GetOrAddID(zoneName)
+	}
+
+	ticketFareReg := ticketfare.NewRegistry()
+	ticketFareioReg, err := ticketfareio.NewRegistry()
+	if err != nil {
+		return fmt.Errorf("乗車券のfareioロードに失敗しました: %w", err)
+	}
+	ticketRouteExtensions, err := ticketusecase.NewRouteExtensionMatcherIDs(ticketfareio.GetGeneratedRouteExtensions(), ticketFullGraph)
+	if err != nil {
+		return fmt.Errorf("乗車券の経路延長対応表初期化に失敗しました: %w", err)
+	}
+
+	ticketSpecificMatcher := ticketfare.NewPathMatcher()
+	for _, f := range ticketFareioReg.GetSpecificFares() {
+		ids := make([]int, 0, len(f.Path))
+		for _, name := range f.Path {
+			id, ok := ticketFullGraph.GetID(name)
+			if ok {
+				ids = append(ids, id)
+			}
+		}
+		if len(ids) == len(f.Path) {
+			if err := ticketSpecificMatcher.Insert(ids, f.Fare); err != nil {
+				panic(fmt.Sprintf("特定運賃の登録に失敗しました (経路: %v): %v", f.Path, err))
+			}
+		}
+	}
+
+	ticketAdjustedMatcher := ticketfare.NewPathMatcher()
+	for _, f := range ticketFareioReg.GetAdjustedFares() {
+		ids := make([]int, 0, len(f.Path))
+		for _, name := range f.Path {
+			id, ok := ticketFullGraph.GetID(name)
+			if ok {
+				ids = append(ids, id)
+			}
+		}
+		if len(ids) == len(f.Path) {
+			if err := ticketAdjustedMatcher.Insert(ids, f.Fare); err != nil {
+				panic(fmt.Sprintf("調整運賃の登録に失敗しました (経路: %v): %v", f.Path, err))
+			}
+		}
+	}
+
+	ticketAddonFareReg := ticketfare.NewAddonRegistry()
+	ticketAddonFareReg.Register("南千歳", "新千歳空港", 20)
+	ticketAddonFareReg.Register("日根野", "りんくうタウン", 160)
+	ticketAddonFareReg.Register("りんくうタウン", "関西空港", 170)
+	ticketAddonFareReg.Register("日根野", "関西空港", 220)
+	ticketAddonFareReg.Register("児島", "宇多津", 110)
+	ticketAddonFareReg.Register("田吉", "宮崎空港", 130)
+
+	if err := ticketAddonFareReg.ResolveIDs(func(name string) (int, bool) {
+		return ticketFullGraph.GetID(name)
+	}); err != nil {
+		return fmt.Errorf("乗車券の加算運賃ID解決に失敗しました: %w", err)
+	}
+
+	ticketPrivateFareReg, err := ticketfareio.NewPrivateFareRegistry()
+	if err != nil {
+		return fmt.Errorf("私鉄運賃データの読み込みに失敗しました: %w", err)
+	}
+
+	ticketTrainSpecificCalc := ticketfare.NewTrainSpecificSectionCalculator()
+
+	ticketAmountCalc := ticketusecase.NewCalculateAmount(
+		ticketFareReg,
+		ticketAddonFareReg,
+		ticketTrainSpecificCalc,
+		ticketSpecificMatcher,
+		ticketAdjustedMatcher,
+		ticketPrivateFareReg,
+		ticketFullGraph,
+		ticketZoneRoutes,
+	)
+
+	ticketApplier := ticketusecase.NewSpecialZoneApplier(ticketFullGraph, ticketZoneReg)
+	ticketSegmentEvaluator := ticketusecase.NewTicketSegmentEvaluator(
+		ticketAmountCalc,
+		ticketApplier,
+		ticketusecase.NewPostZoneCleanupCorrector(),
+		ticketZoneReg,
+		ticketFullGraph,
+	)
+
+	// 経路補正候補を、運賃特例適用後の通常モードの運賃で比較する。
+	// Correctorには物理経路だけを返すため、評価器が返す変換後経路は破棄する。
+	fareEval := func(path []int) (int, error) {
+		res, _, err := ticketSegmentEvaluator.ExecuteWithMode(path, 0, "normal")
+		if err != nil {
+			return 0, err
+		}
+		return res.TotalAmount(), nil
+	}
+
+	ticketCorrector := ticketusecase.NewPipelineCorrector(
+		ticketusecase.NewSuburbanAreaCorrector(fareEval),
+		ticketusecase.NewShinkansenOverlapCorrector(),
+		ticketusecase.NewRule43_2Corrector(),
+		ticketusecase.NewRule69Corrector(),
+		ticketusecase.NewRule157Corrector(),
+		ticketusecase.NewArticle70Corrector(ticketArticle70Routes),
+	)
+
+	ticketHandler := tickethandler.NewTicketWithRouteExtensionsAndZones(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneReg)
+
+	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
+
+	ticketFares, ticketDistGisei, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares(filepath.Join(precomputedDataDir, "ticket.bin"))
+	if err != nil {
+		log.Printf("事前計算された乗車券運賃データのロードに失敗しました: %v", err)
+		// 失敗しても起動できるようにする（データが存在しない初期時などのため）
+	} else if int32(ticketFullGraph.NumStations()) != numTicketStations {
+		log.Printf("データ不整合: edges.jsonの駅数(%d)が乗車券事前計算データの駅数(%d)と一致しません", ticketFullGraph.NumStations(), numTicketStations)
+	} else {
+		ticketSearchUseCase.SetPrecomputedFares(ticketFares)
+		ticketSearchGraph.DistGisei = ticketDistGisei
+	}
+
+	ticketSplitHandler := tickethandler.NewSplit(ticketSearchGraph, ticketSearchUseCase)
 
 	// ルーティング
 	mux := http.NewServeMux()
-	splitHandler := handler.NewSplit(g, searchUseCase)
-	mux.HandleFunc("/api/split-pass", splitHandler.HandleCalculate)
 
-	icSplitHandler := handler.NewSplit(icGraph, icSearchUseCase)
-	mux.HandleFunc("/api/split-icpass", icSplitHandler.HandleCalculate)
+	// 定期券ルート
+	passSplitHandler := passhandler.NewSplit(g, passSearchUseCase)
+	mux.HandleFunc("/api/split-pass", passSplitHandler.HandleCalculate)
+
+	icPassSplitHandler := passhandler.NewSplit(icGraph, icPassSearchUseCase)
+	mux.HandleFunc("/api/split-icpass", icPassSplitHandler.HandleCalculate)
+
+	// 乗車券ルート
+	mux.HandleFunc("/api/fare", ticketHandler.HandleCalculateFare)
+	mux.HandleFunc("/api/fare/ticket", ticketHandler.HandleCalculateFare)
+	mux.HandleFunc("/api/split-ticket", ticketSplitHandler.HandleCalculate)
 
 	server := &http.Server{
 		Addr:         listenAddr,
-		Handler:      mux,
+		Handler:      allowLocalDevelopmentCORS(mux),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}

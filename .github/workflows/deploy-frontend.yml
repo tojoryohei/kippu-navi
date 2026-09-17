@@ -1,0 +1,93 @@
+name: Deploy frontend to Cloudflare
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+    inputs:
+      deploy_environment:
+        description: 'デプロイ先。productionは一時URLでの検証に使用します。'
+        required: true
+        type: choice
+        default: staging
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+
+# All development branches share one staging deployment. A manual production run
+# is available for pre-cutover verification while the custom domain remains on proxy.
+concurrency:
+  group: frontend-${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Pushes deploy main to production and all other branches to staging.
+    # workflow_dispatch can explicitly deploy the current branch to production.
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
+    env:
+      DEPLOY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
+      DEPLOY_COMMIT: ${{ github.sha }}
+      ASTRO_TELEMETRY_DISABLED: 1
+      PUBLIC_GOOGLE_ANALYTICS_ID: ${{ vars.PUBLIC_GOOGLE_ANALYTICS_ID }}
+      PUBLIC_POSTHOG_KEY: ${{ vars.PUBLIC_POSTHOG_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: calculation-engine/go.mod
+          cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify staging domain isolation
+        if: env.DEPLOY_ENVIRONMENT == 'staging'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/check-staging-target.mjs
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Deploy static assets
+        uses: cloudflare/wrangler-action@v3
+        with:
+          wranglerVersion: '4.129.0'
+          apiToken: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env ${{ env.DEPLOY_ENVIRONMENT }}
+
+      - name: Write deployment summary
+        env:
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          if [ "$DEPLOY_ENVIRONMENT" = production ]; then
+            DEPLOY_URL="Cloudflare Worker production（Custom Domain未接続。workers.devで確認）"
+          else
+            DEPLOY_URL="https://staging.kippu-navi.com"
+          fi
+          {
+            printf 'Environment: `%s`\n\n' "$DEPLOY_ENVIRONMENT"
+            printf 'Branch: `%s`\n\n' "$DEPLOY_BRANCH"
+            printf 'Commit: `%s`\n\n' "$DEPLOY_SHA"
+            printf 'Deployment: %s/deployment.json\n' "$DEPLOY_URL"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -3,7 +3,7 @@ name: Deploy API to Cloud Run
 on:
   push:
     branches:
-      - main
+      - '**'
     paths:
       - 'calculation-engine/**'
       - '.github/workflows/deploy-api.yml'
@@ -12,8 +12,12 @@ on:
 env:
   PROJECT_ID: 'bubbly-trail-470023-e4'
   REGION: 'asia-northeast1'
-  SERVICE_NAME: 'calculation-engine'
+  SERVICE_NAME: ${{ github.ref == 'refs/heads/main' && 'calculation-engine' || 'calculation-engine-staging' }}
   GAR_REPO: 'cloud-run-source-deploy' 
+
+concurrency:
+  group: api-${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -37,6 +41,11 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: './calculation-engine/go.mod'
+
       - name: Login to Artifact Registry
         uses: docker/login-action@v3
         with:
@@ -44,24 +53,363 @@ jobs:
           username: 'oauth2accesstoken'
           password: '${{ steps.auth.outputs.access_token }}'
 
-      - name: Get precomputed_server.bin Metadata
+      - name: Get Precomputed Binary Metadata
         id: gcs-meta
+        env:
+          PASS_OBJECT: gs://kippu-navi-build-secrets/data/pass_precomputed_server.bin
+          TICKET_OBJECT: gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin
         run: |
-          MD5=$(gcloud storage objects describe gs://kippu-navi-build-secrets/data/precomputed_server.bin --format="value(md5Hash)")
-          CLEAN_MD5=$(echo "$MD5" | tr -dc 'a-zA-Z0-9')
-          echo "md5=$CLEAN_MD5" >> $GITHUB_OUTPUT
+          set -euo pipefail
+
+          hash_files() {
+            local files
+            files=$(git ls-files "$@")
+            if [ -z "$files" ]; then
+              echo "ハッシュ対象のファイルがありません: $*" >&2
+              return 1
+            fi
+            while IFS= read -r file; do
+              sha256sum "$file"
+            done <<< "$files" | sha256sum | awk '{print $1}'
+          }
+
+          PASS_SOURCE_HASH=$(hash_files \
+            calculation-engine/cmd/precompute-pass-fares \
+            calculation-engine/internal/domain \
+            calculation-engine/internal/pass \
+            calculation-engine/internal/graphdata/edges.json \
+            calculation-engine/go.mod \
+            calculation-engine/go.sum)
+          TICKET_SOURCE_HASH=$(hash_files \
+            calculation-engine/cmd/precompute-ticket-fares \
+            calculation-engine/internal/domain \
+            calculation-engine/internal/graphdata \
+            calculation-engine/internal/ticket \
+            calculation-engine/go.mod \
+            calculation-engine/go.sum)
+
+          lookup_metadata() {
+            local object="$1"
+            local error_file="$RUNNER_TEMP/gcs-describe-$(basename "$object").log"
+            local metadata_json md5 crc32c checksum_type checksum source_hash
+
+            if metadata_json=$(gcloud storage objects describe "$object" --format=json 2>"$error_file"); then
+              md5=$(jq -r '.md5_hash // empty' <<< "$metadata_json")
+              crc32c=$(jq -r '.crc32c_hash // empty' <<< "$metadata_json")
+              source_hash=$(jq -r '(.metadata // {})["precompute-source-sha256"] // empty' <<< "$metadata_json")
+              if [ -n "$md5" ]; then
+                checksum_type=md5
+                checksum="$md5"
+              elif [ -n "$crc32c" ]; then
+                checksum_type=crc32c
+                checksum="$crc32c"
+              else
+                echo "GCSオブジェクトのMD5・CRC32Cを取得できません: $object" >&2
+                return 1
+              fi
+              printf '%s\t%s\t%s\n' "$checksum_type" "$checksum" "$source_hash"
+              return 0
+            fi
+
+            if grep -Eqi 'not[ _-]?found|404' "$error_file"; then
+              return 2
+            fi
+            cat "$error_file" >&2
+            return 1
+          }
+
+          if PASS_METADATA=$(lookup_metadata "$PASS_OBJECT"); then
+            IFS=$'\t' read -r PASS_CHECKSUM_TYPE PASS_CHECKSUM PASS_SOURCE_METADATA <<< "$PASS_METADATA"
+            PASS_MISSING=false
+          else
+            STATUS=$?
+            if [ "$STATUS" -eq 2 ]; then
+              PASS_CHECKSUM_TYPE=missing
+              PASS_CHECKSUM="missing-${GITHUB_SHA}"
+              PASS_SOURCE_METADATA=""
+              PASS_MISSING=true
+            else
+              exit "$STATUS"
+            fi
+          fi
+
+          if TICKET_METADATA=$(lookup_metadata "$TICKET_OBJECT"); then
+            IFS=$'\t' read -r TICKET_CHECKSUM_TYPE TICKET_CHECKSUM TICKET_SOURCE_METADATA <<< "$TICKET_METADATA"
+            TICKET_MISSING=false
+          else
+            STATUS=$?
+            if [ "$STATUS" -eq 2 ]; then
+              TICKET_CHECKSUM_TYPE=missing
+              TICKET_CHECKSUM="missing-${GITHUB_SHA}"
+              TICKET_SOURCE_METADATA=""
+              TICKET_MISSING=true
+            else
+              exit "$STATUS"
+            fi
+          fi
+
+          if [ -f ./calculation-engine/internal/graphdata/edges.json ]; then
+            GRAPH_PATH=./calculation-engine/internal/graphdata/edges.json
+          else
+            GRAPH_PATH=./calculation-engine/internal/pass/graph/data/edges.json
+          fi
+          GRAPH_STATIONS=$(jq -r '.[].station0, .[].station1' "$GRAPH_PATH" | sort -u | wc -l | tr -d ' ')
+          PASS_NEEDS_GENERATION=$([ "$PASS_SOURCE_METADATA" = "$PASS_SOURCE_HASH" ] && echo false || echo true)
+          TICKET_NEEDS_GENERATION=$([ "$TICKET_SOURCE_METADATA" = "$TICKET_SOURCE_HASH" ] && echo false || echo true)
+          echo "pass_checksum_type=$PASS_CHECKSUM_TYPE" >> $GITHUB_OUTPUT
+          echo "pass_checksum=$PASS_CHECKSUM" >> $GITHUB_OUTPUT
+          echo "ticket_checksum_type=$TICKET_CHECKSUM_TYPE" >> $GITHUB_OUTPUT
+          echo "ticket_checksum=$TICKET_CHECKSUM" >> $GITHUB_OUTPUT
+          echo "pass_missing=$PASS_MISSING" >> $GITHUB_OUTPUT
+          echo "ticket_missing=$TICKET_MISSING" >> $GITHUB_OUTPUT
+          echo "pass_source_hash=$PASS_SOURCE_HASH" >> $GITHUB_OUTPUT
+          echo "ticket_source_hash=$TICKET_SOURCE_HASH" >> $GITHUB_OUTPUT
+          echo "pass_needs_generation=$PASS_NEEDS_GENERATION" >> $GITHUB_OUTPUT
+          echo "ticket_needs_generation=$TICKET_NEEDS_GENERATION" >> $GITHUB_OUTPUT
+          echo "graph_path=$GRAPH_PATH" >> $GITHUB_OUTPUT
+          echo "graph_stations=$GRAPH_STATIONS" >> $GITHUB_OUTPUT
 
       - name: Cache Precomputed Server Binary
         id: cache-bin
+        if: github.ref != 'refs/heads/main'
         uses: actions/cache@v4
         with:
-          path: ./calculation-engine/internal/pass/graph/data/precomputed_server.bin
-          key: precomputed-server-${{ steps.gcs-meta.outputs.md5 }}
+          path: |
+            ./calculation-engine/data/precomputed/pass.bin
+            ./calculation-engine/data/precomputed/ticket.bin
+          key: precomputed-server-${{ env.SERVICE_NAME }}-${{ steps.gcs-meta.outputs.pass_checksum_type }}-${{ steps.gcs-meta.outputs.pass_checksum }}-${{ steps.gcs-meta.outputs.ticket_checksum_type }}-${{ steps.gcs-meta.outputs.ticket_checksum }}-${{ steps.gcs-meta.outputs.pass_source_hash }}-${{ steps.gcs-meta.outputs.ticket_source_hash }}
 
-      - name: Download Precomputed Server Binary
-        if: steps.cache-bin.outputs.cache-hit != 'true'
+      - name: Download or generate Precomputed Server Binary
+        id: prepare-data
+        if: github.ref == 'refs/heads/main' || steps.cache-bin.outputs.cache-hit != 'true'
+        env:
+          PASS_OBJECT: gs://kippu-navi-build-secrets/data/pass_precomputed_server.bin
+          TICKET_OBJECT: gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin
+          PASS_MISSING: ${{ steps.gcs-meta.outputs.pass_missing }}
+          TICKET_MISSING: ${{ steps.gcs-meta.outputs.ticket_missing }}
+          PASS_NEEDS_GENERATION: ${{ steps.gcs-meta.outputs.pass_needs_generation }}
+          TICKET_NEEDS_GENERATION: ${{ steps.gcs-meta.outputs.ticket_needs_generation }}
+          GRAPH_PATH: ${{ steps.gcs-meta.outputs.graph_path }}
         run: |
-          gcloud storage cp gs://kippu-navi-build-secrets/data/precomputed_server.bin ./calculation-engine/internal/pass/graph/data/
+          set -euo pipefail
+          PASS_GENERATED=false
+          TICKET_GENERATED=false
+          GRAPH_INPUT="${GRAPH_PATH#./calculation-engine/}"
+
+          if [ "$PASS_MISSING" = true ] || [ "$PASS_NEEDS_GENERATION" = true ]; then
+            if [ "$PASS_MISSING" = true ]; then
+              echo "定期券用GCSデータが無いため、現行グラフから生成します。"
+            else
+              echo "定期券用GCSデータの生成元フィンガープリントが古いため、現行ソースから再生成します。"
+            fi
+            (
+              cd calculation-engine
+              mkdir -p data/precomputed
+              go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./data/precomputed/pass.bin
+            )
+            PASS_GENERATED=true
+          else
+            mkdir -p ./calculation-engine/data/precomputed
+            gcloud storage cp "$PASS_OBJECT" ./calculation-engine/data/precomputed/pass.bin
+          fi
+
+          if [ "$TICKET_MISSING" = true ] || [ "$TICKET_NEEDS_GENERATION" = true ]; then
+            if [ "$TICKET_MISSING" = true ]; then
+              echo "乗車券用GCSデータが無いため、現行グラフから生成します。"
+            else
+              echo "乗車券用GCSデータの生成元フィンガープリントが古いため、現行ソースから再生成します。"
+            fi
+            (
+              cd calculation-engine
+              mkdir -p data/precomputed
+              go run ./cmd/precompute-ticket-fares ./data/precomputed/ticket.bin
+            )
+            TICKET_GENERATED=true
+          else
+            mkdir -p ./calculation-engine/data/precomputed
+            gcloud storage cp "$TICKET_OBJECT" ./calculation-engine/data/precomputed/ticket.bin
+          fi
+
+          echo "pass_generated=$PASS_GENERATED" >> "$GITHUB_OUTPUT"
+          echo "ticket_generated=$TICKET_GENERATED" >> "$GITHUB_OUTPUT"
+
+      - name: Validate or regenerate precomputed binaries
+        id: validate-data
+        env:
+          PASS_OBJECT_CHECKSUM_TYPE: ${{ steps.gcs-meta.outputs.pass_checksum_type }}
+          PASS_OBJECT_CHECKSUM: ${{ steps.gcs-meta.outputs.pass_checksum }}
+          TICKET_OBJECT_CHECKSUM_TYPE: ${{ steps.gcs-meta.outputs.ticket_checksum_type }}
+          TICKET_OBJECT_CHECKSUM: ${{ steps.gcs-meta.outputs.ticket_checksum }}
+          PASS_NEEDS_GENERATION: ${{ steps.gcs-meta.outputs.pass_needs_generation }}
+          TICKET_NEEDS_GENERATION: ${{ steps.gcs-meta.outputs.ticket_needs_generation }}
+        run: |
+          set -euo pipefail
+          md5_base64() {
+            openssl dgst -md5 -binary "$1" | base64 -w0
+          }
+
+          crc32c_base64() {
+            gcloud storage hash --skip-md5 "$1" | awk -F': ' '$1 == "crc32c_hash" { print $2 }'
+          }
+
+          checksum_file() {
+            local checksum_type="$1"
+            local path="$2"
+            case "$checksum_type" in
+              md5) md5_base64 "$path" ;;
+              crc32c) crc32c_base64 "$path" ;;
+              *)
+                echo "未対応の事前計算データチェックサム形式です: $checksum_type" >&2
+                return 1
+                ;;
+            esac
+          }
+
+          verify_checksum() {
+            local path="$1"
+            local checksum_type="$2"
+            local expected="$3"
+            local actual
+            actual=$(checksum_file "$checksum_type" "$path")
+            if [ "$actual" != "$expected" ]; then
+              echo "事前計算データのチェックサムが一致しません: $path (形式=$checksum_type, GCS=$expected, local=$actual)" >&2
+              return 1
+            fi
+          }
+
+          verify_magic() {
+            local path="$1"
+            local expected="$2"
+            local actual
+            actual=$(od -An -t x1 -N8 "$path" | tr -d ' \n')
+            if [ "$actual" != "$expected" ]; then
+              echo "事前計算データのmagicが不正です: $path (expected=$expected, actual=$actual)" >&2
+              return 1
+            fi
+          }
+
+          PASS_BINARY_PATH=./calculation-engine/data/precomputed/pass.bin
+          TICKET_BINARY_PATH=./calculation-engine/data/precomputed/ticket.bin
+          if [ "$PASS_NEEDS_GENERATION" = false ]; then
+            verify_checksum "$PASS_BINARY_PATH" "$PASS_OBJECT_CHECKSUM_TYPE" "$PASS_OBJECT_CHECKSUM"
+          fi
+          if [ "$TICKET_NEEDS_GENERATION" = false ]; then
+            verify_checksum "$TICKET_BINARY_PATH" "$TICKET_OBJECT_CHECKSUM_TYPE" "$TICKET_OBJECT_CHECKSUM"
+          fi
+          verify_magic "$PASS_BINARY_PATH" "5352565242494e00"
+          verify_magic "$TICKET_BINARY_PATH" "544b535256320000"
+
+          BINARY_PATH="$PASS_BINARY_PATH"
+          EXPECTED_STATIONS="${{ steps.gcs-meta.outputs.graph_stations }}"
+          ACTUAL_STATIONS=$(od -An -t u4 -j8 -N4 "$BINARY_PATH" | tr -d ' ')
+
+          if [ "$EXPECTED_STATIONS" = "$ACTUAL_STATIONS" ]; then
+            echo "定期券事前計算データを検証しました: ${ACTUAL_STATIONS}駅"
+            exit 0
+          fi
+
+          GRAPH_INPUT="${{ steps.gcs-meta.outputs.graph_path }}"
+          GRAPH_INPUT="${GRAPH_INPUT#./calculation-engine/}"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "本番用事前計算データを現行グラフから再生成します: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
+          else
+            echo "ステージング用事前計算データを現行グラフから再生成します: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
+          fi
+          (
+            cd calculation-engine
+            go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./data/precomputed/pass.bin
+          )
+
+          ACTUAL_STATIONS=$(od -An -t u4 -j8 -N4 "$BINARY_PATH" | tr -d ' ')
+          if [ "$EXPECTED_STATIONS" != "$ACTUAL_STATIONS" ]; then
+            echo "再生成後も駅数が一致しません: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
+            exit 1
+          fi
+          echo "pass_generated=true" >> "$GITHUB_OUTPUT"
+          echo "事前計算データを検証しました: ${ACTUAL_STATIONS}駅"
+
+      - name: Publish generated precomputed binaries
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          (steps.prepare-data.outputs.pass_generated == 'true' ||
+           steps.prepare-data.outputs.ticket_generated == 'true' ||
+           steps.validate-data.outputs.pass_generated == 'true')
+        env:
+          PASS_OBJECT: gs://kippu-navi-build-secrets/data/pass_precomputed_server.bin
+          TICKET_OBJECT: gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin
+          PASS_GENERATED_ON_FETCH: ${{ steps.prepare-data.outputs.pass_generated }}
+          TICKET_GENERATED: ${{ steps.prepare-data.outputs.ticket_generated }}
+          PASS_GENERATED_ON_VALIDATE: ${{ steps.validate-data.outputs.pass_generated }}
+          PASS_SOURCE_HASH: ${{ steps.gcs-meta.outputs.pass_source_hash }}
+          TICKET_SOURCE_HASH: ${{ steps.gcs-meta.outputs.ticket_source_hash }}
+        run: |
+          set -euo pipefail
+          md5_base64() {
+            openssl dgst -md5 -binary "$1" | base64 -w0
+          }
+
+          crc32c_base64() {
+            gcloud storage hash --skip-md5 "$1" | awk -F': ' '$1 == "crc32c_hash" { print $2 }'
+          }
+
+          checksum_file() {
+            local checksum_type="$1"
+            local path="$2"
+            case "$checksum_type" in
+              md5) md5_base64 "$path" ;;
+              crc32c) crc32c_base64 "$path" ;;
+              *)
+                echo "未対応の事前計算データチェックサム形式です: $checksum_type" >&2
+                return 1
+                ;;
+            esac
+          }
+
+          object_checksum() {
+            local object="$1"
+            local metadata_json md5 crc32c
+            metadata_json=$(gcloud storage objects describe "$object" --format=json)
+            md5=$(jq -r '.md5_hash // empty' <<< "$metadata_json")
+            crc32c=$(jq -r '.crc32c_hash // empty' <<< "$metadata_json")
+            if [ -n "$md5" ]; then
+              printf '%s\t%s\n' md5 "$md5"
+            elif [ -n "$crc32c" ]; then
+              printf '%s\t%s\n' crc32c "$crc32c"
+            else
+              echo "アップロード後のGCSオブジェクトにMD5・CRC32Cがありません: $object" >&2
+              return 1
+            fi
+          }
+
+          publish_and_verify() {
+            local path="$1"
+            local object="$2"
+            local source_hash="$3"
+            local local_checksum uploaded_checksum checksum_type uploaded_checksum_type
+
+            gcloud storage cp "$path" "$object"
+            gcloud storage objects update "$object" \
+              --update-custom-metadata="precompute-source-sha256=${source_hash}"
+            IFS=$'\t' read -r uploaded_checksum_type uploaded_checksum <<< "$(object_checksum "$object")"
+            local_checksum=$(checksum_file "$uploaded_checksum_type" "$path")
+            if [ "$local_checksum" != "$uploaded_checksum" ]; then
+              echo "GCSへアップロードした事前計算データのチェックサムが一致しません: $object (形式=$uploaded_checksum_type, local=$local_checksum, GCS=$uploaded_checksum)" >&2
+              return 1
+            fi
+          }
+
+          if [ "$PASS_GENERATED_ON_FETCH" = true ] || [ "$PASS_GENERATED_ON_VALIDATE" = true ]; then
+            publish_and_verify \
+              ./calculation-engine/data/precomputed/pass.bin \
+              "$PASS_OBJECT" \
+              "$PASS_SOURCE_HASH"
+          fi
+          if [ "$TICKET_GENERATED" = true ]; then
+            publish_and_verify \
+              ./calculation-engine/data/precomputed/ticket.bin \
+              "$TICKET_OBJECT" \
+              "$TICKET_SOURCE_HASH"
+          fi
 
       - name: Build and Push Docker Image
         run: |

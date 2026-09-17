@@ -4,32 +4,60 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"syscall/js"
 	"unsafe"
 
 	"calculation-engine/internal/domain"
+	ticketgraphdata "calculation-engine/internal/graphdata"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
-	"calculation-engine/internal/infra/fareio"
+	"calculation-engine/internal/pass/infra/fareio"
 	"calculation-engine/internal/pass/usecase"
+	ticketdomain "calculation-engine/internal/ticket/domain"
+	ticketfare "calculation-engine/internal/ticket/fare"
+	ticketgraph "calculation-engine/internal/ticket/graph"
+	tickethandler "calculation-engine/internal/ticket/handler"
+	ticketfareio "calculation-engine/internal/ticket/infra/fareio"
+	ticketgraphio "calculation-engine/internal/ticket/infra/graphio"
+	ticketusecase "calculation-engine/internal/ticket/usecase"
+	"io"
 )
 
-// tempBuffer はJSから書き込まれる間、GCによる回収を防ぐためのグローバルピン留めバッファ
-var tempBuffer []byte
+// passTempBuffer は定期券JSから書き込まれるバッファ
+var passTempBuffer []byte
 
-// wasmGraph はロードされたバイナリグラフのグローバルインスタンス
-var wasmGraph *WasmGraph
-var baseGraph *graph.RailwayGraph
+// ticketTempBuffer は乗車券JSから書き込まれるバッファ
+var ticketTempBuffer []byte
+
+// passWasmGraph はロードされたバイナリグラフのグローバルインスタンス（定期券用）
+var passWasmGraph *WasmGraph
+
+// ticketWasmGraph は乗車券用のWasmGraph
+var ticketWasmGraph *WasmGraph
+
+var passBaseGraph *graph.RailwayGraph
 var icGraph *graph.RailwayGraph
-var baseAmountCalc *usecase.CalculateAmount
-var icAmountCalc *usecase.CalculateAmount
+var passBaseAmountCalc *usecase.CalculateAmount
+var passIcAmountCalc *usecase.CalculateAmount
 var bypassRules []passdomain.ResolvedBypassRule
+
+// 乗車券用のグローバルコンポーネント
+var ticketFullGraph *ticketgraph.RailwayGraph
+var ticketSearchGraph *ticketgraph.RailwayGraph
+var ticketAmountCalc *ticketusecase.CalculateAmount
+var ticketApplier *ticketusecase.SpecialZoneApplier
+var ticketSegmentEvaluator *ticketusecase.TicketSegmentEvaluator
+var ticketCorrector *ticketusecase.PipelineCorrector
+var ticketRouteExtensions *ticketusecase.RouteExtensionMatcher
+var ticketZoneRegistry *ticketgraphio.SpecialZoneRegistry
+var ticketHandler *tickethandler.Ticket
 
 // 実行中のコンテキスト
 var activeGraph *graph.RailwayGraph
-var activeAmountCalc *usecase.CalculateAmount
+var passActiveAmountCalc *usecase.CalculateAmount
 
 // EdgeBinary はバイナリデータ内の辺表現 (16 bytes)
 type EdgeBinary struct {
@@ -41,7 +69,8 @@ type EdgeBinary struct {
 	IsTrainSpecificSection bool
 	IsBarrierFreeSection   bool
 	IsIcPassArea           bool
-	Pad                    [2]byte
+	IsBoldLineArea         bool
+	SuburbanArea           uint8
 }
 
 // WasmGraph はバイナリデータからキャストされたグラフデータを提供する Graph 実装
@@ -76,8 +105,10 @@ func (g *WasmGraph) GetEdges(id int) []passdomain.PassEdge {
 				IsLocal:                eb.IsLocal,
 				IsTrainSpecificSection: eb.IsTrainSpecificSection,
 				IsBarrierFreeSection:   eb.IsBarrierFreeSection,
+				SuburbanArea:           domain.SuburbanAreaID(eb.SuburbanArea),
 			},
-			IsIcPassArea: eb.IsIcPassArea,
+			IsIcPassArea:   eb.IsIcPassArea,
+			IsBoldLineArea: eb.IsBoldLineArea,
 		}
 	}
 	return edges
@@ -124,26 +155,26 @@ func (b Bitset) Get(i int) bool {
 	return (b[i>>6] & (1 << (i & 63))) != 0
 }
 
-// JavaScript バインディング用ヘルパー
-func prepareGraphBuffer(this js.Value, args []js.Value) interface{} {
+// 定期券用JavaScript バインディング
+func preparePassGraphBuffer(this js.Value, args []js.Value) interface{} {
 	size := args[0].Int()
-	tempBuffer = make([]byte, size)
-	ptr := uintptr(unsafe.Pointer(&tempBuffer[0]))
+	passTempBuffer = make([]byte, size)
+	ptr := uintptr(unsafe.Pointer(&passTempBuffer[0]))
 	return js.ValueOf(int(ptr))
 }
 
-func initGraphFromBuffer(this js.Value, args []js.Value) interface{} {
-	if len(tempBuffer) < 16 {
+func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
+	if len(passTempBuffer) < 16 {
 		return js.ValueOf("error: buffer is too small")
 	}
 
-	magic := string(tempBuffer[:8])
+	magic := string(passTempBuffer[:8])
 	if magic != "WASMGRA\x00" {
 		return js.ValueOf(fmt.Sprintf("error: invalid magic header: %q", magic))
 	}
 
-	numStations := *(*int32)(unsafe.Pointer(&tempBuffer[8]))
-	numEdges := *(*int32)(unsafe.Pointer(&tempBuffer[12]))
+	numStations := *(*int32)(unsafe.Pointer(&passTempBuffer[8]))
+	numEdges := *(*int32)(unsafe.Pointer(&passTempBuffer[12]))
 
 	offsetIndptr := 16
 	offsetIndices := offsetIndptr + int(numStations+1)*4
@@ -151,11 +182,11 @@ func initGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	offsetNameOffsets := offsetEdgeData + int(numEdges)*16
 	offsetNamesBlob := offsetNameOffsets + int(numStations+1)*4
 
-	indptr := unsafe.Slice((*int32)(unsafe.Pointer(&tempBuffer[offsetIndptr])), numStations+1)
-	indices := unsafe.Slice((*int32)(unsafe.Pointer(&tempBuffer[offsetIndices])), numEdges)
-	edgeData := unsafe.Slice((*EdgeBinary)(unsafe.Pointer(&tempBuffer[offsetEdgeData])), numEdges)
-	nameOffsets := unsafe.Slice((*int32)(unsafe.Pointer(&tempBuffer[offsetNameOffsets])), numStations+1)
-	namesBlob := tempBuffer[offsetNamesBlob : offsetNamesBlob+int(nameOffsets[numStations])]
+	indptr := unsafe.Slice((*int32)(unsafe.Pointer(&passTempBuffer[offsetIndptr])), numStations+1)
+	indices := unsafe.Slice((*int32)(unsafe.Pointer(&passTempBuffer[offsetIndices])), numEdges)
+	edgeData := unsafe.Slice((*EdgeBinary)(unsafe.Pointer(&passTempBuffer[offsetEdgeData])), numEdges)
+	nameOffsets := unsafe.Slice((*int32)(unsafe.Pointer(&passTempBuffer[offsetNameOffsets])), numStations+1)
+	namesBlob := passTempBuffer[offsetNamesBlob : offsetNamesBlob+int(nameOffsets[numStations])]
 
 	nameMap := make(map[string]int32, numStations)
 	for i := 0; i < int(numStations); i++ {
@@ -165,7 +196,7 @@ func initGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		nameMap[name] = int32(i)
 	}
 
-	wasmGraph = &WasmGraph{
+	passWasmGraph = &WasmGraph{
 		numStations: numStations,
 		numEdges:    numEdges,
 		indptr:      indptr,
@@ -176,8 +207,8 @@ func initGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		nameMap:     nameMap,
 	}
 
-	// baseGraph の構築
-	baseGraph = &graph.RailwayGraph{
+	// passBaseGraph の構築
+	passBaseGraph = &graph.RailwayGraph{
 		FastGraph: &graph.FastGraph{
 			Edges: make([][]passdomain.PassEdge, numStations),
 		},
@@ -187,97 +218,86 @@ func initGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		},
 	}
 	for i := 0; i < int(numStations); i++ {
-		baseGraph.IDToName[i] = wasmGraph.GetName(i)
-		baseGraph.NameToID[wasmGraph.GetName(i)] = i
-		baseGraph.Edges[i] = wasmGraph.GetEdges(i)
+		passBaseGraph.IDToName[i] = passWasmGraph.GetName(i)
+		passBaseGraph.NameToID[passWasmGraph.GetName(i)] = i
+		passBaseGraph.Edges[i] = passWasmGraph.GetEdges(i)
 	}
 
 	// icGraph の構築
-	ic, err := graph.NewIcPassGraph(baseGraph)
+	ic, err := graph.NewIcPassGraph(passBaseGraph)
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf("error: NewIcPassGraph failed: %v", err))
 	}
 	icGraph = ic
 
-	// baseAmountCalc の構築
-	baseCalcs, err := fareio.InitRegistry(baseGraph)
+	// passBaseAmountCalc の構築
+	passBaseCalcs, err := fareio.InitRegistry(passBaseGraph)
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf("error: InitRegistry failed: %v", err))
 	}
 
-	addonFareReg := passdomain.NewAddonRegistry()
-	addonFareReg.Register("南千歳", "新千歳空港", passdomain.PassPrice{OneMonth: 660, ThreeMonth: 1880, SixMonth: 3180})
-	addonFareReg.Register("日根野", "りんくうタウン", passdomain.PassPrice{OneMonth: 4690, ThreeMonth: 13320, SixMonth: 22440})
-	addonFareReg.Register("日根野", "関西空港", passdomain.PassPrice{OneMonth: 6640, ThreeMonth: 18900, SixMonth: 31820})
-	addonFareReg.Register("りんくうタウン", "関西空港", passdomain.PassPrice{OneMonth: 5010, ThreeMonth: 14250, SixMonth: 24000})
-	addonFareReg.Register("児島", "宇多津", passdomain.PassPrice{OneMonth: 1610, ThreeMonth: 4600, SixMonth: 8170})
-	addonFareReg.Register("田吉", "宮崎空港", passdomain.PassPrice{OneMonth: 3840, ThreeMonth: 10960, SixMonth: 18680})
+	passAddonFareReg := passdomain.NewAddonRegistry()
+	passAddonFareReg.Register("南千歳", "新千歳空港", passdomain.PassPrice{OneMonth: 660, ThreeMonth: 1880, SixMonth: 3180})
+	passAddonFareReg.Register("日根野", "りんくうタウン", passdomain.PassPrice{OneMonth: 4690, ThreeMonth: 13320, SixMonth: 22440})
+	passAddonFareReg.Register("日根野", "関西空港", passdomain.PassPrice{OneMonth: 6640, ThreeMonth: 18900, SixMonth: 31820})
+	passAddonFareReg.Register("りんくうタウン", "関西空港", passdomain.PassPrice{OneMonth: 5010, ThreeMonth: 14250, SixMonth: 24000})
+	passAddonFareReg.Register("児島", "宇多津", passdomain.PassPrice{OneMonth: 1610, ThreeMonth: 4600, SixMonth: 8170})
+	passAddonFareReg.Register("田吉", "宮崎空港", passdomain.PassPrice{OneMonth: 3840, ThreeMonth: 10960, SixMonth: 18680})
 
-	addonFareReg.ResolveIDs(func(name string) (int, bool) {
-		return baseGraph.GetID(name)
+	passAddonFareReg.ResolveIDs(func(name string) (int, bool) {
+		return passBaseGraph.GetID(name)
 	})
 
-	addonChargeReg := passdomain.NewAddonRegistry()
-	addonChargeReg.Register("博多", "博多南", passdomain.PassPrice{OneMonth: 4680, ThreeMonth: 13340, SixMonth: 25270})
-	addonChargeReg.ResolveIDs(func(name string) (int, bool) {
-		return baseGraph.GetID(name)
+	passAddonChargeReg := passdomain.NewAddonRegistry()
+	passAddonChargeReg.Register("博多", "博多南", passdomain.PassPrice{OneMonth: 4680, ThreeMonth: 13340, SixMonth: 25270})
+	passAddonChargeReg.ResolveIDs(func(name string) (int, bool) {
+		return passBaseGraph.GetID(name)
 	})
 
-	baseAmountCalc = usecase.NewCalculateAmount(
-		baseGraph,
-		baseCalcs.Registry,
-		addonFareReg,
-		addonChargeReg,
-		baseCalcs.TrainSpecific,
-		baseCalcs.SpecificRoute,
-		baseCalcs.AdjustedRoute,
+	passPrivateFareReg, err := fareio.NewPrivateFareRegistry()
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: passPrivateFareRegistry Init failed: %v", err))
+	}
+
+	passBaseAmountCalc = usecase.NewCalculateAmount(
+		passBaseGraph,
+		passBaseCalcs.Registry,
+		passAddonFareReg,
+		passAddonChargeReg,
+		passBaseCalcs.TrainSpecific,
+		passBaseCalcs.SpecificRoute,
+		passBaseCalcs.AdjustedRoute,
+		passPrivateFareReg,
 	)
 
-	// icAmountCalc の構築
-	icCalcs, err := fareio.InitRegistry(icGraph)
+	// passIcAmountCalc の構築
+	passIcCalcs, err := fareio.InitRegistry(icGraph)
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf("error: ic InitRegistry failed: %v", err))
 	}
-	icAmountCalc = usecase.NewCalculateAmount(
+	passIcAmountCalc = usecase.NewCalculateAmount(
 		icGraph,
-		icCalcs.Registry,
-		addonFareReg,
-		addonChargeReg,
-		icCalcs.TrainSpecific,
-		icCalcs.SpecificRoute,
-		icCalcs.AdjustedRoute,
+		passIcCalcs.Registry,
+		passAddonFareReg,
+		passAddonChargeReg,
+		passIcCalcs.TrainSpecific,
+		passIcCalcs.SpecificRoute,
+		passIcCalcs.AdjustedRoute,
+		passPrivateFareReg,
 	)
 
 	// 特例ルールの設定
-	bypassReg := passdomain.NewBypassRegistry()
-	bypassReg.Register(
-		[]string{"大沼", "大沼公園", "赤井川", "駒ケ岳", "森"},
-		[]string{"大沼", "鹿部", "渡島沼尻", "渡島砂原", "掛澗", "尾白内", "東森", "森"},
-	)
-	bypassReg.Register(
-		[]string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"},
-		[]string{"日暮里", "尾久", "赤羽"},
-	)
-	bypassReg.Register(
-		[]string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"},
-		[]string{"赤羽", "北赤羽", "浮間舟渡", "戸田公園", "（北）戸田", "北戸田", "武蔵浦和", "中浦和", "南与野", "与野本町", "北与野", "大宮"},
-	)
-	bypassReg.Register(
-		[]string{"品川", "大井町", "大森", "蒲田", "川崎", "鶴見"},
-		[]string{"品川", "西大井", "武蔵小杉", "新川崎", "鶴見"},
-	)
-
-	rules, err := bypassReg.ResolveIDs(func(name string) (int, bool) {
-		return baseGraph.GetID(name)
+	passBypassReg := passdomain.NewDefaultBypassRegistry()
+	bypassRules, err = passBypassReg.ResolveIDs(func(name string) (int, bool) {
+		return passBaseGraph.GetID(name)
 	})
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf("error: ResolveIDs failed: %v", err))
 	}
-	bypassRules = rules
 	initPassBypassRules()
 
 	// 初期化完了に伴い、一時バッファへのピン留めを解除しGCに開放
-	tempBuffer = nil
+	passTempBuffer = nil
 
 	return js.ValueOf(true)
 }
@@ -289,10 +309,10 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 
 	if isIc {
 		activeGraph = icGraph
-		activeAmountCalc = icAmountCalc
+		passActiveAmountCalc = passIcAmountCalc
 	} else {
-		activeGraph = baseGraph
-		activeAmountCalc = baseAmountCalc
+		activeGraph = passBaseGraph
+		passActiveAmountCalc = passBaseAmountCalc
 	}
 
 	var splitNames []string
@@ -306,7 +326,7 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 
 	splitIDs := make([]int, len(splitNames))
 	for i, name := range splitNames {
-		id, ok := wasmGraph.GetID(name)
+		id, ok := passWasmGraph.GetID(name)
 		if !ok {
 			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
 		}
@@ -350,7 +370,7 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 		for _, seg := range combo {
 			pathNames := make([]string, len(seg.Path))
 			for k, id := range seg.Path {
-				pathNames[k] = wasmGraph.GetName(id)
+				pathNames[k] = passWasmGraph.GetName(id)
 			}
 			viaNames := usecase.GetVia(activeGraph, seg.Path)
 			var eigyo domain.DeciKilo
@@ -365,8 +385,8 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 				Via:            viaNames,
 				Result:         seg.Result,
 				TotalEigyoKilo: eigyo,
-				Start:          wasmGraph.GetName(seg.StartStationID),
-				End:            wasmGraph.GetName(seg.EndStationID),
+				Start:          passWasmGraph.GetName(seg.StartStationID),
+				End:            passWasmGraph.GetName(seg.EndStationID),
 			})
 		}
 		clientResults = append(clientResults, ResultResponse{
@@ -382,7 +402,7 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 		seg := normalSegs[0]
 		pathNames := make([]string, len(seg.Path))
 		for k, id := range seg.Path {
-			pathNames[k] = wasmGraph.GetName(id)
+			pathNames[k] = passWasmGraph.GetName(id)
 		}
 		viaNames := usecase.GetVia(activeGraph, seg.Path)
 		var eigyo domain.DeciKilo
@@ -398,8 +418,8 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 					Via:            viaNames,
 					Result:         seg.Result,
 					TotalEigyoKilo: eigyo,
-					Start:          wasmGraph.GetName(seg.StartStationID),
-					End:            wasmGraph.GetName(seg.EndStationID),
+					Start:          passWasmGraph.GetName(seg.StartStationID),
+					End:            passWasmGraph.GetName(seg.EndStationID),
 				},
 			},
 		}
@@ -465,7 +485,7 @@ func getCheapestNoSplitSegmentsWasm(start, end, months int, allowOvershoot bool)
 	var bestResults []*usecase.CalculationResult
 
 	for _, path := range validPaths {
-		res, err := activeAmountCalc.Execute(path, months)
+		res, err := passActiveAmountCalc.Execute(path, months)
 		if err != nil {
 			continue
 		}
@@ -748,12 +768,12 @@ func initPassBypassRules() {
 	for _, r := range rawRules {
 		detIDs := make([]int, len(r.detour))
 		for i, name := range r.detour {
-			id, _ := wasmGraph.GetID(name)
+			id, _ := passWasmGraph.GetID(name)
 			detIDs[i] = id
 		}
 		shIDs := make([]int, len(r.shortcut))
 		for i, name := range r.shortcut {
-			id, _ := wasmGraph.GetID(name)
+			id, _ := passWasmGraph.GetID(name)
 			shIDs[i] = id
 		}
 		passBypassRules = append(passBypassRules, passBypassRule{
@@ -956,10 +976,10 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 
 	if isIc {
 		activeGraph = icGraph
-		activeAmountCalc = icAmountCalc
+		passActiveAmountCalc = passIcAmountCalc
 	} else {
-		activeGraph = baseGraph
-		activeAmountCalc = baseAmountCalc
+		activeGraph = passBaseGraph
+		passActiveAmountCalc = passBaseAmountCalc
 	}
 
 	var stationNames []string
@@ -973,11 +993,14 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 
 	stationIDs := make([]int, len(stationNames))
 	for i, name := range stationNames {
-		id, ok := wasmGraph.GetID(name)
+		id, ok := passWasmGraph.GetID(name)
 		if !ok {
 			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
 		}
 		stationIDs[i] = id
+	}
+	if domain.HasDuplicateStation(stationIDs) {
+		return js.ValueOf(fmt.Sprintf(`{"error":%q}`, domain.ErrDuplicateRoute.Error()))
 	}
 
 	var finalPath []int
@@ -993,7 +1016,7 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 			if !isPathValidWasm(cand) {
 				continue
 			}
-			res, err := activeAmountCalc.Execute(cand, months)
+			res, err := passActiveAmountCalc.Execute(cand, months)
 			if err != nil {
 				continue
 			}
@@ -1012,16 +1035,16 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 		finalPath = applyNormalBypassCorrection(stationIDs)
 	}
 
-	res, err := activeAmountCalc.Execute(finalPath, months)
+	res, err := passActiveAmountCalc.Execute(finalPath, months)
 	if err != nil {
 		return js.ValueOf(fmt.Sprintf(`{"error":"calculation failed: %v"}`, err))
 	}
 
-	viaList := usecase.GetVia(wasmGraph, finalPath)
+	viaList := usecase.GetVia(passWasmGraph, finalPath)
 
 	correctedPathNames := make([]string, len(finalPath))
 	for i, id := range finalPath {
-		correctedPathNames[i] = wasmGraph.GetName(id)
+		correctedPathNames[i] = passWasmGraph.GetName(id)
 	}
 
 	type RoutePassResponse struct {
@@ -1047,13 +1070,713 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 	return js.ValueOf(string(resBytes))
 }
 
+func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
+	splitStationsJson := args[0].String()
+
+	var splitNames []string
+	if err := json.Unmarshal([]byte(splitStationsJson), &splitNames); err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSON unmarshal failed: %v"}`, err))
+	}
+
+	if len(splitNames) < 2 {
+		return js.ValueOf(`{"error":"at least 2 stations required"}`)
+	}
+
+	splitIDs := make([]int, len(splitNames))
+	for i, name := range splitNames {
+		id, ok := ticketFullGraph.GetID(name)
+		if !ok {
+			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
+		}
+		splitIDs[i] = id
+	}
+
+	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
+
+	var allSegCandidates [][]ticketusecase.TicketSplitSegment
+	for i := 0; i < len(splitIDs)-1; i++ {
+		segs, err := search.GetCheapestTicketSegments(splitIDs[i], splitIDs[i+1])
+		if err != nil {
+			return js.ValueOf(fmt.Sprintf(`{"error":"failed to get segments: %v"}`, err))
+		}
+		allSegCandidates = append(allSegCandidates, segs)
+	}
+
+	// generate combinations
+	var combinations [][]ticketusecase.TicketSplitSegment
+	var current []ticketusecase.TicketSplitSegment
+	var backtrack func(depth int)
+	backtrack = func(depth int) {
+		if depth == len(allSegCandidates) {
+			combo := make([]ticketusecase.TicketSplitSegment, len(current))
+			copy(combo, current)
+			combinations = append(combinations, combo)
+			return
+		}
+		for _, seg := range allSegCandidates[depth] {
+			current = append(current, seg)
+			backtrack(depth + 1)
+			current = current[:len(current)-1]
+		}
+	}
+	if len(allSegCandidates) > 0 {
+		backtrack(0)
+	}
+
+	type SegmentResponse struct {
+		Path           []string                         `json:"path"`
+		Via            []string                         `json:"via"`
+		Result         *ticketusecase.CalculationResult `json:"result"`
+		TotalEigyoKilo domain.DeciKilo                  `json:"totalEigyoKilo"`
+		Start          string                           `json:"start"`
+		End            string                           `json:"end"`
+	}
+
+	type ResultResponse struct {
+		TotalAmount int               `json:"totalAmount"`
+		Segments    []SegmentResponse `json:"segments"`
+	}
+
+	type ClientResponse struct {
+		Normal  ResultResponse   `json:"normal"`
+		Results []ResultResponse `json:"results"`
+	}
+
+	var clientResults []ResultResponse
+	for _, combo := range combinations {
+		var apiSegments []SegmentResponse
+		totalAmount := 0
+		for _, seg := range combo {
+			correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
+			if len(correctedPath) == 0 {
+				correctedPath = seg.Path
+			}
+			correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
+			if correctedResult != nil {
+				correctedPath = correctedTransformedPath
+			}
+			if correctedResult == nil {
+				correctedResult = seg.Result
+			}
+
+			pathNames := make([]string, len(correctedPath))
+			for k, id := range correctedPath {
+				pathNames[k] = ticketFullGraph.GetName(id)
+			}
+			viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
+			var eigyo domain.DeciKilo
+			if correctedResult != nil {
+				eigyo = correctedResult.TotalEigyoKilo
+			}
+			fare := correctedResult.TotalAmount()
+			totalAmount += fare
+
+			apiSegments = append(apiSegments, SegmentResponse{
+				Path:           pathNames,
+				Via:            viaNames,
+				Result:         seg.Result,
+				TotalEigyoKilo: eigyo,
+				Start:          ticketFullGraph.GetName(seg.StartStationID),
+				End:            ticketFullGraph.GetName(seg.EndStationID),
+			})
+		}
+		clientResults = append(clientResults, ResultResponse{
+			TotalAmount: totalAmount,
+			Segments:    apiSegments,
+		})
+	}
+
+	// 通常経路（分割なし）の算出
+	normalSegs, err := search.GetCheapestTicketSegments(splitIDs[0], splitIDs[len(splitIDs)-1])
+	var normalResult ResultResponse
+	if err == nil && len(normalSegs) > 0 {
+		seg := normalSegs[0]
+		correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
+		if len(correctedPath) == 0 {
+			correctedPath = seg.Path
+		}
+		correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
+		if correctedResult != nil {
+			correctedPath = correctedTransformedPath
+		}
+		if correctedResult == nil {
+			correctedResult = seg.Result
+		}
+
+		pathNames := make([]string, len(correctedPath))
+		for k, id := range correctedPath {
+			pathNames[k] = ticketFullGraph.GetName(id)
+		}
+		viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
+		var eigyo domain.DeciKilo
+		if correctedResult != nil {
+			eigyo = correctedResult.TotalEigyoKilo
+		}
+
+		normalResult = ResultResponse{
+			TotalAmount: correctedResult.TotalAmount(),
+			Segments: []SegmentResponse{
+				{
+					Path:           pathNames,
+					Via:            viaNames,
+					Result:         correctedResult,
+					TotalEigyoKilo: eigyo,
+					Start:          ticketFullGraph.GetName(seg.StartStationID),
+					End:            ticketFullGraph.GetName(seg.EndStationID),
+				},
+			},
+		}
+	}
+
+	resp := ClientResponse{
+		Normal:  normalResult,
+		Results: clientResults,
+	}
+
+	respJSON, err := json.Marshal(resp)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSON marshal failed: %v"}`, err))
+	}
+
+	return js.ValueOf(string(respJSON))
+}
+
 func main() {
 	c := make(chan struct{})
 
-	js.Global().Set("prepareGraphBuffer", js.FuncOf(prepareGraphBuffer))
-	js.Global().Set("initGraphFromBuffer", js.FuncOf(initGraphFromBuffer))
+	js.Global().Set("preparePassGraphBuffer", js.FuncOf(preparePassGraphBuffer))
+	js.Global().Set("initPassGraphFromBuffer", js.FuncOf(initPassGraphFromBuffer))
+	js.Global().Set("prepareTicketGraphBuffer", js.FuncOf(prepareTicketGraphBuffer))
+	js.Global().Set("initTicketGraphFromBuffer", js.FuncOf(initTicketGraphFromBuffer))
 	js.Global().Set("reconstructAndCalculate", js.FuncOf(reconstructAndCalculate))
+	js.Global().Set("reconstructAndCalculateTicket", js.FuncOf(reconstructAndCalculateTicket))
 	js.Global().Set("calculateRoutePass", js.FuncOf(calculateRoutePass))
+	js.Global().Set("calculateRouteTicket", js.FuncOf(calculateRouteTicket))
+	js.Global().Set("calculateOptimalSplitTicket", js.FuncOf(calculateOptimalSplitTicket))
 
 	<-c
+}
+
+// 乗車券用のJSバインディング
+func prepareTicketGraphBuffer(this js.Value, args []js.Value) interface{} {
+	size := args[0].Int()
+	ticketTempBuffer = make([]byte, size)
+	ptr := uintptr(unsafe.Pointer(&ticketTempBuffer[0]))
+	return js.ValueOf(int(ptr))
+}
+
+func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
+	if len(ticketTempBuffer) < 16 {
+		return js.ValueOf("error: buffer is too small")
+	}
+
+	magic := string(ticketTempBuffer[:8])
+	if magic != "WASMGRA\x00" {
+		return js.ValueOf(fmt.Sprintf("error: invalid magic header: %q", magic))
+	}
+
+	numStations := *(*int32)(unsafe.Pointer(&ticketTempBuffer[8]))
+	numEdges := *(*int32)(unsafe.Pointer(&ticketTempBuffer[12]))
+
+	offsetIndptr := 16
+	offsetIndices := offsetIndptr + int(numStations+1)*4
+	offsetEdgeData := offsetIndices + int(numEdges)*4
+	offsetNameOffsets := offsetEdgeData + int(numEdges)*16
+	offsetNamesBlob := offsetNameOffsets + int(numStations+1)*4
+
+	indptr := unsafe.Slice((*int32)(unsafe.Pointer(&ticketTempBuffer[offsetIndptr])), numStations+1)
+	indices := unsafe.Slice((*int32)(unsafe.Pointer(&ticketTempBuffer[offsetIndices])), numEdges)
+	edgeData := unsafe.Slice((*EdgeBinary)(unsafe.Pointer(&ticketTempBuffer[offsetEdgeData])), numEdges)
+	nameOffsets := unsafe.Slice((*int32)(unsafe.Pointer(&ticketTempBuffer[offsetNameOffsets])), numStations+1)
+	namesBlob := ticketTempBuffer[offsetNamesBlob : offsetNamesBlob+int(nameOffsets[numStations])]
+
+	nameMap := make(map[string]int32, numStations)
+	for i := 0; i < int(numStations); i++ {
+		start := nameOffsets[i]
+		end := nameOffsets[i+1]
+		name := string(namesBlob[start:end])
+		nameMap[name] = int32(i)
+	}
+
+	ticketWasmGraph = &WasmGraph{
+		numStations: numStations,
+		numEdges:    numEdges,
+		indptr:      indptr,
+		indices:     indices,
+		edgeData:    edgeData,
+		nameOffsets: nameOffsets,
+		namesBlob:   namesBlob,
+		nameMap:     nameMap,
+	}
+
+	ticketFullGraph = &ticketgraph.RailwayGraph{
+		FastGraph: &ticketgraph.FastGraph{
+			Edges:              make([][]ticketdomain.TicketEdge, numStations),
+			PhysicalEdgeCounts: make([]int, numStations),
+		},
+		StationNameIDMapper: &ticketgraph.StationNameIDMapper{
+			NameToID: make(map[string]int, numStations),
+			IDToName: make([]string, numStations),
+		},
+	}
+	for i := 0; i < int(numStations); i++ {
+		name := ticketWasmGraph.GetName(i)
+		ticketFullGraph.IDToName[i] = name
+		ticketFullGraph.NameToID[name] = i
+		// WasmGraph から PassEdge を取り出し、TicketEdge に変換する
+		passEdges := ticketWasmGraph.GetEdges(i)
+		ticketEdges := make([]ticketdomain.TicketEdge, len(passEdges))
+		for j, pe := range passEdges {
+			ticketEdges[j] = ticketdomain.TicketEdge{
+				Edge:           pe.Edge,
+				IsBoldLineArea: pe.IsBoldLineArea,
+			}
+		}
+		ticketFullGraph.Edges[i] = ticketEdges
+		ticketFullGraph.PhysicalEdgeCounts[i] = len(ticketEdges)
+	}
+	if err := (&ticketgraphio.JSONLoader{}).AddVirtualEdges(ticketFullGraph, ticketgraphdata.GetFareGraphEdgeReaders()...); err != nil {
+		return js.ValueOf(fmt.Sprintf("error: failed to add virtual ticket edges: %v", err))
+	}
+	ticketSearchGraph = ticketgraph.NewPhysicalGraphView(ticketFullGraph)
+
+	// 乗車券コンポーネント初期化
+	zoneRoutesBytes, err := io.ReadAll(ticketgraphdata.GetZoneRoutesReader())
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: failed to read zone routes data: %v", err))
+	}
+	ticketZoneRoutes, err := ticketdomain.LoadZoneRoutesFromBytes(zoneRoutesBytes)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: ticket zone routes load failed: %v", err))
+	}
+
+	arBytes, err := io.ReadAll(ticketgraphdata.GetArticle70RoutesReader())
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: failed to read article70 routes data: %v", err))
+	}
+	ticketArticle70Routes, err := ticketdomain.LoadArticle70RoutesFromBytes(arBytes)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: ticket article70 routes load failed: %v", err))
+	}
+
+	ticketZoneReg, err := ticketgraphio.LoadSpecialZones()
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: LoadSpecialZones failed: %v", err))
+	}
+	ticketZoneRegistry = ticketZoneReg
+	for _, z := range ticketZoneReg.Zones {
+		ticketFullGraph.GetOrAddID(z.Name)
+	}
+	for _, zoneName := range ticketZoneRoutes.ZoneNames() {
+		ticketFullGraph.GetOrAddID(zoneName)
+	}
+
+	ticketFareReg := ticketfare.NewRegistry()
+	ticketFareioReg, err := ticketfareio.NewRegistry()
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: ticket fareio load failed: %v", err))
+	}
+	ticketRouteExtensions, err = ticketusecase.NewRouteExtensionMatcherIDs(ticketfareio.GetGeneratedRouteExtensions(), ticketFullGraph)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: route extension data initialization failed: %v", err))
+	}
+
+	ticketSpecificMatcher := ticketfare.NewPathMatcher()
+	for _, f := range ticketFareioReg.GetSpecificFares() {
+		ids := make([]int, 0, len(f.Path))
+		for _, name := range f.Path {
+			id, ok := ticketFullGraph.GetID(name)
+			if ok {
+				ids = append(ids, id)
+			}
+		}
+		if len(ids) == len(f.Path) {
+			if err := ticketSpecificMatcher.Insert(ids, f.Fare); err != nil {
+				return js.ValueOf(fmt.Sprintf("エラー: 特定運賃の登録に失敗しました (経路: %v): %v", f.Path, err))
+			}
+		}
+	}
+
+	ticketAdjustedMatcher := ticketfare.NewPathMatcher()
+	for _, f := range ticketFareioReg.GetAdjustedFares() {
+		ids := make([]int, 0, len(f.Path))
+		for _, name := range f.Path {
+			id, ok := ticketFullGraph.GetID(name)
+			if ok {
+				ids = append(ids, id)
+			}
+		}
+		if len(ids) == len(f.Path) {
+			if err := ticketAdjustedMatcher.Insert(ids, f.Fare); err != nil {
+				return js.ValueOf(fmt.Sprintf("エラー: 調整運賃の登録に失敗しました (経路: %v): %v", f.Path, err))
+			}
+		}
+	}
+
+	ticketAddonFareReg := ticketfare.NewAddonRegistry()
+	ticketAddonFareReg.Register("南千歳", "新千歳空港", 20)
+	ticketAddonFareReg.Register("日根野", "りんくうタウン", 160)
+	ticketAddonFareReg.Register("りんくうタウン", "関西空港", 170)
+	ticketAddonFareReg.Register("日根野", "関西空港", 220)
+	ticketAddonFareReg.Register("児島", "宇多津", 110)
+	ticketAddonFareReg.Register("田吉", "宮崎空港", 130)
+
+	if err := ticketAddonFareReg.ResolveIDs(func(name string) (int, bool) {
+		return ticketFullGraph.GetID(name)
+	}); err != nil {
+		return js.ValueOf(fmt.Sprintf("error: ticket addon fare resolve failed: %v", err))
+	}
+
+	ticketPrivateFareReg, err := ticketfareio.NewPrivateFareRegistry()
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf("error: private fare load failed: %v", err))
+	}
+
+	ticketTrainSpecificCalc := ticketfare.NewTrainSpecificSectionCalculator()
+
+	ticketAmountCalc = ticketusecase.NewCalculateAmount(
+		ticketFareReg,
+		ticketAddonFareReg,
+		ticketTrainSpecificCalc,
+		ticketSpecificMatcher,
+		ticketAdjustedMatcher,
+		ticketPrivateFareReg,
+		ticketFullGraph,
+		ticketZoneRoutes,
+	)
+
+	ticketApplier = ticketusecase.NewSpecialZoneApplier(ticketFullGraph, ticketZoneReg)
+	ticketSegmentEvaluator = ticketusecase.NewTicketSegmentEvaluator(
+		ticketAmountCalc,
+		ticketApplier,
+		ticketusecase.NewPostZoneCleanupCorrector(),
+		ticketZoneReg,
+		ticketFullGraph,
+	)
+
+	// 経路補正候補を、運賃特例適用後の通常モードの運賃で比較する。
+	// Correctorには物理経路だけを返すため、評価器が返す変換後経路は破棄する。
+	fareEval := func(path []int) (int, error) {
+		res, _, err := ticketSegmentEvaluator.ExecuteWithMode(path, 0, "normal")
+		if err != nil {
+			return 0, err
+		}
+		return res.TotalAmount(), nil
+	}
+
+	ticketCorrector = ticketusecase.NewPipelineCorrector(
+		ticketusecase.NewSuburbanAreaCorrector(fareEval),
+		ticketusecase.NewShinkansenOverlapCorrector(),
+		ticketusecase.NewRule43_2Corrector(),
+		ticketusecase.NewRule69Corrector(),
+		ticketusecase.NewRule157Corrector(),
+		ticketusecase.NewArticle70Corrector(ticketArticle70Routes),
+	)
+
+	ticketHandler = tickethandler.NewTicketWithRouteExtensionsAndZones(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneReg)
+
+	// 初期化完了に伴い、一時バッファへのピン留めを解除しGCに開放
+	ticketWasmGraph = nil
+	ticketTempBuffer = nil
+
+	return js.ValueOf("ok")
+}
+
+func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
+	var start float64
+	if perf := js.Global().Get("performance"); perf.Truthy() {
+		start = perf.Call("now").Float()
+	}
+
+	if ticketHandler == nil {
+		return js.ValueOf(`{"error": "ticket graph not initialized"}`)
+	}
+
+	if len(args) < 1 {
+		return js.ValueOf(`{"error": "invalid arguments"}`)
+	}
+
+	jsonStr := args[0].String()
+
+	var req tickethandler.RouteRequest
+	if err := json.Unmarshal([]byte(jsonStr), &req); err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error": "invalid json: %s"}`, err.Error()))
+	}
+
+	var pathIDs []int
+	for _, p := range req.FullPath {
+		if id, ok := ticketFullGraph.GetID(p.StationName); ok {
+			pathIDs = append(pathIDs, id)
+		} else {
+			return js.ValueOf(fmt.Sprintf(`{"error": "駅が見つかりません: %s"}`, p.StationName))
+		}
+	}
+	if domain.HasDuplicateStation(pathIDs) {
+		return js.ValueOf(fmt.Sprintf(`{"error":%q}`, domain.ErrDuplicateRoute.Error()))
+	}
+
+	var correctedPath []int
+	var suburbanPath []int
+	evaluationMode := ticketusecase.NormalizeFareEvaluationMode(req.CalculationMode)
+	var err error
+	if req.CalculationMode == "cheapest" {
+		fareEval := func(candidate []int) (int, error) {
+			res, _, evalErr := ticketSegmentEvaluator.ExecuteWithMode(candidate, 0, "normal")
+			if evalErr != nil {
+				return 0, evalErr
+			}
+			return res.TotalAmount(), nil
+		}
+		correctedPath, suburbanPath, err = ticketusecase.SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(pathIDs, ticketFullGraph, ticketCorrector, ticketRouteExtensions, ticketZoneRegistry, fareEval)
+	} else {
+		correctedPath, evaluationMode, suburbanPath, err = ticketusecase.CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(pathIDs, ticketFullGraph, ticketCorrector, ticketRouteExtensions, req.CalculationMode)
+	}
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error": "経路補正エラー: %v"}`, err))
+	}
+
+	evaluationResult, transformedPath, err := ticketSegmentEvaluator.ExecuteWithMode(correctedPath, 0, evaluationMode)
+	if err == nil {
+		correctedPath = transformedPath
+	}
+	if err != nil {
+		if errors.Is(err, domain.ErrInvalidPath) {
+			return js.ValueOf(`{"error": "再考：要求区間誤り"}`)
+		}
+		return js.ValueOf(fmt.Sprintf(`{"error": "運賃計算エラー: %v"}`, err))
+	}
+
+	var printStrings = []string{} // 経由印字は未実装
+
+	depStation := ticketFullGraph.GetName(evaluationResult.FinalPath[0])
+	arrStation := ticketFullGraph.GetName(evaluationResult.FinalPath[len(evaluationResult.FinalPath)-1])
+
+	// 有効日数の計算（JR・他社線の合計営業キロから算出）
+	validDays := ticketusecase.CalculateTicketValidDays(evaluationResult.TotalPathEigyoKilo, suburbanPath, ticketFullGraph)
+
+	var elapsed float64
+	if perf := js.Global().Get("performance"); perf.Truthy() {
+		elapsed = perf.Call("now").Float() - start
+	}
+
+	resp := tickethandler.RouteResponse{
+		Data: tickethandler.KippuData{
+			Fare:             evaluationResult.TotalAmount(),
+			ValidDays:        validDays,
+			TotalEigyoKilo:   int(evaluationResult.TotalPathEigyoKilo),
+			DepartureStation: depStation,
+			ArrivalStation:   arrStation,
+			PrintedViaLines:  printStrings,
+		},
+		Time: elapsed,
+	}
+
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error": "JSONエンコードエラー: %v"}`, err))
+	}
+
+	return js.ValueOf(string(respBytes))
+}
+
+func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
+	startName := args[0].String()
+	endName := args[1].String()
+	maxSections := 0
+	if len(args) > 2 && args[2].Type() == js.TypeNumber {
+		maxSplits := args[2].Int()
+		if maxSplits < 0 || maxSplits > 10 {
+			return js.ValueOf(`{"error":"maxSplitsは0以上10以下で指定してください"}`)
+		}
+		if maxSplits > 0 {
+			maxSections = maxSplits + 1
+		}
+	}
+	var lockedNames []string
+	if len(args) > 3 && args[3].Type() == js.TypeString && args[3].String() != "" {
+		if err := json.Unmarshal([]byte(args[3].String()), &lockedNames); err != nil {
+			return js.ValueOf(fmt.Sprintf(`{"error":"noSplitStationの解析に失敗しました: %v"}`, err))
+		}
+	}
+
+	startID, ok := ticketFullGraph.GetID(startName)
+	if !ok {
+		return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, startName))
+	}
+	endID, ok := ticketFullGraph.GetID(endName)
+	if !ok {
+		return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, endName))
+	}
+	lockedStations := make([]int, 0, len(lockedNames))
+	seenLocked := make(map[int]struct{}, len(lockedNames))
+	for _, name := range lockedNames {
+		id, exists := ticketFullGraph.GetID(name)
+		if !exists {
+			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
+		}
+		if _, exists := seenLocked[id]; exists {
+			continue
+		}
+		seenLocked[id] = struct{}{}
+		lockedStations = append(lockedStations, id)
+	}
+
+	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
+
+	bestResultPaths, err := search.ExecuteWithOptions(startID, endID, maxSections, lockedStations)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"failed to search optimal split: %v"}`, err))
+	}
+
+	type SegmentResponse struct {
+		Path           []string                         `json:"path"`
+		Via            []string                         `json:"via"`
+		Result         *ticketusecase.CalculationResult `json:"result"`
+		TotalEigyoKilo domain.DeciKilo                  `json:"totalEigyoKilo"`
+		Start          string                           `json:"start"`
+		End            string                           `json:"end"`
+	}
+
+	type ResultResponse struct {
+		TotalAmount int               `json:"totalAmount"`
+		Segments    []SegmentResponse `json:"segments"`
+	}
+
+	type ClientResponse struct {
+		Normal  ResultResponse   `json:"normal"`
+		Results []ResultResponse `json:"results"`
+	}
+
+	var clientResults []ResultResponse
+
+	for _, splitIDs := range bestResultPaths {
+		var allSegCandidates [][]ticketusecase.TicketSplitSegment
+		for i := 0; i < len(splitIDs)-1; i++ {
+			segs, err := search.GetCheapestTicketSegments(splitIDs[i], splitIDs[i+1])
+			if err != nil {
+				continue
+			}
+			allSegCandidates = append(allSegCandidates, segs)
+		}
+		if len(allSegCandidates) != len(splitIDs)-1 {
+			continue
+		}
+
+		var combinations [][]ticketusecase.TicketSplitSegment
+		var current []ticketusecase.TicketSplitSegment
+		var backtrack func(depth int)
+		backtrack = func(depth int) {
+			if depth == len(allSegCandidates) {
+				combo := make([]ticketusecase.TicketSplitSegment, len(current))
+				copy(combo, current)
+				combinations = append(combinations, combo)
+				return
+			}
+			for _, seg := range allSegCandidates[depth] {
+				current = append(current, seg)
+				backtrack(depth + 1)
+				current = current[:len(current)-1]
+			}
+		}
+		if len(allSegCandidates) > 0 {
+			backtrack(0)
+		}
+
+		for _, combo := range combinations {
+			var apiSegments []SegmentResponse
+			totalAmount := 0
+			for _, seg := range combo {
+				correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
+				if len(correctedPath) == 0 {
+					correctedPath = seg.Path
+				}
+				correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
+				if correctedResult != nil {
+					correctedPath = correctedTransformedPath
+				}
+				if correctedResult == nil {
+					correctedResult = seg.Result
+				}
+
+				pathNames := make([]string, len(correctedPath))
+				for k, id := range correctedPath {
+					pathNames[k] = ticketFullGraph.GetName(id)
+				}
+				viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
+				var eigyo domain.DeciKilo
+				if correctedResult != nil {
+					eigyo = correctedResult.TotalEigyoKilo
+				}
+				fare := correctedResult.TotalAmount()
+				totalAmount += fare
+
+				apiSegments = append(apiSegments, SegmentResponse{
+					Path:           pathNames,
+					Via:            viaNames,
+					Result:         correctedResult,
+					TotalEigyoKilo: eigyo,
+					Start:          ticketFullGraph.GetName(seg.StartStationID),
+					End:            ticketFullGraph.GetName(seg.EndStationID),
+				})
+			}
+			clientResults = append(clientResults, ResultResponse{
+				TotalAmount: totalAmount,
+				Segments:    apiSegments,
+			})
+		}
+	}
+
+	// Normal result
+	normalSegs, err := search.GetCheapestTicketSegments(startID, endID)
+	var normalResult ResultResponse
+	if err == nil && len(normalSegs) > 0 {
+		seg := normalSegs[0]
+		correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
+		if len(correctedPath) == 0 {
+			correctedPath = seg.Path
+		}
+		correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
+		if correctedResult != nil {
+			correctedPath = correctedTransformedPath
+		}
+		if correctedResult == nil {
+			correctedResult = seg.Result
+		}
+
+		pathNames := make([]string, len(correctedPath))
+		for k, id := range correctedPath {
+			pathNames[k] = ticketFullGraph.GetName(id)
+		}
+		viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
+		var eigyo domain.DeciKilo
+		if correctedResult != nil {
+			eigyo = correctedResult.TotalEigyoKilo
+		}
+
+		normalResult = ResultResponse{
+			TotalAmount: correctedResult.TotalAmount(),
+			Segments: []SegmentResponse{
+				{
+					Path:           pathNames,
+					Via:            viaNames,
+					Result:         correctedResult,
+					TotalEigyoKilo: eigyo,
+					Start:          ticketFullGraph.GetName(seg.StartStationID),
+					End:            ticketFullGraph.GetName(seg.EndStationID),
+				},
+			},
+		}
+	}
+
+	resp := ClientResponse{
+		Normal:  normalResult,
+		Results: clientResults,
+	}
+
+	respJSON, err := json.Marshal(resp)
+	if err != nil {
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSON marshal failed: %v"}`, err))
+	}
+
+	return js.ValueOf(string(respJSON))
 }

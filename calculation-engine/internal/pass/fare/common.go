@@ -1,16 +1,16 @@
 package fare
 
 import (
-	"errors"
-	"fmt"
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
+	"errors"
+	"fmt"
 )
 
 var (
-	ErrInvalidRouteType = errors.New("不正なRouteTypeです")
-	ErrInvalidTable     = errors.New("運賃表が不正です")
-	ErrInvalidKilo      = errors.New("営業キロまたは運賃計算キロが0以下です")
+	ErrInvalidLineType = errors.New("不正なLineTypeです")
+	ErrInvalidTable    = errors.New("運賃表が不正です")
+	ErrInvalidKilo     = errors.New("営業キロまたは運賃計算キロが0以下です")
 )
 
 // calculateBaseFare は、幹線と地方交通線の運賃表を使い分ける本州・北海道向けの運賃計算ロジックです。
@@ -19,20 +19,20 @@ func calculateBaseFare(params passdomain.PassFareParams, trunkTable, localTable 
 	var useTrunkTable bool
 	var err error
 
-	switch params.RouteType {
-	case domain.RouteTypeTrunkOnly:
+	switch params.LineType {
+	case domain.LineTypeTrunkOnly:
 		targetKm, err = params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("calculateBaseFare: %w", err)
 		}
 		useTrunkTable = true
-	case domain.RouteTypeLocalOnly:
+	case domain.LineTypeLocalOnly:
 		targetKm, err = params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("calculateBaseFare: %w", err)
 		}
 		useTrunkTable = false
-	case domain.RouteTypeMixed:
+	case domain.LineTypeMixed:
 		eigyoKm, err := params.EigyoKilo.ToCeiledKm()
 		if err != nil {
 			return 0, fmt.Errorf("calculateBaseFare: %w", err)
@@ -51,7 +51,7 @@ func calculateBaseFare(params passdomain.PassFareParams, trunkTable, localTable 
 			useTrunkTable = true
 		}
 	default:
-		return 0, fmt.Errorf("calculateBaseFare: %w", ErrInvalidRouteType)
+		return 0, fmt.Errorf("calculateBaseFare: %w", ErrInvalidLineType)
 	}
 
 	table := trunkTable
