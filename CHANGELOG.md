@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.0...kippu-navi-v3.1.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* js-yamlを4.3.2へ更新 ([#698](https://github.com/tojoryohei/kippu-navi/issues/698)) ([5f6f48f](https://github.com/tojoryohei/kippu-navi/commit/5f6f48f5621e2dbc828daa5329061c40056a3fa9))
+
 ## [3.1.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.0.1...kippu-navi-v3.1.0) (2026-09-17)
 
 
