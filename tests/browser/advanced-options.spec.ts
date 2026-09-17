@@ -25,7 +25,7 @@ test("見出し・キーボード追加・削除・空表示", async ({ page }) 
   await splitCount.press("ArrowDown");
   await splitCount.press("Enter");
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("3回");
-  const search = page.getByLabel("分割しない駅", { exact: true });
+  const search = page.getByLabel("分割禁止駅", { exact: true });
   await search.fill("しんじゅく");
   await search.press("ArrowDown");
   await search.press("Enter");
@@ -57,9 +57,9 @@ test("券種切り替え・URL復元・計算要求の設定を維持", async ({
   await expect(page.locator(".split-options-search .station-select__control").last()).toHaveCSS("min-height", "38px");
   await expect(page.locator(".split-count-select .station-select__control")).toHaveCSS("height", "38px");
   await expect(page.getByLabel("最大分割数", { exact: true })).toHaveCSS("opacity", "0");
-  await page.getByLabel("分割しない駅", { exact: true }).fill("品川");
+  await page.getByLabel("分割禁止駅", { exact: true }).fill("品川");
   await expect(page.locator(".split-options-search .station-select__option").first()).toBeVisible();
-  await page.getByLabel("分割しない駅", { exact: true }).fill("");
+  await page.getByLabel("分割禁止駅", { exact: true }).fill("");
   await page.locator("form summary").click();
   await page.getByRole("button", { name: "IC定期券", exact: true }).click();
   await page.locator("form summary").click();
@@ -117,7 +117,7 @@ test("発着駅を一覧と検索候補から除外", async ({ page }) => {
   await expect(page.locator("#selected-no-split-stations li")).toHaveCount(1);
   await page.locator("form summary").click();
   await expect(page.getByRole("button", { name: "新茂原を分割しない駅から削除" })).toHaveCount(0);
-  const search = page.getByLabel("分割しない駅", { exact: true });
+  const search = page.getByLabel("分割禁止駅", { exact: true });
   await search.fill("新茂原");
   await expect(page.locator(".split-options-search").getByText("該当する駅がありません")).toBeVisible();
   await search.fill("東京");
