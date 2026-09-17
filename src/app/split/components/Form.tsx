@@ -5,7 +5,7 @@ import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 import { replaceCalculatorUrl } from "@/lib/calculator-location";
 import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
-import { analytics as posthog } from "@/lib/analytics";
+import { analytics as posthog, getCalculationErrorType } from "@/lib/analytics";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
@@ -394,9 +394,18 @@ export default function SplitForm({
         const currentFrom = getValues("startStation")?.name;
         const currentTo = getValues("endStation")?.name;
         const currentSearchType = getValues("searchType") || "ticket";
+        const currentMaxSplits = getValues("maxSplits");
+        const currentForbiddenStations = getValues("forbiddenStations") ?? [];
+        const noSplitStations = currentForbiddenStations.map(station => station.name);
 
         if (currentFrom && currentTo) {
-            const currentSearchKey = `${currentFrom}_${currentTo}_${currentSearchType}`;
+            const currentSearchKey = JSON.stringify([
+                currentFrom,
+                currentTo,
+                currentSearchType,
+                currentMaxSplits,
+                noSplitStations,
+            ]);
 
             // 同じ検索条件での重複送信を防止
             if (lastTrackedSearch.current !== currentSearchKey) {
@@ -413,6 +422,8 @@ export default function SplitForm({
                         search_type: currentSearchType,
                         from_station: currentFrom,
                         to_station: currentTo,
+                        max_splits: currentMaxSplits,
+                        no_split_stations: noSplitStations,
                         saved_amount: savedAmount
                     };
 
@@ -436,7 +447,9 @@ export default function SplitForm({
                         search_type: currentSearchType,
                         from_station: currentFrom,
                         to_station: currentTo,
-                        error_type: "calculation_error",
+                        max_splits: currentMaxSplits,
+                        no_split_stations: noSplitStations,
+                        error_type: getCalculationErrorType(error),
                         error_message: error
                     };
 
