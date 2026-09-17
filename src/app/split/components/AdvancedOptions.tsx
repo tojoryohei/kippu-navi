@@ -65,8 +65,8 @@ export default function AdvancedOptions({ isIcPass, maxSplits, onMaxSplitsChange
         </div>
         <div className="space-y-3 border-t border-slate-200 py-4">
           <div>
-            <label htmlFor="no-split-stations" className="block text-sm font-semibold text-slate-800">分割しない駅</label>
-            <p id="no-split-stations-help" className="mt-1 text-sm leading-relaxed text-slate-600">選択した駅では分割しません。臨時駅は初期選択されています。</p>
+            <label htmlFor="no-split-stations" className="block text-sm font-semibold text-slate-800">分割禁止駅</label>
+            <p id="no-split-stations-help" className="mt-1 text-sm leading-relaxed text-slate-600">選択した駅では分割しません。</p>
           </div>
           <div ref={searchContainer}>
             <SelectStations instanceId="no-split-stations" describedBy="no-split-stations-help" value={stations} options={options} onChange={onStationsChange} />

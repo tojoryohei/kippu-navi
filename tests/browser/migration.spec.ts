@@ -126,7 +126,7 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
   expect(errors).toEqual([]);
 });
 
-test("運賃計算の種別切り替えで駅のバリデーションを再実行する", async ({
+test("臨時駅を含む経路を定期券として計算できる", async ({
   page,
 }) => {
   await isolateServices(page);
@@ -138,9 +138,8 @@ test("運賃計算の種別切り替えで駅のバリデーションを再実�
 
   await page.getByRole("button", { name: "定期券", exact: true }).click();
   await expect(page).toHaveURL(/\/fare\/pass\?/);
-  await expect(
-    page.getByText("臨時駅発着の定期券は計算できません", { exact: true }).first(),
-  ).toBeVisible();
+  await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
+  await expect(page.locator("p.text-red-500")).toHaveCount(0);
 });
 
 test("運賃計算の不正な駅名を種別切り替え後も再検証する", async ({ page }) => {
@@ -193,7 +192,7 @@ test("空の運賃フォームで種別・期間を切り替えてもバリデ�
   }
 });
 
-test("分割計算の期間変更で駅のバリデーションを再実行する", async ({
+test("臨時駅を含む分割計算の期間変更でエラーにならない", async ({
   page,
 }) => {
   await isolateServices(page);
@@ -205,14 +204,11 @@ test("分割計算の期間変更で駅のバリデーションを再実行す�
   );
   await page.getByRole("button", { name: "定期券", exact: true }).click();
   await expect(page).toHaveURL(/\/split\/pass\?/);
-  await expect(
-    page.getByText("臨時駅発着の定期券は計算できません", { exact: true }).first(),
-  ).toBeVisible();
+  await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
+  await expect(page.locator("p.text-red-500")).toHaveCount(0);
 
   await page.getByRole("button", { name: "1箇月", exact: true }).click();
-  await expect(
-    page.getByText("臨時駅発着の定期券は計算できません", { exact: true }).first(),
-  ).toBeVisible();
+  await expect(page.locator("p.text-red-500")).toHaveCount(0);
 });
 
 test("WASMのロード失敗を表示する", async ({ page }) => {

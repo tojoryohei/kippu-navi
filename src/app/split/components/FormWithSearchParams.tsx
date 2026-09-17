@@ -24,7 +24,7 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
                 initialFrom={searchParams.get("from") || undefined}
                 initialTo={searchParams.get("to") || undefined}
                 initialSearchType={initialSearchType}
-                initialForbiddenStations={searchParams.getAll("noSplitStation")}
+                initialForbiddenStations={searchParams.has("noSplitStation") ? searchParams.getAll("noSplitStation") : undefined}
                 initialMaxSplits={initialMaxSplits}
             />
         </CalculatorErrorBoundary>

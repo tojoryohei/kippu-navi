@@ -40,19 +40,6 @@ const SEARCH_TYPE_OPTIONS: SearchOption[] = [
     { value: "pass6", label: "定期券６箇月" },
 ];
 
-const TEMPORARY_STATIONS = [
-    "原生花園",
-    "ラベンダー畑",
-    "細岡",
-    "猪苗代湖畔",
-    "ガーラ湯沢",
-    "偕楽園",
-    "鹿島サッカースタジアム",
-    "津島ノ宮",
-    "田井ノ浜",
-    "バルーンさが",
-];
-
 interface WasmSegment {
     start: string;
     end: string;
@@ -373,7 +360,7 @@ export default function SplitForm({
         setValue("endStation", endStation);
         const forbiddenNames = initialForbiddenStationsKey
             ? initialForbiddenStationsKey.split("\u0000")
-            : TEMPORARY_STATIONS;
+            : [];
         const stationList = stationDatas as Station[];
         const forbiddenStations = forbiddenNames
             .map(name => stationList.find(s => s.name === name))
@@ -523,10 +510,6 @@ export default function SplitForm({
         const endVal = getValues("endStation");
         if (startVal?.name && endVal?.name && startVal.name === endVal.name) {
             return "発駅と着駅には異なる駅を指定してください";
-        }
-
-        if ((isPass || isIcPass) && TEMPORARY_STATIONS.includes(value.name)) {
-            return "臨時駅発着の定期券は計算できません";
         }
 
         // IC定期券の時のエリアバリデーション

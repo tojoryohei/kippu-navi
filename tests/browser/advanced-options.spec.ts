@@ -69,15 +69,21 @@ test("券種切り替え・URL復元・計算要求の設定を維持", async ({
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("1回");
 });
 
+test("未指定の分割しない駅をURLへ追加しない", async ({ page }) => {
+  await page.goto("/split/ticket?from=新茂原&to=茂原&maxSplits=2");
+  await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
+  expect(new URL(page.url()).searchParams.getAll("noSplitStation")).toEqual([]);
+});
+
 for (const width of [320, 390, 1280]) {
   test(`駅の全件表示・入力欄の統一 ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/split/ticket");
     await page.locator("form summary").click();
     const list = page.getByRole("list", { name: "分割しない駅の一覧" });
-    await expect(list.locator("li")).toHaveCount(10);
+    await expect(list.locator("li")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /残り\d+駅を表示|一部を隠す/ })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "鹿島サッカースタジアムを分割しない駅から削除" })).toBeVisible();
+    await expect(page.getByText("分割しない駅は設定されていません。", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const controls = page.locator(".split-options-search .station-select__control");
     await expect(controls).toHaveCount(2);

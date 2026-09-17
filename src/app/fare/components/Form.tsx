@@ -19,18 +19,6 @@ import type { Station, Line, KippuData, IFormInput, PathStep, CalculationMode, S
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 const SHINKANSEN_LINES: Set<string> = new Set(["山形新幹線", "北海道新幹", "九州新幹線", "上越新幹線", "新幹線", "東北新幹線", "西九州新幹", "北陸新幹線"]);
-const TEMPORARY_STATIONS = [
-    "原生花園",
-    "ラベンダー畑",
-    "細岡",
-    "猪苗代湖畔",
-    "ガーラ湯沢",
-    "偕楽園",
-    "鹿島サッカースタジアム",
-    "津島ノ宮",
-    "田井ノ浜",
-    "バルーンさが"
-];
 
 interface FormValues extends IFormInput {
     calculationMode: CalculationMode;
@@ -246,16 +234,7 @@ export default function Form({
             return;
         }
 
-        const isPass = data.searchType && data.searchType !== "ticket";
-        if (isPass) {
-            const startName = apiRequestBody.fullPath[0].stationName;
-            const endName = apiRequestBody.fullPath[apiRequestBody.fullPath.length - 1].stationName;
-            if (TEMPORARY_STATIONS.includes(startName) || TEMPORARY_STATIONS.includes(endName)) {
-                setError('臨時駅発着の定期券は計算できません');
-                setIsLoading(false);
-                return;
-            }
-
+        if (data.searchType !== "ticket") {
             if (!workerRef.current || !isWasmReadyRef.current) {
                 let waited = 0;
                 while (mountedRef.current && (!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
@@ -271,9 +250,7 @@ export default function Form({
             }
 
             if (!mountedRef.current || calcId !== latestCalcIdRef.current) return;
-            const stationNames = apiRequestBody.fullPath
-                .map(p => p.stationName)
-                .filter(name => !TEMPORARY_STATIONS.includes(name));
+            const stationNames = apiRequestBody.fullPath.map(p => p.stationName);
 
             const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
             const months = monthsMap[data.searchType] || 1;
@@ -291,7 +268,7 @@ export default function Form({
             return;
         }
 
-        if (!isPass) {
+        if (data.searchType === "ticket") {
             if (!workerRef.current || !isWasmReadyRef.current) {
                 let waited = 0;
                 while (mountedRef.current && (!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
@@ -771,10 +748,6 @@ export default function Form({
                                 if (!selected || !selected.name || selected.name.trim() === "") return "発駅を入力してください";
                                 const exists = stationData.some(s => s.name === selected.name);
                                 if (!exists) return "該当する駅が存在しません";
-                                const currentSearchType = getValues("searchType");
-                                if (currentSearchType !== "ticket" && TEMPORARY_STATIONS.includes(selected.name)) {
-                                    return "臨時駅発着の定期券は計算できません";
-                                }
                                 return true;
                             }
                         }}
@@ -891,10 +864,6 @@ export default function Form({
                                                 }
                                             }
 
-                                            const currentSearchType = getValues("searchType");
-                                            if (currentSearchType !== "ticket" && isLastStation && TEMPORARY_STATIONS.includes(selected.name)) {
-                                                return "臨時駅発着の定期券は計算できません";
-                                            }
                                             return true;
                                         }
                                     }}
