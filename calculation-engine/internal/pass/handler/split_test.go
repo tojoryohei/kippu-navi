@@ -33,6 +33,16 @@ func TestParseMaxSplits(t *testing.T) {
 	}
 }
 
+func TestResolveMaxSections(t *testing.T) {
+	got, err := resolveMaxSections(url.Values{"maxSplits": {"10"}}, 2)
+	if err != nil {
+		t.Fatalf("resolveMaxSections() error = %v", err)
+	}
+	if got != 2 {
+		t.Fatalf("resolveMaxSections() = %d, want 2", got)
+	}
+}
+
 func TestParseLockedStationIDs(t *testing.T) {
 	g := graph.NewGraph(3)
 	a := g.GetOrAddID("A")

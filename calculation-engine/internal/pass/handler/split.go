@@ -92,16 +92,10 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	maxSections, err := parseMaxSplits(query)
+	maxSections, err := resolveMaxSections(query, h.search.MaxSectionsLimit())
 	if err != nil {
 		writeErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
-	}
-	if h.search.MaxSectionsLimit() > 0 && query.Has("maxSplits") {
-		if maxSections == 0 || maxSections > h.search.MaxSectionsLimit() {
-			writeErrorResponse(w, http.StatusBadRequest, "IC定期券の最大分割数は1回まで指定できます")
-			return
-		}
 	}
 	lockedStations, err := parseLockedStationIDs(query, h.graph)
 	if err != nil {
@@ -162,6 +156,15 @@ func parseMaxSplits(query url.Values) (int, error) {
 		return 0, nil
 	}
 	return maxSplits + 1, nil
+}
+
+// resolveMaxSections は固定上限がある場合にクエリ指定を無視します。
+// IC定期券では固定上限の2区間（1分割）が常に使用されます。
+func resolveMaxSections(query url.Values, fixedLimit int) (int, error) {
+	if fixedLimit > 0 {
+		return fixedLimit, nil
+	}
+	return parseMaxSplits(query)
 }
 
 func parseLockedStationIDs(query url.Values, stations graph.StationProvider) ([]int, error) {

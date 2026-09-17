@@ -189,7 +189,7 @@ export default function SplitForm({
         if (data.endStation.name) {
             newParams.set("to", data.endStation.name);
         }
-        if (data.maxSplits > 0) {
+        if (!isIcPass && data.maxSplits > 0) {
             newParams.set("maxSplits", String(data.maxSplits));
         }
         for (const station of data.forbiddenStations) {
@@ -223,7 +223,7 @@ export default function SplitForm({
                 to: data.endStation.name,
                 months: months,
             });
-            if (data.maxSplits > 0) {
+            if (!isIcPass && data.maxSplits > 0) {
                 query.set("maxSplits", String(data.maxSplits));
             }
             for (const station of data.forbiddenStations) {
@@ -600,9 +600,8 @@ export default function SplitForm({
             const mVal = monthsMap[nextSearchType] || "6";
             newParams.set("month", mVal);
         }
-        const nextMaxSplits = nextPath === "/split/ic-pass" ? 1 : currentMaxSplits;
-        if (nextMaxSplits > 0) {
-            newParams.set("maxSplits", String(nextMaxSplits));
+        if (nextPath !== "/split/ic-pass" && currentMaxSplits > 0) {
+            newParams.set("maxSplits", String(currentMaxSplits));
         }
         for (const station of currentForbiddenStations) {
             newParams.append("noSplitStation", station.name);

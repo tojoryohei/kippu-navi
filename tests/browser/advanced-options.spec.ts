@@ -61,8 +61,10 @@ test("券種切り替え・URL復元・計算要求の設定を維持", async ({
   await expect(page.locator(".split-options-search .station-select__option").first()).toBeVisible();
   await page.getByLabel("分割禁止駅", { exact: true }).fill("");
   await page.locator("form summary").click();
+  const icPassRequest = page.waitForRequest(req => req.url().includes("/api/split-icpass"));
   await page.getByRole("button", { name: "IC定期券", exact: true }).click();
-  await expect.poll(() => new URL(page.url()).searchParams.get("maxSplits")).toBe("1");
+  expect(new URL((await icPassRequest).url()).searchParams.has("maxSplits")).toBe(false);
+  await expect.poll(() => new URL(page.url()).searchParams.has("maxSplits")).toBe(false);
   await page.locator("form summary").click();
   await expect(page.getByLabel("最大分割数", { exact: true })).toHaveCount(0);
   await expect(page.getByText("1回（固定）", { exact: true })).toBeVisible();

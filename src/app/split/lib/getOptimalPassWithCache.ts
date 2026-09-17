@@ -16,7 +16,7 @@ export async function getOptimalPassWithCache(
         to: endStation,
         months: months.toString(),
     });
-    if (maxSplits > 0) {
+    if (!isIc && maxSplits > 0) {
         params.set("maxSplits", maxSplits.toString());
     }
     for (const station of noSplitStations) {
