@@ -40,13 +40,15 @@ npm run dev
 
 Goの計算ロジックやグラフを修正した場合は、`npm run dev:engine`で再生成し、ブラウザを再読み込みします。
 
-分割APIの事前計算ファイルはサーバー専用です。ローカルにない場合、乗車券は次のコマンドで生成できます。
+分割APIの事前計算ファイルはサーバー専用です。GitHub ActionsではGCSから取得し、GCSオブジェクトのMD5と生成元ソースのフィンガープリントを検証します。不足・不一致時はrunner上で生成し、生成・再生成したデータを共有GCSへ保存するのはmainの本番デプロイだけです。
+
+ローカルにない場合、乗車券は次のコマンドで生成できます。
 
 ```sh
 npm run generate:ticket-fares
 ```
 
-定期券用の`calculation-engine/internal/pass/graph/data/precomputed_server.bin`は従来どおり別途配置してください。これらの大きなファイルはブラウザへ配信しません。
+定期券用の`calculation-engine/internal/pass/graph/data/precomputed_server.bin`はローカル開発時は別途生成・配置してください。これらの大きなファイルはブラウザへ配信しません。
 
 ## ビルド・検証
 

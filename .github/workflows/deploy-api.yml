@@ -55,49 +55,216 @@ jobs:
 
       - name: Get Precomputed Binary Metadata
         id: gcs-meta
+        env:
+          PASS_OBJECT: gs://kippu-navi-build-secrets/data/pass_precomputed_server.bin
+          TICKET_OBJECT: gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin
         run: |
-          PASS_MD5=$(gcloud storage objects describe gs://kippu-navi-build-secrets/data/pass_precomputed_server.bin --format="value(md5Hash)" | tr -dc 'a-zA-Z0-9')
-          TICKET_MD5=$(gcloud storage objects describe gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin --format="value(md5Hash)" 2>/dev/null | tr -dc 'a-zA-Z0-9' || true)
-          if [ -z "$TICKET_MD5" ]; then
-            TICKET_MD5="missing-${{ github.sha }}"
+          set -euo pipefail
+
+          hash_files() {
+            local files
+            files=$(git ls-files "$@")
+            if [ -z "$files" ]; then
+              echo "ハッシュ対象のファイルがありません: $*" >&2
+              return 1
+            fi
+            while IFS= read -r file; do
+              sha256sum "$file"
+            done <<< "$files" | sha256sum | awk '{print $1}'
+          }
+
+          PASS_SOURCE_HASH=$(hash_files \
+            calculation-engine/cmd/precompute-pass-fares \
+            calculation-engine/internal/domain \
+            calculation-engine/internal/pass \
+            calculation-engine/internal/graphdata/edges.json \
+            calculation-engine/go.mod \
+            calculation-engine/go.sum)
+          TICKET_SOURCE_HASH=$(hash_files \
+            calculation-engine/cmd/precompute-ticket-fares \
+            calculation-engine/internal/domain \
+            calculation-engine/internal/graphdata \
+            calculation-engine/internal/ticket \
+            calculation-engine/go.mod \
+            calculation-engine/go.sum)
+
+          lookup_metadata() {
+            local object="$1"
+            local error_file="$RUNNER_TEMP/gcs-describe-$(basename "$object").log"
+            local metadata_json md5 source_hash
+
+            if metadata_json=$(gcloud storage objects describe "$object" --format=json 2>"$error_file"); then
+              md5=$(jq -r '.md5Hash // empty' <<< "$metadata_json")
+              source_hash=$(jq -r '(.metadata // {})["precompute-source-sha256"] // empty' <<< "$metadata_json")
+              if [ -z "$md5" ]; then
+                echo "GCSオブジェクトのmd5Hashを取得できません: $object" >&2
+                return 1
+              fi
+              printf '%s\t%s\n' "$md5" "$source_hash"
+              return 0
+            fi
+
+            if grep -Eqi 'not[ _-]?found|404' "$error_file"; then
+              return 2
+            fi
+            cat "$error_file" >&2
+            return 1
+          }
+
+          if PASS_METADATA=$(lookup_metadata "$PASS_OBJECT"); then
+            IFS=$'\t' read -r PASS_MD5 PASS_SOURCE_METADATA <<< "$PASS_METADATA"
+            PASS_MISSING=false
+          else
+            STATUS=$?
+            if [ "$STATUS" -eq 2 ]; then
+              PASS_MD5="missing-${GITHUB_SHA}"
+              PASS_SOURCE_METADATA=""
+              PASS_MISSING=true
+            else
+              exit "$STATUS"
+            fi
           fi
+
+          if TICKET_METADATA=$(lookup_metadata "$TICKET_OBJECT"); then
+            IFS=$'\t' read -r TICKET_MD5 TICKET_SOURCE_METADATA <<< "$TICKET_METADATA"
+            TICKET_MISSING=false
+          else
+            STATUS=$?
+            if [ "$STATUS" -eq 2 ]; then
+              TICKET_MD5="missing-${GITHUB_SHA}"
+              TICKET_SOURCE_METADATA=""
+              TICKET_MISSING=true
+            else
+              exit "$STATUS"
+            fi
+          fi
+
           if [ -f ./calculation-engine/internal/graphdata/edges.json ]; then
             GRAPH_PATH=./calculation-engine/internal/graphdata/edges.json
           else
             GRAPH_PATH=./calculation-engine/internal/pass/graph/data/edges.json
           fi
-          GRAPH_HASH=$(sha256sum "$GRAPH_PATH" | cut -c1-16)
           GRAPH_STATIONS=$(jq -r '.[].station0, .[].station1' "$GRAPH_PATH" | sort -u | wc -l | tr -d ' ')
+          PASS_NEEDS_GENERATION=$([ "$PASS_SOURCE_METADATA" = "$PASS_SOURCE_HASH" ] && echo false || echo true)
+          TICKET_NEEDS_GENERATION=$([ "$TICKET_SOURCE_METADATA" = "$TICKET_SOURCE_HASH" ] && echo false || echo true)
           echo "pass_md5=$PASS_MD5" >> $GITHUB_OUTPUT
           echo "ticket_md5=$TICKET_MD5" >> $GITHUB_OUTPUT
-          echo "graph_hash=$GRAPH_HASH" >> $GITHUB_OUTPUT
+          echo "pass_missing=$PASS_MISSING" >> $GITHUB_OUTPUT
+          echo "ticket_missing=$TICKET_MISSING" >> $GITHUB_OUTPUT
+          echo "pass_source_hash=$PASS_SOURCE_HASH" >> $GITHUB_OUTPUT
+          echo "ticket_source_hash=$TICKET_SOURCE_HASH" >> $GITHUB_OUTPUT
+          echo "pass_needs_generation=$PASS_NEEDS_GENERATION" >> $GITHUB_OUTPUT
+          echo "ticket_needs_generation=$TICKET_NEEDS_GENERATION" >> $GITHUB_OUTPUT
           echo "graph_path=$GRAPH_PATH" >> $GITHUB_OUTPUT
           echo "graph_stations=$GRAPH_STATIONS" >> $GITHUB_OUTPUT
 
       - name: Cache Precomputed Server Binary
         id: cache-bin
+        if: github.ref != 'refs/heads/main'
         uses: actions/cache@v4
         with:
           path: |
             ./calculation-engine/internal/pass/graph/data/precomputed_server.bin
             ./calculation-engine/internal/ticket/data/precomputed_server.bin
-          key: precomputed-server-${{ env.SERVICE_NAME }}-${{ steps.gcs-meta.outputs.pass_md5 }}-${{ steps.gcs-meta.outputs.ticket_md5 }}-${{ steps.gcs-meta.outputs.graph_hash }}
+          key: precomputed-server-${{ env.SERVICE_NAME }}-${{ steps.gcs-meta.outputs.pass_md5 }}-${{ steps.gcs-meta.outputs.ticket_md5 }}-${{ steps.gcs-meta.outputs.pass_source_hash }}-${{ steps.gcs-meta.outputs.ticket_source_hash }}
 
-      - name: Download Precomputed Server Binary
-        if: steps.cache-bin.outputs.cache-hit != 'true'
+      - name: Download or generate Precomputed Server Binary
+        id: prepare-data
+        if: github.ref == 'refs/heads/main' || steps.cache-bin.outputs.cache-hit != 'true'
+        env:
+          PASS_OBJECT: gs://kippu-navi-build-secrets/data/pass_precomputed_server.bin
+          TICKET_OBJECT: gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin
+          PASS_MISSING: ${{ steps.gcs-meta.outputs.pass_missing }}
+          TICKET_MISSING: ${{ steps.gcs-meta.outputs.ticket_missing }}
+          PASS_NEEDS_GENERATION: ${{ steps.gcs-meta.outputs.pass_needs_generation }}
+          TICKET_NEEDS_GENERATION: ${{ steps.gcs-meta.outputs.ticket_needs_generation }}
+          GRAPH_PATH: ${{ steps.gcs-meta.outputs.graph_path }}
         run: |
-          gcloud storage cp gs://kippu-navi-build-secrets/data/pass_precomputed_server.bin ./calculation-engine/internal/pass/graph/data/
-          if ! gcloud storage cp gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin ./calculation-engine/internal/ticket/data/precomputed_server.bin; then
+          set -euo pipefail
+          PASS_GENERATED=false
+          TICKET_GENERATED=false
+          GRAPH_INPUT="${GRAPH_PATH#./calculation-engine/}"
+
+          if [ "$PASS_MISSING" = true ] || [ "$PASS_NEEDS_GENERATION" = true ]; then
+            if [ "$PASS_MISSING" = true ]; then
+              echo "定期券用GCSデータが無いため、現行グラフから生成します。"
+            else
+              echo "定期券用GCSデータの生成元フィンガープリントが古いため、現行ソースから再生成します。"
+            fi
+            (
+              cd calculation-engine
+              go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./internal/pass/graph/data/precomputed_server.bin
+            )
+            PASS_GENERATED=true
+          else
+            gcloud storage cp "$PASS_OBJECT" ./calculation-engine/internal/pass/graph/data/
+          fi
+
+          if [ "$TICKET_MISSING" = true ] || [ "$TICKET_NEEDS_GENERATION" = true ]; then
+            if [ "$TICKET_MISSING" = true ]; then
+              echo "乗車券用GCSデータが無いため、現行グラフから生成します。"
+            else
+              echo "乗車券用GCSデータの生成元フィンガープリントが古いため、現行ソースから再生成します。"
+            fi
             (
               cd calculation-engine
               go run ./cmd/precompute-ticket-fares ./internal/ticket/data/precomputed_server.bin
             )
-            gcloud storage cp ./calculation-engine/internal/ticket/data/precomputed_server.bin gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin
+            TICKET_GENERATED=true
+          else
+            gcloud storage cp "$TICKET_OBJECT" ./calculation-engine/internal/ticket/data/precomputed_server.bin
           fi
 
-      - name: Validate or regenerate pass precomputed binary
+          echo "pass_generated=$PASS_GENERATED" >> "$GITHUB_OUTPUT"
+          echo "ticket_generated=$TICKET_GENERATED" >> "$GITHUB_OUTPUT"
+
+      - name: Validate or regenerate precomputed binaries
+        id: validate-data
+        env:
+          PASS_OBJECT_MD5: ${{ steps.gcs-meta.outputs.pass_md5 }}
+          TICKET_OBJECT_MD5: ${{ steps.gcs-meta.outputs.ticket_md5 }}
+          PASS_NEEDS_GENERATION: ${{ steps.gcs-meta.outputs.pass_needs_generation }}
+          TICKET_NEEDS_GENERATION: ${{ steps.gcs-meta.outputs.ticket_needs_generation }}
         run: |
-          BINARY_PATH=./calculation-engine/internal/pass/graph/data/precomputed_server.bin
+          set -euo pipefail
+          md5_base64() {
+            openssl dgst -md5 -binary "$1" | base64 -w0
+          }
+
+          verify_hash() {
+            local path="$1"
+            local expected="$2"
+            local actual
+            actual=$(md5_base64 "$path")
+            if [ "$actual" != "$expected" ]; then
+              echo "事前計算データのMD5が一致しません: $path (GCS=$expected, local=$actual)" >&2
+              return 1
+            fi
+          }
+
+          verify_magic() {
+            local path="$1"
+            local expected="$2"
+            local actual
+            actual=$(od -An -t x1 -N8 "$path" | tr -d ' \n')
+            if [ "$actual" != "$expected" ]; then
+              echo "事前計算データのmagicが不正です: $path (expected=$expected, actual=$actual)" >&2
+              return 1
+            fi
+          }
+
+          PASS_BINARY_PATH=./calculation-engine/internal/pass/graph/data/precomputed_server.bin
+          TICKET_BINARY_PATH=./calculation-engine/internal/ticket/data/precomputed_server.bin
+          if [ "$PASS_NEEDS_GENERATION" = false ]; then
+            verify_hash "$PASS_BINARY_PATH" "$PASS_OBJECT_MD5"
+          fi
+          if [ "$TICKET_NEEDS_GENERATION" = false ]; then
+            verify_hash "$TICKET_BINARY_PATH" "$TICKET_OBJECT_MD5"
+          fi
+          verify_magic "$PASS_BINARY_PATH" "5352565242494e00"
+          verify_magic "$TICKET_BINARY_PATH" "544b535256320000"
+
+          BINARY_PATH="$PASS_BINARY_PATH"
           EXPECTED_STATIONS="${{ steps.gcs-meta.outputs.graph_stations }}"
           ACTUAL_STATIONS=$(od -An -t u4 -j8 -N4 "$BINARY_PATH" | tr -d ' ')
 
@@ -106,14 +273,13 @@ jobs:
             exit 0
           fi
 
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "本番用事前計算データの駅数がグラフと一致しません: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
-            exit 1
-          fi
-
           GRAPH_INPUT="${{ steps.gcs-meta.outputs.graph_path }}"
           GRAPH_INPUT="${GRAPH_INPUT#./calculation-engine/}"
-          echo "ステージング用事前計算データを現行グラフから再生成します: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "本番用事前計算データを現行グラフから再生成します: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
+          else
+            echo "ステージング用事前計算データを現行グラフから再生成します: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
+          fi
           (
             cd calculation-engine
             go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./internal/pass/graph/data/precomputed_server.bin
@@ -124,7 +290,58 @@ jobs:
             echo "再生成後も駅数が一致しません: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
             exit 1
           fi
-          echo "ステージング用事前計算データを検証しました: ${ACTUAL_STATIONS}駅"
+          echo "pass_generated=true" >> "$GITHUB_OUTPUT"
+          echo "事前計算データを検証しました: ${ACTUAL_STATIONS}駅"
+
+      - name: Publish generated precomputed binaries
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          (steps.prepare-data.outputs.pass_generated == 'true' ||
+           steps.prepare-data.outputs.ticket_generated == 'true' ||
+           steps.validate-data.outputs.pass_generated == 'true')
+        env:
+          PASS_OBJECT: gs://kippu-navi-build-secrets/data/pass_precomputed_server.bin
+          TICKET_OBJECT: gs://kippu-navi-build-secrets/data/ticket_precomputed_server.bin
+          PASS_GENERATED_ON_FETCH: ${{ steps.prepare-data.outputs.pass_generated }}
+          TICKET_GENERATED: ${{ steps.prepare-data.outputs.ticket_generated }}
+          PASS_GENERATED_ON_VALIDATE: ${{ steps.validate-data.outputs.pass_generated }}
+          PASS_SOURCE_HASH: ${{ steps.gcs-meta.outputs.pass_source_hash }}
+          TICKET_SOURCE_HASH: ${{ steps.gcs-meta.outputs.ticket_source_hash }}
+        run: |
+          set -euo pipefail
+          md5_base64() {
+            openssl dgst -md5 -binary "$1" | base64 -w0
+          }
+
+          publish_and_verify() {
+            local path="$1"
+            local object="$2"
+            local source_hash="$3"
+            local local_md5 uploaded_md5
+
+            gcloud storage cp "$path" "$object"
+            gcloud storage objects update "$object" \
+              --update-custom-metadata="precompute-source-sha256=${source_hash}"
+            local_md5=$(md5_base64 "$path")
+            uploaded_md5=$(gcloud storage objects describe "$object" --format='value(md5Hash)')
+            if [ "$local_md5" != "$uploaded_md5" ]; then
+              echo "GCSへアップロードした事前計算データのMD5が一致しません: $object (local=$local_md5, GCS=$uploaded_md5)" >&2
+              return 1
+            fi
+          }
+
+          if [ "$PASS_GENERATED_ON_FETCH" = true ] || [ "$PASS_GENERATED_ON_VALIDATE" = true ]; then
+            publish_and_verify \
+              ./calculation-engine/internal/pass/graph/data/precomputed_server.bin \
+              "$PASS_OBJECT" \
+              "$PASS_SOURCE_HASH"
+          fi
+          if [ "$TICKET_GENERATED" = true ]; then
+            publish_and_verify \
+              ./calculation-engine/internal/ticket/data/precomputed_server.bin \
+              "$TICKET_OBJECT" \
+              "$TICKET_SOURCE_HASH"
+          fi
 
       - name: Build and Push Docker Image
         run: |
