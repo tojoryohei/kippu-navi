@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.23.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.22.1...kippu-navi-v2.23.0) (2026-09-17)
+
+
+### Features
+
+* PostHogの検索イベント情報を拡充 ([#696](https://github.com/tojoryohei/kippu-navi/issues/696)) ([8fce801](https://github.com/tojoryohei/kippu-navi/commit/8fce801b2997e8ac27069f17998d6a0683098768))
+
 ## [2.22.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v2.22.0...kippu-navi-v2.22.1) (2026-09-17)
 
 
