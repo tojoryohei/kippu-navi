@@ -8,8 +8,8 @@ function parseJsonc(source) {
   let blockComment = false;
 
   for (let index = 0; index < source.length; index += 1) {
-    const character = source[index];
-    const nextCharacter = source[index + 1];
+    const character = source.charAt(index);
+    const nextCharacter = source.charAt(index + 1);
 
     if (lineComment) {
       if (character === '\n') {
@@ -59,7 +59,7 @@ function parseJsonc(source) {
   inString = false;
   escaped = false;
   for (let index = 0; index < withoutComments.length; index += 1) {
-    const character = withoutComments[index];
+    const character = withoutComments.charAt(index);
 
     if (inString) {
       json += character;
@@ -81,8 +81,8 @@ function parseJsonc(source) {
 
     if (character === ',') {
       let nextIndex = index + 1;
-      while (/\s/.test(withoutComments[nextIndex] ?? '')) nextIndex += 1;
-      if (withoutComments[nextIndex] === '}' || withoutComments[nextIndex] === ']') {
+      while (/\s/.test(withoutComments.charAt(nextIndex))) nextIndex += 1;
+      if (withoutComments.charAt(nextIndex) === '}' || withoutComments.charAt(nextIndex) === ']') {
         index = nextIndex - 1;
         continue;
       }
