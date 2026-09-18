@@ -5,6 +5,27 @@ import (
 	"testing"
 )
 
+func TestValidResponsePaths(t *testing.T) {
+	tests := []struct {
+		name    string
+		normal  []string
+		results [][]string
+		want    bool
+	}{
+		{"valid", []string{"A", "B"}, [][]string{{"A", "C", "B"}}, true},
+		{"empty normal", nil, nil, false},
+		{"short normal", []string{"A"}, nil, false},
+		{"short result", []string{"A", "B"}, [][]string{{"A"}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := validResponsePaths(tt.normal, tt.results); got != tt.want {
+				t.Fatalf("validResponsePaths() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestParseMaxSplits(t *testing.T) {
 	tests := []struct {
 		name    string

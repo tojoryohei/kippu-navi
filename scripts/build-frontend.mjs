@@ -16,6 +16,7 @@ const version = readFileSync(
 const env = {
   ...process.env,
   PUBLIC_WASM_VERSION: version,
+  PUBLIC_DEPLOY_COMMIT: process.env.DEPLOY_COMMIT || process.env.GITHUB_SHA || "local",
   DEPLOY_ENVIRONMENT: process.env.DEPLOY_ENVIRONMENT || "staging",
   ASTRO_TELEMETRY_DISABLED: "1",
 };
