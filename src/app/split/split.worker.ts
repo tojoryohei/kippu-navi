@@ -1,4 +1,5 @@
 /// <reference lib="webworker.importscripts" />
+import * as Sentry from "@sentry/browser";
 interface SplitCalculationSegment {
   start: string;
   end: string;
@@ -45,6 +46,21 @@ function getBaseOrigin(): string {
 }
 
 const baseOrigin = getBaseOrigin();
+const sentryDsn = import.meta.env.PUBLIC_SENTRY_DSN;
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    tunnel: `${baseOrigin}/monitoring`,
+    environment: __DEPLOY_ENVIRONMENT__,
+    release: `${__APP_VERSION__}+${__DEPLOY_COMMIT__}`,
+    sendDefaultPii: false,
+    sendClientReports: false,
+    tracesSampleRate: 0,
+    integrations(defaultIntegrations) {
+      return defaultIntegrations.filter(integration => integration.name !== "BrowserSession");
+    },
+  });
+}
 // CI embeds the content hash used to package all four engine files.
 const wasmVersion = __WASM_VERSION__;
 const engineBaseUrl = `${baseOrigin}/engine${wasmVersion ? `/${wasmVersion}` : ''}`;

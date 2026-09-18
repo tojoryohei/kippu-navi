@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -49,7 +49,8 @@ func allowLocalDevelopmentCORS(next http.Handler) http.Handler {
 		if _, allowed := localDevelopmentOrigins[origin]; allowed {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Request-ID")
+			w.Header().Set("Access-Control-Expose-Headers", "X-Request-ID")
 			w.Header().Add("Vary", "Origin")
 		}
 
@@ -62,9 +63,53 @@ func allowLocalDevelopmentCORS(next http.Handler) http.Handler {
 	})
 }
 
+type statusRecorder struct {
+	http.ResponseWriter
+	status      int
+	wroteHeader bool
+}
+
+func (w *statusRecorder) WriteHeader(status int) {
+	if w.wroteHeader {
+		return
+	}
+	w.status = status
+	w.wroteHeader = true
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *statusRecorder) Write(body []byte) (int, error) {
+	if !w.wroteHeader {
+		w.WriteHeader(http.StatusOK)
+	}
+	return w.ResponseWriter.Write(body)
+}
+
+func observeRequests(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		startedAt := time.Now()
+		requestID := r.Header.Get("X-Request-ID")
+		if requestID != "" {
+			w.Header().Set("X-Request-ID", requestID)
+		}
+		recorder := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				if !recorder.wroteHeader {
+					http.Error(recorder, "Internal Server Error", http.StatusInternalServerError)
+				}
+				slog.Error("api panic", "request_id", requestID, "path", r.URL.Path)
+			}
+			slog.Info("api request", "request_id", requestID, "path", r.URL.Path, "method", r.Method, "status", recorder.status, "elapsed_ms", time.Since(startedAt).Milliseconds())
+		}()
+		next.ServeHTTP(recorder, r)
+	})
+}
+
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	if err := run(); err != nil {
-		log.Printf("致命的なエラー: %v", err)
+		slog.Error("fatal startup error", "error", err)
 		os.Exit(1)
 	}
 }
@@ -325,10 +370,10 @@ func run() error {
 
 	ticketFares, ticketDistGisei, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares(filepath.Join(precomputedDataDir, "ticket.bin"))
 	if err != nil {
-		log.Printf("事前計算された乗車券運賃データのロードに失敗しました: %v", err)
+		slog.Error("failed to load precomputed ticket fares", "error", err)
 		// 失敗しても起動できるようにする（データが存在しない初期時などのため）
 	} else if int32(ticketFullGraph.NumStations()) != numTicketStations {
-		log.Printf("データ不整合: edges.jsonの駅数(%d)が乗車券事前計算データの駅数(%d)と一致しません", ticketFullGraph.NumStations(), numTicketStations)
+		slog.Error("ticket precomputed data station count mismatch", "graph_stations", ticketFullGraph.NumStations(), "precomputed_stations", numTicketStations)
 	} else {
 		ticketSearchUseCase.SetPrecomputedFares(ticketFares)
 		ticketSearchGraph.DistGisei = ticketDistGisei
@@ -353,7 +398,7 @@ func run() error {
 
 	server := &http.Server{
 		Addr:         listenAddr,
-		Handler:      allowLocalDevelopmentCORS(mux),
+		Handler:      observeRequests(allowLocalDevelopmentCORS(mux)),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
@@ -365,7 +410,7 @@ func run() error {
 	// サーバーをgoroutineで起動
 	errChan := make(chan error, 1)
 	go func() {
-		log.Printf("calculation-engine を起動しました: %s", server.Addr)
+		slog.Info("calculation-engine started", "address", server.Addr)
 		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			errChan <- err
 		}
@@ -376,7 +421,7 @@ func run() error {
 	case err := <-errChan:
 		return fmt.Errorf("サーバーが異常終了しました: %w", err)
 	case <-ctx.Done():
-		log.Println("シャットダウンシグナルを受信しました。接続の終了を待っています...")
+		slog.Info("shutdown signal received")
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
@@ -386,6 +431,6 @@ func run() error {
 		return fmt.Errorf("graceful shutdown に失敗しました: %w", err)
 	}
 
-	log.Println("サーバーを正常に停止しました")
+	slog.Info("calculation-engine stopped")
 	return nil
 }

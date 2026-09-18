@@ -1,4 +1,5 @@
 import { SearchOperationError, type EngineCapability, type SearchErrorDetails, type SearchErrorStage } from "@/lib/search-errors";
+import { captureUnhandledError } from "@/lib/analytics";
 
 export interface EngineReadiness {
   capability: EngineCapability;
@@ -99,6 +100,7 @@ function initialize() {
   worker.onerror = event => {
     const details: SearchErrorDetails = { message: event.message || "計算エンジンの読み込みに失敗しました。", code: "worker_runtime_failed", source: "worker", stage: "worker_bootstrap", exceptionName: "ErrorEvent", retryable: true, retryCount: 0, workerRestartCount: 0 };
     settleFailure(details);
+    captureUnhandledError(new SearchOperationError(details), "calculation_web_worker");
     requests.clear();
   };
 }

@@ -26,17 +26,17 @@ const metadata = {
         </h2>
         <p>
           {
-            "当サイトでは、サービスの品質向上や利用状況の分析のため、プロダクト分析ツール「PostHog」および「Google Analytics」を利用しています。"
+            "当サイトでは、サービスの品質向上や利用状況の匿名集計のために「PostHog」を、障害の検知と原因調査のために「Sentry」を利用しています。"
           }
         </p>
         <p class="mt-4">
           {
-            "これらのツールはトラフィックデータやサイト内での行動履歴（検索条件やエラーの発生等）を収集するためにCookieを使用しています。データは匿名で収集されており、個人を特定するものではありません。"
+            "PostHogにはページのパス、検索種別、成否、処理時間の区分などを送信しますが、駅名、経路、運賃、検索URL、エラー本文は送信しません。個人プロファイルやセッション記録は使用していません。"
           }
         </p>
         <p class="mt-4">
           {
-            "この機能はCookieを無効にすることで収集を拒否することができますので、お使いのブラウザの設定や、各種ブラウザ拡張機能等をご確認ください。"
+            "Sentryには障害発生時に限り、原因調査に必要なエラー情報、アプリケーションのバージョン、ブラウザ情報、および検索条件を含むURLを送信します。ユーザーを識別する情報やCookie、認証ヘッダー、セッション記録は送信せず、参照期間は30日です。"
           }
           {
             "各ツールの利用規約や、データ使用の仕組みについては、以下のリンクからご確認いただけます。"
@@ -48,31 +48,19 @@ const metadata = {
             <span
               class="font-bold text-slate-800 border-l-4 border-slate-300 pl-2 mb-2 block"
             >
-              {"Google Analytics"}
+              {"Sentry"}
             </span>
             <ul
               class="list-disc list-outside ml-5 space-y-1.5 text-sm text-slate-600"
             >
               <li>
                 <a
-                  href="https://marketingplatform.google.com/about/analytics/terms/jp/"
+                  href="https://sentry.io/privacy/"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="text-blue-600 hover:underline underline-offset-2"
                 >
-                  {"Google Analytics利用規約"}
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://policies.google.com/technologies/partner-sites?hl=ja"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-blue-600 hover:underline underline-offset-2"
-                >
-                  {
-                    "Googleのサービスを使用するサイトやアプリから収集した情報のGoogleによる使用"
-                  }
+                  {"Sentry Privacy Policy"}
                 </a>
               </li>
             </ul>

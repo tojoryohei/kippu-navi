@@ -5,7 +5,7 @@ import (
 	"calculation-engine/internal/pass/usecase"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -44,6 +44,7 @@ type CalculateResponse struct {
 
 // HandleCalculate は計算リクエストを処理します。
 func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
+	requestID := r.Header.Get("X-Request-ID")
 	if r.Method != http.MethodGet {
 		writeErrorResponse(w, http.StatusMethodNotAllowed, "許可されていないメソッドです")
 		return
@@ -104,7 +105,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}
 	optResult, err := h.search.ExecuteWithOptions(startID, endID, reqMonths, maxSections, lockedStations)
 	if err != nil {
-		log.Printf("分割定期券の計算エラー: %v", err)
+		slog.Error("split pass calculation failed", "request_id", requestID, "error_type", fmt.Sprintf("%T", err))
 
 		errMsg := err.Error()
 		if lastIdx := strings.LastIndex(errMsg, ":"); lastIdx != -1 {
@@ -130,7 +131,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !validResponsePaths(normalResp, apiResults) {
-		log.Printf("分割定期券の計算が不正な経路を返しました: normal=%v results=%v", normalResp, apiResults)
+		slog.Error("split pass calculation returned invalid paths", "request_id", requestID, "normal_length", len(normalResp), "result_count", len(apiResults))
 		writeErrorResponse(w, http.StatusInternalServerError, "経路データの生成に失敗しました")
 		return
 	}
@@ -142,7 +143,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		Normal:  normalResp,
 		Results: apiResults,
 	}); err != nil {
-		log.Printf("レスポンスのエンコードエラー: %v", err)
+		slog.Error("failed to encode split pass response", "request_id", requestID, "error_type", fmt.Sprintf("%T", err))
 	}
 }
 
@@ -214,6 +215,6 @@ func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(CalculateResponse{Error: message}); err != nil {
-		log.Printf("エラーレスポンスのエンコードエラー: %v", err)
+		slog.Error("failed to encode split pass error response", "error_type", fmt.Sprintf("%T", err))
 	}
 }
