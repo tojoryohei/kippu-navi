@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.4...kippu-navi-v3.1.5) (2026-09-18)
+
+
+### Bug Fixes
+
+* CloudflareでGET APIをキャッシュ ([#708](https://github.com/tojoryohei/kippu-navi/issues/708)) ([aa04262](https://github.com/tojoryohei/kippu-navi/commit/aa04262cbd175c18be313f9b569d3821115bef4c))
+
 ## [3.1.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.3...kippu-navi-v3.1.4) (2026-09-18)
 
 
