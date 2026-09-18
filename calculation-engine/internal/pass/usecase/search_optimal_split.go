@@ -54,6 +54,7 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([][]int, error
 }
 
 // ExecuteWithOptions は最大区間数と分割禁止駅を指定して、最適な分割を探索します。
+// 返値は0分割（発着駅のみ）を含む最安候補の一覧です。
 // maxSections が0以下の場合は、コンストラクタで設定された既定値を使用します。
 func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, months, maxSections int, lockedStations []int) ([][]int, error) {
 	locked := makeLockedStationSet(lockedStations)
@@ -167,17 +168,7 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, months, maxSecti
 		return nil, err
 	}
 
-	var results [][]int
-	results = append(results, []int{startID, endID})
-
-	for _, path := range optimalPaths {
-		if len(path) == 2 && path[0] == startID && path[1] == endID {
-			continue
-		}
-		results = append(results, path)
-	}
-
-	return results, nil
+	return optimalPaths, nil
 }
 
 // MaxSectionsLimit はコンストラクタで設定された既定の最大区間数を返します。
