@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.3...kippu-navi-v3.1.4) (2026-09-18)
+
+
+### Bug Fixes
+
+* 検索エラーの再試行と監視を改善 ([#706](https://github.com/tojoryohei/kippu-navi/issues/706)) ([296a522](https://github.com/tojoryohei/kippu-navi/commit/296a52242f05ec08f4b1a5cd8c972df981c03471))
+
 ## [3.1.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.2...kippu-navi-v3.1.3) (2026-09-17)
 
 
