@@ -1,19 +1,60 @@
-function proxyApi(request, apiOrigin) {
+const API_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+const cacheableApiParameters = {
+  '/api/split-pass': ['from', 'to', 'months', 'maxSplits', 'noSplitStation'],
+  '/api/split-icpass': ['from', 'to', 'months', 'noSplitStation'],
+  '/api/split-ticket': ['from', 'to', 'maxSplits', 'noSplitStation'],
+};
+
+export function normalizeCacheableApiUrl(url) {
+  const allowedParameters = cacheableApiParameters[url.pathname];
+  if (!allowedParameters) return null;
+
+  const normalized = new URL(url.origin);
+  normalized.pathname = url.pathname;
+  for (const name of allowedParameters) {
+    let values = url.searchParams.getAll(name);
+    if (name === 'noSplitStation') {
+      values = [...new Set(values.map(value => value.trim()).filter(Boolean))].sort();
+    }
+    for (const value of values) normalized.searchParams.append(name, value);
+  }
+  return normalized;
+}
+
+export async function proxyApi(request, apiOrigin) {
   if (!apiOrigin) {
     return new Response('API origin is not configured.', { status: 503 });
   }
 
   const incomingUrl = new URL(request.url);
-  const targetUrl = new URL(`${incomingUrl.pathname}${incomingUrl.search}`, apiOrigin);
-  const headers = new Headers(request.headers);
-  headers.delete('host');
+  const normalizedUrl = request.method === 'GET'
+    ? normalizeCacheableApiUrl(incomingUrl)
+    : null;
+  const requestUrl = normalizedUrl ?? incomingUrl;
+  const targetUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, apiOrigin);
+  const originRequest = new Request(targetUrl, request);
+  originRequest.headers.delete('host');
+  originRequest.headers.delete('cookie');
+  originRequest.headers.delete('authorization');
+  originRequest.headers.delete('cache-control');
+  originRequest.headers.delete('pragma');
+  if (!normalizedUrl) return fetch(originRequest);
 
-  return fetch(new Request(targetUrl, {
-    method: request.method,
-    headers,
-    body: request.body,
-    redirect: 'manual',
-  }));
+  const originResponse = await fetch(originRequest, {
+    cf: {
+      cacheEverything: true,
+      cacheTtlByStatus: {
+        '200-299': API_CACHE_TTL_SECONDS,
+        '300-599': 0,
+      },
+    },
+  });
+  const response = new Response(originResponse.body, originResponse);
+  response.headers.set('Cache-Control', originResponse.ok
+    ? `public, max-age=0, s-maxage=${API_CACHE_TTL_SECONDS}`
+    : 'no-store');
+  return response;
 }
 
 function proxyPostHog(request) {

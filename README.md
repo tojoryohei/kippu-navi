@@ -12,7 +12,7 @@ JR線の運賃、定期券運賃、最安分割きっぷを計算するWebアプ
 | 静的ページ・SEO | Astro、`src/pages`、`src/layouts/Layout.astro` |
 | 計算フォーム | React Islands、`src/app/fare`、`src/app/split` |
 | 計算エンジン | Go / WASM、共有Web Worker |
-| 分割経路探索API | Go、Cloud Run（本番・ステージング別サービス） |
+| 分割経路探索API | Go、Cloud Run（本番・ステージング別サービス）、Cloudflare Edge Cache |
 | 静的配信 | Cloudflare Workers Static Assets |
 | API・PostHogプロキシ | `workers/frontend.mjs` の `/api/*` と `/ingest/*` |
 | フォント | FontsourceのNoto Sans JP・Geist Monoをビルド成果物へ同梱 |
@@ -84,13 +84,15 @@ npm start
 
 `.env.local`とGitHub Repository Variablesには`PUBLIC_POSTHOG_KEY`、`PUBLIC_GOOGLE_ANALYTICS_ID`を設定します。Firebaseの変数は不要です。
 
-WASM・Goランタイム・2種類のBINの内容からSHA-256を計算し、`/engine/<hash>/`へまとめて配置します。UIだけの変更ではエンジンURLは変わりません。エンジンは1年間のimmutableキャッシュ、HTMLはStatic Assetsの更新管理を使います。`deployment.json`で環境・コミット・エンジンバージョンを確認できます。
+WASM・Goランタイム・2種類のBINの内容からSHA-256を計算し、`/engine/<hash>/`へまとめて配置します。UIだけの変更ではエンジンURLは変わりません。エンジンは1年間のimmutableキャッシュ、HTMLはStatic Assetsの更新管理を使います。分割経路探索のGET APIは成功レスポンスだけをCloudflareで30日間共有し、ブラウザには保存しません。`deployment.json`で環境・コミット・エンジンバージョンを確認できます。
 
 ## デプロイ
 
 GitHub Actionsの`deploy-frontend.yml`がフロントエンドを配信します。通常はmain以外がステージング、mainが本番に対応します。`workflow_dispatch`でproductionを選択すると、`kippu-navi.com`へ接続せず`workers.dev`で本番Workerを検証できます。
 
 Astro移行後のフロントエンドでは、Next.js用のDockerfile・Cloud Build設定・Pages Functionsは使用しません。既存の本番Cloud Runサービスをこの変更が削除・更新することはありません。切り替え前にGoogle Cloud側の旧フロントエンドCloud Buildトリガーを無効化してください。Go APIのCloud Runデプロイは`deploy-api.yml`で継続します。
+
+運賃・路線データまたは分割経路探索ロジックを更新した場合は、Cloudflare DashboardからAPIキャッシュを手動でパージします。WorkerのサブリクエストキャッシュはCloud Run側URLをキーにするため、Custom Purgeでは対象環境の`calculation-engine...run.app/api/` prefixを指定します。キャッシュと無関係なAPI変更ではパージ不要です。
 
 本番切り替え前の確認事項は[移行メモ](docs/astro-migration.md)を参照してください。
 

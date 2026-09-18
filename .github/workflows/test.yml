@@ -34,6 +34,9 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Test Cloudflare Worker
+        run: npm run test:worker
+
   knip:
     name: Run Knip
     runs-on: ubuntu-latest
