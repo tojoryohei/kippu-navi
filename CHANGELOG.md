@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.2.0...kippu-navi-v3.2.1) (2026-09-18)
+
+
+### Bug Fixes
+
+* 0分割を定期券の最適候補に含める ([#712](https://github.com/tojoryohei/kippu-navi/issues/712)) ([32443c3](https://github.com/tojoryohei/kippu-navi/commit/32443c3e34722d3b46b4fd1e7510854a568895e0))
+
 ## [3.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.5...kippu-navi-v3.2.0) (2026-09-18)
 
 
