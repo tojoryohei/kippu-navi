@@ -74,6 +74,47 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		if !hasABC {
 			t.Error("期待される分割経路 A-B-C が見つかりません")
 		}
+		for _, path := range got {
+			if isMatch(path, []int{id("A"), id("C")}) {
+				t.Errorf("分割した方が安い場合に0分割候補が含まれています: %v", got)
+			}
+		}
+	})
+
+	t.Run("0分割と分割ありが同額な場合は両方を返す", func(t *testing.T) {
+		var tieTable [101]passdomain.PassPrice
+		for i := range tieTable {
+			if i <= 10 {
+				tieTable[i] = passdomain.PassPrice{OneMonth: 1000}
+			} else {
+				tieTable[i] = passdomain.PassPrice{OneMonth: 2000}
+			}
+		}
+		tieRegistry := fare.NewRegistry()
+		tieRegistry.Register(domain.JREast, fare.NewEastCalculator(tieTable, tieTable))
+		tieRegistry.Register(domain.JRCentral, fare.NewStandardCalculator(tieTable, tieTable))
+		tieCalc := usecase.NewCalculateAmount(
+			g, tieRegistry, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
+			fare.NewTrainSpecificSectionCalculator(tieTable),
+			fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
+		)
+		tieSplit := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(tieCalc), tieCalc)
+		tieSearch := usecase.NewSearchOptimalSplit(g, tieSplit, nil, 0, precomputeFaresForTest(g, tieCalc, nil), int32(g.NumStations()))
+
+		got, err := tieSearch.Execute(id("A"), id("C"), 1)
+		if err != nil {
+			t.Fatalf("Execute が失敗しました: %v", err)
+		}
+
+		hasUnsplit := false
+		hasSplit := false
+		for _, path := range got {
+			hasUnsplit = hasUnsplit || isMatch(path, []int{id("A"), id("C")})
+			hasSplit = hasSplit || isMatch(path, []int{id("A"), id("B"), id("C")})
+		}
+		if !hasUnsplit || !hasSplit {
+			t.Errorf("同額の0分割と分割ありの両方が返りません: %v", got)
+		}
 	})
 
 	t.Run("特例ルールあり: オーバーシュート補正の適用検証", func(t *testing.T) {
@@ -183,6 +224,9 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		got1, err1 := search1.Execute(id2("A"), id2("D"), 1)
 		if err1 != nil {
 			t.Fatalf("Execute(1) が失敗しました: %v", err1)
+		}
+		if len(got1) != 1 || !isMatch(got1[0], []int{id2("A"), id2("D")}) {
+			t.Errorf("分割なしの最安候補が正しく返りません: %v", got1)
 		}
 
 		lockedResult, errLocked := search0.ExecuteWithOptions(id2("A"), id2("D"), 1, 0, []int{id2("B")})

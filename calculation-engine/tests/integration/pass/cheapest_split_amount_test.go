@@ -339,9 +339,6 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 				}
 
 				path := results[0]
-				if len(results) > 1 {
-					path = results[1]
-				}
 
 				totalFare := 0
 				for i := 0; i < len(path)-1; i++ {

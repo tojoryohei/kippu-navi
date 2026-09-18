@@ -16,6 +16,7 @@ func TestValidResponsePaths(t *testing.T) {
 		{"valid", []string{"A", "B"}, [][]string{{"A", "C", "B"}}, true},
 		{"empty normal", nil, nil, false},
 		{"short normal", []string{"A"}, nil, false},
+		{"empty results", []string{"A", "B"}, nil, false},
 		{"short result", []string{"A", "B"}, [][]string{{"A"}}, false},
 	}
 	for _, tt := range tests {

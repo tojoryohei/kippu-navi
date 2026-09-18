@@ -116,19 +116,15 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var normalResp []string
-	var apiResults [][]string
+	normalResp := []string{reqStart, reqEnd}
+	apiResults := make([][]string, 0, len(optResult))
 
-	for i, path := range optResult {
+	for _, path := range optResult {
 		names := make([]string, len(path))
 		for j, id := range path {
 			names[j] = h.graph.GetName(id)
 		}
-		if i == 0 {
-			normalResp = names
-		} else {
-			apiResults = append(apiResults, names)
-		}
+		apiResults = append(apiResults, names)
 	}
 	if !validResponsePaths(normalResp, apiResults) {
 		slog.Error("split pass calculation returned invalid paths", "request_id", requestID, "normal_length", len(normalResp), "result_count", len(apiResults))
@@ -148,7 +144,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 }
 
 func validResponsePaths(normal []string, results [][]string) bool {
-	if len(normal) < 2 {
+	if len(normal) < 2 || len(results) == 0 {
 		return false
 	}
 	for _, path := range results {
