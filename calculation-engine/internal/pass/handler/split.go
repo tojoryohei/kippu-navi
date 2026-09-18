@@ -129,6 +129,11 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 			apiResults = append(apiResults, names)
 		}
 	}
+	if !validResponsePaths(normalResp, apiResults) {
+		log.Printf("分割定期券の計算が不正な経路を返しました: normal=%v results=%v", normalResp, apiResults)
+		writeErrorResponse(w, http.StatusInternalServerError, "経路データの生成に失敗しました")
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -139,6 +144,18 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}); err != nil {
 		log.Printf("レスポンスのエンコードエラー: %v", err)
 	}
+}
+
+func validResponsePaths(normal []string, results [][]string) bool {
+	if len(normal) < 2 {
+		return false
+	}
+	for _, path := range results {
+		if len(path) < 2 {
+			return false
+		}
+	}
+	return true
 }
 
 // parseMaxSplits は分割回数指定を内部の最大区間数へ変換します。

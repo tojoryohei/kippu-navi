@@ -2,7 +2,8 @@ import { useForm, Controller, type SubmitHandler, useFieldArray, useWatch } from
 import type { SingleValue } from "react-select";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
-import { analytics as posthog, getCalculationErrorType } from "@/lib/analytics";
+import { analytics as posthog, captureEngineRecovery, captureSearchError, createSearchId, successfulSearchProperties, type SearchEventContext } from "@/lib/analytics";
+import { SearchOperationError } from "@/lib/search-errors";
 
 import stationData from "@/app/fare/data/stations.json";
 import lineData from "@/app/fare/data/lines.json";
@@ -112,6 +113,8 @@ export default function Form({
     initialCalculationMode = "normal",
 }: FormProps) {
     const lastTrackedSearch = useRef<string | null>(null);
+    const searchContextRef = useRef<SearchEventContext | null>(null);
+    const pendingErrorRef = useRef<unknown>(null);
 
     const { register, handleSubmit, control, setValue, getValues, trigger, clearErrors, formState: { isValid } } = useForm<FormValues>({
         mode: 'onChange',
@@ -203,6 +206,18 @@ export default function Form({
     const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
         if (!mountedRef.current) return;
         const calcId = ++latestCalcIdRef.current;
+        const searchContext: SearchEventContext = {
+            searchId: createSearchId(),
+            startedAt: performance.now(),
+            capability: data.searchType === "ticket" ? "ticket" : "pass",
+            searchType: data.searchType,
+            calculationMode: data.calculationMode,
+            fromStation: data.startStation?.name,
+            toStation: data.segments?.[data.segments.length - 1]?.destinationStation?.name,
+            route: stringifyRoute(data.startStation, data.segments || []),
+        };
+        searchContextRef.current = searchContext;
+        pendingErrorRef.current = null;
         setIsLoading(true);
         setError(null);
         setResult(null);
@@ -217,31 +232,34 @@ export default function Form({
         const apiRequestBody = createApiRequestBody(data);
 
         if (!apiRequestBody) {
-            setError("経路が不完全です。");
+            const operationError = new SearchOperationError({ message: "経路が不完全です。", code: "path_invalid", source: "client", stage: "api_response_validate", capability: searchContext.capability, exceptionName: "ValidationError", retryable: false, retryCount: 0, workerRestartCount: 0 });
+            pendingErrorRef.current = operationError;
+            setError(operationError.message);
             setIsLoading(false);
             return;
         }
 
         if (apiRequestBody.fullPath.length < 2) {
-            setError('不正な経路です');
+            const operationError = new SearchOperationError({ message: "不正な経路です", code: "path_invalid", source: "client", stage: "api_response_validate", capability: searchContext.capability, exceptionName: "ValidationError", retryable: false, retryCount: 0, workerRestartCount: 0, pathCount: 1, invalidPathCount: 1, minimumPathLength: apiRequestBody.fullPath.length });
+            pendingErrorRef.current = operationError;
+            setError(operationError.message);
+            setIsLoading(false);
+            return;
+        }
+
+        if (!workerRef.current) return;
+        try {
+            const readiness = await workerRef.current.ensureReady(searchContext.capability);
+            searchContext.readiness = readiness;
+            captureEngineRecovery(readiness, searchContext);
+        } catch (readinessError) {
+            pendingErrorRef.current = readinessError;
+            setError(readinessError instanceof Error ? readinessError.message : String(readinessError));
             setIsLoading(false);
             return;
         }
 
         if (data.searchType !== "ticket") {
-            if (!workerRef.current || !isWasmReadyRef.current) {
-                let waited = 0;
-                while (mountedRef.current && (!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
-                    await new Promise((resolve) => setTimeout(resolve, 50));
-                    waited += 50;
-                }
-            }
-
-            if (!workerRef.current || !isWasmReadyRef.current) {
-                setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
-                setIsLoading(false);
-                return;
-            }
 
             if (!mountedRef.current || calcId !== latestCalcIdRef.current) return;
             const stationNames = apiRequestBody.fullPath.map(p => p.stationName);
@@ -263,20 +281,6 @@ export default function Form({
         }
 
         if (data.searchType === "ticket") {
-            if (!workerRef.current || !isWasmReadyRef.current) {
-                let waited = 0;
-                while (mountedRef.current && (!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
-                    await new Promise((resolve) => setTimeout(resolve, 50));
-                    waited += 50;
-                }
-            }
-
-            if (!workerRef.current || !isWasmReadyRef.current) {
-                setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
-                setIsLoading(false);
-                return;
-            }
-
             if (!mountedRef.current || calcId !== latestCalcIdRef.current) return;
             workerRef.current.postMessage({
                 type: "calculateRouteTicket",
@@ -305,7 +309,7 @@ export default function Form({
             workerRef.current = worker;
 
             worker.onmessage = (e) => {
-                const { type, result: wResult, error: wError, requestId } = e.data;
+                const { type, result: wResult, error: wError, requestId, details } = e.data;
                 if (requestId !== undefined && requestId !== latestCalcIdRef.current) return;
                 if (type === "ready") {
                     setIsWasmReady(true);
@@ -329,6 +333,7 @@ export default function Form({
                     setIsLoading(false);
 
                 } else if (type === "error") {
+                    pendingErrorRef.current = details ? new SearchOperationError(details) : new Error(wError);
                     setError(wError);
                     setIsLoading(false);
                 }
@@ -454,13 +459,15 @@ export default function Form({
         if (currentFrom && currentTo) {
             // 経路文字列を生成
             const route = stringifyRoute(startStation, segments || []);
-            const currentSearchKey = `${route}_${currentSearchType}`;
+            const context = searchContextRef.current;
+            const currentSearchKey = context?.searchId || `${route}_${currentSearchType}`;
 
             // 同じ検索条件での重複送信を防止
             if (lastTrackedSearch.current !== currentSearchKey) {
                 // 1. 乗車券の計算結果が返ってきた場合
                 if (result) {
                     const eventParams = {
+                        ...(context ? successfulSearchProperties(context) : {}),
                         search_type: currentSearchType,
                         calculation_mode: calculationMode,
                         route,
@@ -484,6 +491,7 @@ export default function Form({
                 // 2. 定期券の計算結果が返ってきた場合
                 else if (resultPass) {
                     const eventParams = {
+                        ...(context ? successfulSearchProperties(context) : {}),
                         search_type: currentSearchType,
                         calculation_mode: calculationMode,
                         route,
@@ -506,18 +514,8 @@ export default function Form({
                 }
                 // 3. エラーが返ってきた場合
                 else if (error) {
-                    const errorParams = {
-                        search_type: currentSearchType,
-                        calculation_mode: calculationMode,
-                        route,
-                        error_type: getCalculationErrorType(error),
-                        error_message: error,
-                    };
-
                     const runTrackingError = () => {
-                        if (posthog) {
-                            posthog.capture("search_error", errorParams);
-                        }
+                        if (context) captureSearchError(pendingErrorRef.current || new Error(error), context);
                     };
 
                     if (typeof window.requestIdleCallback === "function") {
@@ -966,13 +964,11 @@ export default function Form({
                     <button
                         type="submit"
                         className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2 cursor-pointer disabled:cursor-not-allowed"
-                        disabled={!isValid || isLoading || (currentType !== "ticket" && !isWasmReady)}
+                        disabled={!isValid || isLoading}
                     >
                         {isLoading
                             ? "計算中..."
-                            : (currentType !== "ticket" && !isWasmReady)
-                                ? "計算エンジン初期化中..."
-                                : "運賃計算をする"
+                            : "運賃計算をする"
                         }
                     </button>
                 </div>
