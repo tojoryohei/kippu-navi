@@ -2,6 +2,7 @@ import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import { loadEnv } from "vite";
+import packageJson from "./package.json" with { type: "json" };
 
 const env = loadEnv(process.env.NODE_ENV ?? "development", process.cwd(), "");
 
@@ -18,6 +19,9 @@ export default defineConfig({
     define: {
       // Classic Workers cannot evaluate import.meta, including during Vite dev.
       __WASM_VERSION__: JSON.stringify(env.PUBLIC_WASM_VERSION || ""),
+      __APP_VERSION__: JSON.stringify(packageJson.version),
+      __DEPLOY_COMMIT__: JSON.stringify(env.PUBLIC_DEPLOY_COMMIT || "local"),
+      __DEPLOY_ENVIRONMENT__: JSON.stringify(env.DEPLOY_ENVIRONMENT || "local"),
       "import.meta.env.PUBLIC_POSTHOG_KEY": JSON.stringify(
         env.PUBLIC_POSTHOG_KEY || "",
       ),

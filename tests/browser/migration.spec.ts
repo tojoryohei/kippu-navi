@@ -216,8 +216,36 @@ test("WASMのロード失敗を表示する", async ({ page }) => {
   await page.route("**/main.wasm", (route) =>
     route.fulfill({ status: 404, body: "missing" }),
   );
-  await page.goto("/split/ticket");
-  await expect(page.getByText(/WASM binary fetch failed/)).toBeVisible();
+  await page.goto(`/split/ticket?${query}`);
+  await expect(page.getByText(/main\.wasm.*404/)).toBeVisible();
+});
+
+test("WASMの一時的な503を再試行して検索を継続する", async ({ page }) => {
+  await isolateServices(page);
+  let attempts = 0;
+  await page.route("**/main.wasm", async route => {
+    attempts++;
+    if (attempts <= 2) return route.fulfill({ status: 503, body: "temporary" });
+    return route.continue();
+  });
+  await page.goto(`/split/ticket?${query}`);
+  await expectTicket(page);
+  expect(attempts).toBe(3);
+});
+
+test("定期券グラフの障害中も乗車券検索を継続する", async ({ page }) => {
+  await isolateServices(page);
+  await page.route("**/pass_graph_data.bin", route => route.fulfill({ status: 503, body: "temporary" }));
+  await page.goto(`/split/ticket?${query}`);
+  await expectTicket(page);
+});
+
+test("2駅未満のAPI経路をWorkerへ渡さず拒否する", async ({ page }) => {
+  await isolateServices(page);
+  await page.route("**/api/split-ticket**", route => route.fulfill({ json: { normal: ["新茂原"], results: [] } }));
+  await page.goto(`/split/ticket?${query}`);
+  await expect(page.getByText("経路データの取得に失敗しました。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);
 });
 
 test("初期化中も入力画面が表示され、完了後に計算できる", async ({ page }) => {

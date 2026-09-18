@@ -5,7 +5,8 @@ import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 import { replaceCalculatorUrl } from "@/lib/calculator-location";
 import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
-import { analytics as posthog, getCalculationErrorType } from "@/lib/analytics";
+import { analytics as posthog, captureEngineRecovery, captureSearchError, createSearchId, successfulSearchProperties, type SearchEventContext } from "@/lib/analytics";
+import { SearchOperationError } from "@/lib/search-errors";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
@@ -90,6 +91,22 @@ function adaptWasmResponseToSplitFareResult(wasmRes: SplitCalculationResponse): 
     };
 }
 
+function validateSplitStationResponse(value: unknown, capability: "ticket" | "pass"): SplitStationResponse {
+    if (!value || typeof value !== "object") {
+        throw new SearchOperationError({ message: "経路データの形式が不正です。", code: "api_response_invalid", source: "api", stage: "api_response_validate", capability, exceptionName: "ValidationError", retryable: false, retryCount: 0, workerRestartCount: 0 });
+    }
+    const response = value as Partial<SplitStationResponse>;
+    if (response.error) return response as SplitStationResponse;
+    const paths = [response.normal, ...(Array.isArray(response.results) ? response.results : [])];
+    const validShape = Array.isArray(response.normal) && Array.isArray(response.results) && paths.every(path => Array.isArray(path) && path.every(station => typeof station === "string"));
+    const lengths = paths.filter(Array.isArray).map(path => path.length);
+    const invalidPathCount = lengths.filter(length => length < 2).length;
+    if (!validShape || invalidPathCount > 0) {
+        throw new SearchOperationError({ message: "経路データの取得に失敗しました。", code: invalidPathCount > 0 ? "path_invalid" : "api_response_invalid", source: "api", stage: "api_response_validate", capability, exceptionName: "ValidationError", retryable: false, retryCount: 0, workerRestartCount: 0, pathCount: lengths.length, invalidPathCount, minimumPathLength: lengths.length ? Math.min(...lengths) : 0 });
+    }
+    return response as SplitStationResponse;
+}
+
 export default function SplitForm({
     pathname,
     initialFrom,
@@ -125,10 +142,10 @@ export default function SplitForm({
     const [showAllPatterns, setShowAllPatterns] = useState(false);
 
     const lastTrackedSearch = useRef<string>("");
+    const searchContextRef = useRef<SearchEventContext | null>(null);
+    const pendingErrorRef = useRef<unknown>(null);
 
     const workerRef = useRef<EngineClient | null>(null);
-    const [isWasmReady, setIsWasmReady] = useState(false);
-    const isWasmReadyRef = useRef<boolean>(false);
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
     const latestCalcIdRef = useRef<number>(0);
 
@@ -176,6 +193,10 @@ export default function SplitForm({
         const abort = new AbortController();
         apiAbortRef.current = abort;
         const calculationStartedAt = performance.now();
+        const capability = data.searchType === "ticket" ? "ticket" : "pass";
+        const searchContext: SearchEventContext = { searchId: createSearchId(), startedAt: calculationStartedAt, capability, searchType: data.searchType, fromStation: data.startStation.name, toStation: data.endStation.name, maxSplits: data.maxSplits, noSplitStations: data.forbiddenStations.map(station => station.name) };
+        searchContextRef.current = searchContext;
+        pendingErrorRef.current = null;
         setShowAllPatterns(false);
         setError(null);
         setResult(null);
@@ -237,27 +258,33 @@ export default function SplitForm({
             } else {
                 endpoint = "/api/split-pass";
             }
-            const apiRes = await fetch(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: abort.signal });
-            const res: SplitStationResponse = await apiRes.json();
+            let apiRes: Response;
+            try {
+                apiRes = await fetch(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: abort.signal });
+            } catch (fetchError) {
+                throw new SearchOperationError({ message: fetchError instanceof Error ? fetchError.message : String(fetchError), code: "api_network_failed", source: "api", stage: "api_fetch", capability, exceptionName: fetchError instanceof Error ? fetchError.name : "Error", retryable: true, retryCount: 0, workerRestartCount: 0 });
+            }
+            if (!apiRes.ok) {
+                throw new SearchOperationError({ message: `経路APIがエラーを返しました (${apiRes.status})`, code: "api_http_failed", source: "api", stage: "api_fetch", capability, exceptionName: "HttpError", httpStatus: apiRes.status, retryable: apiRes.status === 408 || apiRes.status === 429 || apiRes.status >= 500, retryCount: 0, workerRestartCount: 0 });
+            }
+            let rawResponse: unknown;
+            try {
+                rawResponse = await apiRes.json();
+            } catch (parseError) {
+                throw new SearchOperationError({ message: "経路APIの応答を解析できませんでした。", code: "api_response_invalid", source: "api", stage: "api_response_parse", capability, exceptionName: parseError instanceof Error ? parseError.name : "SyntaxError", retryable: false, retryCount: 0, workerRestartCount: 0 });
+            }
+            const res = validateSplitStationResponse(rawResponse, capability);
             if (abort.signal.aborted) return;
             setServerTime(performance.now() - calculationStartedAt);
             if (res.error) {
+                pendingErrorRef.current = new SearchOperationError({ message: res.error, code: res.error === "経路が重複しています。" ? "duplicate_route" : "calculation_failed", source: "api", stage: "calculation", capability, exceptionName: "ApiCalculationError", retryable: false, retryCount: 0, workerRestartCount: 0 });
                 setError(res.error);
                 setIsCalculating(false);
             } else {
-                if (!workerRef.current || !isWasmReadyRef.current) {
-                    let waited = 0;
-                    while (mountedRef.current && (!workerRef.current || !isWasmReadyRef.current) && waited < 10000) {
-                        await new Promise((resolve) => setTimeout(resolve, 50));
-                        waited += 50;
-                    }
-                }
-
-                if (!workerRef.current || !isWasmReadyRef.current) {
-                    setError("計算エンジン (Web Worker) が初期化されていません。しばらく待ってから再度お試しください。");
-                    setIsCalculating(false);
-                    return;
-                }
+                if (!workerRef.current) return;
+                const readiness = await workerRef.current.ensureReady(capability);
+                searchContext.readiness = readiness;
+                captureEngineRecovery(readiness, searchContext);
 
                 const monthsMap: Record<string, number> = { pass1: 1, pass3: 3, pass6: 6 };
                 const months = monthsMap[data.searchType] || 1;
@@ -281,6 +308,7 @@ export default function SplitForm({
         } catch (err: unknown) {
             if (abort.signal.aborted) return;
             const errorInstance = err instanceof Error ? err : new Error(String(err));
+            pendingErrorRef.current = err;
             setError(errorInstance.message);
             setIsCalculating(false);
         }
@@ -294,19 +322,14 @@ export default function SplitForm({
                 workerRef.current.terminate();
                 workerRef.current = null;
             }
-            setIsWasmReady(false);
-            isWasmReadyRef.current = false;
 
             const worker = createEngineClient();
             workerRef.current = worker;
 
             worker.onmessage = (e) => {
-                const { type, result, error, requestId } = e.data;
+                const { type, result, error, requestId, details } = e.data;
                 if (requestId !== undefined && requestId !== latestCalcIdRef.current) return;
-                if (type === "ready") {
-                    setIsWasmReady(true);
-                    isWasmReadyRef.current = true;
-                } else if (type === "success") {
+                if (type === "success") {
                     // 最新のリクエストIDと一致する場合のみ結果を反映（古い計算結果を破棄）
                     if (requestId === latestCalcIdRef.current) {
                         const adaptedResult = adaptWasmResponseToSplitFareResult(result);
@@ -315,6 +338,7 @@ export default function SplitForm({
                     setIsCalculating(false);
 
                 } else if (type === "error") {
+                    pendingErrorRef.current = details ? new SearchOperationError(details) : new Error(error);
                     setError(error);
                     setIsCalculating(false);
                 }
@@ -328,7 +352,6 @@ export default function SplitForm({
                 workerRef.current.terminate();
                 workerRef.current = null;
             }
-            isWasmReadyRef.current = false;
         };
     }, []);
 
@@ -403,13 +426,8 @@ export default function SplitForm({
         const noSplitStations = currentForbiddenStations.map(station => station.name);
 
         if (currentFrom && currentTo) {
-            const currentSearchKey = JSON.stringify([
-                currentFrom,
-                currentTo,
-                currentSearchType,
-                currentMaxSplits,
-                noSplitStations,
-            ]);
+            const context = searchContextRef.current;
+            const currentSearchKey = context?.searchId || JSON.stringify([currentFrom, currentTo, currentSearchType, currentMaxSplits, noSplitStations]);
 
             // 同じ検索条件での重複送信を防止
             if (lastTrackedSearch.current !== currentSearchKey) {
@@ -423,6 +441,7 @@ export default function SplitForm({
                     const savedAmount = Math.max(0, normalFare - bestFare);
 
                     const eventParams = {
+                        ...(context ? successfulSearchProperties(context) : {}),
                         search_type: currentSearchType,
                         from_station: currentFrom,
                         to_station: currentTo,
@@ -447,20 +466,8 @@ export default function SplitForm({
                 }
                 // 2. エラーが返ってきた場合
                 else if (error) {
-                    const errorParams = {
-                        search_type: currentSearchType,
-                        from_station: currentFrom,
-                        to_station: currentTo,
-                        max_splits: currentMaxSplits,
-                        no_split_stations: noSplitStations,
-                        error_type: getCalculationErrorType(error),
-                        error_message: error
-                    };
-
                     const runTrackingError = () => {
-                        if (posthog) {
-                            posthog.capture("search_error", errorParams);
-                        }
+                        if (context) captureSearchError(pendingErrorRef.current || new Error(error), context);
                     };
 
                     if (typeof window.requestIdleCallback === "function") {
@@ -795,13 +802,11 @@ export default function SplitForm({
                         <button
                             type="submit"
                             className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                            disabled={!isValid || isCalculating || (currentType !== "ticket" && !isWasmReady)}
+                            disabled={!isValid || isCalculating}
                         >
                             {isCalculating
                                 ? "計算中..."
-                                : (currentType !== "ticket" && !isWasmReady)
-                                    ? "計算エンジン初期化中..."
-                                    : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`
+                                : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`
                             }
                         </button>
                     </div>
