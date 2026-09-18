@@ -15,6 +15,7 @@
     "lint": "eslint .",
     "typecheck": "astro check",
     "knip": "knip",
+    "test:worker": "node --test tests/worker/*.test.mjs",
     "test:e2e": "playwright test",
     "predev": "node scripts/prepare-local-engine.mjs",
     "dev:engine": "node scripts/prepare-local-engine.mjs"

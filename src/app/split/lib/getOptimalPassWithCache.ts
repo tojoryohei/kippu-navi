@@ -30,7 +30,6 @@ export async function getOptimalPassWithCache(
     const response = await fetch(`${getApiUrl(endpoint)}?${params.toString()}`, {
         method: "GET",
         headers: { "Accept": "application/json" },
-        cache: "no-store"
     });
 
     if (!response.ok) {

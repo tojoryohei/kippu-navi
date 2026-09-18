@@ -49,7 +49,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Cache-Control", "public, max-age=86400, s-maxage=604800")
+	w.Header().Set("Cache-Control", "public, max-age=0, s-maxage=2592000")
 
 	query := r.URL.Query()
 	from := query.Get("from")
@@ -190,6 +190,7 @@ func parseLockedStationIDs(query url.Values, stations graph.StationProvider) ([]
 
 func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(CalculateResponse{Error: message}); err != nil {
 		log.Printf("エラーレスポンスのエンコードエラー: %v", err)
