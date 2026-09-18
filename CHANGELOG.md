@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.5...kippu-navi-v3.2.0) (2026-09-18)
+
+
+### Features
+
+* 検索分析と障害監視の責務を分離 ([#710](https://github.com/tojoryohei/kippu-navi/issues/710)) ([bce62d7](https://github.com/tojoryohei/kippu-navi/commit/bce62d7a89cd646be9108a783f4ce3f2caac00a2))
+
 ## [3.1.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.1.4...kippu-navi-v3.1.5) (2026-09-18)
 
 
