@@ -14,7 +14,7 @@ JR線の運賃、定期券運賃、最安分割きっぷを計算するWebアプ
 | 計算エンジン | Go / WASM、共有Web Worker |
 | 分割経路探索API | Go、Cloud Run（本番・ステージング別サービス）、Cloudflare Edge Cache |
 | 静的配信 | Cloudflare Workers Static Assets |
-| API・PostHogプロキシ | `workers/frontend.mjs` の `/api/*` と `/ingest/*` |
+| API・計測プロキシ | `workers/frontend.mjs` の `/api/*`、`/ingest/*`、`/monitoring` |
 | フォント | FontsourceのNoto Sans JP・Geist Monoをビルド成果物へ同梱 |
 
 全ページにClientRouterを配置し、内部リンクをhover時にプリフェッチします。Footerの細かいリンクはプリフェッチ対象外です。記事ページにはReactのクライアントランタイムを配信しません。
@@ -76,13 +76,27 @@ npm start
 
 | 変数 | 用途 |
 | --- | --- |
-| `PUBLIC_POSTHOG_KEY` | PostHogキー。ホストは同一オリジンの`/ingest`固定 |
-| `PUBLIC_GOOGLE_ANALYTICS_ID` | Google Analytics測定ID |
+| `PUBLIC_POSTHOG_KEY` | PostHogキー。匿名のページ・検索集計だけに使用 |
+| `PUBLIC_SENTRY_DSN` | Sentry DSN。ブラウザのシステム例外だけに使用 |
 | `PUBLIC_WASM_VERSION` | ビルドスクリプトが自動生成する内容ハッシュ。手動指定不要 |
 | `DEPLOY_ENVIRONMENT` | `staging`または`production` |
 | `API_ORIGIN` | Cloudflare Workerの転送先。`wrangler.jsonc`で環境別に指定 |
+| `SENTRY_DSN` | Worker secret。`/monitoring`の固定転送先検証に使用 |
+| `SENTRY_ORG` / `SENTRY_PROJECT` | Sentryのソースマップアップロード先 |
+| `SENTRY_AUTH_TOKEN` | CI secret。ソースマップアップロードだけに使用 |
 
-`.env.local`とGitHub Repository Variablesには`PUBLIC_POSTHOG_KEY`、`PUBLIC_GOOGLE_ANALYTICS_ID`を設定します。Firebaseの変数は不要です。
+`.env.local`とGitHub Repository Variablesには`PUBLIC_POSTHOG_KEY`、`PUBLIC_SENTRY_DSN`、`SENTRY_ORG`、`SENTRY_PROJECT`を設定します。`SENTRY_AUTH_TOKEN`はGitHub Environment Secretに設定し、公開しません。Cloudflareには環境ごとに`SENTRY_DSN`をsecretとして登録します。Sentryの従量課金は有効化せず、Developerプランの上限を使用量通知で監視します。
+
+## 監視と調査
+
+| 基盤 | 責務 | 送信しない情報 |
+| --- | --- | --- |
+| PostHog | パス別ページビュー、検索種別・成否・時間区分の匿名集計 | 駅名、経路、運賃、検索URL、エラー本文、一意の検索ID |
+| Sentry | ブラウザ、React、Web Worker、WASMのシステム例外 | Cookie、認証ヘッダー、ユーザー識別、成功検索 |
+| Cloudflare Workers Logs | Edgeプロキシのstatus、遅延、キャッシュ、転送失敗 | 駅名や経路を独立フィールドまたはメッセージに複製しない |
+| Google Cloud Logging | Cloud Run APIのstatus、遅延、panic、起動失敗 | 駅名や計算経路をログ本文に出さない |
+
+API障害はSentryの`request_id`を起点にCloudflare、Google Cloud Loggingの順で追跡します。Web WorkerまたはWASMだけの障害は、Sentryの`error_code`、`error_stage`、`engine_version`、障害時URLで再現します。PostHogは障害調査やアラートには使用しません。新規・再発例外はSentry、Edgeの5xx・転送失敗はCloudflare、APIの5xx・panicはGoogle Cloud側で通知を設定します。Sentryの障害イベントはDeveloperプランの30日参照を前提とします。
 
 WASM・Goランタイム・2種類のBINの内容からSHA-256を計算し、`/engine/<hash>/`へまとめて配置します。UIだけの変更ではエンジンURLは変わりません。エンジンは1年間のimmutableキャッシュ、HTMLはStatic Assetsの更新管理を使います。分割経路探索のGET APIは成功レスポンスだけをCloudflareで30日間共有し、ブラウザには保存しません。`deployment.json`で環境・コミット・エンジンバージョンを確認できます。
 

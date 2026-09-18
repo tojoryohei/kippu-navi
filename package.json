@@ -2,6 +2,7 @@
   "name": "kippu-navi",
   "version": "3.1.5",
   "private": true,
+  "type": "module",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -24,6 +25,7 @@
     "@astrojs/react": "^6.0.5",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@fontsource-variable/noto-sans-jp": "^5.3.0",
+    "@sentry/browser": "^10.75.0",
     "astro": "^7.3.2",
     "posthog-js": "^1.429.5",
     "react": "^19.3.0",
@@ -34,6 +36,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@sentry/vite-plugin": "^5.4.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.5.1",
@@ -52,6 +55,7 @@
     "typescript": "^5.9.3"
   },
   "allowScripts": {
+    "@sentry/cli": true,
     "core-js@3.50.0": true,
     "esbuild@0.28.2": true,
     "fsevents@2.3.3": true,

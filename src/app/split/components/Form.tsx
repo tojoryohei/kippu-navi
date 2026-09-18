@@ -5,7 +5,7 @@ import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 import { replaceCalculatorUrl } from "@/lib/calculator-location";
 import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
-import { analytics as posthog, captureEngineRecovery, captureSearchError, createSearchId, successfulSearchProperties, type SearchEventContext } from "@/lib/analytics";
+import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
 import { SearchOperationError } from "@/lib/search-errors";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
@@ -194,7 +194,7 @@ export default function SplitForm({
         apiAbortRef.current = abort;
         const calculationStartedAt = performance.now();
         const capability = data.searchType === "ticket" ? "ticket" : "pass";
-        const searchContext: SearchEventContext = { searchId: createSearchId(), startedAt: calculationStartedAt, capability, searchType: data.searchType, fromStation: data.startStation.name, toStation: data.endStation.name, maxSplits: data.maxSplits, noSplitStations: data.forbiddenStations.map(station => station.name) };
+        const searchContext: SearchEventContext = { searchId: createSearchId(), startedAt: calculationStartedAt, capability, searchType: data.searchType };
         searchContextRef.current = searchContext;
         pendingErrorRef.current = null;
         setShowAllPatterns(false);
@@ -264,6 +264,7 @@ export default function SplitForm({
             } catch (fetchError) {
                 throw new SearchOperationError({ message: fetchError instanceof Error ? fetchError.message : String(fetchError), code: "api_network_failed", source: "api", stage: "api_fetch", capability, exceptionName: fetchError instanceof Error ? fetchError.name : "Error", retryable: true, retryCount: 0, workerRestartCount: 0 });
             }
+            searchContext.requestId = apiRes.headers.get("X-Request-ID") || undefined;
             if (!apiRes.ok) {
                 throw new SearchOperationError({ message: `経路APIがエラーを返しました (${apiRes.status})`, code: "api_http_failed", source: "api", stage: "api_fetch", capability, exceptionName: "HttpError", httpStatus: apiRes.status, retryable: apiRes.status === 408 || apiRes.status === 429 || apiRes.status >= 500, retryCount: 0, workerRestartCount: 0 });
             }
@@ -414,7 +415,7 @@ export default function SplitForm({
         }
     }, [initialFrom, initialTo, initialSearchType, initialForbiddenStationsKey, initialMaxSplits, isIcPass, isPass, setValue, trigger, onSubmit]);
 
-    // GA4 & PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
+    // 検索完了の匿名集計と障害通知（計算結果またはエラーが返ってきたタイミングで実行）
     useEffect(() => {
         if (typeof window === "undefined") return;
 
@@ -433,27 +434,8 @@ export default function SplitForm({
             if (lastTrackedSearch.current !== currentSearchKey) {
                 // 1. 正常に計算結果が返ってきた場合
                 if (result) {
-                    const normalFare = result.normal?.fare || 0;
-                    const bestFare = result.results?.length > 0
-                        ? result.results[0].totalFare
-                        : normalFare;
-
-                    const savedAmount = Math.max(0, normalFare - bestFare);
-
-                    const eventParams = {
-                        ...(context ? successfulSearchProperties(context) : {}),
-                        search_type: currentSearchType,
-                        from_station: currentFrom,
-                        to_station: currentTo,
-                        max_splits: currentMaxSplits,
-                        no_split_stations: noSplitStations,
-                        saved_amount: savedAmount
-                    };
-
                     const runTracking = () => {
-                        if (posthog) {
-                            posthog.capture("search_split", eventParams);
-                        }
+                        if (context) captureSuccessfulSearch(context);
                     };
 
                     if (typeof window.requestIdleCallback === "function") {

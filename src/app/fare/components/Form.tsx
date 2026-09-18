@@ -2,7 +2,7 @@ import { useForm, Controller, type SubmitHandler, useFieldArray, useWatch } from
 import type { SingleValue } from "react-select";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
-import { analytics as posthog, captureEngineRecovery, captureSearchError, createSearchId, successfulSearchProperties, type SearchEventContext } from "@/lib/analytics";
+import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
 import { SearchOperationError } from "@/lib/search-errors";
 
 import stationData from "@/app/fare/data/stations.json";
@@ -212,9 +212,6 @@ export default function Form({
             capability: data.searchType === "ticket" ? "ticket" : "pass",
             searchType: data.searchType,
             calculationMode: data.calculationMode,
-            fromStation: data.startStation?.name,
-            toStation: data.segments?.[data.segments.length - 1]?.destinationStation?.name,
-            route: stringifyRoute(data.startStation, data.segments || []),
         };
         searchContextRef.current = searchContext;
         pendingErrorRef.current = null;
@@ -444,14 +441,13 @@ export default function Form({
         }
     }, [isWasmReady, getValues, resultPass, isLoading, error, handleSubmit, onSubmit]);
 
-    // PostHog 計測用 useEffect (計算結果またはエラーが返ってきたタイミングで実行)
+    // 検索完了の匿名集計と障害通知（計算結果またはエラーが返ってきたタイミングで実行）
     useEffect(() => {
         if (typeof window === "undefined") return;
 
         const startStation = getValues("startStation");
         const segments = getValues("segments");
         const currentSearchType = getValues("searchType") || "ticket";
-        const calculationMode = getValues("calculationMode") || "normal";
         const currentFrom = startStation?.name;
         const lastSegment = segments?.[segments.length - 1];
         const currentTo = lastSegment?.destinationStation?.name;
@@ -466,18 +462,8 @@ export default function Form({
             if (lastTrackedSearch.current !== currentSearchKey) {
                 // 1. 乗車券の計算結果が返ってきた場合
                 if (result) {
-                    const eventParams = {
-                        ...(context ? successfulSearchProperties(context) : {}),
-                        search_type: currentSearchType,
-                        calculation_mode: calculationMode,
-                        route,
-                        fare: result.fare,
-                    };
-
                     const runTracking = () => {
-                        if (posthog) {
-                            posthog.capture("search_fare", eventParams);
-                        }
+                        if (context) captureSuccessfulSearch(context);
                     };
 
                     if (typeof window.requestIdleCallback === "function") {
@@ -490,18 +476,8 @@ export default function Form({
                 }
                 // 2. 定期券の計算結果が返ってきた場合
                 else if (resultPass) {
-                    const eventParams = {
-                        ...(context ? successfulSearchProperties(context) : {}),
-                        search_type: currentSearchType,
-                        calculation_mode: calculationMode,
-                        route,
-                        fare: resultPass.fare,
-                    };
-
                     const runTracking = () => {
-                        if (posthog) {
-                            posthog.capture("search_fare", eventParams);
-                        }
+                        if (context) captureSuccessfulSearch(context);
                     };
 
                     if (typeof window.requestIdleCallback === "function") {

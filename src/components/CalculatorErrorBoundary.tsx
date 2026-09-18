@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { captureUnhandledError } from "@/lib/analytics";
 
 export default class CalculatorErrorBoundary extends Component<
   { children: ReactNode },
@@ -7,6 +8,9 @@ export default class CalculatorErrorBoundary extends Component<
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
+  }
+  componentDidCatch(error: Error) {
+    captureUnhandledError(error, "calculator_error_boundary");
   }
   render() {
     if (this.state.failed)
