@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.0...kippu-navi-v3.3.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* PostHogの検索URLをアクティビティに表示する ([#718](https://github.com/tojoryohei/kippu-navi/issues/718)) ([8944998](https://github.com/tojoryohei/kippu-navi/commit/894499856e4d07fec2e78fc4d13a0964d999e26c))
+
 ## [3.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.2.2...kippu-navi-v3.3.0) (2026-09-19)
 
 
