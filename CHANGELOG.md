@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.4...kippu-navi-v3.3.5) (2026-09-19)
+
+
+### Bug Fixes
+
+* 在来線で非連結の区間を業務エラーとして扱うように修正 ([#729](https://github.com/tojoryohei/kippu-navi/issues/729)) ([a35db60](https://github.com/tojoryohei/kippu-navi/commit/a35db60bdba61dfd3260d6b175ba38368b748bd2))
+
 ## [3.3.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.3...kippu-navi-v3.3.4) (2026-09-19)
 
 
