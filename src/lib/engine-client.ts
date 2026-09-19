@@ -65,7 +65,7 @@ function settleFailure(details: SearchErrorDetails) {
 
 function createWorker(): Worker {
   try {
-    return new Worker(new URL("../app/split/split.worker.ts", import.meta.url));
+    return new Worker(new URL("../app/split/split.worker.ts", import.meta.url), { type: "module" });
   } catch (error) {
     const exception = error instanceof Error ? error : new Error(String(error));
     throw new SearchOperationError({ message: exception.message, code: "worker_creation_failed", source: "client", stage: "worker_create", exceptionName: exception.name, retryable: true, retryCount: 0, workerRestartCount: 0 });

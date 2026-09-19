@@ -36,6 +36,7 @@ jobs:
       DEPLOY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
       DEPLOY_COMMIT: ${{ github.sha }}
       ASTRO_TELEMETRY_DISABLED: 1
+      PUBLIC_GOOGLE_ANALYTICS_ID: ${{ vars.PUBLIC_GOOGLE_ANALYTICS_ID }}
       PUBLIC_POSTHOG_KEY: ${{ vars.PUBLIC_POSTHOG_KEY }}
       PUBLIC_SENTRY_DSN: ${{ vars.PUBLIC_SENTRY_DSN }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}

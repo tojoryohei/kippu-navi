@@ -43,6 +43,9 @@ export default defineConfig({
       "import.meta.env.PUBLIC_POSTHOG_KEY": JSON.stringify(
         env.PUBLIC_POSTHOG_KEY || "",
       ),
+      "import.meta.env.PUBLIC_GOOGLE_ANALYTICS_ID": JSON.stringify(
+        env.PUBLIC_GOOGLE_ANALYTICS_ID || "",
+      ),
       "import.meta.env.PUBLIC_SENTRY_DSN": JSON.stringify(
         publicSentryDsn,
       ),
