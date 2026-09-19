@@ -15,7 +15,7 @@ JR線の運賃、定期券運賃、最安分割きっぷを計算するWebアプ
 | 分割経路探索API | Go、Cloud Run（本番・ステージング別サービス）、Cloudflare Edge Cache |
 | 静的配信 | Cloudflare Workers Static Assets |
 | API・計測プロキシ | `workers/frontend.mjs` の `/api/*`、`/ingest/*`、`/monitoring` |
-| フォント | FontsourceのNoto Sans JP・Geist Monoをビルド成果物へ同梱 |
+| フォント | Noto Sans JPをCloudflare Fontsで配信 |
 
 全ページにClientRouterを配置し、内部リンクをhover時にプリフェッチします。Footerの細かいリンクはプリフェッチ対象外です。記事ページにはReactのクライアントランタイムを配信しません。
 
@@ -105,6 +105,8 @@ WASM・Goランタイム・2種類のBINの内容からSHA-256を計算し、`/e
 ## デプロイ
 
 本番・ステージングのデプロイ、Cloud Run認証、鍵ローテーションは[運用手順](docs/deployment.md)を参照してください。
+
+Noto Sans JPはGoogle FontsのCSS2 APIが返す`unicode-range`別の可変フォントを使用します。Cloudflareダッシュボードの「Speed > Settings > Content Optimization」でCloudflare Fontsを有効にすると、Google FontsへのリンクがインラインCSSへ変換され、必要なサブセットだけが同一オリジンの`/cf-fonts/`から配信されます。Google Fontsへの`preconnect`はローカル開発や変換対象外時のフォールバック用で、変換時にはCloudflareが削除します。
 
 ## 著作権
 
