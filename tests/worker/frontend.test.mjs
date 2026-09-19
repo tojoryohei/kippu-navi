@@ -43,6 +43,7 @@ test('PostHog fare search payload contains route, URL, and exact result values',
     retry_count: 1,
     worker_restart_count: 0,
     outcome: 'success',
+    $current_url: 'https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn',
     search_surface: 'fare',
     search_url: 'https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn',
     origin_station: 'A',
@@ -115,6 +116,7 @@ test('PostHog business errors retain search details without result fields', () =
   });
   assert.equal(properties.error_code, 'path_invalid');
   assert.equal(properties.outcome, 'business_error');
+  assert.equal(properties.$current_url, 'https://kippu-navi.com/fare/ticket?route=A-A');
   assert.equal(Object.hasOwn(properties, 'total_fare_yen'), false);
 });
 
