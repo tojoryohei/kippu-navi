@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.2.2...kippu-navi-v3.3.0) (2026-09-19)
+
+
+### Features
+
+* 検索内容をPostHogで分析可能にする ([#716](https://github.com/tojoryohei/kippu-navi/issues/716)) ([237f091](https://github.com/tojoryohei/kippu-navi/commit/237f0911a4ce15442f346a8d8c916b4eb78aec41))
+
 ## [3.2.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.2.1...kippu-navi-v3.2.2) (2026-09-19)
 
 
