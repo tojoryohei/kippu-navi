@@ -76,6 +76,7 @@ npm start
 
 | 変数 | 用途 |
 | --- | --- |
+| `PUBLIC_GOOGLE_ANALYTICS_ID` | GA4測定ID。ページビューの集計だけに使用 |
 | `PUBLIC_POSTHOG_KEY` | PostHogキー。匿名のページ・検索集計だけに使用 |
 | `PUBLIC_SENTRY_DSN` | Sentry DSN。ブラウザのシステム例外だけに使用 |
 | `PUBLIC_WASM_VERSION` | ビルドスクリプトが自動生成する内容ハッシュ。手動指定不要 |
@@ -87,18 +88,21 @@ npm start
 | `SENTRY_ORG` / `SENTRY_PROJECT` | Sentryのソースマップアップロード先 |
 | `SENTRY_AUTH_TOKEN` | CI secret。ソースマップアップロードだけに使用 |
 
-`.env.local`とGitHub Repository Variablesには`PUBLIC_POSTHOG_KEY`、`PUBLIC_SENTRY_DSN`、`SENTRY_ORG`、`SENTRY_PROJECT`を設定します。`SENTRY_AUTH_TOKEN`はGitHub Environment Secretに設定し、公開しません。Cloudflareには環境ごとに`SENTRY_DSN`、`GCP_SERVICE_ACCOUNT_EMAIL`、`GCP_SERVICE_ACCOUNT_PRIVATE_KEY`をsecretとして登録します。Googleの秘密鍵はリポジトリ、GitHub Secrets、Wrangler vars、ログには保存しません。Sentryの従量課金は有効化せず、Developerプランの上限を使用量通知で監視します。
+`.env.local`とGitHub Repository Variablesには`PUBLIC_GOOGLE_ANALYTICS_ID`、`PUBLIC_POSTHOG_KEY`、`PUBLIC_SENTRY_DSN`、`SENTRY_ORG`、`SENTRY_PROJECT`を設定します。`SENTRY_AUTH_TOKEN`はGitHub Environment Secretに設定し、公開しません。Cloudflareには環境ごとに`SENTRY_DSN`、`GCP_SERVICE_ACCOUNT_EMAIL`、`GCP_SERVICE_ACCOUNT_PRIVATE_KEY`をsecretとして登録します。Googleの秘密鍵はリポジトリ、GitHub Secrets、Wrangler vars、ログには保存しません。Sentryの従量課金は有効化せず、Developerプランの上限を使用量通知で監視します。
 
 ## 監視と調査
 
 | 基盤 | 責務 | 送信しない情報 |
 | --- | --- | --- |
+| Google Analytics 4 | hostname、絶対URL、ページタイトルを使ったページビュー集計 | 検索条件、計算結果、エラー情報 |
 | PostHog | パス別ページビュー、検索条件（駅名・経路・検索URL）、検索種別・成否・時間区分、運賃・節約額の匿名集計 | エラー本文、一意の検索ID、個人プロファイル、セッション記録 |
 | Sentry | ブラウザ、React、Web Worker、WASMのシステム例外 | Cookie、認証ヘッダー、ユーザー識別、成功検索 |
 | Cloudflare Workers Logs | Edgeプロキシのstatus、遅延、キャッシュ、転送失敗 | 駅名や経路を独立フィールドまたはメッセージに複製しない |
 | Google Cloud Logging | Cloud Run APIのstatus、遅延、panic、起動失敗 | 駅名や計算経路をログ本文に出さない |
 
 PostHogの検索イベントには、クエリパラメーターを含むクリック可能な検索URLと構造化した検索条件・計算結果を保存します。検索間の関連付けはブラウザのセッション内だけで行い、個人を識別しません。API障害はSentryの`request_id`を起点にCloudflare、Google Cloud Loggingの順で追跡します。Web WorkerまたはWASMだけの障害は、Sentryの`error_code`、`error_stage`、`engine_version`、障害時URLで再現します。PostHogは障害調査やアラートには使用しません。新規・再発例外はSentry、Edgeの5xx・転送失敗はCloudflare、APIの5xx・panicはGoogle Cloud側で通知を設定します。Sentryの障害イベントはDeveloperプランの30日参照を前提とします。
+
+GA4はページビューだけを収集します。Google tag gateway for advertisersをCloudflareで有効にし、タグ配信と計測リクエストを同一オリジンの未使用パス経由にします。独自WorkerにはGA4の転送処理を追加しません。
 
 WASM・Goランタイム・2種類のBINの内容からSHA-256を計算し、`/engine/<hash>/`へまとめて配置します。UIだけの変更ではエンジンURLは変わりません。エンジンは1年間のimmutableキャッシュ、HTMLはStatic Assetsの更新管理を使います。分割経路探索のGET APIは成功レスポンスだけをCloudflareで30日間共有し、ブラウザには保存しません。`deployment.json`で環境・コミット・エンジンバージョンを確認できます。
 

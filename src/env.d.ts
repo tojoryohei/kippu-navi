@@ -3,6 +3,7 @@
 interface ImportMetaEnv {
   readonly PUBLIC_WASM_VERSION?: string;
   readonly PUBLIC_POSTHOG_KEY?: string;
+  readonly PUBLIC_GOOGLE_ANALYTICS_ID?: string;
   readonly PUBLIC_SENTRY_DSN?: string;
 }
 

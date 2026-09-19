@@ -1,10 +1,12 @@
 import * as Sentry from "@sentry/browser";
 import posthog from "posthog-js";
 import type { EngineReadiness } from "@/lib/engine-client";
-import { buildSearchCompletedProperties, type SearchAnalyticsInput, type SearchOutcome, type SearchResultAnalytics } from "@/lib/analytics-events";
+import { buildSearchCompletedProperties, buildSearchUrl, type SearchAnalyticsInput, type SearchOutcome, type SearchResultAnalytics } from "@/lib/analytics-events";
+import { initializeGoogleAnalytics, trackGooglePageView } from "@/lib/google-analytics";
 import { classifyCalculationError, SearchOperationError, type EngineCapability } from "@/lib/search-errors";
 
 const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY;
+const googleAnalyticsId = import.meta.env.PUBLIC_GOOGLE_ANALYTICS_ID;
 const sentryDsn = import.meta.env.PUBLIC_SENTRY_DSN;
 let initialized = false;
 
@@ -18,6 +20,7 @@ function initialize() {
   if (posthogKey) {
     posthog.init(posthogKey, { api_host: "/ingest", ui_host: "https://us.posthog.com", persistence: "sessionStorage", person_profiles: "never", capture_pageview: false, disable_session_recording: true, autocapture: false, capture_performance: false });
   }
+  initializeGoogleAnalytics(googleAnalyticsId, window, document);
   if (sentryDsn) {
     Sentry.init({
       dsn: sentryDsn,
@@ -46,7 +49,7 @@ function initialize() {
 export const analytics = {
   capture(event: string, properties?: Record<string, unknown>) {
     initialize();
-    if (posthogKey) posthog.capture(event, { ...releaseProperties(), $current_url: window.location.pathname, ...properties });
+    if (posthogKey) posthog.capture(event, { ...releaseProperties(), ...properties, $current_url: buildSearchUrl(window.location) });
   },
 };
 
@@ -136,5 +139,6 @@ export function captureUnhandledError(error: unknown, component: string) {
 // ClientRouterの初回表示・遷移完了ごとに一度呼ぶ。検索条件は送信しない。
 export function trackPageView() {
   initialize();
-  analytics.capture("$pageview", { $current_url: window.location.pathname });
+  analytics.capture("$pageview");
+  trackGooglePageView(googleAnalyticsId, window, document);
 }

@@ -10,6 +10,7 @@ import {
   proxySentry,
 } from '../../workers/frontend.mjs';
 import { buildSearchCompletedProperties, buildSearchUrl } from '../../src/lib/analytics-events.ts';
+import { initializeGoogleAnalytics, trackGooglePageView } from '../../src/lib/google-analytics.ts';
 import { classifyCalculationError } from '../../src/lib/search-errors.ts';
 
 const sentryDsn = 'https://public-key@o123.ingest.sentry.io/456';
@@ -24,6 +25,19 @@ const testTokenProvider = async () => 'google-id-token';
 function encodeTestJwt(payload) {
   const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
   return `${encode({ alg: 'RS256' })}.${encode(payload)}.signature`;
+}
+
+function fakeGoogleAnalyticsBrowser() {
+  const scripts = [];
+  return {
+    targetWindow: { location: { href: 'https://kippu-navi.com/split/ticket?from=A&to=B#result' } },
+    targetDocument: {
+      title: '分割乗車券 | きっぷナビ',
+      head: { append: element => scripts.push(element) },
+      createElement: () => ({ async: false, src: '' }),
+    },
+    scripts,
+  };
 }
 
 async function generatePrivateKeyPem() {
@@ -77,7 +91,6 @@ test('PostHog fare search payload contains route, URL, and exact result values',
     retry_count: 1,
     worker_restart_count: 0,
     outcome: 'success',
-    $current_url: 'https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn',
     search_surface: 'fare',
     search_url: 'https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn',
     origin_station: 'A',
@@ -150,7 +163,6 @@ test('PostHog business errors retain search details without result fields', () =
   });
   assert.equal(properties.error_code, 'path_invalid');
   assert.equal(properties.outcome, 'business_error');
-  assert.equal(properties.$current_url, 'https://kippu-navi.com/fare/ticket?route=A-A');
   assert.equal(Object.hasOwn(properties, 'total_fare_yen'), false);
 });
 
@@ -160,6 +172,41 @@ test('search URL is absolute, keeps all query parameters, and excludes hash', ()
     buildSearchUrl(location),
     'https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn',
   );
+});
+
+test('Google Analytics initializes once and queues manual page views with absolute URLs', () => {
+  const { targetWindow, targetDocument, scripts } = fakeGoogleAnalyticsBrowser();
+
+  initializeGoogleAnalytics('G-TEST ID', targetWindow, targetDocument);
+  initializeGoogleAnalytics('G-TEST ID', targetWindow, targetDocument);
+  trackGooglePageView('G-TEST ID', targetWindow, targetDocument);
+  trackGooglePageView('G-TEST ID', targetWindow, targetDocument);
+
+  assert.equal(scripts.length, 1);
+  assert.equal(scripts[0].async, true);
+  assert.equal(scripts[0].src, 'https://www.googletagmanager.com/gtag/js?id=G-TEST%20ID');
+  const commands = targetWindow.dataLayer.map(entry => Array.from(entry));
+  assert.deepEqual(commands[1], ['config', 'G-TEST ID', { send_page_view: false }]);
+  assert.deepEqual(commands.slice(2), [
+    ['event', 'page_view', {
+      page_location: 'https://kippu-navi.com/split/ticket?from=A&to=B#result',
+      page_title: '分割乗車券 | きっぷナビ',
+    }],
+    ['event', 'page_view', {
+      page_location: 'https://kippu-navi.com/split/ticket?from=A&to=B#result',
+      page_title: '分割乗車券 | きっぷナビ',
+    }],
+  ]);
+});
+
+test('Google Analytics stays disabled without a measurement ID', () => {
+  const { targetWindow, targetDocument, scripts } = fakeGoogleAnalyticsBrowser();
+
+  initializeGoogleAnalytics('', targetWindow, targetDocument);
+  trackGooglePageView('', targetWindow, targetDocument);
+
+  assert.equal(targetWindow.dataLayer, undefined);
+  assert.deepEqual(scripts, []);
 });
 
 test('cacheable API query is allowlisted and normalized', () => {

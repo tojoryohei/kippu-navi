@@ -59,7 +59,6 @@ export function buildSearchCompletedProperties(input: SearchCompletedInput) {
     retry_count: input.retryCount,
     worker_restart_count: input.workerRestartCount,
     outcome: input.outcome,
-    $current_url: input.search.searchUrl,
     search_surface: input.search.searchSurface,
     search_url: input.search.searchUrl,
     origin_station: input.search.originStation,

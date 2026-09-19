@@ -1,4 +1,4 @@
-/// <reference lib="webworker.importscripts" />
+/// <reference lib="webworker" />
 import * as Sentry from "@sentry/browser";
 import { classifyCalculationError } from "@/lib/search-errors";
 interface SplitCalculationSegment {
@@ -150,8 +150,8 @@ function initFailure(error: unknown, stage: InitStage, retryCount: number, capab
     error: exception.message,
     errorCode: stage.endsWith('_fetch') ? 'engine_asset_fetch_failed'
       : stage === 'wasm_instantiate' ? 'wasm_instantiation_failed'
-      : stage.endsWith('_initialize') ? 'graph_initialization_failed'
-      : 'engine_initialization_failed',
+        : stage.endsWith('_initialize') ? 'graph_initialization_failed'
+          : 'engine_initialization_failed',
     errorStage: stage,
     exceptionName: exception.name,
     httpStatus,
@@ -182,7 +182,7 @@ async function initWasm() {
 
   try {
     try {
-      importScripts(`${engineBaseUrl}/wasm_exec.js`);
+      await import(/* @vite-ignore */ `${engineBaseUrl}/wasm_exec.js`);
       go = new Go();
     } catch (error) {
       postMessage(initFailure(error, 'worker_bootstrap', 0));
@@ -334,7 +334,7 @@ onmessage = async (e: MessageEvent) => {
         // splitStations は JSON 文字列として Go に渡す
         const splitStationsJson = JSON.stringify(path);
         let resultJsonStr = "";
-        
+
         if (isTicket) {
           resultJsonStr = workerSelf.reconstructAndCalculateTicket(splitStationsJson);
         } else {
