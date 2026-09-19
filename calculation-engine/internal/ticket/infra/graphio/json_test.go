@@ -1,12 +1,39 @@
 package graphio
 
 import (
+	"calculation-engine/internal/graphdata"
 	"io"
 	"strings"
 	"testing"
 
 	ticketdomain "calculation-engine/internal/ticket/domain"
 )
+
+func TestPhysicalGraphSeparatesHakodateAndShinAomori(t *testing.T) {
+	loader := &JSONLoader{}
+	searchGraph, _, err := loader.LoadSeparatedGraphs(
+		[]io.Reader{graphdata.GetEdgesReader()},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("グラフのロードに失敗しました: %v", err)
+	}
+	if err := searchGraph.Validate(); err != nil {
+		t.Fatalf("探索用グラフの検証に失敗しました: %v", err)
+	}
+
+	hakodateID, ok := searchGraph.GetID("函館")
+	if !ok {
+		t.Fatal("函館駅が見つかりません")
+	}
+	shinAomoriID, ok := searchGraph.GetID("新青森")
+	if !ok {
+		t.Fatal("新青森駅が見つかりません")
+	}
+	if searchGraph.GetGroupID(hakodateID) == searchGraph.GetGroupID(shinAomoriID) {
+		t.Fatal("函館駅と新青森駅が同じ在来線連結成分として判定されました")
+	}
+}
 
 const physicalEdgeJSON = `[{"line":"在来線","station0":"A","station1":"B","eigyoKilo":10,"giseiKilo":10,"isLocal":false,"company":2,"isTrainSpecificSection":false,"isBoldLineArea":false,"isBarrierFreeSection":false,"isIcPassArea":false,"suburbanArea":0}]`
 const virtualEdgeJSON = `[{"line":"仮想線","station0":"A","station1":"C","eigyoKilo":5,"giseiKilo":5,"isLocal":false,"company":2,"isTrainSpecificSection":false,"isBoldLineArea":false,"isBarrierFreeSection":false,"isIcPassArea":false,"suburbanArea":0}]`

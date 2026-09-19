@@ -248,6 +248,18 @@ test("2駅未満のAPI経路をWorkerへ渡さず拒否する", async ({ page })
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);
 });
 
+test("在来線でつながっていない区間の業務エラーを表示する", async ({ page }) => {
+  await isolateServices(page);
+  const message = "指定された区間はJR在来線のみで繋がっていません。新幹線や私鉄線を利用する経路は検索対象外です。";
+  await page.route("**/api/split-ticket**", route => route.fulfill({
+    status: 422,
+    json: { normal: null, results: [], error: message },
+  }));
+  await page.goto("/split/ticket?from=函館&to=新青森");
+  await expect(page.getByText(message, { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);
+});
+
 test("初期化中も入力画面が表示され、完了後に計算できる", async ({ page }) => {
   await isolateServices(page);
   let release!: () => void;

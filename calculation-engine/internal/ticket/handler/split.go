@@ -80,8 +80,8 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	// O(1) 事前バリデーション: 連結成分（エリア）のチェック
 	startGroupID := h.graph.GetGroupID(startID)
 	endGroupID := h.graph.GetGroupID(endID)
-	if startGroupID == 0 || endGroupID == 0 || startGroupID != endGroupID {
-		writeErrorResponse(w, http.StatusUnprocessableEntity, "指定された区間は対象外エリア、または異なるエリア間にまたがっています")
+	if startGroupID < 0 || endGroupID < 0 || startGroupID != endGroupID {
+		writeErrorResponse(w, http.StatusUnprocessableEntity, "指定された区間はJR在来線のみで繋がっていません。新幹線や私鉄線を利用する経路は検索対象外です。")
 		return
 	}
 

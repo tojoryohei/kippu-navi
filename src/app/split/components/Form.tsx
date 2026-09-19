@@ -284,9 +284,6 @@ export default function SplitForm({
                 throw new SearchOperationError({ message: fetchError instanceof Error ? fetchError.message : String(fetchError), code: "api_network_failed", source: "api", stage: "api_fetch", capability, exceptionName: fetchError instanceof Error ? fetchError.name : "Error", retryable: true, retryCount: 0, workerRestartCount: 0 });
             }
             searchContext.requestId = apiRes.headers.get("X-Request-ID") || undefined;
-            if (!apiRes.ok) {
-                throw new SearchOperationError({ message: `経路APIがエラーを返しました (${apiRes.status})`, code: "api_http_failed", source: "api", stage: "api_fetch", capability, exceptionName: "HttpError", httpStatus: apiRes.status, retryable: apiRes.status === 408 || apiRes.status === 429 || apiRes.status >= 500, retryCount: 0, workerRestartCount: 0 });
-            }
             let rawResponse: unknown;
             try {
                 rawResponse = await apiRes.json();
@@ -294,10 +291,13 @@ export default function SplitForm({
                 throw new SearchOperationError({ message: "経路APIの応答を解析できませんでした。", code: "api_response_invalid", source: "api", stage: "api_response_parse", capability, exceptionName: parseError instanceof Error ? parseError.name : "SyntaxError", retryable: false, retryCount: 0, workerRestartCount: 0 });
             }
             const res = validateSplitStationResponse(rawResponse, capability);
+            if (!apiRes.ok && !res.error) {
+                throw new SearchOperationError({ message: `経路APIがエラーを返しました (${apiRes.status})`, code: "api_http_failed", source: "api", stage: "api_fetch", capability, exceptionName: "HttpError", httpStatus: apiRes.status, retryable: apiRes.status === 408 || apiRes.status === 429 || apiRes.status >= 500, retryCount: 0, workerRestartCount: 0 });
+            }
             if (abort.signal.aborted) return;
             setServerTime(performance.now() - calculationStartedAt);
             if (res.error) {
-                pendingErrorRef.current = new SearchOperationError({ message: res.error, code: classifyCalculationError(res.error), source: "api", stage: "calculation", capability, exceptionName: "ApiCalculationError", retryable: false, retryCount: 0, workerRestartCount: 0 });
+                pendingErrorRef.current = new SearchOperationError({ message: res.error, code: classifyCalculationError(res.error, apiRes.status), source: "api", stage: "calculation", capability, exceptionName: "ApiCalculationError", httpStatus: apiRes.status, retryable: false, retryCount: 0, workerRestartCount: 0 });
                 setError(res.error);
                 setIsCalculating(false);
             } else {

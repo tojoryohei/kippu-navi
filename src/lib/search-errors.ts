@@ -19,7 +19,8 @@ export type SearchErrorCode =
 const DUPLICATE_ROUTE_ERROR = "経路が重複しています。";
 const INVALID_REQUEST_INTERVAL_ERROR = "再考：要求区間誤り";
 
-export function classifyCalculationError(message: string): SearchErrorCode {
+export function classifyCalculationError(message: string, httpStatus?: number): SearchErrorCode {
+  if (httpStatus === 422) return "path_invalid";
   if (message === DUPLICATE_ROUTE_ERROR) return "duplicate_route";
   if (message === INVALID_REQUEST_INTERVAL_ERROR) return "path_invalid";
   return "calculation_failed";
