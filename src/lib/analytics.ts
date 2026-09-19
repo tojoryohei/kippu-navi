@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/browser";
 import posthog from "posthog-js";
 import type { EngineReadiness } from "@/lib/engine-client";
 import { buildSearchCompletedProperties, type SearchOutcome } from "@/lib/analytics-events";
-import { SearchOperationError, type EngineCapability } from "@/lib/search-errors";
+import { classifyCalculationError, SearchOperationError, type EngineCapability } from "@/lib/search-errors";
 
 const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY;
 const sentryDsn = import.meta.env.PUBLIC_SENTRY_DSN;
@@ -50,11 +50,11 @@ export const analytics = {
   },
 };
 
-const DUPLICATE_ROUTE_ERROR = "経路が重複しています。";
 const BUSINESS_ERROR_CODES = new Set(["duplicate_route", "path_invalid"]);
 
 export function getCalculationErrorType(error: string) {
-  return error === DUPLICATE_ROUTE_ERROR ? "duplicate_route" : "calculation_error";
+  const code = classifyCalculationError(error);
+  return code === "calculation_failed" ? "calculation_error" : code;
 }
 
 export interface SearchEventContext {
@@ -74,8 +74,7 @@ export function createSearchId() {
 export function normalizeSearchError(error: unknown, capability: EngineCapability): SearchOperationError {
   if (error instanceof SearchOperationError) return error;
   const exception = error instanceof Error ? error : new Error(String(error));
-  const duplicate = exception.message === DUPLICATE_ROUTE_ERROR;
-  return new SearchOperationError({ message: exception.message, code: duplicate ? "duplicate_route" : "calculation_failed", source: "client", stage: "calculation", exceptionName: exception.name, capability, retryable: false, retryCount: 0, workerRestartCount: 0 });
+  return new SearchOperationError({ message: exception.message, code: classifyCalculationError(exception.message), source: "client", stage: "calculation", exceptionName: exception.name, capability, retryable: false, retryCount: 0, workerRestartCount: 0 });
 }
 
 function completedSearchProperties(context: SearchEventContext, outcome: SearchOutcome, errorCode?: string) {

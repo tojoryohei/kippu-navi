@@ -3,9 +3,16 @@ import test from 'node:test';
 
 import { normalizeCacheableApiUrl, proxyApi, proxySentry } from '../../workers/frontend.mjs';
 import { buildSearchCompletedProperties } from '../../src/lib/analytics-events.ts';
+import { classifyCalculationError } from '../../src/lib/search-errors.ts';
 
 const sentryDsn = 'https://public-key@o123.ingest.sentry.io/456';
 const sentryEnvelope = dsn => `${JSON.stringify({ dsn })}\n${JSON.stringify({ type: 'event' })}\n{}`;
+
+test('calculation errors distinguish business errors from system failures', () => {
+  assert.equal(classifyCalculationError('経路が重複しています。'), 'duplicate_route');
+  assert.equal(classifyCalculationError('再考：要求区間誤り'), 'path_invalid');
+  assert.equal(classifyCalculationError('unexpected failure'), 'calculation_failed');
+});
 
 test('PostHog search payload contains aggregate fields only', () => {
   const properties = buildSearchCompletedProperties({

@@ -1,6 +1,6 @@
 export type EngineCapability = "ticket" | "pass";
 
-type SearchErrorCode =
+export type SearchErrorCode =
   | "engine_asset_fetch_failed"
   | "engine_initialization_failed"
   | "engine_initialization_timeout"
@@ -15,6 +15,15 @@ type SearchErrorCode =
   | "calculation_failed"
   | "duplicate_route"
   | "unknown";
+
+const DUPLICATE_ROUTE_ERROR = "経路が重複しています。";
+const INVALID_REQUEST_INTERVAL_ERROR = "再考：要求区間誤り";
+
+export function classifyCalculationError(message: string): SearchErrorCode {
+  if (message === DUPLICATE_ROUTE_ERROR) return "duplicate_route";
+  if (message === INVALID_REQUEST_INTERVAL_ERROR) return "path_invalid";
+  return "calculation_failed";
+}
 
 export type SearchErrorStage =
   | "api_fetch"
