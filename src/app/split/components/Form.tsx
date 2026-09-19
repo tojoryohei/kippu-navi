@@ -6,6 +6,7 @@ import { replaceCalculatorUrl } from "@/lib/calculator-location";
 import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
+import { buildSearchUrl } from "@/lib/analytics-events";
 import { classifyCalculationError, SearchOperationError } from "@/lib/search-errors";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
@@ -194,8 +195,6 @@ export default function SplitForm({
         apiAbortRef.current = abort;
         const calculationStartedAt = performance.now();
         const capability = data.searchType === "ticket" ? "ticket" : "pass";
-        const searchContext: SearchEventContext = { searchId: createSearchId(), startedAt: calculationStartedAt, capability, searchType: data.searchType };
-        searchContextRef.current = searchContext;
         pendingErrorRef.current = null;
         setShowAllPatterns(false);
         setError(null);
@@ -231,6 +230,26 @@ export default function SplitForm({
         const newUrl = `${nextPath}?${newParams.toString()}`;
         // URLバーだけ更新
         replaceCalculatorUrl(newUrl);
+
+        const monthsMap: Partial<Record<SearchType, number>> = { pass1: 1, pass3: 3, pass6: 6 };
+        const searchContext: SearchEventContext = {
+            searchId: createSearchId(),
+            startedAt: calculationStartedAt,
+            capability,
+            searchType: data.searchType,
+            search: {
+                searchSurface: "split",
+                searchUrl: buildSearchUrl(window.location),
+                originStation: data.startStation.name,
+                destinationStation: data.endStation.name,
+                routeStations: [data.startStation.name, data.endStation.name],
+                months: monthsMap[data.searchType],
+                maxSplits: data.maxSplits,
+                noSplitStations: data.forbiddenStations.map(station => station.name),
+                isIc: isIcPass,
+            },
+        };
+        searchContextRef.current = searchContext;
 
         // 検索タイプの確定
         setSearchedType(data.searchType);
@@ -435,7 +454,20 @@ export default function SplitForm({
                 // 1. 正常に計算結果が返ってきた場合
                 if (result) {
                     const runTracking = () => {
-                        if (context) captureSuccessfulSearch(context);
+                        if (!context) return;
+                        const best = result.results.reduce<SplitFarePlan | undefined>(
+                            (currentBest, candidate) => !currentBest || candidate.totalFare < currentBest.totalFare ? candidate : currentBest,
+                            undefined,
+                        );
+                        captureSuccessfulSearch(context, {
+                            normalFareYen: result.normal.fare,
+                            ...(best ? {
+                                bestFareYen: best.totalFare,
+                                savingsYen: Math.max(result.normal.fare - best.totalFare, 0),
+                                bestSplitCount: Math.max(best.segments.length - 1, 0),
+                            } : {}),
+                            candidateCount: result.results.length,
+                        });
                     };
 
                     if (typeof window.requestIdleCallback === "function") {
