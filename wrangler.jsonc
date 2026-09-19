@@ -15,6 +15,9 @@
   "env": {
     "staging": {
       "name": "staging",
+      "secrets": {
+        "required": ["SENTRY_DSN"]
+      },
       "vars": {
         "API_ORIGIN": "https://calculation-engine-staging-198310540092.asia-northeast1.run.app"
       },
@@ -28,6 +31,9 @@
     "production": {
       "name": "production",
       "workers_dev": true,
+      "secrets": {
+        "required": ["SENTRY_DSN"]
+      },
       "vars": {
         "API_ORIGIN": "https://calculation-engine-198310540092.asia-northeast1.run.app"
       }

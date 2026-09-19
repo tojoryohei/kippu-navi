@@ -6,7 +6,7 @@ import { replaceCalculatorUrl } from "@/lib/calculator-location";
 import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
-import { SearchOperationError } from "@/lib/search-errors";
+import { classifyCalculationError, SearchOperationError } from "@/lib/search-errors";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
@@ -278,7 +278,7 @@ export default function SplitForm({
             if (abort.signal.aborted) return;
             setServerTime(performance.now() - calculationStartedAt);
             if (res.error) {
-                pendingErrorRef.current = new SearchOperationError({ message: res.error, code: res.error === "経路が重複しています。" ? "duplicate_route" : "calculation_failed", source: "api", stage: "calculation", capability, exceptionName: "ApiCalculationError", retryable: false, retryCount: 0, workerRestartCount: 0 });
+                pendingErrorRef.current = new SearchOperationError({ message: res.error, code: classifyCalculationError(res.error), source: "api", stage: "calculation", capability, exceptionName: "ApiCalculationError", retryable: false, retryCount: 0, workerRestartCount: 0 });
                 setError(res.error);
                 setIsCalculating(false);
             } else {

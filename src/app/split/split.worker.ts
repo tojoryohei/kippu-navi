@@ -1,5 +1,6 @@
 /// <reference lib="webworker.importscripts" />
 import * as Sentry from "@sentry/browser";
+import { classifyCalculationError } from "@/lib/search-errors";
 interface SplitCalculationSegment {
   start: string;
   end: string;
@@ -162,10 +163,9 @@ function initFailure(error: unknown, stage: InitStage, retryCount: number, capab
 
 function postWorkerError(error: unknown, requestId: unknown, capability: 'ticket' | 'pass', stage: 'calculation' | 'calculation_result_parse' = 'calculation') {
   const exception = error instanceof Error ? error : new Error(String(error));
-  const duplicate = exception.message === '経路が重複しています。';
   const details = {
     message: exception.message,
-    code: duplicate ? 'duplicate_route' : 'calculation_failed',
+    code: classifyCalculationError(exception.message),
     source: 'worker',
     stage,
     exceptionName: exception.name,
