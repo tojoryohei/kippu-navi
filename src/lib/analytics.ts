@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/browser";
 import posthog from "posthog-js";
 import type { EngineReadiness } from "@/lib/engine-client";
-import { buildSearchCompletedProperties, type SearchOutcome } from "@/lib/analytics-events";
+import { buildSearchCompletedProperties, type SearchAnalyticsInput, type SearchOutcome, type SearchResultAnalytics } from "@/lib/analytics-events";
 import { classifyCalculationError, SearchOperationError, type EngineCapability } from "@/lib/search-errors";
 
 const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY;
@@ -16,7 +16,7 @@ function initialize() {
   if (initialized || typeof window === "undefined") return;
   initialized = true;
   if (posthogKey) {
-    posthog.init(posthogKey, { api_host: "/ingest", ui_host: "https://us.posthog.com", person_profiles: "never", capture_pageview: false, disable_session_recording: true, autocapture: false, capture_performance: false });
+    posthog.init(posthogKey, { api_host: "/ingest", ui_host: "https://us.posthog.com", persistence: "sessionStorage", person_profiles: "never", capture_pageview: false, disable_session_recording: true, autocapture: false, capture_performance: false });
   }
   if (sentryDsn) {
     Sentry.init({
@@ -63,6 +63,7 @@ export interface SearchEventContext {
   capability: EngineCapability;
   searchType: string;
   calculationMode?: string;
+  search: SearchAnalyticsInput;
   readiness?: EngineReadiness;
   requestId?: string;
 }
@@ -77,7 +78,7 @@ export function normalizeSearchError(error: unknown, capability: EngineCapabilit
   return new SearchOperationError({ message: exception.message, code: classifyCalculationError(exception.message), source: "client", stage: "calculation", exceptionName: exception.name, capability, retryable: false, retryCount: 0, workerRestartCount: 0 });
 }
 
-function completedSearchProperties(context: SearchEventContext, outcome: SearchOutcome, errorCode?: string) {
+function completedSearchProperties(context: SearchEventContext, outcome: SearchOutcome, errorCode?: string, result?: SearchResultAnalytics) {
   return buildSearchCompletedProperties({
     searchType: context.searchType,
     calculationMode: context.calculationMode,
@@ -88,6 +89,8 @@ function completedSearchProperties(context: SearchEventContext, outcome: SearchO
     workerRestartCount: context.readiness?.workerRestartCount || 0,
     outcome,
     errorCode,
+    search: context.search,
+    result,
   });
 }
 
@@ -116,8 +119,8 @@ export function captureEngineRecovery(readiness: EngineReadiness, context: Searc
   context.readiness = readiness;
 }
 
-export function captureSuccessfulSearch(context: SearchEventContext) {
-  analytics.capture("search_completed", completedSearchProperties(context, "success"));
+export function captureSuccessfulSearch(context: SearchEventContext, result: SearchResultAnalytics) {
+  analytics.capture("search_completed", completedSearchProperties(context, "success", undefined, result));
 }
 
 export function captureUnhandledError(error: unknown, component: string) {

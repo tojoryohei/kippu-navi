@@ -3,6 +3,7 @@ import type { SingleValue } from "react-select";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
+import { buildSearchUrl } from "@/lib/analytics-events";
 import { SearchOperationError } from "@/lib/search-errors";
 
 import stationData from "@/app/fare/data/stations.json";
@@ -206,14 +207,6 @@ export default function Form({
     const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
         if (!mountedRef.current) return;
         const calcId = ++latestCalcIdRef.current;
-        const searchContext: SearchEventContext = {
-            searchId: createSearchId(),
-            startedAt: performance.now(),
-            capability: data.searchType === "ticket" ? "ticket" : "pass",
-            searchType: data.searchType,
-            calculationMode: data.calculationMode,
-        };
-        searchContextRef.current = searchContext;
         pendingErrorRef.current = null;
         setIsLoading(true);
         setError(null);
@@ -225,6 +218,32 @@ export default function Form({
 
         // 検索実行時に URL にクエリパラメータ route / month を付与・更新
         updateUrlAndState(pathname, data.searchType);
+
+        const routeStations = [
+            data.startStation?.name,
+            ...data.segments.map(segment => segment.destinationStation?.name),
+        ].filter((station): station is string => Boolean(station));
+        const routeLines = data.segments
+            .map(segment => segment.viaLine?.name)
+            .filter((line): line is string => Boolean(line));
+        const monthsMap: Partial<Record<SearchType, number>> = { pass1: 1, pass3: 3, pass6: 6 };
+        const searchContext: SearchEventContext = {
+            searchId: createSearchId(),
+            startedAt: performance.now(),
+            capability: data.searchType === "ticket" ? "ticket" : "pass",
+            searchType: data.searchType,
+            calculationMode: data.calculationMode,
+            search: {
+                searchSurface: "fare",
+                searchUrl: buildSearchUrl(window.location),
+                originStation: data.startStation?.name ?? "",
+                destinationStation: routeStations.at(-1) ?? "",
+                routeStations,
+                routeLines,
+                months: monthsMap[data.searchType],
+            },
+        };
+        searchContextRef.current = searchContext;
 
         const apiRequestBody = createApiRequestBody(data);
 
@@ -463,7 +482,10 @@ export default function Form({
                 // 1. 乗車券の計算結果が返ってきた場合
                 if (result) {
                     const runTracking = () => {
-                        if (context) captureSuccessfulSearch(context);
+                        if (context) captureSuccessfulSearch(context, {
+                            totalFareYen: result.fare,
+                            distanceKm: result.totalEigyoKilo / 10,
+                        });
                     };
 
                     if (typeof window.requestIdleCallback === "function") {
@@ -477,7 +499,10 @@ export default function Form({
                 // 2. 定期券の計算結果が返ってきた場合
                 else if (resultPass) {
                     const runTracking = () => {
-                        if (context) captureSuccessfulSearch(context);
+                        if (context) captureSuccessfulSearch(context, {
+                            totalFareYen: resultPass.fare + resultPass.barrierFreeFee + resultPass.charge,
+                            distanceKm: resultPass.totalEigyoKilo / 10,
+                        });
                     };
 
                     if (typeof window.requestIdleCallback === "function") {

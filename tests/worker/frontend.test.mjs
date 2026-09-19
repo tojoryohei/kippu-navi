@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { normalizeCacheableApiUrl, proxyApi, proxySentry } from '../../workers/frontend.mjs';
-import { buildSearchCompletedProperties } from '../../src/lib/analytics-events.ts';
+import { buildSearchCompletedProperties, buildSearchUrl } from '../../src/lib/analytics-events.ts';
 import { classifyCalculationError } from '../../src/lib/search-errors.ts';
 
 const sentryDsn = 'https://public-key@o123.ingest.sentry.io/456';
@@ -14,7 +14,7 @@ test('calculation errors distinguish business errors from system failures', () =
   assert.equal(classifyCalculationError('unexpected failure'), 'calculation_failed');
 });
 
-test('PostHog search payload contains aggregate fields only', () => {
+test('PostHog fare search payload contains route, URL, and exact result values', () => {
   const properties = buildSearchCompletedProperties({
     searchType: 'ticket',
     calculationMode: 'normal',
@@ -24,6 +24,15 @@ test('PostHog search payload contains aggregate fields only', () => {
     retryCount: 1,
     workerRestartCount: 0,
     outcome: 'success',
+    search: {
+      searchSurface: 'fare',
+      searchUrl: 'https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn',
+      originStation: 'A',
+      destinationStation: 'B',
+      routeStations: ['A', 'C', 'B'],
+      routeLines: ['X線', 'Y線'],
+    },
+    result: { totalFareYen: 1_460, distanceKm: 42.7 },
   });
   assert.deepEqual(properties, {
     search_type: 'ticket',
@@ -34,10 +43,87 @@ test('PostHog search payload contains aggregate fields only', () => {
     retry_count: 1,
     worker_restart_count: 0,
     outcome: 'success',
+    search_surface: 'fare',
+    search_url: 'https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn',
+    origin_station: 'A',
+    destination_station: 'B',
+    route_stations: ['A', 'C', 'B'],
+    route_lines: ['X線', 'Y線'],
+    total_fare_yen: 1_460,
+    distance_km: 42.7,
   });
-  for (const forbidden of ['from_station', 'to_station', 'route', 'no_split_stations', 'fare', 'saved_amount', 'error_message', 'search_id', 'url']) {
+  for (const forbidden of ['error_message', 'search_id']) {
     assert.equal(Object.hasOwn(properties, forbidden), false);
   }
+});
+
+test('PostHog split search payload contains split settings and savings', () => {
+  const properties = buildSearchCompletedProperties({
+    searchType: 'pass3',
+    capability: 'pass',
+    elapsedMs: 320,
+    engineRecovered: false,
+    retryCount: 0,
+    workerRestartCount: 0,
+    outcome: 'success',
+    search: {
+      searchSurface: 'split',
+      searchUrl: 'https://kippu-navi.com/split/pass?from=A&to=B&month=3&maxSplits=2',
+      originStation: 'A',
+      destinationStation: 'B',
+      routeStations: ['A', 'B'],
+      months: 3,
+      maxSplits: 2,
+      noSplitStations: ['C'],
+      isIc: false,
+    },
+    result: {
+      normalFareYen: 30_000,
+      bestFareYen: 24_000,
+      savingsYen: 6_000,
+      bestSplitCount: 2,
+      candidateCount: 4,
+    },
+  });
+  assert.equal(properties.months, 3);
+  assert.equal(properties.max_splits, 2);
+  assert.deepEqual(properties.no_split_stations, ['C']);
+  assert.equal(properties.normal_fare_yen, 30_000);
+  assert.equal(properties.best_fare_yen, 24_000);
+  assert.equal(properties.savings_yen, 6_000);
+  assert.equal(properties.best_split_count, 2);
+  assert.equal(properties.candidate_count, 4);
+});
+
+test('PostHog business errors retain search details without result fields', () => {
+  const properties = buildSearchCompletedProperties({
+    searchType: 'ticket',
+    capability: 'ticket',
+    elapsedMs: 20,
+    engineRecovered: false,
+    retryCount: 0,
+    workerRestartCount: 0,
+    outcome: 'business_error',
+    errorCode: 'path_invalid',
+    search: {
+      searchSurface: 'fare',
+      searchUrl: 'https://kippu-navi.com/fare/ticket?route=A-A',
+      originStation: 'A',
+      destinationStation: 'A',
+      routeStations: ['A', 'A'],
+    },
+  });
+  assert.equal(properties.error_code, 'path_invalid');
+  assert.equal(properties.outcome, 'business_error');
+  assert.equal(Object.hasOwn(properties, 'total_fare_yen'), false);
+});
+
+test('search URL is absolute, keeps all query parameters, and excludes hash', () => {
+  const location = new URL('https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn#result');
+  assert.equal(
+    buildSearchUrl(location),
+    'https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn',
+  );
 });
 
 test('cacheable API query is allowlisted and normalized', () => {
