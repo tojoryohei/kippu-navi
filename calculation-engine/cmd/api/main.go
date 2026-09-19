@@ -261,11 +261,19 @@ func run() error {
 	for _, zoneName := range ticketZoneRoutes.ZoneNames() {
 		ticketFullGraph.GetOrAddID(zoneName)
 	}
+	// 特例駅の追加後に連結成分を確定する。探索用グラフと運賃計算用グラフは
+	// 駅名マッピングを共有する一方、連結成分IDはそれぞれ保持するため両方を検証する。
+	if err := ticketSearchGraph.Validate(); err != nil {
+		return fmt.Errorf("乗車券探索グラフの検証に失敗しました: %w", err)
+	}
+	if err := ticketFullGraph.Validate(); err != nil {
+		return fmt.Errorf("乗車券運賃計算グラフの検証に失敗しました: %w", err)
+	}
 
 	ticketFareReg := ticketfare.NewRegistry()
 	ticketFareioReg, err := ticketfareio.NewRegistry()
 	if err != nil {
-		return fmt.Errorf("乗車券のfareioロードに失敗しました: %w", err)
+		return fmt.Errorf("乗車券の運賃データのロードに失敗しました: %w", err)
 	}
 	ticketRouteExtensions, err := ticketusecase.NewRouteExtensionMatcherIDs(ticketfareio.GetGeneratedRouteExtensions(), ticketFullGraph)
 	if err != nil {

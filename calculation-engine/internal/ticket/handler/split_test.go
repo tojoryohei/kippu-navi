@@ -1,9 +1,49 @@
 package handler
 
 import (
+	"calculation-engine/internal/domain"
+	ticketdomain "calculation-engine/internal/ticket/domain"
+	ticketgraph "calculation-engine/internal/ticket/graph"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 )
+
+func TestHandleCalculateRejectsDisconnectedLocalLineAreas(t *testing.T) {
+	g := ticketgraph.NewGraph(4)
+	aID := g.GetOrAddID("A")
+	bID := g.GetOrAddID("B")
+	cID := g.GetOrAddID("C")
+	dID := g.GetOrAddID("D")
+	for _, edge := range [][2]int{{aID, bID}, {bID, aID}, {cID, dID}, {dID, cID}} {
+		g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{FromID: edge[0], ToID: edge[1], EigyoKilo: 10, GiseiKilo: 10}})
+	}
+	if err := g.Validate(); err != nil {
+		t.Fatalf("グラフの検証に失敗しました: %v", err)
+	}
+	if got := g.GetGroupID(aID); got != 0 {
+		t.Fatalf("先頭の連結成分ID = %d, want 0", got)
+	}
+
+	h := NewSplit(g, nil)
+	request := httptest.NewRequest(http.MethodGet, "/api/split-ticket?from=A&to=C", nil)
+	response := httptest.NewRecorder()
+	h.HandleCalculate(response, request)
+
+	if response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusUnprocessableEntity)
+	}
+	var body CalculateResponse
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatalf("レスポンスの解析に失敗しました: %v", err)
+	}
+	want := "指定された区間はJR在来線のみで繋がっていません。新幹線や私鉄線を利用する経路は検索対象外です。"
+	if body.Error != want {
+		t.Errorf("error = %q, want %q", body.Error, want)
+	}
+}
 
 func TestValidResponsePaths(t *testing.T) {
 	tests := []struct {

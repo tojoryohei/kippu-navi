@@ -59,6 +59,7 @@ async function generatePrivateKeyPem() {
 test('calculation errors distinguish business errors from system failures', () => {
   assert.equal(classifyCalculationError('経路が重複しています。'), 'duplicate_route');
   assert.equal(classifyCalculationError('再考：要求区間誤り'), 'path_invalid');
+  assert.equal(classifyCalculationError('指定された区間はJR在来線のみで繋がっていません。', 422), 'path_invalid');
   assert.equal(classifyCalculationError('unexpected failure'), 'calculation_failed');
 });
 
