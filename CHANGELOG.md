@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.2...kippu-navi-v3.3.3) (2026-09-19)
+
+
+### Performance Improvements
+
+* Noto Sans JPの配信を最適化 ([#725](https://github.com/tojoryohei/kippu-navi/issues/725)) ([1ad132a](https://github.com/tojoryohei/kippu-navi/commit/1ad132a058adcbd73cbe61f36e36c894376d2111))
+
 ## [3.3.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.1...kippu-navi-v3.3.2) (2026-09-19)
 
 
