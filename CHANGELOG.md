@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.3...kippu-navi-v3.3.4) (2026-09-19)
+
+
+### Bug Fixes
+
+* GA4のページビュー収集を復旧 ([#727](https://github.com/tojoryohei/kippu-navi/issues/727)) ([9a89bb8](https://github.com/tojoryohei/kippu-navi/commit/9a89bb8605864ec50129127b836000aa9be30016))
+
 ## [3.3.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.2...kippu-navi-v3.3.3) (2026-09-19)
 
 
