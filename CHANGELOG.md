@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.2.1...kippu-navi-v3.2.2) (2026-09-19)
+
+
+### Bug Fixes
+
+* 要求区間誤りを業務エラーとして分類 ([#714](https://github.com/tojoryohei/kippu-navi/issues/714)) ([e7981bb](https://github.com/tojoryohei/kippu-navi/commit/e7981bbbd392c22547768b9040642c0fba52661a))
+
 ## [3.2.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.2.0...kippu-navi-v3.2.1) (2026-09-18)
 
 
