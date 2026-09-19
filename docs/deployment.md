@@ -4,7 +4,7 @@
 
 GitHub Actionsの`deploy-frontend.yml`がフロントエンドを配信します。通常はmain以外がステージング、mainが本番に対応します。`workflow_dispatch`でproductionを選択すると、`kippu-navi.com`へ接続せず`workers.dev`で本番Workerを検証できます。
 
-Go APIのCloud Runデプロイは`deploy-api.yml`が行います。
+Go APIのCloud Runデプロイは`deploy-api.yml`が行います。pushによるデプロイでは同一コミットのCloudflareデプロイ成功を待ってからCloud Runを更新するため、認証切替時も旧Workerとの競合は発生しません。`workflow_dispatch`でAPIだけを手動デプロイする場合は、対応するWorkerが反映済みであることを先に確認します。
 
 ## Cloud Run認証の初期設定
 

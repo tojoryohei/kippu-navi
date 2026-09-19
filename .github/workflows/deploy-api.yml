@@ -25,6 +25,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       id-token: write
 
@@ -419,6 +420,30 @@ jobs:
           
           docker build -t $IMAGE_PATH ./calculation-engine
           docker push $IMAGE_PATH
+
+      - name: Wait for matching Cloudflare deployment
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          FRONTEND_RUN_ID=''
+          for _ in $(seq 1 30); do
+            FRONTEND_RUN_ID=$(gh run list \
+              --workflow=deploy-frontend.yml \
+              --commit="$GITHUB_SHA" \
+              --event=push \
+              --limit=1 \
+              --json=databaseId \
+              --jq='.[0].databaseId // empty')
+            [ -n "$FRONTEND_RUN_ID" ] && break
+            sleep 10
+          done
+          [ -n "$FRONTEND_RUN_ID" ] || {
+            echo "Matching Cloudflare deployment was not found for $GITHUB_SHA." >&2
+            exit 1
+          }
+          gh run watch "$FRONTEND_RUN_ID" --exit-status
 
       - name: Deploy to Cloud Run
         id: deploy
