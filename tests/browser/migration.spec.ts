@@ -413,6 +413,54 @@ const routes = [
   "/split/ic-pass",
 ];
 
+const calculatorRoutes = [
+  "/fare/ticket",
+  "/fare/pass",
+  "/split/ticket",
+  "/split/pass",
+  "/split/ic-pass",
+];
+
+test("計算ページ下部を関連リンクに整理する", async ({
+  request,
+}) => {
+  for (const route of calculatorRoutes) {
+    const html = await (await request.get(route)).text();
+    expect(html, route).toContain("関連情報");
+    expect(html, route).not.toContain("このツールでできること");
+    expect(html, route).not.toContain("対象外・注意事項を確認");
+    expect(html, route).not.toContain("計算条件とデータ確認日");
+  }
+
+  const splitTicketHtml = await (
+    await request.get("/split/ticket")
+  ).text();
+  expect(splitTicketHtml).not.toContain("FAQPage");
+  expect(splitTicketHtml).not.toContain("分割きっぷは違法ではありませんか？");
+
+  const guideHtml = await (await request.get("/guide")).text();
+  expect(guideHtml).toContain('id="how-to-search"');
+  expect(guideHtml).toContain('id="how-to-buy"');
+});
+
+test("関連情報がモバイルで横にはみ出さない", async ({
+  page,
+}) => {
+  await isolateServices(page);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/split/ticket");
+
+  await expect(page.getByRole("heading", { name: "関連情報" })).toBeVisible();
+  await expect(page.locator('section[aria-labelledby="calculator-resources-title"] a')).toHaveCount(3);
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+});
+
 test("全既存URLのHTML・canonical・sitemap・404を維持する", async ({
   request,
 }) => {

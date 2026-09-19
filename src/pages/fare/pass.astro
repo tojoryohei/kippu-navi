@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { RiGuideLine } from "react-icons/ri";
+import CalculatorResources from "@/components/CalculatorResources.astro";
 
 const metadata = {
   title: "JR定期券運賃計算機",
@@ -77,65 +78,13 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
           />
         </div>
 
-        {/* ツール説明セクション */}
-        <div class="mt-12 space-y-8">
-          <section
-            class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200"
-          >
-            <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">
-              {"このツールでできること"}
-            </h2>
-            <div class="text-slate-700 leading-relaxed space-y-3 text-sm">
-              <p>
-                {
-                  "JR定期券運賃計算機は、JR全線の運賃と営業キロを正確に計算するプログラムです。分割定期券計算機の基盤となるエンジンを、そのままお試しいただけます。"
-                }
-              </p>
-              <p>
-                {"通勤定期券（1ヶ月・3ヶ月・6ヶ月）の運賃を計算できます。"}
-              </p>
-              <p>
-                {
-                  "旅客営業規則に基づき、特定区間運賃、特定経路区間の補正、幹線・地方交通線の運賃表の適用区分などを考慮して計算します。"
-                }
-              </p>
-            </div>
-          </section>
-
-          <section
-            class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200"
-          >
-            <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">
-              {"使い方"}
-            </h2>
-            <div class="text-slate-700 leading-relaxed space-y-3 text-sm">
-              <ol class="list-decimal list-inside space-y-2 ml-2">
-                <li>
-                  <strong>発駅を入力</strong> — 検索ボックスに出発駅を入力し、候補から選択します。
-                </li>
-                <li>
-                  <strong>着駅を入力</strong> — 同様に到着駅を入力し、候補から選択します。
-                </li>
-                <li>
-                  <strong>経由路線を追加</strong> — 経由する路線名を追加します。
-                </li>
-                <li>
-                  <strong>計算ボタンをクリック</strong> — 定期券運賃の計算が開始されます。
-                </li>
-              </ol>
-              <p class="text-slate-500 text-xs mt-2">
-                {"※分割定期券の最安パターンを計算したい場合は"}
-                <a
-                  href="/split/pass"
-                  class="text-blue-600 hover:underline underline-offset-2 mx-1"
-                >
-                  {"JR分割定期券計算機"}
-                </a>
-                {"をご利用ください。"}
-              </p>
-            </div>
-          </section>
-        </div>
+        <CalculatorResources
+          links={[
+            { href: "/guide#how-to-search", title: "使い方", description: "駅と経由路線の入力方法を確認します。" },
+            { href: "/logic", title: "計算の仕組み", description: "定期運賃計算の技術情報を紹介します。" },
+            { href: "/articles/jr-fare-system", title: "JR運賃の解説", description: "距離と運賃の関係や制度を解説します。" },
+          ]}
+        />
       </main>
     </div>
   </>

@@ -1,0 +1,41 @@
+---
+interface ResourceLink {
+  href: string;
+  title: string;
+  description: string;
+}
+
+interface Props {
+  links: ResourceLink[];
+}
+
+const { links } = Astro.props;
+const visibleLinks = links.slice(0, 3);
+---
+
+<section
+  class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+  aria-labelledby="calculator-resources-title"
+>
+  <h2 id="calculator-resources-title" class="text-lg font-bold text-slate-800">
+    関連情報
+  </h2>
+  <div class="mt-4 grid gap-3 sm:grid-cols-3">
+    {
+      visibleLinks.map((link) => (
+        <a
+          href={link.href}
+          class="group rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+        >
+          <span class="flex items-center justify-between gap-2 font-bold text-blue-700">
+            {link.title}
+            <span aria-hidden="true" class="transition-transform group-hover:translate-x-0.5">→</span>
+          </span>
+          <span class="mt-1.5 block text-xs leading-relaxed text-slate-600">
+            {link.description}
+          </span>
+        </a>
+      ))
+    }
+  </div>
+</section>
