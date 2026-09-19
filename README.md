@@ -80,12 +80,14 @@ npm start
 | `PUBLIC_SENTRY_DSN` | Sentry DSN。ブラウザのシステム例外だけに使用 |
 | `PUBLIC_WASM_VERSION` | ビルドスクリプトが自動生成する内容ハッシュ。手動指定不要 |
 | `DEPLOY_ENVIRONMENT` | `staging`または`production` |
-| `API_ORIGIN` | Cloudflare Workerの転送先。`wrangler.jsonc`で環境別に指定 |
+| `API_ORIGIN` | Cloudflare Workerの転送先兼Cloud Run IDトークンのaudience。環境別の`run.app`サービスURL |
+| `GCP_SERVICE_ACCOUNT_EMAIL` | Worker secret。環境別Cloud Run Invokerサービスアカウント |
+| `GCP_SERVICE_ACCOUNT_PRIVATE_KEY` | Worker secret。InvokerサービスアカウントのPKCS#8秘密鍵 |
 | `SENTRY_DSN` | Worker secret。`/monitoring`の固定転送先検証に使用 |
 | `SENTRY_ORG` / `SENTRY_PROJECT` | Sentryのソースマップアップロード先 |
 | `SENTRY_AUTH_TOKEN` | CI secret。ソースマップアップロードだけに使用 |
 
-`.env.local`とGitHub Repository Variablesには`PUBLIC_POSTHOG_KEY`、`PUBLIC_SENTRY_DSN`、`SENTRY_ORG`、`SENTRY_PROJECT`を設定します。`SENTRY_AUTH_TOKEN`はGitHub Environment Secretに設定し、公開しません。Cloudflareには環境ごとに`SENTRY_DSN`をsecretとして登録します。Sentryの従量課金は有効化せず、Developerプランの上限を使用量通知で監視します。
+`.env.local`とGitHub Repository Variablesには`PUBLIC_POSTHOG_KEY`、`PUBLIC_SENTRY_DSN`、`SENTRY_ORG`、`SENTRY_PROJECT`を設定します。`SENTRY_AUTH_TOKEN`はGitHub Environment Secretに設定し、公開しません。Cloudflareには環境ごとに`SENTRY_DSN`、`GCP_SERVICE_ACCOUNT_EMAIL`、`GCP_SERVICE_ACCOUNT_PRIVATE_KEY`をsecretとして登録します。Googleの秘密鍵はリポジトリ、GitHub Secrets、Wrangler vars、ログには保存しません。Sentryの従量課金は有効化せず、Developerプランの上限を使用量通知で監視します。
 
 ## 監視と調査
 
@@ -102,13 +104,7 @@ WASM・Goランタイム・2種類のBINの内容からSHA-256を計算し、`/e
 
 ## デプロイ
 
-GitHub Actionsの`deploy-frontend.yml`がフロントエンドを配信します。通常はmain以外がステージング、mainが本番に対応します。`workflow_dispatch`でproductionを選択すると、`kippu-navi.com`へ接続せず`workers.dev`で本番Workerを検証できます。
-
-Astro移行後のフロントエンドでは、Next.js用のDockerfile・Cloud Build設定・Pages Functionsは使用しません。既存の本番Cloud Runサービスをこの変更が削除・更新することはありません。切り替え前にGoogle Cloud側の旧フロントエンドCloud Buildトリガーを無効化してください。Go APIのCloud Runデプロイは`deploy-api.yml`で継続します。
-
-運賃・路線データまたは分割経路探索ロジックを更新した場合は、Cloudflare DashboardからAPIキャッシュを手動でパージします。WorkerのサブリクエストキャッシュはCloud Run側URLをキーにするため、Custom Purgeでは対象環境の`calculation-engine...run.app/api/` prefixを指定します。キャッシュと無関係なAPI変更ではパージ不要です。
-
-本番切り替え前の確認事項は[移行メモ](docs/astro-migration.md)を参照してください。
+本番・ステージングのデプロイ、Cloud Run認証、鍵ローテーションは[運用手順](docs/deployment.md)を参照してください。
 
 ## 著作権
 
