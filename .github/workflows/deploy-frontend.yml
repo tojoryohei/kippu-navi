@@ -43,16 +43,16 @@ jobs:
       SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '24'
           cache: npm
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: calculation-engine/go.mod
           cache: false
@@ -71,7 +71,7 @@ jobs:
         run: npm run build
 
       - name: Deploy static assets
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           wranglerVersion: '4.129.0'
           apiToken: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
