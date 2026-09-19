@@ -1,5 +1,10 @@
 const API_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
 const SENTRY_MAX_ENVELOPE_BYTES = 200 * 1024;
+const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+const GOOGLE_TOKEN_LIFETIME_SECONDS = 60 * 60;
+const GOOGLE_TOKEN_REFRESH_MARGIN_SECONDS = 5 * 60;
+
+const googleIdTokenCache = new Map();
 
 const cacheableApiParameters = {
   '/api/split-pass': ['from', 'to', 'months', 'maxSplits', 'noSplitStation'],
@@ -23,9 +28,124 @@ export function normalizeCacheableApiUrl(url) {
   return normalized;
 }
 
-export async function proxyApi(request, apiOrigin) {
-  if (!apiOrigin) {
-    return new Response('API origin is not configured.', { status: 503 });
+function encodeBase64Url(value) {
+  const bytes = typeof value === 'string'
+    ? new TextEncoder().encode(value)
+    : new Uint8Array(value);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+}
+
+function decodeBase64Url(value) {
+  const padded = value.replaceAll('-', '+').replaceAll('_', '/')
+    .padEnd(Math.ceil(value.length / 4) * 4, '=');
+  return Uint8Array.from(atob(padded), character => character.charCodeAt(0));
+}
+
+function privateKeyBytes(privateKey) {
+  const body = privateKey
+    .replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, '');
+  if (!body) throw new Error('Invalid service account private key.');
+  return Uint8Array.from(atob(body), character => character.charCodeAt(0));
+}
+
+async function createServiceAccountAssertion(email, privateKey, audience, nowSeconds) {
+  const header = encodeBase64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const claims = encodeBase64Url(JSON.stringify({
+    iss: email,
+    sub: email,
+    aud: GOOGLE_TOKEN_ENDPOINT,
+    iat: nowSeconds,
+    exp: nowSeconds + GOOGLE_TOKEN_LIFETIME_SECONDS,
+    target_audience: audience,
+  }));
+  const unsignedToken = `${header}.${claims}`;
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    privateKeyBytes(privateKey),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(unsignedToken),
+  );
+  return `${unsignedToken}.${encodeBase64Url(signature)}`;
+}
+
+function tokenExpiry(idToken) {
+  const parts = idToken.split('.');
+  if (parts.length !== 3) throw new Error('Google returned an invalid ID token.');
+  const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(parts[1])));
+  if (!Number.isFinite(payload.exp)) throw new Error('Google ID token has no expiry.');
+  return payload.exp;
+}
+
+export async function fetchGoogleIdToken(credentials, fetchImpl = fetch, now = Date.now()) {
+  const nowSeconds = Math.floor(now / 1000);
+  const assertion = await createServiceAccountAssertion(
+    credentials.email,
+    credentials.privateKey,
+    credentials.audience,
+    nowSeconds,
+  );
+  const response = await fetchImpl(GOOGLE_TOKEN_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion,
+    }),
+  });
+  if (!response.ok) throw new Error(`Google ID token exchange failed with status ${response.status}.`);
+  const body = await response.json();
+  if (typeof body.id_token !== 'string') throw new Error('Google ID token response is invalid.');
+  return { token: body.id_token, expiresAt: tokenExpiry(body.id_token) };
+}
+
+export async function getGoogleIdToken(credentials, now = Date.now()) {
+  const cacheKey = `${credentials.email}\n${credentials.audience}`;
+  const nowSeconds = Math.floor(now / 1000);
+  const cached = googleIdTokenCache.get(cacheKey);
+  if (cached?.token && cached.expiresAt - GOOGLE_TOKEN_REFRESH_MARGIN_SECONDS > nowSeconds) {
+    return cached.token;
+  }
+  if (cached?.pending) return cached.pending;
+
+  const pending = fetchGoogleIdToken(credentials, fetch, now)
+    .then(result => {
+      googleIdTokenCache.set(cacheKey, result);
+      return result.token;
+    })
+    .catch(error => {
+      googleIdTokenCache.delete(cacheKey);
+      throw error;
+    });
+  googleIdTokenCache.set(cacheKey, { pending });
+  return pending;
+}
+
+export function clearGoogleIdTokenCache() {
+  googleIdTokenCache.clear();
+}
+
+function googleCredentials(env) {
+  if (!env.API_ORIGIN || !env.GCP_SERVICE_ACCOUNT_EMAIL || !env.GCP_SERVICE_ACCOUNT_PRIVATE_KEY) {
+    return null;
+  }
+  return {
+    audience: env.API_ORIGIN,
+    email: env.GCP_SERVICE_ACCOUNT_EMAIL,
+    privateKey: env.GCP_SERVICE_ACCOUNT_PRIVATE_KEY,
+  };
+}
+
+export async function proxyApi(request, apiOrigin, credentials, tokenProvider = getGoogleIdToken) {
+  if (!apiOrigin || !credentials) {
+    return new Response('API origin authentication is not configured.', { status: 503 });
   }
 
   const incomingUrl = new URL(request.url);
@@ -45,6 +165,8 @@ export async function proxyApi(request, apiOrigin) {
   originRequest.headers.set('X-Request-ID', requestId);
   let originResponse;
   try {
+    const idToken = await tokenProvider(credentials);
+    originRequest.headers.set('Authorization', `Bearer ${idToken}`);
     originResponse = normalizedUrl
       ? await fetch(originRequest, {
           cf: {
@@ -134,7 +256,7 @@ export default {
       return proxyPostHog(request);
     }
     if (url.pathname.startsWith('/api/')) {
-      return proxyApi(request, env.API_ORIGIN);
+      return proxyApi(request, env.API_ORIGIN, googleCredentials(env));
     }
     return env.ASSETS.fetch(request);
   },

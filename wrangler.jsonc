@@ -2,7 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "kippu-navi",
   "main": "workers/frontend.mjs",
-  "compatibility_date": "2026-09-05",
+  "compatibility_date": "2026-09-19",
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
@@ -16,7 +16,7 @@
     "staging": {
       "name": "staging",
       "secrets": {
-        "required": ["SENTRY_DSN"]
+        "required": ["SENTRY_DSN", "GCP_SERVICE_ACCOUNT_EMAIL", "GCP_SERVICE_ACCOUNT_PRIVATE_KEY"]
       },
       "vars": {
         "API_ORIGIN": "https://calculation-engine-staging-198310540092.asia-northeast1.run.app"
@@ -32,7 +32,7 @@
       "name": "production",
       "workers_dev": true,
       "secrets": {
-        "required": ["SENTRY_DSN"]
+        "required": ["SENTRY_DSN", "GCP_SERVICE_ACCOUNT_EMAIL", "GCP_SERVICE_ACCOUNT_PRIVATE_KEY"]
       },
       "vars": {
         "API_ORIGIN": "https://calculation-engine-198310540092.asia-northeast1.run.app"

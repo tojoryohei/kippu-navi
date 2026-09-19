@@ -1,12 +1,46 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { normalizeCacheableApiUrl, proxyApi, proxySentry } from '../../workers/frontend.mjs';
+import {
+  clearGoogleIdTokenCache,
+  fetchGoogleIdToken,
+  getGoogleIdToken,
+  normalizeCacheableApiUrl,
+  proxyApi,
+  proxySentry,
+} from '../../workers/frontend.mjs';
 import { buildSearchCompletedProperties, buildSearchUrl } from '../../src/lib/analytics-events.ts';
 import { classifyCalculationError } from '../../src/lib/search-errors.ts';
 
 const sentryDsn = 'https://public-key@o123.ingest.sentry.io/456';
 const sentryEnvelope = dsn => `${JSON.stringify({ dsn })}\n${JSON.stringify({ type: 'event' })}\n{}`;
+const googleCredentials = {
+  audience: 'https://calculation-engine.example.com',
+  email: 'cloudflare@example.iam.gserviceaccount.com',
+  privateKey: 'unused by the injected token provider',
+};
+const testTokenProvider = async () => 'google-id-token';
+
+function encodeTestJwt(payload) {
+  const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
+  return `${encode({ alg: 'RS256' })}.${encode(payload)}.signature`;
+}
+
+async function generatePrivateKeyPem() {
+  const pair = await crypto.subtle.generateKey(
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: 'SHA-256',
+    },
+    true,
+    ['sign', 'verify'],
+  );
+  const bytes = Buffer.from(await crypto.subtle.exportKey('pkcs8', pair.privateKey));
+  const lines = bytes.toString('base64').match(/.{1,64}/g);
+  return `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----\n`;
+}
 
 test('calculation errors distinguish business errors from system failures', () => {
   assert.equal(classifyCalculationError('経路が重複しています。'), 'duplicate_route');
@@ -165,10 +199,10 @@ test('cacheable GET strips private and bypass headers and applies edge caching',
         Pragma: 'no-cache',
       },
     },
-  ), 'https://calculation-engine.example.com');
+  ), 'https://calculation-engine.example.com', googleCredentials, testTokenProvider);
 
   assert.equal(capturedRequest.url, 'https://calculation-engine.example.com/api/split-ticket?from=A&to=B');
-  assert.equal(capturedRequest.headers.has('authorization'), false);
+  assert.equal(capturedRequest.headers.get('authorization'), 'Bearer google-id-token');
   assert.equal(capturedRequest.headers.has('cookie'), false);
   assert.equal(capturedRequest.headers.has('cache-control'), false);
   assert.equal(capturedRequest.headers.has('pragma'), false);
@@ -193,7 +227,7 @@ test('POST requests do not enable shared caching', async t => {
   await proxyApi(new Request('https://kippu-navi.com/api/fare', {
     method: 'POST',
     body: '{}',
-  }), 'https://calculation-engine.example.com');
+  }), 'https://calculation-engine.example.com', googleCredentials, testTokenProvider);
 
   assert.equal(capturedOptions, undefined);
 });
@@ -208,10 +242,84 @@ test('unsuccessful GET responses are not exposed as cacheable', async t => {
 
   const response = await proxyApi(new Request(
     'https://kippu-navi.com/api/split-ticket?from=A&to=A',
-  ), 'https://calculation-engine.example.com');
+  ), 'https://calculation-engine.example.com', googleCredentials, testTokenProvider);
 
   assert.equal(response.status, 400);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
+});
+
+test('Google token exchange signs the expected service account assertion', async () => {
+  const privateKey = await generatePrivateKeyPem();
+  let request;
+  const idToken = encodeTestJwt({ exp: 4_600 });
+  const result = await fetchGoogleIdToken(
+    { ...googleCredentials, privateKey },
+    async (url, options) => {
+      request = { url, options };
+      return Response.json({ id_token: idToken });
+    },
+    1_000_000,
+  );
+
+  assert.equal(request.url, 'https://oauth2.googleapis.com/token');
+  assert.equal(request.options.method, 'POST');
+  const form = new URLSearchParams(request.options.body);
+  assert.equal(form.get('grant_type'), 'urn:ietf:params:oauth:grant-type:jwt-bearer');
+  const assertionParts = form.get('assertion').split('.');
+  const claims = JSON.parse(Buffer.from(assertionParts[1], 'base64url').toString());
+  assert.equal(claims.iss, googleCredentials.email);
+  assert.equal(claims.sub, googleCredentials.email);
+  assert.equal(claims.aud, 'https://oauth2.googleapis.com/token');
+  assert.equal(claims.target_audience, googleCredentials.audience);
+  assert.equal(claims.iat, 1_000);
+  assert.equal(claims.exp, 4_600);
+  assert.equal(result.token, idToken);
+  assert.equal(result.expiresAt, 4_600);
+});
+
+test('Google ID token is cached until its refresh window', async t => {
+  const originalFetch = globalThis.fetch;
+  const privateKey = await generatePrivateKeyPem();
+  const credentials = { ...googleCredentials, privateKey };
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return Response.json({ id_token: encodeTestJwt({ exp: calls === 1 ? 4_600 : 8_200 }) });
+  };
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    clearGoogleIdTokenCache();
+  });
+  clearGoogleIdTokenCache();
+
+  const first = await getGoogleIdToken(credentials, 1_000_000);
+  const cached = await getGoogleIdToken(credentials, 4_000_000);
+  const refreshed = await getGoogleIdToken(credentials, 4_301_000);
+
+  assert.equal(first, cached);
+  assert.notEqual(first, refreshed);
+  assert.equal(calls, 2);
+});
+
+test('API proxy returns 502 without calling the origin when token exchange fails', async t => {
+  const originalFetch = globalThis.fetch;
+  let originCalls = 0;
+  globalThis.fetch = async () => {
+    originCalls += 1;
+    return Response.json({ ok: true });
+  };
+  t.after(() => { globalThis.fetch = originalFetch; });
+
+  const response = await proxyApi(
+    new Request('https://kippu-navi.com/api/fare'),
+    'https://calculation-engine.example.com',
+    googleCredentials,
+    async () => { throw new Error('token exchange failed'); },
+  );
+
+  assert.equal(response.status, 502);
+  assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  assert.equal(originCalls, 0);
 });
 
 test('Sentry tunnel only accepts POST', async () => {
