@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.1...kippu-navi-v3.3.2) (2026-09-19)
+
+
+### Bug Fixes
+
+* 九州新幹線 新八代〜熊本間を含む運賃計算ができない問題を修正 ([#722](https://github.com/tojoryohei/kippu-navi/issues/722)) ([cfebe75](https://github.com/tojoryohei/kippu-navi/commit/cfebe756ab5273a23199b88c8c9967d75ab42df9))
+
 ## [3.3.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.0...kippu-navi-v3.3.1) (2026-09-19)
 
 
