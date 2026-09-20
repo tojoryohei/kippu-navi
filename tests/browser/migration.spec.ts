@@ -267,7 +267,12 @@ test("経路APIの一時的なネットワーク失敗を再試行して検索�
   await page.route("**/api/split-ticket**", async route => {
     attempts++;
     if (attempts === 1) return route.abort("failed");
-    return route.continue();
+    return route.fulfill({
+      json: {
+        normal: ["新茂原", "茂原"],
+        results: [["新茂原", "茂原"]],
+      },
+    });
   });
 
   await page.goto(`/split/ticket?${query}`);
