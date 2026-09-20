@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.5...kippu-navi-v3.3.6) (2026-09-20)
+
+
+### Bug Fixes
+
+* Sentry未解決エラーの復旧処理を改善 ([#731](https://github.com/tojoryohei/kippu-navi/issues/731)) ([2255cdb](https://github.com/tojoryohei/kippu-navi/commit/2255cdbcb8ec749004f2f3154b8cabaa195b1c02))
+
 ## [3.3.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.4...kippu-navi-v3.3.5) (2026-09-19)
 
 
