@@ -24,7 +24,7 @@
   "dependencies": {
     "@astrojs/react": "^6.0.5",
     "@sentry/browser": "^10.75.0",
-    "astro": "^7.3.2",
+    "astro": "^7.3.3",
     "posthog-js": "^1.429.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
