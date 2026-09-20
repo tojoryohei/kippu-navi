@@ -30,6 +30,7 @@ function initialize() {
       sendDefaultPii: false,
       sendClientReports: false,
       tracesSampleRate: 0,
+      denyUrls: [/^https?:\/\/pagead\.googlesyndication\.com\//],
       // Astro can reject an older native View Transition when a newer
       // navigation starts. This is an expected navigation race, not an app
       // failure.
@@ -38,6 +39,14 @@ function initialize() {
         return defaultIntegrations.filter(integration => integration.name !== "BrowserSession");
       },
       beforeSend(event) {
+        const exception = event.exception?.values?.[0];
+        const fetchErrors = (event.breadcrumbs || []).filter(
+          breadcrumb => breadcrumb.category === "fetch" && breadcrumb.level === "error",
+        );
+        const isCancelledNavigationRejection = exception?.type === "UnhandledRejection"
+          && exception.value === "Non-Error promise rejection captured with value: undefined"
+          && fetchErrors.length > 0;
+        if (isCancelledNavigationRejection) return null;
         delete event.user;
         if (event.request) {
           delete event.request.cookies;
@@ -111,7 +120,8 @@ export function captureSearchError(error: unknown, context: SearchEventContext) 
     initialize();
     if (sentryDsn) {
       Sentry.withScope(scope => {
-        scope.setTags({ error_code: details.code, error_stage: details.stage, capability: details.capability || context.capability, http_status: details.httpStatus?.toString() || "none", retry_count: details.retryCount.toString(), app_version: __APP_VERSION__, engine_version: __WASM_VERSION__, deploy_commit: __DEPLOY_COMMIT__ });
+        scope.setTags({ error_code: details.code, error_stage: details.stage, capability: details.capability || context.capability, http_status: details.httpStatus?.toString() || "none", retry_count: details.retryCount.toString(), worker_restart_count: details.workerRestartCount.toString(), app_version: __APP_VERSION__, engine_version: __WASM_VERSION__, deploy_commit: __DEPLOY_COMMIT__ });
+        if (details.elapsedMs !== undefined) scope.setTag("elapsed_ms", details.elapsedMs.toString());
         if (context.requestId) scope.setTag("request_id", context.requestId);
         scope.setExtra("search_url", window.location.href);
         scope.setFingerprint([details.code, details.stage, details.capability || context.capability, String(details.httpStatus || "none"), __WASM_VERSION__]);

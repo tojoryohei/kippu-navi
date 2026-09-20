@@ -14,6 +14,7 @@ export interface EngineClient {
   onmessage: ((event: MessageEvent) => void) | null;
   ensureReady(capability: EngineCapability): Promise<EngineReadiness>;
   postMessage(message: { type: string; payload: Record<string, unknown> }): void;
+  restart(): void;
   terminate(): void;
 }
 
@@ -115,7 +116,7 @@ function resetWorker() {
   initialize();
 }
 
-function waitUntilReady(capability: EngineCapability, timeoutMs = 15_000): Promise<number> {
+function waitUntilReady(capability: EngineCapability, timeoutMs = 15_000, startedAt = performance.now()): Promise<number> {
   const retryCount = ready.get(capability);
   if (retryCount !== undefined) return Promise.resolve(retryCount);
   const failure = failures.get(capability);
@@ -125,7 +126,7 @@ function waitUntilReady(capability: EngineCapability, timeoutMs = 15_000): Promi
     waiters.get(capability)!.add(waiter);
     setTimeout(() => {
       if (!waiters.get(capability)!.delete(waiter)) return;
-      reject(new SearchOperationError({ message: "計算エンジンの初期化がタイムアウトしました。", code: "engine_initialization_timeout", source: "client", stage: "worker_bootstrap", capability, exceptionName: "TimeoutError", retryable: true, retryCount: 0, workerRestartCount: 0 }));
+      reject(new SearchOperationError({ message: "計算エンジンの初期化がタイムアウトしました。", code: "engine_initialization_timeout", source: "client", stage: "worker_bootstrap", capability, exceptionName: "TimeoutError", retryable: true, retryCount: 0, workerRestartCount: 0, elapsedMs: Math.round(performance.now() - startedAt) }));
     }, timeoutMs);
   });
 }
@@ -142,19 +143,12 @@ export function createEngineClient(): EngineClient {
     async ensureReady(capability) {
       const startedAt = performance.now();
       try {
-        const retryCount = await waitUntilReady(capability);
+        const retryCount = await waitUntilReady(capability, 15_000, startedAt);
         return { capability, recovered: retryCount > 0, retryCount, workerRestartCount: 0, recoveryMs: performance.now() - startedAt, initialError: recoveredAssetFailure(capability, retryCount) };
       } catch (firstError) {
         const initial = firstError instanceof SearchOperationError ? firstError : null;
         if (!initial?.details.retryable) throw firstError;
-        resetWorker();
-        try {
-          const retryCount = await waitUntilReady(capability);
-          return { capability, recovered: true, retryCount: initial.details.retryCount + retryCount, workerRestartCount: 1, recoveryMs: performance.now() - startedAt, initialError: initial.details };
-        } catch (secondError) {
-          if (secondError instanceof SearchOperationError) throw new SearchOperationError({ ...secondError.details, retryCount: initial.details.retryCount + secondError.details.retryCount, workerRestartCount: 1 });
-          throw secondError;
-        }
+        throw firstError;
       }
     },
     postMessage(message) {
@@ -162,6 +156,9 @@ export function createEngineClient(): EngineClient {
       const requestId = ++sequence;
       requests.set(requestId, { client, requestId: message.payload.requestId });
       worker.postMessage({ ...message, payload: { ...message.payload, requestId } });
+    },
+    restart() {
+      resetWorker();
     },
     terminate() {
       clients.delete(client);

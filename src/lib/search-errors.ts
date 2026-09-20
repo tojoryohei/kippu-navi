@@ -52,6 +52,7 @@ export interface SearchErrorDetails {
   retryable: boolean;
   retryCount: number;
   workerRestartCount: number;
+  elapsedMs?: number;
   pathCount?: number;
   invalidPathCount?: number;
   minimumPathLength?: number;
