@@ -7,7 +7,7 @@ import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
 import { buildSearchUrl } from "@/lib/analytics-events";
-import { classifyCalculationError, SearchOperationError } from "@/lib/search-errors";
+import { classifyCalculationError, isRetryableEngineError, SearchOperationError } from "@/lib/search-errors";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
@@ -127,7 +127,7 @@ export default function SplitForm({
     // ローカルでの計算結果・エラー・計測時間および検索タイプの管理State
     const [isCalculating, setIsCalculating] = useState(false);
     const [isEngineSlow, setIsEngineSlow] = useState(false);
-    const [isEngineTimeout, setIsEngineTimeout] = useState(false);
+    const [isEngineRetryable, setIsEngineRetryable] = useState(false);
     const [result, setResult] = useState<SplitFareResult | null>(initialResult || null);
     const [error, setError] = useState<string | null>(initialError || null);
     const [serverTime, setServerTime] = useState<number | null>(initialServerTime || null);
@@ -209,7 +209,7 @@ export default function SplitForm({
         setResult(null);
         setServerTime(null);
         setIsCalculating(true);
-        setIsEngineTimeout(false);
+        setIsEngineRetryable(false);
         setIsEngineSlow(false);
 
         const newParams = new URLSearchParams();
@@ -339,13 +339,13 @@ export default function SplitForm({
             if (abort.signal.aborted) return;
             const errorInstance = err instanceof Error ? err : new Error(String(err));
             pendingErrorRef.current = err;
-            setIsEngineTimeout(err instanceof SearchOperationError && err.details.code === "engine_initialization_timeout");
+            setIsEngineRetryable(isRetryableEngineError(err));
             setError(errorInstance.message);
             setIsCalculating(false);
         }
     }, [pathname, isIcPass]);
 
-    const retryAfterEngineTimeout = () => {
+    const retryAfterEngineError = () => {
         workerRef.current?.restart();
         void handleSubmit(onSubmit)();
     };
@@ -848,8 +848,8 @@ export default function SplitForm({
                 {!isCalculating && serverTime != null && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
                 {!isCalculating && error && (
                     <div className="py-5 border-t text-center text-red-500">
-                        <p>{isEngineTimeout ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
-                        {isEngineTimeout && <button type="button" onClick={retryAfterEngineTimeout} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white">再試行</button>}
+                        <p>{isEngineRetryable ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
+                        {isEngineRetryable && <button type="button" onClick={retryAfterEngineError} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white">再試行</button>}
                     </div>
                 )}
 

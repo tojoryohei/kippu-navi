@@ -11,7 +11,7 @@ import {
 } from '../../workers/frontend.mjs';
 import { buildSearchCompletedProperties, buildSearchUrl } from '../../src/lib/analytics-events.ts';
 import { initializeGoogleAnalytics, trackGooglePageView } from '../../src/lib/google-analytics.ts';
-import { classifyCalculationError } from '../../src/lib/search-errors.ts';
+import { classifyCalculationError, isRetryableEngineError, SearchOperationError } from '../../src/lib/search-errors.ts';
 
 const sentryDsn = 'https://public-key@o123.ingest.sentry.io/456';
 const sentryEnvelope = dsn => `${JSON.stringify({ dsn })}\n${JSON.stringify({ type: 'event' })}\n{}`;
@@ -61,6 +61,39 @@ test('calculation errors distinguish business errors from system failures', () =
   assert.equal(classifyCalculationError('再考：要求区間誤り'), 'path_invalid');
   assert.equal(classifyCalculationError('指定された区間はJR在来線のみで繋がっていません。', 422), 'path_invalid');
   assert.equal(classifyCalculationError('unexpected failure'), 'calculation_failed');
+});
+
+test('retryable engine initialization failures can recover through the UI', () => {
+  const baseDetails = {
+    message: 'engine failed',
+    code: 'engine_initialization_timeout',
+    source: 'client',
+    stage: 'worker_bootstrap',
+    exceptionName: 'Error',
+    retryCount: 0,
+    workerRestartCount: 0,
+    retryable: true,
+  };
+
+  assert.equal(isRetryableEngineError(new SearchOperationError(baseDetails)), true);
+  assert.equal(isRetryableEngineError(new SearchOperationError({
+    ...baseDetails,
+    code: 'worker_runtime_failed',
+    source: 'worker',
+    exceptionName: 'ErrorEvent',
+  })), true);
+  assert.equal(isRetryableEngineError(new SearchOperationError({
+    ...baseDetails,
+    code: 'engine_asset_fetch_failed',
+    stage: 'wasm_fetch',
+    httpStatus: 404,
+    retryable: false,
+  })), false);
+  assert.equal(isRetryableEngineError(new SearchOperationError({
+    ...baseDetails,
+    code: 'calculation_failed',
+    stage: 'calculation',
+  })), false);
 });
 
 test('PostHog fare search payload contains route, URL, and exact result values', () => {

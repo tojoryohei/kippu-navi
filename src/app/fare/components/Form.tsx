@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
 import { buildSearchUrl } from "@/lib/analytics-events";
-import { SearchOperationError } from "@/lib/search-errors";
+import { isRetryableEngineError, SearchOperationError } from "@/lib/search-errors";
 
 import stationData from "@/app/fare/data/stations.json";
 import lineData from "@/app/fare/data/lines.json";
@@ -137,7 +137,7 @@ export default function Form({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isEngineSlow, setIsEngineSlow] = useState(false);
-    const [isEngineTimeout, setIsEngineTimeout] = useState(false);
+    const [isEngineRetryable, setIsEngineRetryable] = useState(false);
 
     const workerRef = useRef<EngineClient | null>(null);
     const [isWasmReady, setIsWasmReady] = useState(false);
@@ -218,7 +218,7 @@ export default function Form({
         pendingErrorRef.current = null;
         setIsLoading(true);
         setError(null);
-        setIsEngineTimeout(false);
+        setIsEngineRetryable(false);
         setIsEngineSlow(false);
         setResult(null);
         setResultPass(null);
@@ -280,7 +280,7 @@ export default function Form({
             captureEngineRecovery(readiness, searchContext);
         } catch (readinessError) {
             pendingErrorRef.current = readinessError;
-            setIsEngineTimeout(readinessError instanceof SearchOperationError && readinessError.details.code === "engine_initialization_timeout");
+            setIsEngineRetryable(isRetryableEngineError(readinessError));
             setError(readinessError instanceof Error ? readinessError.message : String(readinessError));
             setIsLoading(false);
             return;
@@ -459,7 +459,7 @@ export default function Form({
         }
     }, [pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, onSubmit, isWasmReady]);
 
-    const retryAfterEngineTimeout = () => {
+    const retryAfterEngineError = () => {
         workerRef.current?.restart();
         void handleSubmit(onSubmit)();
     };
@@ -997,8 +997,8 @@ export default function Form({
 
                 {!isLoading && error && (
                     <div className="py-5 border-t text-center text-red-500">
-                        <p>{isEngineTimeout ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
-                        {isEngineTimeout && <button type="button" onClick={retryAfterEngineTimeout} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white">再試行</button>}
+                        <p>{isEngineRetryable ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
+                        {isEngineRetryable && <button type="button" onClick={retryAfterEngineError} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white">再試行</button>}
                     </div>
                 )}
 
