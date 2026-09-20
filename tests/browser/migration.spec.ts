@@ -220,6 +220,44 @@ test("WASMのロード失敗を表示する", async ({ page }) => {
   await expect(page.getByText(/main\.wasm.*404/)).toBeVisible();
 });
 
+test("エンジン初期化失敗後もメインの計算ボタンから再試行できる", async ({ page }) => {
+  await isolateServices(page);
+  let allowWasm = false;
+  await page.route("**/main.wasm", route =>
+    allowWasm
+      ? route.continue()
+      : route.fulfill({ status: 503, body: "temporary" }),
+  );
+
+  await page.goto(`/split/ticket?${query}`);
+  const retryCalculationButton = page.getByRole("button", { name: "計算を再試行", exact: true });
+  await expect(retryCalculationButton).toBeVisible();
+  await expect(page.getByRole("button", { name: "再試行", exact: true })).toHaveCount(0);
+
+  allowWasm = true;
+  await retryCalculationButton.click();
+  await expectTicket(page);
+});
+
+test("運賃計算もメインの計算ボタンからエンジンを再試行できる", async ({ page }) => {
+  await isolateServices(page);
+  let allowWasm = false;
+  await page.route("**/main.wasm", route =>
+    allowWasm
+      ? route.continue()
+      : route.fulfill({ status: 503, body: "temporary" }),
+  );
+
+  await page.goto(`/fare/ticket?route=${encodeURIComponent("新茂原[外房]茂原")}`);
+  const retryCalculationButton = page.getByRole("button", { name: "計算を再試行", exact: true });
+  await expect(retryCalculationButton).toBeVisible();
+  await expect(page.getByRole("button", { name: "再試行", exact: true })).toHaveCount(0);
+
+  allowWasm = true;
+  await retryCalculationButton.click();
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
+});
+
 test("古いエンジンURLの404時に現行資材へフォールバックして検索を継続する", async ({ page }) => {
   await isolateServices(page);
   const fallbackEngineBasePath = `/engine/${"f".repeat(64)}`;

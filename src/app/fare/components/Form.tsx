@@ -215,6 +215,7 @@ export default function Form({
     const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
         if (!mountedRef.current) return;
         const calcId = ++latestCalcIdRef.current;
+        const shouldRestartEngine = isRetryableEngineError(pendingErrorRef.current);
         pendingErrorRef.current = null;
         setIsLoading(true);
         setError(null);
@@ -275,6 +276,7 @@ export default function Form({
 
         if (!workerRef.current) return;
         try {
+            if (shouldRestartEngine) workerRef.current.restart();
             const readiness = await workerRef.current.ensureReady(searchContext.capability);
             searchContext.readiness = readiness;
             captureEngineRecovery(readiness, searchContext);
@@ -458,11 +460,6 @@ export default function Form({
             }
         }
     }, [pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, onSubmit, isWasmReady]);
-
-    const retryAfterEngineError = () => {
-        workerRef.current?.restart();
-        void handleSubmit(onSubmit)();
-    };
 
     // WASMが後から初期化完了(isWasmReady=true)したタイミングで、初期アクセス時自動計算をフォールバック実行
     useEffect(() => {
@@ -985,6 +982,8 @@ export default function Form({
                     >
                         {isLoading
                             ? (isEngineSlow ? "準備に時間がかかっています..." : "計算中...")
+                            : isEngineRetryable
+                                ? "計算を再試行"
                             : "運賃計算をする"
                         }
                     </button>
@@ -998,7 +997,6 @@ export default function Form({
                 {!isLoading && error && (
                     <div className="py-5 border-t text-center text-red-500">
                         <p>{isEngineRetryable ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
-                        {isEngineRetryable && <button type="button" onClick={retryAfterEngineError} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white">再試行</button>}
                     </div>
                 )}
 
