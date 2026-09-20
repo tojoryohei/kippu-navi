@@ -12,7 +12,7 @@ import { classifyCalculationError, SearchOperationError } from "@/lib/search-err
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
 import AdvancedOptions from "@/app/split/components/AdvancedOptions";
-import { getApiUrl } from "@/app/lib/api";
+import { fetchWithNetworkRetry, getApiUrl } from "@/app/lib/api";
 import type {
     SearchOption,
     SearchType,
@@ -279,7 +279,7 @@ export default function SplitForm({
             }
             let apiRes: Response;
             try {
-                apiRes = await fetch(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: abort.signal });
+                apiRes = await fetchWithNetworkRetry(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: abort.signal });
             } catch (fetchError) {
                 throw new SearchOperationError({ message: fetchError instanceof Error ? fetchError.message : String(fetchError), code: "api_network_failed", source: "api", stage: "api_fetch", capability, exceptionName: fetchError instanceof Error ? fetchError.name : "Error", retryable: true, retryCount: 0, workerRestartCount: 0 });
             }

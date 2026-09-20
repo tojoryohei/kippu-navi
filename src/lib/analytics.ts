@@ -30,6 +30,10 @@ function initialize() {
       sendDefaultPii: false,
       sendClientReports: false,
       tracesSampleRate: 0,
+      // Astro can reject an older native View Transition when a newer
+      // navigation starts. This is an expected navigation race, not an app
+      // failure.
+      ignoreErrors: [/Old view transition aborted by new view transition/],
       integrations(defaultIntegrations) {
         return defaultIntegrations.filter(integration => integration.name !== "BrowserSession");
       },

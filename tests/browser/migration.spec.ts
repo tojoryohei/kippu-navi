@@ -220,6 +220,61 @@ test("WASMのロード失敗を表示する", async ({ page }) => {
   await expect(page.getByText(/main\.wasm.*404/)).toBeVisible();
 });
 
+test("古いエンジンURLの404時に現行資材へフォールバックして検索を継続する", async ({ page }) => {
+  await isolateServices(page);
+  const fallbackEngineBasePath = `/engine/${"f".repeat(64)}`;
+  let staleEngineBasePath: string | undefined;
+  let staleWasmRuntime404s = 0;
+  let staleTicketGraph404s = 0;
+
+  await page.route("**/deployment.json", route =>
+    route.fulfill({ json: { enginePath: fallbackEngineBasePath } }),
+  );
+  await page.route("**/engine/**", async route => {
+    const url = new URL(route.request().url());
+    const match = url.pathname.match(/^\/engine\/([a-f0-9]{64})(\/[^/]+)$/);
+    if (!match) return route.continue();
+
+    staleEngineBasePath ??= `/engine/${match[1]}`;
+    const assetPath = match[2];
+    if (assetPath === "/wasm_exec.js" && !url.pathname.startsWith(fallbackEngineBasePath) && staleWasmRuntime404s === 0) {
+      staleWasmRuntime404s++;
+      return route.fulfill({ status: 404, body: "stale engine runtime" });
+    }
+    if (assetPath === "/ticket_graph_data.bin" && !url.pathname.startsWith(fallbackEngineBasePath) && staleTicketGraph404s === 0) {
+      staleTicketGraph404s++;
+      return route.fulfill({ status: 404, body: "stale engine asset" });
+    }
+
+    if (url.pathname.startsWith(fallbackEngineBasePath) && staleEngineBasePath) {
+      const rewritten = new URL(url);
+      rewritten.pathname = `${staleEngineBasePath}${assetPath}`;
+      return route.continue({ url: rewritten.toString() });
+    }
+
+    return route.continue();
+  });
+
+  await page.goto(`/split/ticket?${query}`);
+  await expectTicket(page);
+  expect(staleWasmRuntime404s).toBe(1);
+  expect(staleTicketGraph404s).toBe(1);
+});
+
+test("経路APIの一時的なネットワーク失敗を再試行して検索を継続する", async ({ page }) => {
+  await isolateServices(page);
+  let attempts = 0;
+  await page.route("**/api/split-ticket**", async route => {
+    attempts++;
+    if (attempts === 1) return route.abort("failed");
+    return route.continue();
+  });
+
+  await page.goto(`/split/ticket?${query}`);
+  await expectTicket(page);
+  expect(attempts).toBe(2);
+});
+
 test("WASMの一時的な503を再試行して検索を継続する", async ({ page }) => {
   await isolateServices(page);
   let attempts = 0;
