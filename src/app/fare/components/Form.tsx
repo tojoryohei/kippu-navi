@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
 import { buildSearchUrl } from "@/lib/analytics-events";
-import { SearchOperationError } from "@/lib/search-errors";
+import { isRetryableEngineError, SearchOperationError } from "@/lib/search-errors";
 
 import stationData from "@/app/fare/data/stations.json";
 import lineData from "@/app/fare/data/lines.json";
@@ -136,6 +136,8 @@ export default function Form({
     const [serverTime, setServerTime] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isEngineSlow, setIsEngineSlow] = useState(false);
+    const [isEngineRetryable, setIsEngineRetryable] = useState(false);
 
     const workerRef = useRef<EngineClient | null>(null);
     const [isWasmReady, setIsWasmReady] = useState(false);
@@ -148,6 +150,12 @@ export default function Form({
     const [resultPass, setResultPass] = useState<PassFareResult | null>(null);
     const [correctedStartPass, setCorrectedStartPass] = useState<string>("");
     const [correctedEndPass, setCorrectedEndPass] = useState<string>("");
+
+    useEffect(() => {
+        if (!isLoading) return;
+        const timer = window.setTimeout(() => setIsEngineSlow(true), 5_000);
+        return () => window.clearTimeout(timer);
+    }, [isLoading]);
 
     // 種別・期間切り替え時は、入力済みの経路だけ再検証する。
     // 空フォームではNext.js版と同じくエラーを表示しない。
@@ -210,6 +218,8 @@ export default function Form({
         pendingErrorRef.current = null;
         setIsLoading(true);
         setError(null);
+        setIsEngineRetryable(false);
+        setIsEngineSlow(false);
         setResult(null);
         setResultPass(null);
         setCorrectedStartPass("");
@@ -270,6 +280,7 @@ export default function Form({
             captureEngineRecovery(readiness, searchContext);
         } catch (readinessError) {
             pendingErrorRef.current = readinessError;
+            setIsEngineRetryable(isRetryableEngineError(readinessError));
             setError(readinessError instanceof Error ? readinessError.message : String(readinessError));
             setIsLoading(false);
             return;
@@ -447,6 +458,11 @@ export default function Form({
             }
         }
     }, [pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, onSubmit, isWasmReady]);
+
+    const retryAfterEngineError = () => {
+        workerRef.current?.restart();
+        void handleSubmit(onSubmit)();
+    };
 
     // WASMが後から初期化完了(isWasmReady=true)したタイミングで、初期アクセス時自動計算をフォールバック実行
     useEffect(() => {
@@ -968,7 +984,7 @@ export default function Form({
                         disabled={!isValid || isLoading}
                     >
                         {isLoading
-                            ? "計算中..."
+                            ? (isEngineSlow ? "準備に時間がかかっています..." : "計算中...")
                             : "運賃計算をする"
                         }
                     </button>
@@ -976,10 +992,15 @@ export default function Form({
             </form>
 
             <div className="my-8 p-4">
-                {isLoading && <p className="py-5 border-t text-center text-gray-500">計算中...</p>}
+                {isLoading && <p className="py-5 border-t text-center text-gray-500">{isEngineSlow ? "計算エンジンの準備に時間がかかっています..." : "計算中..."}</p>}
                 {!isLoading && serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
 
-                {!isLoading && error && <p className="py-5 border-t text-red-500 text-center">{error}</p>}
+                {!isLoading && error && (
+                    <div className="py-5 border-t text-center text-red-500">
+                        <p>{isEngineRetryable ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
+                        {isEngineRetryable && <button type="button" onClick={retryAfterEngineError} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white">再試行</button>}
+                    </div>
+                )}
 
                 {!isLoading && result && (
                     <div>

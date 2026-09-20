@@ -7,7 +7,7 @@ import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
 import { buildSearchUrl } from "@/lib/analytics-events";
-import { classifyCalculationError, SearchOperationError } from "@/lib/search-errors";
+import { classifyCalculationError, isRetryableEngineError, SearchOperationError } from "@/lib/search-errors";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
@@ -126,6 +126,8 @@ export default function SplitForm({
 
     // ローカルでの計算結果・エラー・計測時間および検索タイプの管理State
     const [isCalculating, setIsCalculating] = useState(false);
+    const [isEngineSlow, setIsEngineSlow] = useState(false);
+    const [isEngineRetryable, setIsEngineRetryable] = useState(false);
     const [result, setResult] = useState<SplitFareResult | null>(initialResult || null);
     const [error, setError] = useState<string | null>(initialError || null);
     const [serverTime, setServerTime] = useState<number | null>(initialServerTime || null);
@@ -149,6 +151,12 @@ export default function SplitForm({
     const workerRef = useRef<EngineClient | null>(null);
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
     const latestCalcIdRef = useRef<number>(0);
+
+    useEffect(() => {
+        if (!isCalculating) return;
+        const timer = window.setTimeout(() => setIsEngineSlow(true), 5_000);
+        return () => window.clearTimeout(timer);
+    }, [isCalculating]);
 
     const defaultSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
         ? initialSearchType
@@ -201,6 +209,8 @@ export default function SplitForm({
         setResult(null);
         setServerTime(null);
         setIsCalculating(true);
+        setIsEngineRetryable(false);
+        setIsEngineSlow(false);
 
         const newParams = new URLSearchParams();
         if (data.startStation.name) {
@@ -329,10 +339,16 @@ export default function SplitForm({
             if (abort.signal.aborted) return;
             const errorInstance = err instanceof Error ? err : new Error(String(err));
             pendingErrorRef.current = err;
+            setIsEngineRetryable(isRetryableEngineError(err));
             setError(errorInstance.message);
             setIsCalculating(false);
         }
     }, [pathname, isIcPass]);
+
+    const retryAfterEngineError = () => {
+        workerRef.current?.restart();
+        void handleSubmit(onSubmit)();
+    };
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -819,7 +835,7 @@ export default function SplitForm({
                             disabled={!isValid || isCalculating}
                         >
                             {isCalculating
-                                ? "計算中..."
+                                ? (isEngineSlow ? "準備に時間がかかっています..." : "計算中...")
                                 : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`
                             }
                         </button>
@@ -828,9 +844,14 @@ export default function SplitForm({
             </form>
 
             <div className="my-8">
-                {isCalculating && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
+                {isCalculating && <p className="py-5 border-t text-center text-gray-500">{isEngineSlow ? "計算エンジンの準備に時間がかかっています..." : "計算中です..."}</p>}
                 {!isCalculating && serverTime != null && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
-                {!isCalculating && error && <p className="py-5 border-t text-red-500 text-center">{error}</p>}
+                {!isCalculating && error && (
+                    <div className="py-5 border-t text-center text-red-500">
+                        <p>{isEngineRetryable ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
+                        {isEngineRetryable && <button type="button" onClick={retryAfterEngineError} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white">再試行</button>}
+                    </div>
+                )}
 
                 {!isCalculating && result && (
                     <div className="border-t pt-8 space-y-8">

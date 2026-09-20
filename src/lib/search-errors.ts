@@ -52,6 +52,7 @@ export interface SearchErrorDetails {
   retryable: boolean;
   retryCount: number;
   workerRestartCount: number;
+  elapsedMs?: number;
   pathCount?: number;
   invalidPathCount?: number;
   minimumPathLength?: number;
@@ -65,4 +66,21 @@ export class SearchOperationError extends Error {
     this.name = details.exceptionName || "SearchOperationError";
     this.details = details;
   }
+}
+
+const ENGINE_RECOVERY_STAGES = new Set<SearchErrorStage>([
+  "worker_create",
+  "worker_bootstrap",
+  "wasm_fetch",
+  "wasm_instantiate",
+  "pass_graph_fetch",
+  "pass_graph_initialize",
+  "ticket_graph_fetch",
+  "ticket_graph_initialize",
+]);
+
+export function isRetryableEngineError(error: unknown): error is SearchOperationError {
+  return error instanceof SearchOperationError
+    && error.details.retryable
+    && ENGINE_RECOVERY_STAGES.has(error.details.stage);
 }
