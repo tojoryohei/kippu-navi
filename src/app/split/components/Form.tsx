@@ -197,6 +197,7 @@ export default function SplitForm({
         if (!mountedRef.current) return;
         const calcId = ++latestCalcIdRef.current;
         if (!data.startStation?.name || !data.endStation?.name) return;
+        const shouldRestartEngine = isRetryableEngineError(pendingErrorRef.current);
 
         apiAbortRef.current?.abort();
         const abort = new AbortController();
@@ -312,6 +313,7 @@ export default function SplitForm({
                 setIsCalculating(false);
             } else {
                 if (!workerRef.current) return;
+                if (shouldRestartEngine) workerRef.current.restart();
                 const readiness = await workerRef.current.ensureReady(capability);
                 searchContext.readiness = readiness;
                 captureEngineRecovery(readiness, searchContext);
@@ -344,11 +346,6 @@ export default function SplitForm({
             setIsCalculating(false);
         }
     }, [pathname, isIcPass]);
-
-    const retryAfterEngineError = () => {
-        workerRef.current?.restart();
-        void handleSubmit(onSubmit)();
-    };
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -836,6 +833,8 @@ export default function SplitForm({
                         >
                             {isCalculating
                                 ? (isEngineSlow ? "準備に時間がかかっています..." : "計算中...")
+                                : isEngineRetryable
+                                    ? "計算を再試行"
                                 : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`
                             }
                         </button>
@@ -849,7 +848,6 @@ export default function SplitForm({
                 {!isCalculating && error && (
                     <div className="py-5 border-t text-center text-red-500">
                         <p>{isEngineRetryable ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
-                        {isEngineRetryable && <button type="button" onClick={retryAfterEngineError} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white">再試行</button>}
                     </div>
                 )}
 
