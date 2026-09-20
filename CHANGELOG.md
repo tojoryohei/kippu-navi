@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.7...kippu-navi-v3.3.8) (2026-09-20)
+
+
+### Bug Fixes
+
+* 計算ボタンからエンジン再試行できるようにする ([#735](https://github.com/tojoryohei/kippu-navi/issues/735)) ([4fbda54](https://github.com/tojoryohei/kippu-navi/commit/4fbda547a346a352c747eb68df076c51c52dbcea))
+
 ## [3.3.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.6...kippu-navi-v3.3.7) (2026-09-20)
 
 
