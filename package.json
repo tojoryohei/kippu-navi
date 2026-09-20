@@ -22,7 +22,7 @@
     "dev:engine": "node scripts/prepare-local-engine.mjs"
   },
   "dependencies": {
-    "@astrojs/react": "^6.0.5",
+    "@astrojs/react": "^6.0.6",
     "@sentry/browser": "^10.75.0",
     "astro": "^7.3.3",
     "posthog-js": "^1.429.5",
