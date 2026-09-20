@@ -65,6 +65,36 @@ if (sentryDsn) {
 // CI embeds the content hash used to package all four engine files.
 const wasmVersion = __WASM_VERSION__;
 const engineBaseUrl = `${baseOrigin}/engine${wasmVersion ? `/${wasmVersion}` : ''}`;
+let currentEngineBaseUrl: string | null | undefined;
+let currentEngineBaseUrlPromise: Promise<string | null> | undefined;
+
+async function getCurrentEngineBaseUrl() {
+  if (currentEngineBaseUrl !== undefined) return currentEngineBaseUrl;
+  if (currentEngineBaseUrlPromise) return currentEngineBaseUrlPromise;
+
+  const origin = baseOrigin || (self.location.origin !== 'null' ? self.location.origin : '');
+  if (!origin) {
+    currentEngineBaseUrl = null;
+    return currentEngineBaseUrl;
+  }
+
+  currentEngineBaseUrlPromise = fetch(`${origin}/deployment.json`, { cache: 'no-store' })
+    .then(async response => {
+      if (!response.ok) return null;
+      const deployment = await response.json() as { enginePath?: unknown };
+      if (typeof deployment.enginePath !== 'string') return null;
+
+      const engineUrl = new URL(deployment.enginePath, `${origin}/deployment.json`);
+      if (engineUrl.origin !== origin || !/^\/engine\/[a-f0-9]{64}$/.test(engineUrl.pathname)) return null;
+
+      return engineUrl.href.replace(/\/$/, '');
+    })
+    .catch(() => null);
+
+  currentEngineBaseUrl = await currentEngineBaseUrlPromise;
+  currentEngineBaseUrlPromise = undefined;
+  return currentEngineBaseUrl;
+}
 
 interface GoInstance {
   importObject: WebAssembly.Imports;
@@ -119,7 +149,20 @@ function isRetryableStatus(status: number) {
   return status === 408 || status === 429 || status >= 500;
 }
 
-async function fetchAsset(url: string) {
+async function loadWasmRuntime() {
+  const runtimeUrl = `${engineBaseUrl}/wasm_exec.js`;
+  try {
+    await import(/* @vite-ignore */ runtimeUrl);
+    return;
+  } catch (error) {
+    const currentBaseUrl = await getCurrentEngineBaseUrl();
+    const fallbackUrl = currentBaseUrl ? `${currentBaseUrl}/wasm_exec.js` : null;
+    if (!fallbackUrl || fallbackUrl === runtimeUrl) throw error;
+    await import(/* @vite-ignore */ fallbackUrl);
+  }
+}
+
+async function fetchAssetWithRetry(url: string) {
   let lastError: unknown;
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     try {
@@ -140,6 +183,35 @@ async function fetchAsset(url: string) {
     await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
   }
   throw lastError;
+}
+
+async function fetchAsset(url: string) {
+  try {
+    return await fetchAssetWithRetry(url);
+  } catch (error) {
+    const status = (error as { httpStatus?: number }).httpStatus;
+    const assetMatch = url.match(/\/engine\/[a-f0-9]{64}\/([^/?#]+)$/);
+    if (status !== 404 || !assetMatch) throw error;
+
+    const currentBaseUrl = await getCurrentEngineBaseUrl();
+    if (!currentBaseUrl) throw error;
+
+    const fallbackUrl = `${currentBaseUrl}/${assetMatch[1]}`;
+    if (fallbackUrl === url) throw error;
+
+    try {
+      // A stale HTML/Worker bundle can retain an engine hash from a previous
+      // deployment. Use the current deployment manifest when that version was
+      // removed from the active static-assets manifest.
+      const fallback = await fetchAssetWithRetry(fallbackUrl);
+      return { ...fallback, retryCount: fallback.retryCount + 1 };
+    } catch (fallbackError) {
+      if (fallbackError && typeof fallbackError === 'object') {
+        Object.assign(fallbackError, { originalUrl: url, fallbackUrl });
+      }
+      throw fallbackError;
+    }
+  }
 }
 
 function initFailure(error: unknown, stage: InitStage, retryCount: number, capability?: 'ticket' | 'pass'): InitFailure {
@@ -182,7 +254,7 @@ async function initWasm() {
 
   try {
     try {
-      await import(/* @vite-ignore */ `${engineBaseUrl}/wasm_exec.js`);
+      await loadWasmRuntime();
       go = new Go();
     } catch (error) {
       postMessage(initFailure(error, 'worker_bootstrap', 0));
