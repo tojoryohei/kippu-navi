@@ -3,6 +3,7 @@ const SENTRY_MAX_ENVELOPE_BYTES = 200 * 1024;
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const GOOGLE_TOKEN_LIFETIME_SECONDS = 60 * 60;
 const GOOGLE_TOKEN_REFRESH_MARGIN_SECONDS = 5 * 60;
+const ENGINE_ASSET_PATTERN = /^\/engine\/([a-f0-9]{64})\/(main\.wasm|pass_graph_data\.bin|ticket_graph_data\.bin|wasm_exec\.js)$/;
 
 const googleIdTokenCache = new Map();
 
@@ -223,6 +224,38 @@ export async function proxySentry(request, configuredDsn) {
   return fetch(endpoint, { method: 'POST', headers, body });
 }
 
+export async function fetchEngineAsset(request, assets) {
+  const url = new URL(request.url);
+  const match = ENGINE_ASSET_PATTERN.exec(url.pathname);
+  if (!match || !['GET', 'HEAD'].includes(request.method)) return assets.fetch(request);
+
+  const response = await assets.fetch(request);
+  if (response.status !== 404) return response;
+
+  try {
+    const manifestUrl = new URL('/deployment.json', url);
+    const manifestResponse = await assets.fetch(new Request(manifestUrl, {
+      method: 'GET',
+      headers: request.headers,
+    }));
+    if (!manifestResponse.ok) return response;
+
+    const manifest = await manifestResponse.json();
+    if (typeof manifest.enginePath !== 'string') return response;
+
+    const engineUrl = new URL(manifest.enginePath, manifestUrl);
+    if (engineUrl.origin !== url.origin || !/^\/engine\/[a-f0-9]{64}$/.test(engineUrl.pathname)) return response;
+    if (engineUrl.pathname === `/engine/${match[1]}`) return response;
+
+    const fallbackUrl = new URL(`${engineUrl.pathname}/${match[2]}`, url);
+    fallbackUrl.search = url.search;
+    return assets.fetch(new Request(fallbackUrl, request));
+  } catch {
+    // Keep the original 404 if the deployment manifest is unavailable or invalid.
+    return response;
+  }
+}
+
 function proxyPostHog(request) {
   const incomingUrl = new URL(request.url);
   const isAssetRequest =
@@ -258,6 +291,6 @@ export default {
     if (url.pathname.startsWith('/api/')) {
       return proxyApi(request, env.API_ORIGIN, googleCredentials(env));
     }
-    return env.ASSETS.fetch(request);
+    return fetchEngineAsset(request, env.ASSETS);
   },
 };

@@ -8,17 +8,38 @@ import { classifyCalculationError, SearchOperationError, type EngineCapability }
 const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY;
 const googleAnalyticsId = import.meta.env.PUBLIC_GOOGLE_ANALYTICS_ID;
 const sentryDsn = import.meta.env.PUBLIC_SENTRY_DSN;
+const POSTHOG_TOOLBAR_STORAGE_KEY = "_postHogToolbarParams";
 let initialized = false;
 
 function releaseProperties() {
   return { engine_version: __WASM_VERSION__, app_version: __APP_VERSION__, deploy_commit: __DEPLOY_COMMIT__, environment: __DEPLOY_ENVIRONMENT__ };
 }
 
+function disablePostHogToolbar() {
+  try {
+    window.localStorage.removeItem(POSTHOG_TOOLBAR_STORAGE_KEY);
+  } catch {
+    // Storage may be unavailable in privacy-restricted browsers.
+  }
+}
+
 function initialize() {
   if (initialized || typeof window === "undefined") return;
   initialized = true;
   if (posthogKey) {
-    posthog.init(posthogKey, { api_host: "/ingest", ui_host: "https://us.posthog.com", persistence: "sessionStorage", person_profiles: "never", capture_pageview: false, disable_session_recording: true, autocapture: false, capture_performance: false });
+    disablePostHogToolbar();
+    posthog.init(posthogKey, {
+      api_host: "/ingest",
+      ui_host: "https://us.posthog.com",
+      persistence: "sessionStorage",
+      person_profiles: "never",
+      capture_pageview: false,
+      disable_session_recording: true,
+      autocapture: false,
+      capture_performance: false,
+      // posthog-js has no public disable_toolbar option; omit only the Toolbar extension.
+      __extensionClasses: { toolbar: undefined },
+    });
   }
   initializeGoogleAnalytics(googleAnalyticsId, window, document);
   if (sentryDsn) {
@@ -30,11 +51,16 @@ function initialize() {
       sendDefaultPii: false,
       sendClientReports: false,
       tracesSampleRate: 0,
-      denyUrls: [/^https?:\/\/pagead\.googlesyndication\.com\//],
+      denyUrls: [
+        /^https?:\/\/pagead\.googlesyndication\.com\//,
+      ],
       // Astro can reject an older native View Transition when a newer
       // navigation starts. This is an expected navigation race, not an app
       // failure.
-      ignoreErrors: [/Old view transition aborted by new view transition/],
+      ignoreErrors: [
+        /Old view transition aborted by new view transition/,
+        /Non-Error promise rejection captured with value: undefined/,
+      ],
       integrations(defaultIntegrations) {
         return defaultIntegrations.filter(integration => integration.name !== "BrowserSession");
       },

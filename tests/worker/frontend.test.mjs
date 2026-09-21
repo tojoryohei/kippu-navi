@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   clearGoogleIdTokenCache,
+  fetchEngineAsset,
   fetchGoogleIdToken,
   getGoogleIdToken,
   normalizeCacheableApiUrl,
@@ -446,4 +447,54 @@ test('Sentry tunnel forwards a valid envelope to its fixed project endpoint', as
   assert.equal(response.status, 200);
   assert.equal(capturedUrl, 'https://o123.ingest.sentry.io/api/456/envelope/');
   assert.equal(capturedBody, envelope);
+});
+
+test('stale engine asset paths fall back to the current deployment manifest', async () => {
+  const staleUrl = 'https://kippu-navi.com/engine/' + 'a'.repeat(64) + '/main.wasm';
+  const currentPath = '/engine/' + 'b'.repeat(64);
+  const requested = [];
+  const assets = {
+    fetch: async request => {
+      const url = new URL(request.url);
+      requested.push(url.pathname);
+      if (url.pathname === staleUrl.replace('https://kippu-navi.com', '')) {
+        return new Response('missing', { status: 404 });
+      }
+      if (url.pathname === '/deployment.json') {
+        return Response.json({ enginePath: currentPath });
+      }
+      if (url.pathname === `${currentPath}/main.wasm`) {
+        return new Response('wasm', { status: 200 });
+      }
+      return new Response('unexpected', { status: 404 });
+    },
+  };
+
+  const response = await fetchEngineAsset(new Request(staleUrl), assets);
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(requested, [
+    `/engine/${'a'.repeat(64)}/main.wasm`,
+    '/deployment.json',
+    `${currentPath}/main.wasm`,
+  ]);
+});
+
+test('engine asset fallback rejects an external deployment manifest path', async () => {
+  const staleUrl = 'https://kippu-navi.com/engine/' + 'a'.repeat(64) + '/wasm_exec.js';
+  let fallbackRequested = false;
+  const assets = {
+    fetch: async request => {
+      const url = new URL(request.url);
+      if (url.pathname.startsWith('/engine/')) return new Response('missing', { status: 404 });
+      if (url.pathname === '/deployment.json') return Response.json({ enginePath: 'https://attacker.example/engine/' + 'b'.repeat(64) });
+      fallbackRequested = true;
+      return new Response('unexpected', { status: 500 });
+    },
+  };
+
+  const response = await fetchEngineAsset(new Request(staleUrl), assets);
+
+  assert.equal(response.status, 404);
+  assert.equal(fallbackRequested, false);
 });
