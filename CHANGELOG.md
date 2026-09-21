@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.11](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.10...kippu-navi-v3.3.11) (2026-09-21)
+
+
+### Bug Fixes
+
+* ブラウザAPI通信に15秒タイムアウトを追加 ([#747](https://github.com/tojoryohei/kippu-navi/issues/747)) ([0e57d5d](https://github.com/tojoryohei/kippu-navi/commit/0e57d5d12dcd7a91a0b1aca502922742e1567f55))
+
 ## [3.3.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.9...kippu-navi-v3.3.10) (2026-09-21)
 
 
