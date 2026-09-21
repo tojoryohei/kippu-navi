@@ -127,6 +127,7 @@ let wasmRetryCount = 0;
 const WASM_URL = `${engineBaseUrl}/main.wasm`;
 const PASS_GRAPH_URL = `${engineBaseUrl}/pass_graph_data.bin`;
 const TICKET_GRAPH_URL = `${engineBaseUrl}/ticket_graph_data.bin`;
+const ASSET_REQUEST_TIMEOUT_MS = 8_000;
 
 type InitStage = 'worker_bootstrap' | 'wasm_fetch' | 'wasm_instantiate' |
   'pass_graph_fetch' | 'pass_graph_initialize' | 'ticket_graph_fetch' | 'ticket_graph_initialize';
@@ -165,8 +166,10 @@ async function loadWasmRuntime() {
 async function fetchAssetWithRetry(url: string) {
   let lastError: unknown;
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), ASSET_REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: controller.signal });
       if (response.ok) return { response, retryCount: attempt };
       const error = new Error(`${url}: ${response.status} ${response.statusText}`);
       Object.assign(error, { httpStatus: response.status, retryCount: attempt });
@@ -179,6 +182,8 @@ async function fetchAssetWithRetry(url: string) {
         if (error && typeof error === 'object') Object.assign(error, { retryCount: attempt, assetFetch: true });
         throw error;
       }
+    } finally {
+      clearTimeout(timeout);
     }
     await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
   }

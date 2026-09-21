@@ -27,6 +27,7 @@ const requests = new Map<number, { client: EngineClient; requestId: unknown }>()
 const ready = new Map<EngineCapability, number>();
 const failures = new Map<EngineCapability, SearchErrorDetails>();
 const waiters = new Map<EngineCapability, Set<Waiter>>([["ticket", new Set()], ["pass", new Set()]]);
+const ENGINE_READY_TIMEOUT_MS = 30_000;
 
 function notify(client: EngineClient, data: unknown) {
   client.onmessage?.(new MessageEvent("message", { data }));
@@ -143,7 +144,7 @@ export function createEngineClient(): EngineClient {
     async ensureReady(capability) {
       const startedAt = performance.now();
       try {
-        const retryCount = await waitUntilReady(capability, 15_000, startedAt);
+        const retryCount = await waitUntilReady(capability, ENGINE_READY_TIMEOUT_MS, startedAt);
         return { capability, recovered: retryCount > 0, retryCount, workerRestartCount: 0, recoveryMs: performance.now() - startedAt, initialError: recoveredAssetFailure(capability, retryCount) };
       } catch (firstError) {
         const initial = firstError instanceof SearchOperationError ? firstError : null;
