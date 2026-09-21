@@ -8,6 +8,7 @@ export type SearchErrorCode =
   | "worker_runtime_failed"
   | "wasm_instantiation_failed"
   | "graph_initialization_failed"
+  | "api_timeout"
   | "api_network_failed"
   | "api_http_failed"
   | "api_response_invalid"

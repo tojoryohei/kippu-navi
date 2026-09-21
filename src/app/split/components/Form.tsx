@@ -12,7 +12,7 @@ import { classifyCalculationError, isRetryableEngineError, SearchOperationError 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
 import AdvancedOptions from "@/app/split/components/AdvancedOptions";
-import { fetchWithNetworkRetry, getApiUrl } from "@/app/lib/api";
+import { API_REQUEST_TIMEOUT_MS, createAbortTimeout, fetchWithNetworkRetry, getApiUrl } from "@/app/lib/api";
 import type {
     SearchOption,
     SearchType,
@@ -106,6 +106,21 @@ function validateSplitStationResponse(value: unknown, capability: "ticket" | "pa
         throw new SearchOperationError({ message: "経路データの取得に失敗しました。", code: invalidPathCount > 0 ? "path_invalid" : "api_response_invalid", source: "api", stage: "api_response_validate", capability, exceptionName: "ValidationError", retryable: false, retryCount: 0, workerRestartCount: 0, pathCount: lengths.length, invalidPathCount, minimumPathLength: lengths.length ? Math.min(...lengths) : 0 });
     }
     return response as SplitStationResponse;
+}
+
+function createApiTimeoutError(capability: "ticket" | "pass") {
+    return new SearchOperationError({
+        message: `APIから${API_REQUEST_TIMEOUT_MS / 1000}秒以内に応答がありませんでした。しばらくしてから再試行してください。`,
+        code: "api_timeout",
+        source: "api",
+        stage: "api_fetch",
+        capability,
+        exceptionName: "TimeoutError",
+        retryable: true,
+        retryCount: 0,
+        workerRestartCount: 0,
+        elapsedMs: API_REQUEST_TIMEOUT_MS,
+    });
 }
 
 export default function SplitForm({
@@ -257,6 +272,7 @@ export default function SplitForm({
         // 検索タイプの確定
         setSearchedType(data.searchType);
 
+        const apiTimeout = createAbortTimeout(abort.signal);
         try {
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
             const months = data.searchType !== "ticket" ? (monthsMap[data.searchType] || "6") : "6";
@@ -282,18 +298,23 @@ export default function SplitForm({
             }
             let apiRes: Response;
             try {
-                apiRes = await fetchWithNetworkRetry(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: abort.signal });
+                apiRes = await fetchWithNetworkRetry(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: apiTimeout.signal });
             } catch (fetchError) {
+                if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
                 throw new SearchOperationError({ message: fetchError instanceof Error ? fetchError.message : String(fetchError), code: "api_network_failed", source: "api", stage: "api_fetch", capability, exceptionName: fetchError instanceof Error ? fetchError.name : "Error", retryable: true, retryCount: 0, workerRestartCount: 0 });
             }
+            if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
             searchContext.requestId = apiRes.headers.get("X-Request-ID") || undefined;
             let rawResponse: unknown;
             try {
                 rawResponse = await apiRes.json();
             } catch (parseError) {
+                if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
                 throw new SearchOperationError({ message: "経路APIの応答を解析できませんでした。", code: "api_response_invalid", source: "api", stage: "api_response_parse", capability, exceptionName: parseError instanceof Error ? parseError.name : "SyntaxError", retryable: false, retryCount: 0, workerRestartCount: 0 });
             }
+            if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
             const res = validateSplitStationResponse(rawResponse, capability);
+            apiTimeout.dispose();
             if (!apiRes.ok && !res.error) {
                 throw new SearchOperationError({ message: `経路APIがエラーを返しました (${apiRes.status})`, code: "api_http_failed", source: "api", stage: "api_fetch", capability, exceptionName: "HttpError", httpStatus: apiRes.status, retryable: apiRes.status === 408 || apiRes.status === 429 || apiRes.status >= 500, retryCount: 0, workerRestartCount: 0 });
             }
@@ -330,7 +351,8 @@ export default function SplitForm({
                 });
             }
         } catch (err: unknown) {
-            if (abort.signal.aborted) return;
+            apiTimeout.dispose();
+            if (abort.signal.aborted && !apiTimeout.didTimeout()) return;
             const errorInstance = err instanceof Error ? err : new Error(String(err));
             pendingErrorRef.current = err;
             setIsEngineRetryable(isRetryableEngineError(err));
@@ -823,7 +845,7 @@ export default function SplitForm({
                             className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors cursor-pointer disabled:cursor-not-allowed"
                             disabled={!isValid || isCalculating}
                         >
-                        {isCalculating
+                            {isCalculating
                                 ? "計算中..."
                                 : isEngineRetryable
                                     ? "計算を再試行"
