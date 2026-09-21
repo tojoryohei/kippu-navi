@@ -126,7 +126,6 @@ export default function SplitForm({
 
     // ローカルでの計算結果・エラー・計測時間および検索タイプの管理State
     const [isCalculating, setIsCalculating] = useState(false);
-    const [isEngineSlow, setIsEngineSlow] = useState(false);
     const [isEngineRetryable, setIsEngineRetryable] = useState(false);
     const [result, setResult] = useState<SplitFareResult | null>(initialResult || null);
     const [error, setError] = useState<string | null>(initialError || null);
@@ -151,12 +150,6 @@ export default function SplitForm({
     const workerRef = useRef<EngineClient | null>(null);
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
     const latestCalcIdRef = useRef<number>(0);
-
-    useEffect(() => {
-        if (!isCalculating) return;
-        const timer = window.setTimeout(() => setIsEngineSlow(true), 5_000);
-        return () => window.clearTimeout(timer);
-    }, [isCalculating]);
 
     const defaultSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
         ? initialSearchType
@@ -211,7 +204,6 @@ export default function SplitForm({
         setServerTime(null);
         setIsCalculating(true);
         setIsEngineRetryable(false);
-        setIsEngineSlow(false);
 
         const newParams = new URLSearchParams();
         if (data.startStation.name) {
@@ -831,11 +823,11 @@ export default function SplitForm({
                             className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors cursor-pointer disabled:cursor-not-allowed"
                             disabled={!isValid || isCalculating}
                         >
-                            {isCalculating
-                                ? (isEngineSlow ? "準備に時間がかかっています..." : "計算中...")
+                        {isCalculating
+                                ? "計算中..."
                                 : isEngineRetryable
                                     ? "計算を再試行"
-                                : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`
+                                    : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`
                             }
                         </button>
                     </div>
@@ -843,7 +835,7 @@ export default function SplitForm({
             </form>
 
             <div className="my-8">
-                {isCalculating && <p className="py-5 border-t text-center text-gray-500">{isEngineSlow ? "計算エンジンの準備に時間がかかっています..." : "計算中です..."}</p>}
+                {isCalculating && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
                 {!isCalculating && serverTime != null && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
                 {!isCalculating && error && (
                     <div className="py-5 border-t text-center text-red-500">
