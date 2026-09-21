@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.12](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.11...kippu-navi-v3.3.12) (2026-09-21)
+
+
+### Bug Fixes
+
+* Sentry未解決エラーの発生経路を修正 ([#749](https://github.com/tojoryohei/kippu-navi/issues/749)) ([de36a9f](https://github.com/tojoryohei/kippu-navi/commit/de36a9f71993e3e795d39c438e22110b26a86c5e))
+
 ## [3.3.11](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.10...kippu-navi-v3.3.11) (2026-09-21)
 
 
