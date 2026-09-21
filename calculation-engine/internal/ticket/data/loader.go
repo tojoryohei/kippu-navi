@@ -1,9 +1,16 @@
 package data
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
 	"unsafe"
+)
+
+const (
+	TicketBinaryMagic  = "TKSRV3\x00\x00"
+	TicketSectionCount = 3
+	ticketHeaderSize   = 16 + TicketSectionCount*8
 )
 
 var (
@@ -20,29 +27,46 @@ func LoadPrecomputedTicketFares(filepath string) ([]int32, []uint16, int32, erro
 	mmapData = data
 	mmapFileObj = file
 
-	if len(mmapData) < 16 {
+	if len(mmapData) < ticketHeaderSize {
 		ClosePrecomputedTicketFares()
 		return nil, nil, 0, fmt.Errorf("data: ファイルサイズが小さすぎます")
 	}
-	if magic := string(mmapData[:8]); magic != "TKSRV2\x00\x00" {
+	if magic := string(mmapData[:8]); magic != TicketBinaryMagic {
 		ClosePrecomputedTicketFares()
 		return nil, nil, 0, fmt.Errorf("data: 不正なマジックヘッダーです: %q", magic)
 	}
 
-	numStations := *(*int32)(unsafe.Pointer(&mmapData[8]))
+	numStations := int32(binary.LittleEndian.Uint32(mmapData[8:12]))
 	if numStations <= 0 {
 		ClosePrecomputedTicketFares()
 		return nil, nil, 0, fmt.Errorf("data: 駅数が不正です: %d", numStations)
 	}
 
-	flatSize := int(numStations * numStations)
-	offsetFares := 16
-	offsetDistGisei := offsetFares + flatSize*4
-	requiredSize := offsetDistGisei + flatSize*2
-	if len(mmapData) < requiredSize {
+	if got := binary.LittleEndian.Uint32(mmapData[12:16]); got != TicketSectionCount {
 		ClosePrecomputedTicketFares()
-		return nil, nil, 0, fmt.Errorf("data: ファイルサイズが不足しています (期待: %d, 実際: %d)", requiredSize, len(mmapData))
+		return nil, nil, 0, fmt.Errorf("data: セクション数が不正です: %d", got)
 	}
+	lengths := make([]uint64, TicketSectionCount)
+	offset := ticketHeaderSize
+	for i := range lengths {
+		lengths[i] = binary.LittleEndian.Uint64(mmapData[16+i*8 : 24+i*8])
+		if lengths[i] == 0 || lengths[i] > uint64(len(mmapData)-offset) {
+			ClosePrecomputedTicketFares()
+			return nil, nil, 0, fmt.Errorf("data: 必須セクション%dが欠落または破損しています", i)
+		}
+		offset += int(lengths[i])
+	}
+	if offset != len(mmapData) {
+		ClosePrecomputedTicketFares()
+		return nil, nil, 0, fmt.Errorf("data: セクション長とファイルサイズが一致しません")
+	}
+	flatSize := int(numStations * numStations)
+	if lengths[0] != uint64(flatSize*4) || lengths[1] != uint64(flatSize*2) || lengths[2] != uint64(flatSize*2) {
+		ClosePrecomputedTicketFares()
+		return nil, nil, 0, fmt.Errorf("data: 行列セクションのサイズが駅数と一致しません")
+	}
+	offsetFares := ticketHeaderSize
+	offsetDistGisei := offsetFares + int(lengths[0])
 
 	fares := unsafe.Slice((*int32)(unsafe.Pointer(&mmapData[offsetFares])), flatSize)
 	distGisei := unsafe.Slice((*uint16)(unsafe.Pointer(&mmapData[offsetDistGisei])), flatSize)

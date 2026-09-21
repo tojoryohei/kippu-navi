@@ -8,4 +8,7 @@ type SpecialZone struct {
 	MinDistanceDeciKilo domain.DeciKilo
 	MaxDistanceDeciKilo domain.DeciKilo
 	Stations            []string
+	// CenterGiseiDeciKilo stores the precomputed shortest physical distance
+	// from each member station to this zone's official center station.
+	CenterGiseiDeciKilo map[string]domain.DeciKilo
 }

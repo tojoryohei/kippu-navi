@@ -374,14 +374,14 @@ func run() error {
 
 	ticketHandler := tickethandler.NewTicketWithRouteExtensionsAndZones(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneReg)
 
-	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
+	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator, ticketZoneReg)
+	ticketSearchUseCase.SetPathCorrector(ticketCorrector)
 
 	ticketFares, ticketDistGisei, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares(filepath.Join(precomputedDataDir, "ticket.bin"))
 	if err != nil {
-		slog.Error("failed to load precomputed ticket fares", "error", err)
-		// 失敗しても起動できるようにする（データが存在しない初期時などのため）
+		return fmt.Errorf("乗車券探索用データの読み込みに失敗しました: %w", err)
 	} else if int32(ticketFullGraph.NumStations()) != numTicketStations {
-		slog.Error("ticket precomputed data station count mismatch", "graph_stations", ticketFullGraph.NumStations(), "precomputed_stations", numTicketStations)
+		return fmt.Errorf("乗車券探索用データの駅数が一致しません: graph=%d data=%d", ticketFullGraph.NumStations(), numTicketStations)
 	} else {
 		ticketSearchUseCase.SetPrecomputedFares(ticketFares)
 		ticketSearchGraph.DistGisei = ticketDistGisei

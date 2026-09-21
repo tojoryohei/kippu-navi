@@ -13,6 +13,7 @@ import (
 
 	"calculation-engine/internal/domain"
 	ticketgraphdata "calculation-engine/internal/graphdata"
+	ticketdata "calculation-engine/internal/ticket/data"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	ticketfare "calculation-engine/internal/ticket/fare"
 	ticketfareio "calculation-engine/internal/ticket/infra/fareio"
@@ -323,8 +324,7 @@ func run(args []string) (runErr error) {
 		}
 	}()
 
-	magic := [8]byte{'T', 'K', 'S', 'R', 'V', '2', 0, 0}
-	if _, err := outServerFile.Write(magic[:]); err != nil {
+	if _, err := outServerFile.Write([]byte(ticketdata.TicketBinaryMagic)); err != nil {
 		return fmt.Errorf("magicの書き込みに失敗しました: %w", err)
 	}
 
@@ -332,16 +332,22 @@ func run(args []string) (runErr error) {
 		return fmt.Errorf("駅数の書き込みに失敗しました: %w", err)
 	}
 
-	padding := [4]byte{0, 0, 0, 0}
-	if _, err := outServerFile.Write(padding[:]); err != nil {
-		return fmt.Errorf("paddingの書き込みに失敗しました: %w", err)
+	if err := binary.Write(outServerFile, binary.LittleEndian, uint32(ticketdata.TicketSectionCount)); err != nil {
+		return fmt.Errorf("セクション数の書き込みに失敗しました: %w", err)
 	}
-
-	if err := binary.Write(outServerFile, binary.LittleEndian, baseFares); err != nil {
-		return fmt.Errorf("BaseFaresの書き込みに失敗しました: %w", err)
+	sections := []any{baseFares, physicalDistGisei, physicalDistGisei}
+	lengths := []uint64{
+		uint64(len(baseFares) * 4), uint64(len(physicalDistGisei) * 2), uint64(len(physicalDistGisei) * 2),
 	}
-	if err := binary.Write(outServerFile, binary.LittleEndian, physicalDistGisei); err != nil {
-		return fmt.Errorf("DistGiseiの書き込みに失敗しました: %w", err)
+	for _, length := range lengths {
+		if err := binary.Write(outServerFile, binary.LittleEndian, length); err != nil {
+			return fmt.Errorf("セクション長の書き込みに失敗しました: %w", err)
+		}
+	}
+	for i, section := range sections {
+		if err := binary.Write(outServerFile, binary.LittleEndian, section); err != nil {
+			return fmt.Errorf("セクション%dの書き込みに失敗しました: %w", i, err)
+		}
 	}
 
 	return nil

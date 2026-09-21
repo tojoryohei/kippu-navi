@@ -10,10 +10,10 @@ import (
 )
 
 type rawSpecialZone struct {
-	Name                string   `json:"name"`
-	MinDistanceDeciKilo int      `json:"minDistanceDeciKilo"`
-	MaxDistanceDeciKilo int      `json:"maxDistanceDeciKilo"`
-	Stations            []string `json:"stations"`
+	Name                string         `json:"name"`
+	MinDistanceDeciKilo int            `json:"minDistanceDeciKilo"`
+	MaxDistanceDeciKilo int            `json:"maxDistanceDeciKilo"`
+	Stations            map[string]int `json:"stations"`
 }
 
 // ZoneCenterStations maps each special zone name to its official JR center station name.
@@ -61,11 +61,16 @@ func LoadSpecialZones() (*SpecialZoneRegistry, error) {
 			Name:                rz.Name,
 			MinDistanceDeciKilo: domain.DeciKilo(rz.MinDistanceDeciKilo),
 			MaxDistanceDeciKilo: domain.DeciKilo(rz.MaxDistanceDeciKilo),
-			Stations:            rz.Stations,
+			Stations:            make([]string, 0, len(rz.Stations)),
+			CenterGiseiDeciKilo: make(map[string]domain.DeciKilo, len(rz.Stations)),
+		}
+		for station, distance := range rz.Stations {
+			zone.Stations = append(zone.Stations, station)
+			zone.CenterGiseiDeciKilo[station] = domain.DeciKilo(distance)
 		}
 		registry.Zones = append(registry.Zones, zone)
 
-		for _, station := range rz.Stations {
+		for _, station := range zone.Stations {
 			registry.StationToZones[station] = append(registry.StationToZones[station], zone)
 		}
 	}

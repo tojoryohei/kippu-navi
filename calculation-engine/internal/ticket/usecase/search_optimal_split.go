@@ -3,8 +3,21 @@ package usecase
 import (
 	"calculation-engine/internal/domain"
 	"calculation-engine/internal/ticket/graph"
+	"calculation-engine/internal/ticket/infra/graphio"
+	"context"
 	"math"
 )
+
+// TicketRouteCandidate keeps the travelled route separate from paths produced
+// solely for fare calculation. This prevents zone transformations from being
+// fed back into physical route enumeration.
+type TicketRouteCandidate struct {
+	PhysicalPath      []int
+	FarePaths         [][]int
+	PhysicalEigyoKilo domain.DeciKilo
+	PhysicalGiseiKilo domain.DeciKilo
+	FareGiseiKilo     []domain.DeciKilo
+}
 
 // TicketSplitSegment は分割された個々の区間とその運賃計算結果を保持します。
 type TicketSplitSegment struct {
@@ -19,17 +32,53 @@ type SearchOptimalSplit struct {
 	graph     graph.Graph
 	evaluator *TicketSegmentEvaluator
 	fares     []int32
+	zones     *graphio.SpecialZoneRegistry
+	corrector PathCorrector
+}
+
+// SetPathCorrector sets the physical-route corrections that must run before
+// special-zone fare candidates are generated. A fare path returned by the
+// evaluator must not be corrected a second time.
+func (u *SearchOptimalSplit) SetPathCorrector(corrector PathCorrector) {
+	u.corrector = corrector
+}
+
+func (u *SearchOptimalSplit) correctedPhysicalPath(path []int) ([]int, error) {
+	if u.corrector == nil {
+		return path, nil
+	}
+	corrected, err := u.corrector.Correct(path, u.graph)
+	if err != nil {
+		return nil, err
+	}
+	if len(corrected) == 0 {
+		return path, nil
+	}
+	return corrected, nil
+}
+
+func (u *SearchOptimalSplit) evaluateAll(path []int) ([]TicketFareEvaluation, error) {
+	corrected, err := u.correctedPhysicalPath(path)
+	if err != nil {
+		return nil, err
+	}
+	return u.evaluator.EvaluateAllWithMode(corrected, 0, "normal")
 }
 
 // NewSearchOptimalSplit は新しい SearchOptimalSplit を作成します。
 func NewSearchOptimalSplit(
 	g graph.Graph,
 	evaluator *TicketSegmentEvaluator,
+	zones ...*graphio.SpecialZoneRegistry,
 ) *SearchOptimalSplit {
-	return &SearchOptimalSplit{
+	search := &SearchOptimalSplit{
 		graph:     g,
 		evaluator: evaluator,
 	}
+	if len(zones) > 0 {
+		search.zones = zones[0]
+	}
+	return search
 }
 
 // SetPrecomputedFares は事前計算された運賃データを設定します。
@@ -45,29 +94,28 @@ func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, 
 // ExecuteWithOptions は分割禁止駅を考慮して、指定された区間の最適分割を探索します。
 // lockedStations に含まれる駅は、経路上に存在しても分割境界として使用しません。
 func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int, lockedStations []int) ([][]int, error) {
+	return u.ExecuteWithContext(context.Background(), startID, endID, maxSections, lockedStations)
+}
+
+// ExecuteWithContext is the cancellable exact ticket search entry point.
+func (u *SearchOptimalSplit) ExecuteWithContext(ctx context.Context, startID, endID, maxSections int, lockedStations []int) ([][]int, error) {
 	if startID == endID {
 		return nil, domain.ErrInvalidPath
 	}
 	locked := makeLockedStationSet(lockedStations)
 
-	// 1. 候補駅（candStations）の抽出
-	// 最短経路から駅を抽出します。
-	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
+	pathsResult, _, err := u.findCandidatePhysicalPaths(ctx, startID, endID)
 	if err != nil {
-		return nil, domain.ErrInvalidPath
-	}
-
-	// 乗車券の場合は、運賃の振れ幅がそこまで大きくないため、最短経路＋多少の迂回経路の駅を候補とします。
-	maxGisei := shortest.GiseiKilo + 50
-	pathsResult, err := u.graph.FindUnboundedKShortestPathsGisei(startID, endID, maxGisei)
-	if err != nil {
-		return nil, domain.ErrInvalidPath
+		return nil, err
 	}
 
 	minTotalFare := math.MaxInt
 	var bestResultPaths [][]int
 
 	for _, pr := range pathsResult {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		path := pr.StationIDs
 		n := len(path)
 		if maxSections <= 0 {
@@ -115,7 +163,7 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 				subPath := path[i : j+1]
 				var cost int
 
-				if u.fares != nil {
+				if u.evaluator == nil && u.fares != nil {
 					startSt := subPath[0]
 					endSt := subPath[len(subPath)-1]
 					numSt := u.graph.NumStations()
@@ -126,11 +174,11 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 						continue
 					}
 				} else {
-					res, _, err := u.evaluator.Execute(subPath, 0)
-					if err != nil {
+					evaluations, err := u.evaluateAll(subPath)
+					if err != nil || len(evaluations) == 0 {
 						continue
 					}
-					cost = res.TotalAmount()
+					cost = evaluations[0].Result.TotalAmount()
 				}
 
 				// Make a copy of subPath since it's a slice of path
@@ -211,6 +259,25 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 	}
 
 	return uniquePaths, nil
+}
+
+func (u *SearchOptimalSplit) findCandidatePhysicalPaths(ctx context.Context, start, end int) ([]*graph.PathResult, TicketSearchDistanceLimit, error) {
+	limit, err := calculateTicketSearchDistanceLimit(u.graph, u.zones, start, end)
+	if err != nil {
+		return nil, TicketSearchDistanceLimit{}, err
+	}
+	type contextPathFinder interface {
+		FindUnboundedKShortestPathsGiseiWithContext(context.Context, int, int, domain.DeciKilo) ([]*graph.PathResult, error)
+	}
+	if finder, ok := u.graph.(contextPathFinder); ok {
+		paths, err := finder.FindUnboundedKShortestPathsGiseiWithContext(ctx, start, end, limit.MaxGisei)
+		return paths, limit, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, TicketSearchDistanceLimit{}, err
+	}
+	paths, err := u.graph.FindUnboundedKShortestPathsGisei(start, end, limit.MaxGisei)
+	return paths, limit, err
 }
 
 // searchUnlimitedSplit は区間数無制限の最適分割を O(n²) で探索し、
@@ -304,7 +371,7 @@ func isLockedStation(stationID int, locked map[int]struct{}) bool {
 }
 
 func (u *SearchOptimalSplit) segmentFare(path []int) (int, bool) {
-	if u.fares != nil {
+	if u.evaluator == nil && u.fares != nil {
 		numStations := u.graph.NumStations()
 		idx := path[0]*numStations + path[len(path)-1]
 		if idx < 0 || idx >= len(u.fares) || u.fares[idx] == math.MaxInt32 {
@@ -313,24 +380,22 @@ func (u *SearchOptimalSplit) segmentFare(path []int) (int, bool) {
 		return int(u.fares[idx]), true
 	}
 
-	res, _, err := u.evaluator.Execute(path, 0)
-	if err != nil {
+	evaluations, err := u.evaluateAll(path)
+	if err != nil || len(evaluations) == 0 {
 		return 0, false
 	}
-	return res.TotalAmount(), true
+	return evaluations[0].Result.TotalAmount(), true
 }
 
 // GetCheapestTicketSegments は2駅間の最も安い乗車券経路（分割なし）を取得します。
 func (u *SearchOptimalSplit) GetCheapestTicketSegments(start, end int) ([]TicketSplitSegment, error) {
-	shortest, err := u.graph.FindShortestPathGisei(start, end)
-	if err != nil {
-		return nil, domain.ErrInvalidPath
-	}
-	maxGisei := shortest.GiseiKilo + 50
+	return u.GetCheapestTicketSegmentsWithContext(context.Background(), start, end)
+}
 
-	pathsResult, err := u.graph.FindUnboundedKShortestPathsGisei(start, end, maxGisei)
+func (u *SearchOptimalSplit) GetCheapestTicketSegmentsWithContext(ctx context.Context, start, end int) ([]TicketSplitSegment, error) {
+	pathsResult, _, err := u.findCandidatePhysicalPaths(ctx, start, end)
 	if err != nil {
-		return nil, domain.ErrInvalidPath
+		return nil, err
 	}
 
 	minFare := math.MaxInt
@@ -338,20 +403,23 @@ func (u *SearchOptimalSplit) GetCheapestTicketSegments(start, end int) ([]Ticket
 	var bestResults []*CalculationResult
 
 	for _, pr := range pathsResult {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		path := pr.StationIDs
-		res, transformedPath, err := u.evaluator.Execute(path, 0)
+		evaluations, err := u.evaluateAll(path)
 		if err != nil {
 			continue
 		}
-		fare := res.TotalAmount()
-		if fare < minFare {
-			minFare = fare
-			bestPaths = [][]int{transformedPath}
-			bestResults = []*CalculationResult{res}
-		} else if fare == minFare {
-			if !containsPath(bestPaths, transformedPath) {
-				bestPaths = append(bestPaths, transformedPath)
-				bestResults = append(bestResults, res)
+		for _, evaluation := range evaluations {
+			fare := evaluation.Result.TotalAmount()
+			if fare < minFare {
+				minFare = fare
+				bestPaths = [][]int{evaluation.Path}
+				bestResults = []*CalculationResult{evaluation.Result}
+			} else if fare == minFare && !containsPath(bestPaths, evaluation.Path) {
+				bestPaths = append(bestPaths, evaluation.Path)
+				bestResults = append(bestResults, evaluation.Result)
 			}
 		}
 	}

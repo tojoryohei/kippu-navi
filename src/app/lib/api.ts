@@ -4,6 +4,7 @@ export function getApiUrl(path: string): string {
 }
 
 export const API_REQUEST_TIMEOUT_MS = 15_000;
+export const TICKET_SPLIT_API_REQUEST_TIMEOUT_MS = 120_000;
 
 const NETWORK_RETRY_DELAYS_MS = [250];
 

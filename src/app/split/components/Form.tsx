@@ -12,7 +12,7 @@ import { classifyCalculationError, isRetryableEngineError, SearchOperationError 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
 import AdvancedOptions from "@/app/split/components/AdvancedOptions";
-import { API_REQUEST_TIMEOUT_MS, createAbortTimeout, fetchWithNetworkRetry, getApiUrl } from "@/app/lib/api";
+import { API_REQUEST_TIMEOUT_MS, TICKET_SPLIT_API_REQUEST_TIMEOUT_MS, createAbortTimeout, fetchWithNetworkRetry, getApiUrl } from "@/app/lib/api";
 import type {
     SearchOption,
     SearchType,
@@ -108,9 +108,9 @@ function validateSplitStationResponse(value: unknown, capability: "ticket" | "pa
     return response as SplitStationResponse;
 }
 
-function createApiTimeoutError(capability: "ticket" | "pass") {
+function createApiTimeoutError(capability: "ticket" | "pass", timeoutMs: number) {
     return new SearchOperationError({
-        message: `APIから${API_REQUEST_TIMEOUT_MS / 1000}秒以内に応答がありませんでした。しばらくしてから再試行してください。`,
+        message: `APIから${timeoutMs / 1000}秒以内に応答がありませんでした。しばらくしてから再試行してください。`,
         code: "api_timeout",
         source: "api",
         stage: "api_fetch",
@@ -119,7 +119,7 @@ function createApiTimeoutError(capability: "ticket" | "pass") {
         retryable: true,
         retryCount: 0,
         workerRestartCount: 0,
-        elapsedMs: API_REQUEST_TIMEOUT_MS,
+        elapsedMs: timeoutMs,
     });
 }
 
@@ -272,7 +272,8 @@ export default function SplitForm({
         // 検索タイプの確定
         setSearchedType(data.searchType);
 
-        const apiTimeout = createAbortTimeout(abort.signal);
+        const apiTimeoutMs = data.searchType === "ticket" ? TICKET_SPLIT_API_REQUEST_TIMEOUT_MS : API_REQUEST_TIMEOUT_MS;
+        const apiTimeout = createAbortTimeout(abort.signal, apiTimeoutMs);
         try {
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
             const months = data.searchType !== "ticket" ? (monthsMap[data.searchType] || "6") : "6";
@@ -300,19 +301,19 @@ export default function SplitForm({
             try {
                 apiRes = await fetchWithNetworkRetry(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: apiTimeout.signal });
             } catch (fetchError) {
-                if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
+                if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability, apiTimeoutMs);
                 throw new SearchOperationError({ message: fetchError instanceof Error ? fetchError.message : String(fetchError), code: "api_network_failed", source: "api", stage: "api_fetch", capability, exceptionName: fetchError instanceof Error ? fetchError.name : "Error", retryable: true, retryCount: 0, workerRestartCount: 0 });
             }
-            if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
+            if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability, apiTimeoutMs);
             searchContext.requestId = apiRes.headers.get("X-Request-ID") || undefined;
             let rawResponse: unknown;
             try {
                 rawResponse = await apiRes.json();
             } catch (parseError) {
-                if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
+                if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability, apiTimeoutMs);
                 throw new SearchOperationError({ message: "経路APIの応答を解析できませんでした。", code: "api_response_invalid", source: "api", stage: "api_response_parse", capability, exceptionName: parseError instanceof Error ? parseError.name : "SyntaxError", retryable: false, retryCount: 0, workerRestartCount: 0 });
             }
-            if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
+            if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability, apiTimeoutMs);
             const res = validateSplitStationResponse(rawResponse, capability);
             apiTimeout.dispose();
             if (!apiRes.ok && !res.error) {
