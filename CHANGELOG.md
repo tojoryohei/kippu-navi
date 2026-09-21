@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.9...kippu-navi-v3.3.10) (2026-09-21)
+
+
+### Bug Fixes
+
+* エンジン遅延表示用の状態を削除 ([#745](https://github.com/tojoryohei/kippu-navi/issues/745)) ([f0e1dd5](https://github.com/tojoryohei/kippu-navi/commit/f0e1dd5c7e6401d6d7c771c1c04ac693af0a991e))
+
 ## [3.3.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.8...kippu-navi-v3.3.9) (2026-09-21)
 
 
