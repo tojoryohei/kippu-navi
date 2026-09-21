@@ -318,6 +318,15 @@ test("経路APIの一時的なネットワーク失敗を再試行して検索�
   expect(attempts).toBe(2);
 });
 
+test("APIが15秒でタイムアウトして計算中表示を解除する", async ({ page }) => {
+  await isolateServices(page);
+  await page.route("**/api/split-ticket**", async () => new Promise(() => { }));
+
+  await page.goto(`/split/ticket?${query}`);
+  await expect(page.getByText("APIから15秒以内に応答がありませんでした。しばらくしてから再試行してください。", { exact: true })).toBeVisible({ timeout: 17_000 });
+  await expect(page.getByRole("button", { name: "計算中...", exact: true })).toHaveCount(0);
+});
+
 test("WASMの一時的な503を再試行して検索を継続する", async ({ page }) => {
   await isolateServices(page);
   let attempts = 0;
