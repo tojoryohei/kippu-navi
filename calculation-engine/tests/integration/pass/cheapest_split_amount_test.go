@@ -359,6 +359,9 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 
 func BenchmarkSearchOptimalSplit_Integration(b *testing.B) {
 	g, search, _ := setupSearch(b)
+	if isMockMode {
+		b.Skip("本番のpass.binがないため統合ベンチマークをスキップします")
+	}
 
 	fromID, ok1 := g.GetID("品川")
 	toID, ok2 := g.GetID("名古屋")
@@ -377,6 +380,9 @@ func BenchmarkSearchOptimalSplit_Integration(b *testing.B) {
 
 func BenchmarkSearchOptimalSplit_PureDP(b *testing.B) {
 	g, search, calc := setupSearch(b)
+	if isMockMode {
+		b.Skip("本番のpass.binがないためPureDPベンチマークをスキップします")
+	}
 
 	fromID, ok1 := g.GetID("横浜")
 	toID, ok2 := g.GetID("新宿")
@@ -419,7 +425,7 @@ func BenchmarkSearchOptimalSplit_PureDP(b *testing.B) {
 
 	numStations := g.NumStations()
 	scratch := usecase.GetDPScratchForTest()
-	usecase.EnsureSizeForTest(scratch, numStations, 0, numStations) // maxSections=0 (磁気定期)
+	usecase.EnsureCandidateBuffersForTest(scratch, numStations)
 
 	candFlags := usecase.GetCandFlagsForTest(scratch)
 	for i := 0; i < numStations; i++ {

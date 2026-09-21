@@ -452,7 +452,7 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-          flags: '--invoker-iam-check --service-account=${{ env.RUNTIME_SERVICE_ACCOUNT }}'
+          flags: '--invoker-iam-check --service-account=${{ env.RUNTIME_SERVICE_ACCOUNT }} --memory=768Mi --concurrency=2'
 
       - name: Restrict Cloud Run invocation to Cloudflare
         run: |

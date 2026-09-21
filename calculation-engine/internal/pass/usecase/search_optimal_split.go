@@ -9,7 +9,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 const (
@@ -98,14 +97,14 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, months, maxSecti
 		maxGisei = shortest.GiseiKilo
 	}
 
-	// 候補駅決定および探索用のスクラッチバッファをプールから調達
+	// 候補駅決定用のスクラッチバッファだけを先に確保する。
 	numStations := int(u.numStations)
-	scratch := dpScratchPool.Get().(*dpScratch)
+	scratch := &dpScratch{}
 	effectiveMaxSections := maxSections
 	if effectiveMaxSections <= 0 {
 		effectiveMaxSections = u.maxSections
 	}
-	scratch.ensureSize(numStations, effectiveMaxSections, numStations)
+	scratch.ensureCandidateBuffers(numStations)
 
 	// candFlags の初期化 (Zero-allocation)
 	for i := 0; i < numStations; i++ {
@@ -158,9 +157,6 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, months, maxSecti
 
 	_, optimalPaths, err := u.searchOptimalSplitDPMinimalWithLocks(startID, endID, months, effectiveMaxSections, candStations, scratch, locked)
 
-	// プールへの返却
-	dpScratchPool.Put(scratch)
-
 	if err != nil {
 		if errors.Is(err, domain.ErrNoValidPattern) {
 			return [][]int{{startID, endID}}, nil
@@ -202,25 +198,56 @@ type staticListNode struct {
 	next      int // 次のノードのインデックス。-1なら終端。
 }
 
+const staticListNodeChunkSize = 8192
+
+type staticListNodeStore struct {
+	chunks [][]staticListNode
+	count  int
+}
+
+func (s *staticListNodeStore) Append(node staticListNode) int {
+	index := s.count
+	chunkIndex := index / staticListNodeChunkSize
+	if chunkIndex == len(s.chunks) {
+		s.chunks = append(s.chunks, make([]staticListNode, staticListNodeChunkSize))
+	}
+	s.chunks[chunkIndex][index%staticListNodeChunkSize] = node
+	s.count++
+	return index
+}
+
+func (s *staticListNodeStore) At(index int) staticListNode {
+	return s.chunks[index/staticListNodeChunkSize][index%staticListNodeChunkSize]
+}
+
+func (s *staticListNodeStore) Reset() {
+	s.count = 0
+}
+
 type dpScratch struct {
 	stationToIndex  []int
 	distTable       []int
 	headTable       []int
-	nodes           []staticListNode
+	nodes           staticListNodeStore
 	pathBuf         []int
-	nodeCount       int
 	candFlags       []bool
 	candStationsBuf []int
-	localFares      []int
-	adjEdges        []int32
-	adjHead         []int32
+	localFares      []int32
 }
 
-func (s *dpScratch) ensureSize(numStations int, maxK int, numCandidates int) {
+func (s *dpScratch) ensureCandidateBuffers(numStations int) {
 	if len(s.stationToIndex) < numStations {
 		s.stationToIndex = make([]int, numStations)
 	}
+	if len(s.candFlags) < numStations {
+		s.candFlags = make([]bool, numStations)
+	}
+	if len(s.candStationsBuf) < numStations {
+		s.candStationsBuf = make([]int, numStations)
+	}
+}
 
+func (s *dpScratch) ensureDPBuffers(maxK int, numCandidates int) {
 	requiredDPSize := (maxK + 1) * numCandidates
 	if len(s.distTable) < requiredDPSize {
 		s.distTable = make([]int, requiredDPSize)
@@ -229,51 +256,19 @@ func (s *dpScratch) ensureSize(numStations int, maxK int, numCandidates int) {
 		s.headTable = make([]int, requiredDPSize)
 	}
 
-	requiredNodesSize := requiredDPSize * 4
-	if len(s.nodes) < requiredNodesSize {
-		s.nodes = make([]staticListNode, requiredNodesSize)
-	}
-
 	requiredPathBufSize := maxK + 2
 	if len(s.pathBuf) < requiredPathBufSize {
 		s.pathBuf = make([]int, requiredPathBufSize)
 	}
 
-	if len(s.candFlags) < numStations {
-		s.candFlags = make([]bool, numStations)
-	}
-	if len(s.candStationsBuf) < numStations {
-		s.candStationsBuf = make([]int, numStations)
-	}
-
 	requiredLocalSize := numCandidates * numCandidates
 	if len(s.localFares) < requiredLocalSize {
-		s.localFares = make([]int, requiredLocalSize)
-	}
-	if len(s.adjEdges) < requiredLocalSize {
-		s.adjEdges = make([]int32, requiredLocalSize)
-	}
-	if len(s.adjHead) < numCandidates+1 {
-		s.adjHead = make([]int32, numCandidates+1)
+		s.localFares = make([]int32, requiredLocalSize)
 	}
 }
 
-var dpScratchPool = sync.Pool{
-	New: func() interface{} {
-		const maxN = 2500
-		return &dpScratch{
-			stationToIndex:  make([]int, 5000),
-			distTable:       make([]int, 101*maxN),
-			headTable:       make([]int, 101*maxN),
-			nodes:           make([]staticListNode, 101*maxN*4),
-			pathBuf:         make([]int, 105),
-			candFlags:       make([]bool, 5000),
-			candStationsBuf: make([]int, 5000),
-			localFares:      make([]int, maxN*maxN),
-			adjEdges:        make([]int32, maxN*maxN),
-			adjHead:         make([]int32, maxN+1),
-		}
-	},
+func (s *dpScratch) appendNode(node staticListNode) int {
+	return s.nodes.Append(node)
 }
 
 func monthToIndex(months int) int {
@@ -307,8 +302,9 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPWithLocks(startID, endID, month
 	mIdx := monthToIndex(months)
 	N := len(candStations)
 
-	scratch.ensureSize(numStations, maxK, N)
-	scratch.nodeCount = 0
+	scratch.ensureCandidateBuffers(numStations)
+	scratch.ensureDPBuffers(maxK, N)
+	scratch.nodes.Reset()
 
 	// 逆写像テーブルの初期化
 	for i := 0; i < numStations; i++ {
@@ -348,7 +344,7 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPWithLocks(startID, endID, month
 			}
 
 			nextID := candStations[vIdx]
-			fareVal := int(u.fares[baseIdx+int32(nextID)])
+			fareVal := u.fares[baseIdx+int32(nextID)]
 			scratch.localFares[uOffset+vIdx] = fareVal
 		}
 	}
@@ -374,7 +370,7 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPWithLocks(startID, endID, month
 				if vIdx != endIdx && isLockedStation(candStations[vIdx], locked) {
 					continue
 				}
-				fareVal := scratch.localFares[uOffset+vIdx]
+				fareVal := int(scratch.localFares[uOffset+vIdx])
 				if fareVal <= 0 {
 					continue
 				}
@@ -385,33 +381,19 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPWithLocks(startID, endID, month
 				if newCost < scratch.distTable[targetIdx] {
 					scratch.distTable[targetIdx] = newCost
 
-					if scratch.nodeCount >= len(scratch.nodes) {
-						newNodes := make([]staticListNode, len(scratch.nodes)*2)
-						copy(newNodes, scratch.nodes)
-						scratch.nodes = newNodes
-					}
-
-					scratch.nodes[scratch.nodeCount] = staticListNode{
+					nodeIndex := scratch.appendNode(staticListNode{
 						parentIdx: uIdx,
 						sections:  s,
 						next:      -1,
-					}
-					scratch.headTable[targetIdx] = scratch.nodeCount
-					scratch.nodeCount++
+					})
+					scratch.headTable[targetIdx] = nodeIndex
 				} else if newCost == scratch.distTable[targetIdx] {
-					if scratch.nodeCount >= len(scratch.nodes) {
-						newNodes := make([]staticListNode, len(scratch.nodes)*2)
-						copy(newNodes, scratch.nodes)
-						scratch.nodes = newNodes
-					}
-
-					scratch.nodes[scratch.nodeCount] = staticListNode{
+					nodeIndex := scratch.appendNode(staticListNode{
 						parentIdx: uIdx,
 						sections:  s,
 						next:      scratch.headTable[targetIdx],
-					}
-					scratch.headTable[targetIdx] = scratch.nodeCount
-					scratch.nodeCount++
+					})
+					scratch.headTable[targetIdx] = nodeIndex
 				}
 			}
 		}
@@ -434,7 +416,7 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPWithLocks(startID, endID, month
 	var optimalPaths [][]int
 	for s := 1; s <= maxK; s++ {
 		if scratch.distTable[s*N+endIdx] == minCostToEnd {
-			u.backtrackZeroAlloc(endIdx, s, scratch, 0, startIdx, candStations, N, &optimalPaths)
+			u.collectOptimalPaths(endIdx, s, scratch, 0, startIdx, candStations, N, &optimalPaths)
 		}
 	}
 
@@ -473,7 +455,8 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPWithLocks(startID, endID, month
 	return results, nil
 }
 
-func (u *SearchOptimalSplit) backtrackZeroAlloc(
+// collectOptimalPaths はDPの親ノードをバックトラックしながら最適経路を収集します。
+func (u *SearchOptimalSplit) collectOptimalPaths(
 	currIdx, currS int,
 	scratch *dpScratch,
 	depth int,
@@ -499,8 +482,8 @@ func (u *SearchOptimalSplit) backtrackZeroAlloc(
 	targetIdx := currS*N + currIdx
 	nodeIdx := scratch.headTable[targetIdx]
 	for nodeIdx != -1 {
-		node := scratch.nodes[nodeIdx]
-		u.backtrackZeroAlloc(node.parentIdx, node.sections, scratch, depth+1, startIdx, candStations, N, optimalPaths)
+		node := scratch.nodes.At(nodeIdx)
+		u.collectOptimalPaths(node.parentIdx, node.sections, scratch, depth+1, startIdx, candStations, N, optimalPaths)
 		nodeIdx = node.next
 	}
 }
@@ -858,20 +841,18 @@ func (u *SearchOptimalSplit) RunBenchmarkDPForTest(startID, endID, months int, m
 	return err
 }
 
-// GetDPScratchForTest は内部の dpScratchPool から scratch 領域を取得します。
+// GetDPScratchForTest は新しい scratch 領域を返します。
 func GetDPScratchForTest() interface{} {
-	return dpScratchPool.Get()
+	return &dpScratch{}
 }
 
-// PutDPScratchForTest は scratch 領域を dpScratchPool に戻します。
-func PutDPScratchForTest(scratch interface{}) {
-	dpScratchPool.Put(scratch)
-}
+// PutDPScratchForTest は後方互換性のために残されたno-opです。
+func PutDPScratchForTest(interface{}) {}
 
-// EnsureSizeForTest は scratch のサイズを確認・確保します。
-func EnsureSizeForTest(scratch interface{}, numStations, maxK, numCandidates int) {
+// EnsureCandidateBuffersForTest は候補駅選定用バッファを確認・確保します。
+func EnsureCandidateBuffersForTest(scratch interface{}, numStations int) {
 	sc := scratch.(*dpScratch)
-	sc.ensureSize(numStations, maxK, numCandidates)
+	sc.ensureCandidateBuffers(numStations)
 }
 
 // GetCandFlagsForTest は scratch の candFlags スライスを返します。
@@ -898,8 +879,9 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID
 	mIdx := monthToIndex(months)
 	N := len(candStations)
 
-	scratch.ensureSize(numStations, maxK, N)
-	scratch.nodeCount = 0
+	scratch.ensureCandidateBuffers(numStations)
+	scratch.ensureDPBuffers(maxK, N)
+	scratch.nodes.Reset()
 
 	// 逆写像テーブルの初期化
 	for i := 0; i < numStations; i++ {
@@ -939,7 +921,7 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID
 			}
 
 			nextID := candStations[vIdx]
-			fareVal := int(u.fares[baseIdx+int32(nextID)])
+			fareVal := u.fares[baseIdx+int32(nextID)]
 			scratch.localFares[uOffset+vIdx] = fareVal
 		}
 	}
@@ -965,7 +947,7 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID
 				if vIdx != endIdx && isLockedStation(candStations[vIdx], locked) {
 					continue
 				}
-				fareVal := scratch.localFares[uOffset+vIdx]
+				fareVal := int(scratch.localFares[uOffset+vIdx])
 				if fareVal <= 0 {
 					continue
 				}
@@ -976,33 +958,19 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID
 				if newCost < scratch.distTable[targetIdx] {
 					scratch.distTable[targetIdx] = newCost
 
-					if scratch.nodeCount >= len(scratch.nodes) {
-						newNodes := make([]staticListNode, len(scratch.nodes)*2)
-						copy(newNodes, scratch.nodes)
-						scratch.nodes = newNodes
-					}
-
-					scratch.nodes[scratch.nodeCount] = staticListNode{
+					nodeIndex := scratch.appendNode(staticListNode{
 						parentIdx: uIdx,
 						sections:  s,
 						next:      -1,
-					}
-					scratch.headTable[targetIdx] = scratch.nodeCount
-					scratch.nodeCount++
+					})
+					scratch.headTable[targetIdx] = nodeIndex
 				} else if newCost == scratch.distTable[targetIdx] {
-					if scratch.nodeCount >= len(scratch.nodes) {
-						newNodes := make([]staticListNode, len(scratch.nodes)*2)
-						copy(newNodes, scratch.nodes)
-						scratch.nodes = newNodes
-					}
-
-					scratch.nodes[scratch.nodeCount] = staticListNode{
+					nodeIndex := scratch.appendNode(staticListNode{
 						parentIdx: uIdx,
 						sections:  s,
 						next:      scratch.headTable[targetIdx],
-					}
-					scratch.headTable[targetIdx] = scratch.nodeCount
-					scratch.nodeCount++
+					})
+					scratch.headTable[targetIdx] = nodeIndex
 				}
 			}
 		}
@@ -1025,7 +993,7 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID
 	var optimalPaths [][]int
 	for s := 1; s <= maxK; s++ {
 		if scratch.distTable[s*N+endIdx] == minCostToEnd {
-			u.backtrackZeroAlloc(endIdx, s, scratch, 0, startIdx, candStations, N, &optimalPaths)
+			u.collectOptimalPaths(endIdx, s, scratch, 0, startIdx, candStations, N, &optimalPaths)
 		}
 	}
 
