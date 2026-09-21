@@ -36,6 +36,8 @@ type SearchOptimalSplit struct {
 	corrector PathCorrector
 }
 
+const ticketCandidatePathLimit = 10
+
 // SetPathCorrector sets the physical-route corrections that must run before
 // special-zone fare candidates are generated. A fare path returned by the
 // evaluator must not be corrected a second time.
@@ -97,7 +99,7 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 	return u.ExecuteWithContext(context.Background(), startID, endID, maxSections, lockedStations)
 }
 
-// ExecuteWithContext is the cancellable exact ticket search entry point.
+// ExecuteWithContext is the cancellable ticket search entry point.
 func (u *SearchOptimalSplit) ExecuteWithContext(ctx context.Context, startID, endID, maxSections int, lockedStations []int) ([][]int, error) {
 	if startID == endID {
 		return nil, domain.ErrInvalidPath
@@ -267,16 +269,19 @@ func (u *SearchOptimalSplit) findCandidatePhysicalPaths(ctx context.Context, sta
 		return nil, TicketSearchDistanceLimit{}, err
 	}
 	type contextPathFinder interface {
-		FindUnboundedKShortestPathsGiseiWithContext(context.Context, int, int, domain.DeciKilo) ([]*graph.PathResult, error)
+		FindKShortestPathsGiseiWithContext(context.Context, int, int, int, domain.DeciKilo) ([]*graph.PathResult, error)
 	}
 	if finder, ok := u.graph.(contextPathFinder); ok {
-		paths, err := finder.FindUnboundedKShortestPathsGiseiWithContext(ctx, start, end, limit.MaxGisei)
+		paths, err := finder.FindKShortestPathsGiseiWithContext(ctx, start, end, ticketCandidatePathLimit, limit.MaxGisei)
 		return paths, limit, err
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, TicketSearchDistanceLimit{}, err
 	}
 	paths, err := u.graph.FindUnboundedKShortestPathsGisei(start, end, limit.MaxGisei)
+	if len(paths) > ticketCandidatePathLimit {
+		paths = paths[:ticketCandidatePathLimit]
+	}
 	return paths, limit, err
 }
 

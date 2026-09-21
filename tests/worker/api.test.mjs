@@ -3,7 +3,6 @@ import test from 'node:test';
 
 import {
   API_REQUEST_TIMEOUT_MS,
-  TICKET_SPLIT_API_REQUEST_TIMEOUT_MS,
   createAbortTimeout,
   fetchWithNetworkRetry,
 } from '../../src/app/lib/api.ts';
@@ -12,9 +11,8 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-test('API request timeout keeps pass at 15 seconds and allows ticket split 120 seconds', () => {
+test('API request timeout is 15 seconds', () => {
   assert.equal(API_REQUEST_TIMEOUT_MS, 15_000);
-  assert.equal(TICKET_SPLIT_API_REQUEST_TIMEOUT_MS, 120_000);
 });
 
 test('timeout signal distinguishes timeout from parent abort', () => {

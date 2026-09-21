@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const exactSearchTimeout = 120 * time.Second
+const exactSearchTimeout = 15 * time.Second
 
 // Split は乗車券の最適解を計算するHTTPリクエストを処理します。
 type Split struct {
@@ -49,8 +49,9 @@ type CalculateResponse struct {
 
 // HandleCalculate は計算リクエストを処理します。
 func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
-	// The server-wide timeout remains unchanged for pass APIs; only ticket split
-	// receives the longer exact-search response deadline.
+	// The ticket split search has the same 15-second response budget as the
+	// existing pass APIs. Extend the per-response deadline explicitly because
+	// the server-wide write timeout is shorter.
 	_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(exactSearchTimeout))
 	ctx, cancel := context.WithTimeout(r.Context(), exactSearchTimeout)
 	defer cancel()

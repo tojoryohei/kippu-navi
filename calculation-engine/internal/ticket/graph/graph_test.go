@@ -56,3 +56,25 @@ func TestFindUnboundedKShortestPathsGiseiWithContextCanceled(t *testing.T) {
 		t.Fatalf("error = %v, want context.Canceled", err)
 	}
 }
+
+func TestFindKShortestPathsGiseiWithContextLimitsResults(t *testing.T) {
+	loader := &graphio.JSONLoader{}
+	g, err := loader.Load(graphdata.GetEdgesReader())
+	if err != nil {
+		t.Fatal(err)
+	}
+	start, _ := g.GetID("東京")
+	end, _ := g.GetID("大阪")
+	paths, err := g.FindKShortestPathsGiseiWithContext(context.Background(), start, end, 10, 10000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paths) != 10 {
+		t.Fatalf("path count = %d, want 10", len(paths))
+	}
+	for i := 1; i < len(paths); i++ {
+		if paths[i-1].GiseiKilo > paths[i].GiseiKilo {
+			t.Fatalf("paths are not sorted: %d > %d", paths[i-1].GiseiKilo, paths[i].GiseiKilo)
+		}
+	}
+}

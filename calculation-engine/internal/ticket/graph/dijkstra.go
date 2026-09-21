@@ -567,7 +567,22 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithContext(ctx context.C
 		EigyoDist:    make([]domain.DeciKilo, numStations),
 		Prev:         make([]int, numStations),
 	}
-	return g.FindUnboundedKShortestPathsGiseiWithScratchContext(ctx, startID, endID, maxGisei, scratch)
+	return g.findKShortestPathsGiseiWithScratchContext(ctx, startID, endID, 0, maxGisei, scratch)
+}
+
+// FindKShortestPathsGiseiWithContext は距離上限内の単純経路を擬制キロ順に最大k本返します。
+func (g *RailwayGraph) FindKShortestPathsGiseiWithContext(ctx context.Context, startID, endID, k int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
+	if k <= 0 {
+		return nil, domain.ErrInvalidPath
+	}
+	numStations := len(g.IDToName)
+	scratch := &YenScratch{
+		BlockedNodes: make([]bool, numStations),
+		Dist:         make([]domain.DeciKilo, numStations),
+		EigyoDist:    make([]domain.DeciKilo, numStations),
+		Prev:         make([]int, numStations),
+	}
+	return g.findKShortestPathsGiseiWithScratchContext(ctx, startID, endID, k, maxGisei, scratch)
 }
 
 // FindUnboundedKShortestPathsGiseiWithScratch は再利用バッファを用いてYen's Algorithmを実行します
@@ -576,6 +591,10 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratch(startID, endI
 }
 
 func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratchContext(ctx context.Context, startID, endID int, maxGisei domain.DeciKilo, scratch *YenScratch) ([]*PathResult, error) {
+	return g.findKShortestPathsGiseiWithScratchContext(ctx, startID, endID, 0, maxGisei, scratch)
+}
+
+func (g *RailwayGraph) findKShortestPathsGiseiWithScratchContext(ctx context.Context, startID, endID, maxPaths int, maxGisei domain.DeciKilo, scratch *YenScratch) ([]*PathResult, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -729,6 +748,9 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratchContext(ctx co
 		nextPath := B[0]
 		A = append(A, nextPath)
 		B = B[1:]
+		if maxPaths > 0 && len(A) >= maxPaths {
+			break
+		}
 	}
 
 	// Bに残った不要なパススライスをプールに返却
