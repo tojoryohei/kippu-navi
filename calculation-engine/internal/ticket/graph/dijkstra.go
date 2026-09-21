@@ -548,10 +548,11 @@ func putPathBuffer(pathBuffer *[]int) {
 
 // YenScratch はYen's Algorithm用の再利用バッファです
 type YenScratch struct {
-	BlockedNodes []bool
-	Dist         []domain.DeciKilo
-	EigyoDist    []domain.DeciKilo
-	Prev         []int
+	BlockedNodes  []bool
+	Dist          []domain.DeciKilo
+	EigyoDist     []domain.DeciKilo
+	Prev          []int
+	DistanceToEnd []domain.DeciKilo
 }
 
 // FindUnboundedKShortestPathsGisei は、Yen's Algorithm を用いて、合計擬制キロが maxGisei 以下の最短経路をすべて探索します。
@@ -581,6 +582,14 @@ func (g *RailwayGraph) FindKShortestPathsGiseiWithContext(ctx context.Context, s
 		Dist:         make([]domain.DeciKilo, numStations),
 		EigyoDist:    make([]domain.DeciKilo, numStations),
 		Prev:         make([]int, numStations),
+	}
+	return g.findKShortestPathsGiseiWithScratchContext(ctx, startID, endID, k, maxGisei, scratch)
+}
+
+// FindKShortestPathsGiseiWithScratchContext は再利用バッファを使い、距離上限内の単純経路を最大k本返します。
+func (g *RailwayGraph) FindKShortestPathsGiseiWithScratchContext(ctx context.Context, startID, endID, k int, maxGisei domain.DeciKilo, scratch *YenScratch) ([]*PathResult, error) {
+	if k <= 0 {
+		return nil, domain.ErrInvalidPath
 	}
 	return g.findKShortestPathsGiseiWithScratchContext(ctx, startID, endID, k, maxGisei, scratch)
 }
@@ -640,7 +649,11 @@ func (g *RailwayGraph) findKShortestPathsGiseiWithScratchContext(ctx context.Con
 	eigyoDist := scratch.EigyoDist
 	prev := scratch.Prev
 
-	distanceToEnd := make([]domain.DeciKilo, numStations)
+	distanceToEnd := scratch.DistanceToEnd
+	if len(distanceToEnd) != numStations {
+		distanceToEnd = make([]domain.DeciKilo, numStations)
+		scratch.DistanceToEnd = distanceToEnd
+	}
 	if len(g.DistGisei) == numStations*numStations {
 		for stationID := range distanceToEnd {
 			precomputed := g.DistGisei[stationID*numStations+endID]

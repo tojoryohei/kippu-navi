@@ -29,11 +29,12 @@ type TicketSplitSegment struct {
 
 // SearchOptimalSplit は乗車券の最適分割を探索するユースケースです。
 type SearchOptimalSplit struct {
-	graph     graph.Graph
-	evaluator *TicketSegmentEvaluator
-	fares     []int32
-	zones     *graphio.SpecialZoneRegistry
-	corrector PathCorrector
+	graph      graph.Graph
+	evaluator  *TicketSegmentEvaluator
+	fares      []int32
+	zones      *graphio.SpecialZoneRegistry
+	corrector  PathCorrector
+	yenScratch *graph.YenScratch
 }
 
 const ticketCandidatePathLimit = 10
@@ -86,6 +87,12 @@ func NewSearchOptimalSplit(
 // SetPrecomputedFares は事前計算された運賃データを設定します。
 func (u *SearchOptimalSplit) SetPrecomputedFares(fares []int32) {
 	u.fares = fares
+}
+
+// SetYenScratch は事前計算など単一goroutineで連続探索する場合の作業領域を設定します。
+// 通常のAPI処理ではリクエスト間共有を避けるため使用しません。
+func (u *SearchOptimalSplit) SetYenScratch(scratch *graph.YenScratch) {
+	u.yenScratch = scratch
 }
 
 // Execute は指定された区間における乗車券の最適な分割パターンを探索します。
@@ -165,7 +172,7 @@ func (u *SearchOptimalSplit) ExecuteWithContext(ctx context.Context, startID, en
 				subPath := path[i : j+1]
 				var cost int
 
-				if u.evaluator == nil && u.fares != nil {
+				if u.fares != nil {
 					startSt := subPath[0]
 					endSt := subPath[len(subPath)-1]
 					numSt := u.graph.NumStations()
@@ -272,6 +279,15 @@ func (u *SearchOptimalSplit) findCandidatePhysicalPaths(ctx context.Context, sta
 		FindKShortestPathsGiseiWithContext(context.Context, int, int, int, domain.DeciKilo) ([]*graph.PathResult, error)
 	}
 	if finder, ok := u.graph.(contextPathFinder); ok {
+		if u.yenScratch != nil {
+			type scratchPathFinder interface {
+				FindKShortestPathsGiseiWithScratchContext(context.Context, int, int, int, domain.DeciKilo, *graph.YenScratch) ([]*graph.PathResult, error)
+			}
+			if scratchFinder, ok := u.graph.(scratchPathFinder); ok {
+				paths, err := scratchFinder.FindKShortestPathsGiseiWithScratchContext(ctx, start, end, ticketCandidatePathLimit, limit.MaxGisei, u.yenScratch)
+				return paths, limit, err
+			}
+		}
 		paths, err := finder.FindKShortestPathsGiseiWithContext(ctx, start, end, ticketCandidatePathLimit, limit.MaxGisei)
 		return paths, limit, err
 	}
@@ -376,7 +392,7 @@ func isLockedStation(stationID int, locked map[int]struct{}) bool {
 }
 
 func (u *SearchOptimalSplit) segmentFare(path []int) (int, bool) {
-	if u.evaluator == nil && u.fares != nil {
+	if u.fares != nil {
 		numStations := u.graph.NumStations()
 		idx := path[0]*numStations + path[len(path)-1]
 		if idx < 0 || idx >= len(u.fares) || u.fares[idx] == math.MaxInt32 {

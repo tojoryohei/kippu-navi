@@ -59,6 +59,28 @@ func TestSearchUnlimitedSplit(t *testing.T) {
 	})
 }
 
+func TestSearchUnlimitedSplitUsesPrecomputedFaresWhenEvaluatorIsConfigured(t *testing.T) {
+	g := graph.NewGraph(2)
+	start := g.GetOrAddID("A")
+	end := g.GetOrAddID("B")
+	fares := unavailableFares(2)
+	fares[start*2+end] = 1230
+
+	// API実行時と同様に評価器が設定されていても、分割DPは事前計算行列を使う。
+	// 未初期化の評価器へ到達するとpanicするため、行列参照の回帰テストにもなる。
+	search := NewSearchOptimalSplit(g, &TicketSegmentEvaluator{})
+	search.SetPrecomputedFares(fares)
+
+	cost, results := search.searchUnlimitedSplit([]int{start, end})
+	if cost != 1230 {
+		t.Fatalf("運賃 = %d, want 1230", cost)
+	}
+	want := [][]int{{start, end}}
+	if !reflect.DeepEqual(results, want) {
+		t.Fatalf("結果 = %v, want %v", results, want)
+	}
+}
+
 func TestSearchUnlimitedSplitLockedStation(t *testing.T) {
 	g := graph.NewGraph(4)
 	path := []int{
