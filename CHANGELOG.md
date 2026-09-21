@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.8...kippu-navi-v3.3.9) (2026-09-21)
+
+
+### Performance Improvements
+
+* DPスクラッチとCloud Runメモリを最適化 ([#743](https://github.com/tojoryohei/kippu-navi/issues/743)) ([e91e45a](https://github.com/tojoryohei/kippu-navi/commit/e91e45abdd9dea9608aa649d4c2950fd8a107264))
+
 ## [3.3.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.7...kippu-navi-v3.3.8) (2026-09-20)
 
 
