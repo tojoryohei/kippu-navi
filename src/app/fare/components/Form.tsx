@@ -136,7 +136,6 @@ export default function Form({
     const [serverTime, setServerTime] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isEngineSlow, setIsEngineSlow] = useState(false);
     const [isEngineRetryable, setIsEngineRetryable] = useState(false);
 
     const workerRef = useRef<EngineClient | null>(null);
@@ -150,12 +149,6 @@ export default function Form({
     const [resultPass, setResultPass] = useState<PassFareResult | null>(null);
     const [correctedStartPass, setCorrectedStartPass] = useState<string>("");
     const [correctedEndPass, setCorrectedEndPass] = useState<string>("");
-
-    useEffect(() => {
-        if (!isLoading) return;
-        const timer = window.setTimeout(() => setIsEngineSlow(true), 5_000);
-        return () => window.clearTimeout(timer);
-    }, [isLoading]);
 
     // 種別・期間切り替え時は、入力済みの経路だけ再検証する。
     // 空フォームではNext.js版と同じくエラーを表示しない。
@@ -220,7 +213,6 @@ export default function Form({
         setIsLoading(true);
         setError(null);
         setIsEngineRetryable(false);
-        setIsEngineSlow(false);
         setResult(null);
         setResultPass(null);
         setCorrectedStartPass("");
@@ -981,17 +973,17 @@ export default function Form({
                         disabled={!isValid || isLoading}
                     >
                         {isLoading
-                            ? (isEngineSlow ? "準備に時間がかかっています..." : "計算中...")
+                            ? "計算中..."
                             : isEngineRetryable
                                 ? "計算を再試行"
-                            : "運賃計算をする"
+                                : "運賃計算をする"
                         }
                     </button>
                 </div>
             </form>
 
             <div className="my-8 p-4">
-                {isLoading && <p className="py-5 border-t text-center text-gray-500">{isEngineSlow ? "計算エンジンの準備に時間がかかっています..." : "計算中..."}</p>}
+                {isLoading && <p className="py-5 border-t text-center text-gray-500">計算中...</p>}
                 {!isLoading && serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
 
                 {!isLoading && error && (
