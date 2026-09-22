@@ -37,7 +37,7 @@ type SearchOptimalSplit struct {
 	yenScratch *graph.YenScratch
 }
 
-const ticketCandidatePathLimit = 10
+const ticketCandidatePathLimit = 5
 
 // SetPathCorrector sets the physical-route corrections that must run before
 // special-zone fare candidates are generated. A fare path returned by the

@@ -239,7 +239,7 @@ func run(args []string) (runErr error) {
 		}(i)
 	}
 	wg.Wait()
-	// 実行時と同じA*下界を使って、距離上限内の短い10経路を探索する。
+	// 実行時と同じA*下界を使って、距離上限内の短い5経路を探索する。
 	ticketSearchGraph.DistGisei = physicalDistGisei
 
 	log.Println("運賃マトリクスを事前計算しています（並列処理）...")
