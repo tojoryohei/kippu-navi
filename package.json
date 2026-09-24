@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@astrojs/react": "^6.0.6",
-    "@sentry/browser": "^10.75.0",
+    "@sentry/browser": "^10.75.1",
     "astro": "^7.3.3",
     "posthog-js": "^1.434.5",
     "react": "^19.3.0",
