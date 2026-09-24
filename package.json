@@ -25,7 +25,7 @@
     "@astrojs/react": "^6.0.6",
     "@sentry/browser": "^10.75.0",
     "astro": "^7.3.3",
-    "posthog-js": "^1.434.2",
+    "posthog-js": "^1.434.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-hook-form": "^7.87.0",
