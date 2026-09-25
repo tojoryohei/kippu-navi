@@ -8,7 +8,7 @@ import { isRetryableEngineError, SearchOperationError } from "@/lib/search-error
 
 import stationData from "@/app/fare/data/stations.json";
 import lineData from "@/app/fare/data/lines.json";
-import { getLineByName, getKana } from '@/app/fare/lib/loadData';
+import { getLineByName, getKana, isPrivateRailwayLine, isShinkansen } from '@/app/fare/lib/loadData';
 import SelectStation from "@/app/fare/components/SelectStation";
 import SelectLine from "@/app/fare/components/SelectLine";
 
@@ -20,7 +20,6 @@ import { stringifyRoute, parseRoute } from "@/app/fare/lib/routeParser";
 import type { Station, Line, TicketFareResult, PassFareResult, TicketFareResponse, IFormInput, PathStep, CalculationMode, SearchType } from "@/app/types";
 
 const stationMap = new Map(stationData.map(s => [s.name, s]));
-const SHINKANSEN_LINES: Set<string> = new Set(["山形新幹線", "北海道新幹", "九州新幹線", "上越新幹線", "新幹線", "東北新幹線", "西九州新幹", "北陸新幹線"]);
 
 interface FormValues extends IFormInput {
     calculationMode: CalculationMode;
@@ -44,7 +43,10 @@ const createApiRequestBody = (data: FormValues) => {
     if (data.searchType !== "ticket") {
         for (const seg of data.segments) {
             if (seg.viaLine?.name) {
-                if (SHINKANSEN_LINES.has(seg.viaLine.name)) {
+                if (isShinkansen(seg.viaLine.name)) {
+                    return null;
+                }
+                if (isPrivateRailwayLine(seg.viaLine.name)) {
                     return null;
                 }
             }
@@ -819,7 +821,8 @@ export default function Form({
                                                 const currentSearchType = getValues("searchType");
                                                 const isPass = currentSearchType !== "ticket";
                                                 const targetBaseName = value.name.split('_')[0];
-                                                if (isPass && SHINKANSEN_LINES.has(value.name)) return "定期券の計算で新幹線は選択できません";
+                                                if (isPass && isShinkansen(value.name)) return "定期券の計算で新幹線は選択できません";
+                                                if (isPass && isPrivateRailwayLine(value.name)) return "定期券の計算で会社線は選択できません";
                                                 if (previousStation) {
                                                     const prevLines = previousStation.lines || [];
                                                     const hasLine = prevLines.some(l => l === value.name || l.split('_')[0] === targetBaseName || l === targetBaseName);
