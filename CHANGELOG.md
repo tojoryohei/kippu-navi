@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.13](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.12...kippu-navi-v3.3.13) (2026-09-25)
+
+
+### Bug Fixes
+
+* 定期券で会社線を選べないようにする ([#757](https://github.com/tojoryohei/kippu-navi/issues/757)) ([083590b](https://github.com/tojoryohei/kippu-navi/commit/083590b7b09484d540e282491d55d1ab6a954142))
+
 ## [3.3.12](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.11...kippu-navi-v3.3.12) (2026-09-21)
 
 
