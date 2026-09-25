@@ -13,8 +13,10 @@ import (
 
 	"calculation-engine/internal/domain"
 	ticketgraphdata "calculation-engine/internal/graphdata"
+	ticketdata "calculation-engine/internal/ticket/data"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	ticketfare "calculation-engine/internal/ticket/fare"
+	ticketgraph "calculation-engine/internal/ticket/graph"
 	ticketfareio "calculation-engine/internal/ticket/infra/fareio"
 	ticketgraphio "calculation-engine/internal/ticket/infra/graphio"
 	ticketusecase "calculation-engine/internal/ticket/usecase"
@@ -50,6 +52,14 @@ func run(args []string) (runErr error) {
 	ticketZoneRoutes, err := ticketdomain.LoadZoneRoutes("./internal/graphdata/zone_routes.json")
 	if err != nil {
 		return fmt.Errorf("乗車券の特例ゾーンルートロードに失敗しました: %w", err)
+	}
+	article70Bytes, err := io.ReadAll(ticketgraphdata.GetArticle70RoutesReader())
+	if err != nil {
+		return fmt.Errorf("article70Routesの読み込みに失敗しました: %w", err)
+	}
+	ticketArticle70Routes, err := ticketdomain.LoadArticle70RoutesFromBytes(article70Bytes)
+	if err != nil {
+		return fmt.Errorf("article70Routesのパースに失敗しました: %w", err)
 	}
 
 	ticketZoneReg, err := ticketgraphio.LoadSpecialZones()
@@ -167,12 +177,23 @@ func run(args []string) (runErr error) {
 		ticketZoneReg,
 		ticketFullGraph,
 	)
+	fareEval := func(path []int) (int, error) {
+		res, _, err := ticketSegmentEvaluator.ExecuteWithMode(path, 0, "normal")
+		if err != nil {
+			return 0, err
+		}
+		return res.TotalAmount(), nil
+	}
+	ticketCorrector := ticketusecase.NewPipelineCorrector(
+		ticketusecase.NewSuburbanAreaCorrector(fareEval),
+		ticketusecase.NewShinkansenOverlapCorrector(),
+		ticketusecase.NewRule43_2Corrector(),
+		ticketusecase.NewRule69Corrector(),
+		ticketusecase.NewRule157Corrector(),
+		ticketusecase.NewArticle70Corrector(ticketArticle70Routes),
+	)
 
 	log.Println("物理グラフの全点対最短経路を事前計算しています...")
-	basePrevGisei := make([][]int, numStations)
-	baseDistGisei := make([][]domain.DeciKilo, numStations)
-	basePrevEigyo := make([][]int, numStations)
-	baseDistEigyo := make([][]domain.DeciKilo, numStations)
 	physicalDistGisei := make([]uint16, numStations*numStations)
 	for i := range physicalDistGisei {
 		physicalDistGisei[i] = math.MaxUint16
@@ -202,14 +223,7 @@ func run(args []string) (runErr error) {
 			}
 
 			// 分割候補の経路探索には物理エッジだけを使う。
-			// 特例ゾーンなどの仮想エッジは、復元した経路を evaluator で運賃評価するときに適用される。
-			dG, pG := ticketSearchGraph.FindAllShortestPathsGisei(startID)
-			basePrevGisei[startID] = pG
-			baseDistGisei[startID] = dG
-
-			dE, pE := ticketSearchGraph.FindAllShortestPathsEigyo(startID)
-			basePrevEigyo[startID] = pE
-			baseDistEigyo[startID] = dE
+			dG, _ := ticketSearchGraph.FindAllShortestPathsGisei(startID)
 
 			rowOffset := startID * numStations
 			for endID, distance := range dG {
@@ -225,6 +239,8 @@ func run(args []string) (runErr error) {
 		}(i)
 	}
 	wg.Wait()
+	// 実行時と同じA*下界を使って、距離上限内の短い5経路を探索する。
+	ticketSearchGraph.DistGisei = physicalDistGisei
 
 	log.Println("運賃マトリクスを事前計算しています（並列処理）...")
 	baseFares := make([]int32, numStations*numStations)
@@ -251,56 +267,26 @@ func run(args []string) (runErr error) {
 				return
 			}
 
+			search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator, ticketZoneReg)
+			search.SetPathCorrector(ticketCorrector)
+			search.SetYenScratch(&ticketgraph.YenScratch{
+				BlockedNodes:  make([]bool, numStations),
+				Dist:          make([]domain.DeciKilo, numStations),
+				EigyoDist:     make([]domain.DeciKilo, numStations),
+				Prev:          make([]int, numStations),
+				DistanceToEnd: make([]domain.DeciKilo, numStations),
+			})
 			for endID := 0; endID < numStations; endID++ {
 				if startID == endID {
 					continue
 				}
-				if basePrevGisei[startID] == nil || basePrevGisei[startID][endID] == -1 {
+				if physicalDistGisei[startID*numStations+endID] == math.MaxUint16 {
 					continue
 				}
-
-				// 1. 最短擬制キロ経路の復元と評価
-				pathGisei := []int{}
-				curr := endID
-				for curr != -1 && curr != startID {
-					pathGisei = append([]int{curr}, pathGisei...)
-					curr = basePrevGisei[startID][curr]
-				}
-				if curr == startID {
-					pathGisei = append([]int{startID}, pathGisei...)
-				}
-
-				minFare := math.MaxInt32
-				if len(pathGisei) > 0 {
-					res, _, err := ticketSegmentEvaluator.Execute(pathGisei, 0)
-					if err == nil && res != nil {
-						minFare = res.TotalAmount()
-					}
-				}
-
-				// 2. 最短営業キロ経路の復元と評価
-				if basePrevEigyo[startID] != nil && basePrevEigyo[startID][endID] != -1 {
-					pathEigyo := []int{}
-					currE := endID
-					for currE != -1 && currE != startID {
-						pathEigyo = append([]int{currE}, pathEigyo...)
-						currE = basePrevEigyo[startID][currE]
-					}
-					if currE == startID {
-						pathEigyo = append([]int{startID}, pathEigyo...)
-					}
-					if len(pathEigyo) > 0 {
-						resE, _, err := ticketSegmentEvaluator.Execute(pathEigyo, 0)
-						if err == nil && resE != nil {
-							if resE.TotalAmount() < minFare {
-								minFare = resE.TotalAmount()
-							}
-						}
-					}
-				}
-				if minFare != math.MaxInt32 {
+				segments, err := search.GetCheapestTicketSegments(startID, endID)
+				if err == nil && len(segments) > 0 && segments[0].Result != nil {
 					idx := int32(startID)*int32(numStations) + int32(endID)
-					baseFares[idx] = int32(minFare)
+					baseFares[idx] = int32(segments[0].Result.TotalAmount())
 				}
 			}
 
@@ -323,8 +309,7 @@ func run(args []string) (runErr error) {
 		}
 	}()
 
-	magic := [8]byte{'T', 'K', 'S', 'R', 'V', '2', 0, 0}
-	if _, err := outServerFile.Write(magic[:]); err != nil {
+	if _, err := outServerFile.Write([]byte(ticketdata.TicketBinaryMagic)); err != nil {
 		return fmt.Errorf("magicの書き込みに失敗しました: %w", err)
 	}
 
@@ -332,16 +317,22 @@ func run(args []string) (runErr error) {
 		return fmt.Errorf("駅数の書き込みに失敗しました: %w", err)
 	}
 
-	padding := [4]byte{0, 0, 0, 0}
-	if _, err := outServerFile.Write(padding[:]); err != nil {
-		return fmt.Errorf("paddingの書き込みに失敗しました: %w", err)
+	if err := binary.Write(outServerFile, binary.LittleEndian, uint32(ticketdata.TicketSectionCount)); err != nil {
+		return fmt.Errorf("セクション数の書き込みに失敗しました: %w", err)
 	}
-
-	if err := binary.Write(outServerFile, binary.LittleEndian, baseFares); err != nil {
-		return fmt.Errorf("BaseFaresの書き込みに失敗しました: %w", err)
+	sections := []any{baseFares, physicalDistGisei, physicalDistGisei}
+	lengths := []uint64{
+		uint64(len(baseFares) * 4), uint64(len(physicalDistGisei) * 2), uint64(len(physicalDistGisei) * 2),
 	}
-	if err := binary.Write(outServerFile, binary.LittleEndian, physicalDistGisei); err != nil {
-		return fmt.Errorf("DistGiseiの書き込みに失敗しました: %w", err)
+	for _, length := range lengths {
+		if err := binary.Write(outServerFile, binary.LittleEndian, length); err != nil {
+			return fmt.Errorf("セクション長の書き込みに失敗しました: %w", err)
+		}
+	}
+	for i, section := range sections {
+		if err := binary.Write(outServerFile, binary.LittleEndian, section); err != nil {
+			return fmt.Errorf("セクション%dの書き込みに失敗しました: %w", i, err)
+		}
 	}
 
 	return nil

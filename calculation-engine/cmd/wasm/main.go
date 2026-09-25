@@ -181,7 +181,6 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	offsetEdgeData := offsetIndices + int(numEdges)*4
 	offsetNameOffsets := offsetEdgeData + int(numEdges)*16
 	offsetNamesBlob := offsetNameOffsets + int(numStations+1)*4
-
 	indptr := unsafe.Slice((*int32)(unsafe.Pointer(&passTempBuffer[offsetIndptr])), numStations+1)
 	indices := unsafe.Slice((*int32)(unsafe.Pointer(&passTempBuffer[offsetIndices])), numEdges)
 	edgeData := unsafe.Slice((*EdgeBinary)(unsafe.Pointer(&passTempBuffer[offsetEdgeData])), numEdges)
@@ -1091,7 +1090,8 @@ func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 		splitIDs[i] = id
 	}
 
-	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
+	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator, ticketZoneRegistry)
+	search.SetPathCorrector(ticketCorrector)
 
 	var allSegCandidates [][]ticketusecase.TicketSplitSegment
 	for i := 0; i < len(splitIDs)-1; i++ {
@@ -1147,37 +1147,21 @@ func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 		var apiSegments []SegmentResponse
 		totalAmount := 0
 		for _, seg := range combo {
-			correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
-			if len(correctedPath) == 0 {
-				correctedPath = seg.Path
-			}
-			correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
-			if correctedResult != nil {
-				correctedPath = correctedTransformedPath
-			}
-			if correctedResult == nil {
-				correctedResult = seg.Result
-			}
-
-			pathNames := make([]string, len(correctedPath))
-			for k, id := range correctedPath {
+			pathNames := make([]string, len(seg.Path))
+			for k, id := range seg.Path {
 				pathNames[k] = ticketFullGraph.GetName(id)
 			}
-			viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
-			var eigyo domain.DeciKilo
-			if correctedResult != nil {
-				eigyo = correctedResult.TotalEigyoKilo
-			}
-			fare := correctedResult.TotalAmount()
+			viaNames := ticketusecase.GetVia(ticketFullGraph, seg.Path)
+			fare := seg.Result.TotalAmount()
 			totalAmount += fare
 
 			apiSegments = append(apiSegments, SegmentResponse{
 				Path:           pathNames,
 				Via:            viaNames,
 				Result:         seg.Result,
-				TotalEigyoKilo: eigyo,
-				Start:          ticketFullGraph.GetName(seg.StartStationID),
-				End:            ticketFullGraph.GetName(seg.EndStationID),
+				TotalEigyoKilo: seg.Result.TotalEigyoKilo,
+				Start:          pathNames[0],
+				End:            pathNames[len(pathNames)-1],
 			})
 		}
 		clientResults = append(clientResults, ResultResponse{
@@ -1191,38 +1175,22 @@ func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 	var normalResult ResultResponse
 	if err == nil && len(normalSegs) > 0 {
 		seg := normalSegs[0]
-		correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
-		if len(correctedPath) == 0 {
-			correctedPath = seg.Path
-		}
-		correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
-		if correctedResult != nil {
-			correctedPath = correctedTransformedPath
-		}
-		if correctedResult == nil {
-			correctedResult = seg.Result
-		}
-
-		pathNames := make([]string, len(correctedPath))
-		for k, id := range correctedPath {
+		pathNames := make([]string, len(seg.Path))
+		for k, id := range seg.Path {
 			pathNames[k] = ticketFullGraph.GetName(id)
 		}
-		viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
-		var eigyo domain.DeciKilo
-		if correctedResult != nil {
-			eigyo = correctedResult.TotalEigyoKilo
-		}
+		viaNames := ticketusecase.GetVia(ticketFullGraph, seg.Path)
 
 		normalResult = ResultResponse{
-			TotalAmount: correctedResult.TotalAmount(),
+			TotalAmount: seg.Result.TotalAmount(),
 			Segments: []SegmentResponse{
 				{
 					Path:           pathNames,
 					Via:            viaNames,
-					Result:         correctedResult,
-					TotalEigyoKilo: eigyo,
-					Start:          ticketFullGraph.GetName(seg.StartStationID),
-					End:            ticketFullGraph.GetName(seg.EndStationID),
+					Result:         seg.Result,
+					TotalEigyoKilo: seg.Result.TotalEigyoKilo,
+					Start:          pathNames[0],
+					End:            pathNames[len(pathNames)-1],
 				},
 			},
 		}
@@ -1271,7 +1239,7 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	}
 
 	magic := string(ticketTempBuffer[:8])
-	if magic != "WASMGRA\x00" {
+	if magic != "TKWASM2\x00" {
 		return js.ValueOf(fmt.Sprintf("error: invalid magic header: %q", magic))
 	}
 
@@ -1283,12 +1251,19 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	offsetEdgeData := offsetIndices + int(numEdges)*4
 	offsetNameOffsets := offsetEdgeData + int(numEdges)*16
 	offsetNamesBlob := offsetNameOffsets + int(numStations+1)*4
+	if numStations <= 0 || numEdges < 0 || offsetNamesBlob > len(ticketTempBuffer) {
+		return js.ValueOf("error: truncated ticket graph")
+	}
 
 	indptr := unsafe.Slice((*int32)(unsafe.Pointer(&ticketTempBuffer[offsetIndptr])), numStations+1)
 	indices := unsafe.Slice((*int32)(unsafe.Pointer(&ticketTempBuffer[offsetIndices])), numEdges)
 	edgeData := unsafe.Slice((*EdgeBinary)(unsafe.Pointer(&ticketTempBuffer[offsetEdgeData])), numEdges)
 	nameOffsets := unsafe.Slice((*int32)(unsafe.Pointer(&ticketTempBuffer[offsetNameOffsets])), numStations+1)
-	namesBlob := ticketTempBuffer[offsetNamesBlob : offsetNamesBlob+int(nameOffsets[numStations])]
+	namesEnd := offsetNamesBlob + int(nameOffsets[numStations])
+	if namesEnd != len(ticketTempBuffer) {
+		return js.ValueOf("error: ticket graph size mismatch")
+	}
+	namesBlob := ticketTempBuffer[offsetNamesBlob:namesEnd]
 
 	nameMap := make(map[string]int32, numStations)
 	for i := 0; i < int(numStations); i++ {
@@ -1369,6 +1344,9 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	}
 	for _, zoneName := range ticketZoneRoutes.ZoneNames() {
 		ticketFullGraph.GetOrAddID(zoneName)
+	}
+	if ticketFullGraph.NumStations() != int(numStations) {
+		return js.ValueOf(fmt.Sprintf("error: ticket distance matrix station count mismatch: graph=%d data=%d", ticketFullGraph.NumStations(), numStations))
 	}
 
 	ticketFareReg := ticketfare.NewRegistry()
@@ -1621,7 +1599,8 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 		lockedStations = append(lockedStations, id)
 	}
 
-	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
+	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator, ticketZoneRegistry)
+	search.SetPathCorrector(ticketCorrector)
 
 	bestResultPaths, err := search.ExecuteWithOptions(startID, endID, maxSections, lockedStations)
 	if err != nil {
@@ -1686,37 +1665,21 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 			var apiSegments []SegmentResponse
 			totalAmount := 0
 			for _, seg := range combo {
-				correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
-				if len(correctedPath) == 0 {
-					correctedPath = seg.Path
-				}
-				correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
-				if correctedResult != nil {
-					correctedPath = correctedTransformedPath
-				}
-				if correctedResult == nil {
-					correctedResult = seg.Result
-				}
-
-				pathNames := make([]string, len(correctedPath))
-				for k, id := range correctedPath {
+				pathNames := make([]string, len(seg.Path))
+				for k, id := range seg.Path {
 					pathNames[k] = ticketFullGraph.GetName(id)
 				}
-				viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
-				var eigyo domain.DeciKilo
-				if correctedResult != nil {
-					eigyo = correctedResult.TotalEigyoKilo
-				}
-				fare := correctedResult.TotalAmount()
+				viaNames := ticketusecase.GetVia(ticketFullGraph, seg.Path)
+				fare := seg.Result.TotalAmount()
 				totalAmount += fare
 
 				apiSegments = append(apiSegments, SegmentResponse{
 					Path:           pathNames,
 					Via:            viaNames,
-					Result:         correctedResult,
-					TotalEigyoKilo: eigyo,
-					Start:          ticketFullGraph.GetName(seg.StartStationID),
-					End:            ticketFullGraph.GetName(seg.EndStationID),
+					Result:         seg.Result,
+					TotalEigyoKilo: seg.Result.TotalEigyoKilo,
+					Start:          pathNames[0],
+					End:            pathNames[len(pathNames)-1],
 				})
 			}
 			clientResults = append(clientResults, ResultResponse{
@@ -1731,38 +1694,22 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 	var normalResult ResultResponse
 	if err == nil && len(normalSegs) > 0 {
 		seg := normalSegs[0]
-		correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
-		if len(correctedPath) == 0 {
-			correctedPath = seg.Path
-		}
-		correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
-		if correctedResult != nil {
-			correctedPath = correctedTransformedPath
-		}
-		if correctedResult == nil {
-			correctedResult = seg.Result
-		}
-
-		pathNames := make([]string, len(correctedPath))
-		for k, id := range correctedPath {
+		pathNames := make([]string, len(seg.Path))
+		for k, id := range seg.Path {
 			pathNames[k] = ticketFullGraph.GetName(id)
 		}
-		viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
-		var eigyo domain.DeciKilo
-		if correctedResult != nil {
-			eigyo = correctedResult.TotalEigyoKilo
-		}
+		viaNames := ticketusecase.GetVia(ticketFullGraph, seg.Path)
 
 		normalResult = ResultResponse{
-			TotalAmount: correctedResult.TotalAmount(),
+			TotalAmount: seg.Result.TotalAmount(),
 			Segments: []SegmentResponse{
 				{
 					Path:           pathNames,
 					Via:            viaNames,
-					Result:         correctedResult,
-					TotalEigyoKilo: eigyo,
-					Start:          ticketFullGraph.GetName(seg.StartStationID),
-					End:            ticketFullGraph.GetName(seg.EndStationID),
+					Result:         seg.Result,
+					TotalEigyoKilo: seg.Result.TotalEigyoKilo,
+					Start:          pathNames[0],
+					End:            pathNames[len(pathNames)-1],
 				},
 			},
 		}

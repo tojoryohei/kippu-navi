@@ -13,6 +13,7 @@ type FarePathCandidate struct {
 	Path           []int
 	ThresholdKilo  domain.DeciKilo
 	CheckThreshold bool
+	IsSpecialZone  bool
 }
 
 // SpecialFareRuleResolver は運賃計算前に適用する特例経路を、モードごとの順序で解決します。
@@ -111,6 +112,7 @@ func (r *SpecialFareRuleResolver) applySuburbanZoneCandidate(path []int, areaID 
 		Path:           corrected,
 		ThresholdKilo:  info.ThresholdKilo,
 		CheckThreshold: false,
+		IsSpecialZone:  true,
 	}}
 }
 
@@ -186,6 +188,7 @@ func (r *SpecialFareRuleResolver) applyNormalZoneCandidates(path []int) []FarePa
 			Path:           corrected,
 			ThresholdKilo:  info.ThresholdKilo,
 			CheckThreshold: true,
+			IsSpecialZone:  true,
 		})
 	}
 	return resolved
@@ -207,6 +210,7 @@ func (r *SpecialFareRuleResolver) applyUncorrectZoneCandidates(path []int) []Far
 			Path:           info.TransformedPath,
 			ThresholdKilo:  info.ThresholdKilo,
 			CheckThreshold: true,
+			IsSpecialZone:  true,
 		})
 	}
 	return resolved

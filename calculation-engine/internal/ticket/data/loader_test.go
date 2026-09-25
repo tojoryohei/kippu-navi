@@ -15,10 +15,12 @@ func TestLoadPrecomputedTicketFares(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, value := range []any{
-		[8]byte{'T', 'K', 'S', 'R', 'V', '2', 0, 0},
+		[8]byte{'T', 'K', 'S', 'R', 'V', '3', 0, 0},
 		int32(2),
-		[4]byte{},
+		uint32(TicketSectionCount),
+		[]uint64{16, 8, 8},
 		[]int32{0, 120, 120, 0},
+		[]uint16{0, 15, 15, 0},
 		[]uint16{0, 15, 15, 0},
 	} {
 		if err := binary.Write(file, binary.LittleEndian, value); err != nil {
@@ -42,5 +44,15 @@ func TestLoadPrecomputedTicketFares(t *testing.T) {
 	}
 	if !reflect.DeepEqual(distances, []uint16{0, 15, 15, 0}) {
 		t.Fatalf("距離 = %v", distances)
+	}
+}
+
+func TestLoadPrecomputedTicketFaresRejectsV2(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "ticket-v2.bin")
+	if err := os.WriteFile(path, []byte("TKSRV2\x00\x00legacy"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := LoadPrecomputedTicketFares(path); err == nil {
+		t.Fatal("旧形式を受理しました")
 	}
 }

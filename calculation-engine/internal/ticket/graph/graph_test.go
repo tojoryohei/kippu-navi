@@ -3,6 +3,8 @@ package graph_test
 import (
 	"calculation-engine/internal/graphdata"
 	"calculation-engine/internal/ticket/infra/graphio"
+	"context"
+	"errors"
 	"testing"
 )
 
@@ -37,4 +39,42 @@ func TestRailwayGraph_LoadAndFindPath(t *testing.T) {
 
 	t.Logf("Path from Tokyo to Osaka found: %d stations, GiseiKilo: %d, EigyoKilo: %d",
 		len(res.StationIDs), res.GiseiKilo, res.EigyoKilo)
+}
+
+func TestFindUnboundedKShortestPathsGiseiWithContextCanceled(t *testing.T) {
+	loader := &graphio.JSONLoader{}
+	g, err := loader.Load(graphdata.GetEdgesReader())
+	if err != nil {
+		t.Fatal(err)
+	}
+	start, _ := g.GetID("東京")
+	end, _ := g.GetID("大阪")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err = g.FindUnboundedKShortestPathsGiseiWithContext(ctx, start, end, 10000)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want context.Canceled", err)
+	}
+}
+
+func TestFindKShortestPathsGiseiWithContextLimitsResults(t *testing.T) {
+	loader := &graphio.JSONLoader{}
+	g, err := loader.Load(graphdata.GetEdgesReader())
+	if err != nil {
+		t.Fatal(err)
+	}
+	start, _ := g.GetID("東京")
+	end, _ := g.GetID("大阪")
+	paths, err := g.FindKShortestPathsGiseiWithContext(context.Background(), start, end, 10, 10000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paths) != 10 {
+		t.Fatalf("path count = %d, want 10", len(paths))
+	}
+	for i := 1; i < len(paths); i++ {
+		if paths[i-1].GiseiKilo > paths[i].GiseiKilo {
+			t.Fatalf("paths are not sorted: %d > %d", paths[i-1].GiseiKilo, paths[i].GiseiKilo)
+		}
+	}
 }

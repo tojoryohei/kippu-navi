@@ -59,6 +59,28 @@ func TestSearchUnlimitedSplit(t *testing.T) {
 	})
 }
 
+func TestSearchUnlimitedSplitUsesPrecomputedFaresWhenEvaluatorIsConfigured(t *testing.T) {
+	g := graph.NewGraph(2)
+	start := g.GetOrAddID("A")
+	end := g.GetOrAddID("B")
+	fares := unavailableFares(2)
+	fares[start*2+end] = 1230
+
+	// API実行時と同様に評価器が設定されていても、分割DPは事前計算行列を使う。
+	// 未初期化の評価器へ到達するとpanicするため、行列参照の回帰テストにもなる。
+	search := NewSearchOptimalSplit(g, &TicketSegmentEvaluator{})
+	search.SetPrecomputedFares(fares)
+
+	cost, results := search.searchUnlimitedSplit([]int{start, end})
+	if cost != 1230 {
+		t.Fatalf("運賃 = %d, want 1230", cost)
+	}
+	want := [][]int{{start, end}}
+	if !reflect.DeepEqual(results, want) {
+		t.Fatalf("結果 = %v, want %v", results, want)
+	}
+}
+
 func TestSearchUnlimitedSplitLockedStation(t *testing.T) {
 	g := graph.NewGraph(4)
 	path := []int{
@@ -146,4 +168,66 @@ func unavailableFares(numStations int) []int32 {
 		fares[i] = math.MaxInt32
 	}
 	return fares
+}
+
+func TestSearchOptimalSplitFindsCheaperPathOutsideLegacyMargin(t *testing.T) {
+	g := graph.NewGraph(4)
+	a := g.GetOrAddID("A")
+	b := g.GetOrAddID("B")
+	c := g.GetOrAddID("C")
+	d := g.GetOrAddID("D")
+	add := func(from, to int, distance domain.DeciKilo) {
+		g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{FromID: from, ToID: to, EigyoKilo: distance, GiseiKilo: distance, Company: domain.JREast}})
+	}
+	add(a, b, 10)
+	add(a, c, 30)
+	add(c, d, 30)
+	add(d, b, 30) // 90 DeciKilo: old shortest+50 cut-off was 60.
+
+	fares := unavailableFares(4)
+	fares[a*4+b] = 1000
+	fares[a*4+c] = 100
+	fares[c*4+d] = 100
+	fares[d*4+b] = 100
+	search := NewSearchOptimalSplit(g, nil)
+	search.SetPrecomputedFares(fares)
+
+	got, err := search.Execute(a, b, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsPath(got, []int{a, c, d, b}) {
+		t.Fatalf("固定上限外の最安経路がありません: %v", got)
+	}
+}
+
+func TestSearchOptimalSplitExcludesPathAboveCalculatedLimit(t *testing.T) {
+	g := graph.NewGraph(4)
+	a := g.GetOrAddID("A")
+	b := g.GetOrAddID("B")
+	c := g.GetOrAddID("C")
+	d := g.GetOrAddID("D")
+	add := func(from, to int, distance domain.DeciKilo) {
+		g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{FromID: from, ToID: to, EigyoKilo: distance, GiseiKilo: distance, Company: domain.JREast}})
+	}
+	add(a, b, 10) // limit = 10 + 100 = 110
+	add(a, c, 37)
+	add(c, d, 37)
+	add(d, b, 37) // 111: one DeciKilo above the limit
+	if err := g.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	fares := unavailableFares(4)
+	fares[a*4+b] = 1000
+	fares[a*4+c], fares[c*4+d], fares[d*4+b] = 100, 100, 100
+	search := NewSearchOptimalSplit(g, nil)
+	search.SetPrecomputedFares(fares)
+
+	got, err := search.Execute(a, b, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if containsPath(got, []int{a, c, d, b}) {
+		t.Fatalf("上限超過経路が含まれています: %v", got)
+	}
 }

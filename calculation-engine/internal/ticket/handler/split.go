@@ -3,14 +3,19 @@ package handler
 import (
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/usecase"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
+
+const exactSearchTimeout = 15 * time.Second
 
 // Split は乗車券の最適解を計算するHTTPリクエストを処理します。
 type Split struct {
@@ -44,6 +49,13 @@ type CalculateResponse struct {
 
 // HandleCalculate は計算リクエストを処理します。
 func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
+	// The ticket split search has the same 15-second response budget as the
+	// existing pass APIs. Extend the per-response deadline explicitly because
+	// the server-wide write timeout is shorter.
+	_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(exactSearchTimeout))
+	ctx, cancel := context.WithTimeout(r.Context(), exactSearchTimeout)
+	defer cancel()
+	r = r.WithContext(ctx)
 	requestID := r.Header.Get("X-Request-ID")
 	if r.Method != http.MethodGet {
 		writeErrorResponse(w, http.StatusMethodNotAllowed, "許可されていないメソッドです")
@@ -95,7 +107,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		writeErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	optResult, err := h.search.ExecuteWithOptions(startID, endID, maxSections, lockedStations)
+	optResult, err := h.search.ExecuteWithContext(r.Context(), startID, endID, maxSections, lockedStations)
 	if err != nil {
 		slog.Error("split ticket calculation failed", "request_id", requestID, "error_type", fmt.Sprintf("%T", err))
 
@@ -104,7 +116,11 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 			errMsg = strings.TrimSpace(errMsg[lastIdx+1:])
 		}
 
-		writeErrorResponse(w, http.StatusInternalServerError, errMsg)
+		status := http.StatusInternalServerError
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			status = http.StatusGatewayTimeout
+		}
+		writeErrorResponse(w, status, errMsg)
 		return
 	}
 

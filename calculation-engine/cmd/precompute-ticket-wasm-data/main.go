@@ -129,7 +129,7 @@ func main() {
 		log.Fatalf("出力ファイルの作成に失敗しました: %v", err)
 	}
 	// 1. Magic Header: 8 bytes
-	magic := [8]byte{'W', 'A', 'S', 'M', 'G', 'R', 'A', 0}
+	magic := [8]byte{'T', 'K', 'W', 'A', 'S', 'M', '2', 0}
 	if _, err := outFile.Write(magic[:]); err != nil {
 		log.Fatalf("Magicの書き込みに失敗しました: %v", err)
 	}

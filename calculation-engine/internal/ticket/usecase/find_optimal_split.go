@@ -5,6 +5,7 @@ import (
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/graphio"
 	"fmt"
+	"math"
 )
 
 // EvaluationResult は、運賃計算結果を抽象化するインターフェースです。
@@ -33,14 +34,38 @@ func (u *TicketCalculationUseCase) Execute(path []int, months int) (*Calculation
 }
 
 func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode string) (*CalculationResult, []int, error) {
+	results, err := u.EvaluateAllWithMode(path, months, mode)
+	if err != nil {
+		return nil, nil, err
+	}
+	return results[0].Result, results[0].Path, nil
+}
+
+// TicketFareEvaluation is one valid fare-path evaluation for a physical path.
+// Path is deliberately kept separate from the caller supplied physical path.
+type TicketFareEvaluation struct {
+	Result *CalculationResult
+	Path   []int
+}
+
+// EvaluateAllWithMode evaluates every valid special-rule candidate and returns
+// all candidates tied for the minimum fare. Resolver ordering is not a
+// correctness rule: a later ordinary/special candidate may be cheaper.
+func (u *TicketCalculationUseCase) EvaluateAllWithMode(path []int, months int, mode string) ([]TicketFareEvaluation, error) {
 	// cheapest は物理経路補正側だけで使い、運賃評価は通常モードで行います。
 	// 既存の呼び出し元との互換性のため、ここでも防御的に正規化します。
 	mode = NormalizeFareEvaluationMode(mode)
 	candidates, err := u.resolver.Resolve(path, mode)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	var lastErr error
+	type evaluatedCandidate struct {
+		evaluation    TicketFareEvaluation
+		isSpecialZone bool
+	}
+	var evaluated []evaluatedCandidate
+	hasApplicableSpecialZone := false
 	for _, candidate := range candidates {
 		res, err := u.calc.Execute(candidate.Path)
 		if err != nil {
@@ -50,12 +75,38 @@ func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode 
 		if candidate.CheckThreshold && res.TotalEigyoKilo <= candidate.ThresholdKilo {
 			continue
 		}
-		return res, candidate.Path, nil
+		if candidate.IsSpecialZone {
+			hasApplicableSpecialZone = true
+		}
+		evaluated = append(evaluated, evaluatedCandidate{
+			evaluation:    TicketFareEvaluation{Result: res, Path: append([]int(nil), candidate.Path...)},
+			isSpecialZone: candidate.IsSpecialZone,
+		})
+	}
+	minAmount := math.MaxInt
+	var best []TicketFareEvaluation
+	for _, candidate := range evaluated {
+		// 第86条・第87条が成立する区間では、通常駅発着の候補は選択できません。
+		// これは同額時の表示優先ではなく、普通乗車券としての適用条件です。
+		if hasApplicableSpecialZone && !candidate.isSpecialZone {
+			continue
+		}
+		amount := candidate.evaluation.Result.TotalAmount()
+		if amount < minAmount {
+			minAmount = amount
+			best = best[:0]
+		}
+		if amount == minAmount {
+			best = append(best, candidate.evaluation)
+		}
+	}
+	if len(best) > 0 {
+		return best, nil
 	}
 	if lastErr != nil {
-		return nil, nil, lastErr
+		return nil, lastErr
 	}
-	return nil, nil, domain.ErrInvalidPath
+	return nil, domain.ErrInvalidPath
 }
 
 // TicketSegmentEvaluator は分割探索から利用される乗車券評価器です。
@@ -86,6 +137,10 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 // 経路補正用のcheapestはNormalizeFareEvaluationModeでnormalへ変換されます。
 func (e *TicketSegmentEvaluator) ExecuteWithMode(path []int, months int, mode string) (*CalculationResult, []int, error) {
 	return e.calculation.ExecuteWithMode(path, months, mode)
+}
+
+func (e *TicketSegmentEvaluator) EvaluateAllWithMode(path []int, months int, mode string) ([]TicketFareEvaluation, error) {
+	return e.calculation.EvaluateAllWithMode(path, months, mode)
 }
 
 // NormalizeFareEvaluationMode は、経路補正モードを運賃評価モードへ変換します。

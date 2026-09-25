@@ -2,7 +2,9 @@ package graph
 
 import (
 	"calculation-engine/internal/domain"
+	ticketdomain "calculation-engine/internal/ticket/domain"
 	"container/heap"
+	"context"
 	"fmt"
 	"sort"
 	"sync"
@@ -136,6 +138,11 @@ func (g *RailwayGraph) FindShortestPathGisei(startID, endID int) (*PathResult, e
 }
 
 func (g *RailwayGraph) FindAllShortestPathsGisei(startID int) ([]domain.DeciKilo, []int) {
+	dist, prev, _ := g.findAllShortestPathsGiseiContext(context.Background(), startID)
+	return dist, prev
+}
+
+func (g *RailwayGraph) findAllShortestPathsGiseiContext(ctx context.Context, startID int) ([]domain.DeciKilo, []int, error) {
 	numStations := g.NumStations()
 	dist := make([]domain.DeciKilo, numStations)
 	prev := make([]int, numStations)
@@ -153,6 +160,9 @@ func (g *RailwayGraph) FindAllShortestPathsGisei(startID int) ([]domain.DeciKilo
 	})
 
 	for pq.Len() > 0 {
+		if err := ctx.Err(); err != nil {
+			return nil, nil, err
+		}
 		u := heap.Pop(&pq).(*node)
 
 		if dist[u.stationID] != -1 && u.cost > dist[u.stationID] {
@@ -178,7 +188,53 @@ func (g *RailwayGraph) FindAllShortestPathsGisei(startID int) ([]domain.DeciKilo
 			}
 		}
 	}
-	return dist, prev
+	return dist, prev, nil
+}
+
+// findShortestDistancesToEndContext は各駅から endID までの最短擬制キロを返します。
+// 有向グラフでも正しい下界になるよう、物理辺を反転したグラフでDijkstraを実行します。
+func (g *RailwayGraph) findShortestDistancesToEndContext(ctx context.Context, endID int) ([]domain.DeciKilo, error) {
+	numStations := g.NumStations()
+	reverseEdges := make([][]ticketdomain.TicketEdge, numStations)
+	for from := 0; from < numStations; from++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		for _, edge := range g.getSearchEdges(from) {
+			if edge.ToID < 0 || edge.ToID >= numStations {
+				continue
+			}
+			reversed := edge
+			reversed.ToID = from
+			reverseEdges[edge.ToID] = append(reverseEdges[edge.ToID], reversed)
+		}
+	}
+
+	dist := make([]domain.DeciKilo, numStations)
+	for i := range dist {
+		dist[i] = -1
+	}
+	dist[endID] = 0
+	pq := make(priorityQueue, 0)
+	heap.Init(&pq)
+	heap.Push(&pq, &node{stationID: endID, cost: 0})
+	for pq.Len() > 0 {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		current := heap.Pop(&pq).(*node)
+		if current.cost > dist[current.stationID] {
+			continue
+		}
+		for _, edge := range reverseEdges[current.stationID] {
+			nextDistance := current.cost + edge.GiseiKilo
+			if dist[edge.ToID] == -1 || nextDistance < dist[edge.ToID] {
+				dist[edge.ToID] = nextDistance
+				heap.Push(&pq, &node{stationID: edge.ToID, cost: nextDistance})
+			}
+		}
+	}
+	return dist, nil
 }
 
 // FindAllShortestPathsEigyo は指定した駅からの全駅への最短営業キロ経路をダイクストラ法で検索します。
@@ -358,7 +414,20 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 	dist []domain.DeciKilo,
 	eigyoDist []domain.DeciKilo,
 	prev []int,
-	rootGisei domain.DeciKilo, maxGisei domain.DeciKilo, precalcDistGisei []uint16, endDistOffset int,
+	rootGisei domain.DeciKilo, maxGisei domain.DeciKilo, distanceToEnd []domain.DeciKilo,
+) (*PathResult, error) {
+	return g.FindShortestPathGiseiWithForbiddenContext(context.Background(), startID, endID, blockedNodes, blockedEdges, dist, eigyoDist, prev, rootGisei, maxGisei, distanceToEnd)
+}
+
+func (g *RailwayGraph) FindShortestPathGiseiWithForbiddenContext(
+	ctx context.Context,
+	startID, endID int,
+	blockedNodes []bool,
+	blockedEdges map[uint64]bool,
+	dist []domain.DeciKilo,
+	eigyoDist []domain.DeciKilo,
+	prev []int,
+	rootGisei domain.DeciKilo, maxGisei domain.DeciKilo, distanceToEnd []domain.DeciKilo,
 ) (*PathResult, error) {
 	if startID < 0 || startID >= len(g.IDToName) {
 		return nil, fmt.Errorf("FindShortestPathGiseiWithForbidden: %w: ID %d", domain.ErrStationNotFound, startID)
@@ -371,7 +440,7 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 		return nil, domain.ErrInvalidPath
 	}
 
-	if len(precalcDistGisei) > 0 && rootGisei+domain.DeciKilo(precalcDistGisei[endDistOffset+startID]) > maxGisei {
+	if len(distanceToEnd) > 0 && (distanceToEnd[startID] < 0 || rootGisei+distanceToEnd[startID] > maxGisei) {
 		return nil, domain.ErrInvalidPath
 	}
 
@@ -388,6 +457,9 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 	heap.Push(pq, &node{stationID: startID, cost: 0})
 
 	for pq.Len() > 0 {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		curr := heap.Pop(pq).(*node)
 
 		if curr.stationID == endID {
@@ -417,7 +489,7 @@ func (g *RailwayGraph) FindShortestPathGiseiWithForbidden(
 			newGisei := dist[curr.stationID] + edge.GiseiKilo
 			if newGisei < dist[next] {
 				// A* 枝刈り：rootGisei + ここまでの距離 + ここからゴールまでの最小予測距離 が maxGisei を超えるならキューに追加しない
-				ok := len(precalcDistGisei) == 0 || rootGisei+newGisei+domain.DeciKilo(precalcDistGisei[endDistOffset+next]) <= maxGisei
+				ok := len(distanceToEnd) == 0 || (distanceToEnd[next] >= 0 && rootGisei+newGisei+distanceToEnd[next] <= maxGisei)
 				if ok {
 					dist[next] = newGisei
 					eigyoDist[next] = eigyoDist[curr.stationID] + edge.EigyoKilo
@@ -476,14 +548,19 @@ func putPathBuffer(pathBuffer *[]int) {
 
 // YenScratch はYen's Algorithm用の再利用バッファです
 type YenScratch struct {
-	BlockedNodes []bool
-	Dist         []domain.DeciKilo
-	EigyoDist    []domain.DeciKilo
-	Prev         []int
+	BlockedNodes  []bool
+	Dist          []domain.DeciKilo
+	EigyoDist     []domain.DeciKilo
+	Prev          []int
+	DistanceToEnd []domain.DeciKilo
 }
 
 // FindUnboundedKShortestPathsGisei は、Yen's Algorithm を用いて、合計擬制キロが maxGisei 以下の最短経路をすべて探索します。
 func (g *RailwayGraph) FindUnboundedKShortestPathsGisei(startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
+	return g.FindUnboundedKShortestPathsGiseiWithContext(context.Background(), startID, endID, maxGisei)
+}
+
+func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithContext(ctx context.Context, startID, endID int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
 	numStations := len(g.IDToName)
 	scratch := &YenScratch{
 		BlockedNodes: make([]bool, numStations),
@@ -491,11 +568,45 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGisei(startID, endID int, maxG
 		EigyoDist:    make([]domain.DeciKilo, numStations),
 		Prev:         make([]int, numStations),
 	}
-	return g.FindUnboundedKShortestPathsGiseiWithScratch(startID, endID, maxGisei, scratch)
+	return g.findKShortestPathsGiseiWithScratchContext(ctx, startID, endID, 0, maxGisei, scratch)
+}
+
+// FindKShortestPathsGiseiWithContext は距離上限内の単純経路を擬制キロ順に最大k本返します。
+func (g *RailwayGraph) FindKShortestPathsGiseiWithContext(ctx context.Context, startID, endID, k int, maxGisei domain.DeciKilo) ([]*PathResult, error) {
+	if k <= 0 {
+		return nil, domain.ErrInvalidPath
+	}
+	numStations := len(g.IDToName)
+	scratch := &YenScratch{
+		BlockedNodes: make([]bool, numStations),
+		Dist:         make([]domain.DeciKilo, numStations),
+		EigyoDist:    make([]domain.DeciKilo, numStations),
+		Prev:         make([]int, numStations),
+	}
+	return g.findKShortestPathsGiseiWithScratchContext(ctx, startID, endID, k, maxGisei, scratch)
+}
+
+// FindKShortestPathsGiseiWithScratchContext は再利用バッファを使い、距離上限内の単純経路を最大k本返します。
+func (g *RailwayGraph) FindKShortestPathsGiseiWithScratchContext(ctx context.Context, startID, endID, k int, maxGisei domain.DeciKilo, scratch *YenScratch) ([]*PathResult, error) {
+	if k <= 0 {
+		return nil, domain.ErrInvalidPath
+	}
+	return g.findKShortestPathsGiseiWithScratchContext(ctx, startID, endID, k, maxGisei, scratch)
 }
 
 // FindUnboundedKShortestPathsGiseiWithScratch は再利用バッファを用いてYen's Algorithmを実行します
 func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratch(startID, endID int, maxGisei domain.DeciKilo, scratch *YenScratch) ([]*PathResult, error) {
+	return g.FindUnboundedKShortestPathsGiseiWithScratchContext(context.Background(), startID, endID, maxGisei, scratch)
+}
+
+func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratchContext(ctx context.Context, startID, endID int, maxGisei domain.DeciKilo, scratch *YenScratch) ([]*PathResult, error) {
+	return g.findKShortestPathsGiseiWithScratchContext(ctx, startID, endID, 0, maxGisei, scratch)
+}
+
+func (g *RailwayGraph) findKShortestPathsGiseiWithScratchContext(ctx context.Context, startID, endID, maxPaths int, maxGisei domain.DeciKilo, scratch *YenScratch) ([]*PathResult, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	firstPath, err := g.FindShortestPathGisei(startID, endID)
 	if err != nil {
 		return nil, err
@@ -538,12 +649,38 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratch(startID, endI
 	eigyoDist := scratch.EigyoDist
 	prev := scratch.Prev
 
-	endDistOffset := endID * numStations
+	distanceToEnd := scratch.DistanceToEnd
+	if len(distanceToEnd) != numStations {
+		distanceToEnd = make([]domain.DeciKilo, numStations)
+		scratch.DistanceToEnd = distanceToEnd
+	}
+	if len(g.DistGisei) == numStations*numStations {
+		for stationID := range distanceToEnd {
+			precomputed := g.DistGisei[stationID*numStations+endID]
+			if precomputed == ^uint16(0) {
+				distanceToEnd[stationID] = -1
+			} else {
+				distanceToEnd[stationID] = domain.DeciKilo(precomputed)
+			}
+		}
+	} else {
+		var err error
+		distanceToEnd, err = g.findShortestDistancesToEndContext(ctx, endID)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	for ki := 1; ; ki++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		prevPath := A[ki-1].StationIDs
 		// 分岐ノード（spurNode）のループ：最初のノードから最後から2番目のノードまで
 		for i := 0; i < len(prevPath)-1; i++ {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
 			spurNode := prevPath[i]
 			rootPath := prevPath[0 : i+1]
 
@@ -573,9 +710,10 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratch(startID, endI
 			rootGiseiVal, _ := g.getPathKilos(rootPath)
 
 			// 修正されたグラフ上で spurNode から endID への最短経路を探索
-			spurPathResult, err := g.FindShortestPathGiseiWithForbidden(
+			spurPathResult, err := g.FindShortestPathGiseiWithForbiddenContext(
+				ctx,
 				spurNode, endID, blockedNodes, blockedEdges, dist, eigyoDist, prev,
-				rootGiseiVal, maxGisei, g.DistGisei, endDistOffset,
+				rootGiseiVal, maxGisei, distanceToEnd,
 			)
 			if err == nil {
 				// ルートパスと分岐パスの結合
@@ -623,6 +761,9 @@ func (g *RailwayGraph) FindUnboundedKShortestPathsGiseiWithScratch(startID, endI
 		nextPath := B[0]
 		A = append(A, nextPath)
 		B = B[1:]
+		if maxPaths > 0 && len(A) >= maxPaths {
+			break
+		}
 	}
 
 	// Bに残った不要なパススライスをプールに返却
