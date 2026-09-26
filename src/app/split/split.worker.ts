@@ -196,7 +196,7 @@ async function fetchAsset(url: string) {
   } catch (error) {
     const status = (error as { httpStatus?: number }).httpStatus;
     const assetMatch = url.match(/\/engine\/[a-f0-9]{64}\/([^/?#]+)$/);
-    if (status !== 404 || !assetMatch) throw error;
+    if ((status !== 403 && status !== 404) || !assetMatch) throw error;
 
     const currentBaseUrl = await getCurrentEngineBaseUrl();
     if (!currentBaseUrl) throw error;

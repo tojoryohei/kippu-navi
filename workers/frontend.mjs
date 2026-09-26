@@ -230,7 +230,7 @@ export async function fetchEngineAsset(request, assets) {
   if (!match || !['GET', 'HEAD'].includes(request.method)) return assets.fetch(request);
 
   const response = await assets.fetch(request);
-  if (response.status !== 404) return response;
+  if (response.status !== 403 && response.status !== 404) return response;
 
   try {
     const manifestUrl = new URL('/deployment.json', url);
@@ -251,7 +251,7 @@ export async function fetchEngineAsset(request, assets) {
     fallbackUrl.search = url.search;
     return assets.fetch(new Request(fallbackUrl, request));
   } catch {
-    // Keep the original 404 if the deployment manifest is unavailable or invalid.
+    // Keep the original response if the deployment manifest is unavailable or invalid.
     return response;
   }
 }
