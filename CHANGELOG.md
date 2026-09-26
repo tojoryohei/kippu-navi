@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.14](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.13...kippu-navi-v3.3.14) (2026-09-26)
+
+
+### Bug Fixes
+
+* エンジン資材の403復旧とSentryの重複分類を改善 ([#759](https://github.com/tojoryohei/kippu-navi/issues/759)) ([48c0766](https://github.com/tojoryohei/kippu-navi/commit/48c07663cf5803184aaaca9bef52965832db9e04))
+
 ## [3.3.13](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.12...kippu-navi-v3.3.13) (2026-09-25)
 
 
