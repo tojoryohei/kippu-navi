@@ -150,7 +150,7 @@ export function captureSearchError(error: unknown, context: SearchEventContext) 
         if (details.elapsedMs !== undefined) scope.setTag("elapsed_ms", details.elapsedMs.toString());
         if (context.requestId) scope.setTag("request_id", context.requestId);
         scope.setExtra("search_url", window.location.href);
-        scope.setFingerprint([details.code, details.stage, details.capability || context.capability, String(details.httpStatus || "none"), __WASM_VERSION__]);
+        scope.setFingerprint([details.code, details.stage, details.capability || context.capability, String(details.httpStatus || "none")]);
         Sentry.captureException(normalized);
       });
     }

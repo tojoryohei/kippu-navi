@@ -258,12 +258,12 @@ test("運賃計算もメインの計算ボタンからエンジンを再試行�
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
 });
 
-test("古いエンジンURLの404時に現行資材へフォールバックして検索を継続する", async ({ page }) => {
+for (const staleStatus of [403, 404]) test(`古いエンジンURLの${staleStatus}時に現行資材へフォールバックして検索を継続する`, async ({ page }) => {
   await isolateServices(page);
   const fallbackEngineBasePath = `/engine/${"f".repeat(64)}`;
   let staleEngineBasePath: string | undefined;
-  let staleWasmRuntime404s = 0;
-  let staleTicketGraph404s = 0;
+  let staleWasmRuntimeFailures = 0;
+  let staleTicketGraphFailures = 0;
 
   await page.route("**/deployment.json", route =>
     route.fulfill({ json: { enginePath: fallbackEngineBasePath } }),
@@ -275,13 +275,13 @@ test("古いエンジンURLの404時に現行資材へフォールバックし�
 
     staleEngineBasePath ??= `/engine/${match[1]}`;
     const assetPath = match[2];
-    if (assetPath === "/wasm_exec.js" && !url.pathname.startsWith(fallbackEngineBasePath) && staleWasmRuntime404s === 0) {
-      staleWasmRuntime404s++;
-      return route.fulfill({ status: 404, body: "stale engine runtime" });
+    if (assetPath === "/wasm_exec.js" && !url.pathname.startsWith(fallbackEngineBasePath) && staleWasmRuntimeFailures === 0) {
+      staleWasmRuntimeFailures++;
+      return route.fulfill({ status: staleStatus, body: "stale engine runtime" });
     }
-    if (assetPath === "/ticket_graph_data.bin" && !url.pathname.startsWith(fallbackEngineBasePath) && staleTicketGraph404s === 0) {
-      staleTicketGraph404s++;
-      return route.fulfill({ status: 404, body: "stale engine asset" });
+    if (assetPath === "/ticket_graph_data.bin" && !url.pathname.startsWith(fallbackEngineBasePath) && staleTicketGraphFailures === 0) {
+      staleTicketGraphFailures++;
+      return route.fulfill({ status: staleStatus, body: "stale engine asset" });
     }
 
     if (url.pathname.startsWith(fallbackEngineBasePath) && staleEngineBasePath) {
@@ -295,8 +295,8 @@ test("古いエンジンURLの404時に現行資材へフォールバックし�
 
   await page.goto(`/split/ticket?${query}`);
   await expectTicket(page);
-  expect(staleWasmRuntime404s).toBe(1);
-  expect(staleTicketGraph404s).toBe(1);
+  expect(staleWasmRuntimeFailures).toBe(1);
+  expect(staleTicketGraphFailures).toBe(1);
 });
 
 test("経路APIの一時的なネットワーク失敗を再試行して検索を継続する", async ({ page }) => {

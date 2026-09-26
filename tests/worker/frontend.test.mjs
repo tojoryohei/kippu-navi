@@ -449,7 +449,7 @@ test('Sentry tunnel forwards a valid envelope to its fixed project endpoint', as
   assert.equal(capturedBody, envelope);
 });
 
-test('stale engine asset paths fall back to the current deployment manifest', async () => {
+for (const staleStatus of [403, 404]) test(`stale engine asset paths fall back after ${staleStatus}`, async () => {
   const staleUrl = 'https://kippu-navi.com/engine/' + 'a'.repeat(64) + '/main.wasm';
   const currentPath = '/engine/' + 'b'.repeat(64);
   const requested = [];
@@ -458,7 +458,7 @@ test('stale engine asset paths fall back to the current deployment manifest', as
       const url = new URL(request.url);
       requested.push(url.pathname);
       if (url.pathname === staleUrl.replace('https://kippu-navi.com', '')) {
-        return new Response('missing', { status: 404 });
+        return new Response('missing', { status: staleStatus });
       }
       if (url.pathname === '/deployment.json') {
         return Response.json({ enginePath: currentPath });
@@ -478,6 +478,24 @@ test('stale engine asset paths fall back to the current deployment manifest', as
     '/deployment.json',
     `${currentPath}/main.wasm`,
   ]);
+});
+
+test('a 403 for the current engine asset is preserved', async () => {
+  const currentPath = '/engine/' + 'b'.repeat(64);
+  const requested = [];
+  const assets = {
+    fetch: async request => {
+      const pathname = new URL(request.url).pathname;
+      requested.push(pathname);
+      if (pathname === '/deployment.json') return Response.json({ enginePath: currentPath });
+      return new Response('forbidden', { status: 403 });
+    },
+  };
+
+  const response = await fetchEngineAsset(new Request(`https://kippu-navi.com${currentPath}/main.wasm`), assets);
+
+  assert.equal(response.status, 403);
+  assert.deepEqual(requested, [`${currentPath}/main.wasm`, '/deployment.json']);
 });
 
 test('engine asset fallback rejects an external deployment manifest path', async () => {
