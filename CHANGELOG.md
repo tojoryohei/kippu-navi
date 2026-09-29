@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.15](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.14...kippu-navi-v3.3.15) (2026-09-29)
+
+
+### Bug Fixes
+
+* 未登録運賃を業務エラーとして扱う ([#768](https://github.com/tojoryohei/kippu-navi/issues/768)) ([d2ad169](https://github.com/tojoryohei/kippu-navi/commit/d2ad1697a9c05ed44f963ecd05f498a14be41632))
+
 ## [3.3.14](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.13...kippu-navi-v3.3.14) (2026-09-26)
 
 
