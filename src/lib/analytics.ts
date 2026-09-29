@@ -92,7 +92,7 @@ export const analytics = {
   },
 };
 
-const BUSINESS_ERROR_CODES = new Set(["duplicate_route", "path_invalid"]);
+const BUSINESS_ERROR_CODES = new Set(["duplicate_route", "path_invalid", "fare_unregistered"]);
 
 export function getCalculationErrorType(error: string) {
   const code = classifyCalculationError(error);
