@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy_environment:
-        description: 'デプロイ先。productionは一時URLでの検証に使用します。'
+        description: 'デプロイ先。productionのworkers.dev URLとプレビューURLは無効です。'
         required: true
         type: choice
         default: staging
@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 # All development branches share one staging deployment. A manual production run
-# is available for pre-cutover verification while the custom domain remains on proxy.
+# is available when a production deployment needs to be run explicitly.
 concurrency:
   group: frontend-${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
   cancel-in-progress: false
@@ -96,13 +96,13 @@ jobs:
           DEPLOY_SHA: ${{ github.sha }}
         run: |
           if [ "$DEPLOY_ENVIRONMENT" = production ]; then
-            DEPLOY_URL="Cloudflare Worker production（Custom Domain未接続。workers.devで確認）"
+            DEPLOY_URL="workers.dev URLとプレビューURLは無効"
           else
-            DEPLOY_URL="https://staging.kippu-navi.com"
+            DEPLOY_URL="https://staging.kippu-navi.com/deployment.json"
           fi
           {
             printf 'Environment: `%s`\n\n' "$DEPLOY_ENVIRONMENT"
             printf 'Branch: `%s`\n\n' "$DEPLOY_BRANCH"
             printf 'Commit: `%s`\n\n' "$DEPLOY_SHA"
-            printf 'Deployment: %s/deployment.json\n' "$DEPLOY_URL"
+            printf 'Deployment: %s\n' "$DEPLOY_URL"
           } >> "$GITHUB_STEP_SUMMARY"
