@@ -49,7 +49,7 @@ jobs:
 
       - name: Checkout
         if: github.actor != 'dependabot[bot]'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         if: github.actor != 'dependabot[bot]'
