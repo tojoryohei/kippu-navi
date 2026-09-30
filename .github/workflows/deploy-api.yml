@@ -16,9 +16,6 @@ env:
   RUNTIME_SERVICE_ACCOUNT: ${{ github.ref == 'refs/heads/main' && 'calculation-engine-runtime@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'calculation-engine-stg-runtime@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
   INVOKER_SERVICE_ACCOUNT: ${{ github.ref == 'refs/heads/main' && 'cloudflare-api-invoker@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'cloudflare-api-invoker-stg@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
   GAR_REPO: 'cloud-run-source-deploy' 
-  R2_BUCKET: 'kippu-navi-build-data'
-  R2_ENDPOINT: 'https://06a234256eb76f93d5e4aaab15ea26f2.r2.cloudflarestorage.com'
-  AWS_DEFAULT_REGION: 'auto'
 
 concurrency:
   group: api-${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
@@ -47,9 +44,6 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
 
-      - name: Check R2 client
-        run: aws --version
-
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
@@ -62,304 +56,66 @@ jobs:
           username: 'oauth2accesstoken'
           password: '${{ steps.auth.outputs.access_token }}'
 
-      - name: Get Precomputed Binary Metadata
-        id: r2-meta
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_READ_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_READ_SECRET_ACCESS_KEY }}
-          PASS_OBJECT: pass_precomputed_server.bin
-          TICKET_OBJECT: ticket_precomputed_server.bin
-        run: |
-          set -euo pipefail
-
-          hash_files() {
-            local files
-            files=$(git ls-files "$@")
-            if [ -z "$files" ]; then
-              echo "ハッシュ対象のファイルがありません: $*" >&2
-              return 1
-            fi
-            while IFS= read -r file; do
-              sha256sum "$file"
-            done <<< "$files" | sha256sum | awk '{print $1}'
-          }
-
-          PASS_SOURCE_HASH=$(hash_files \
-            calculation-engine/cmd/precompute-pass-fares \
-            calculation-engine/internal/domain \
-            calculation-engine/internal/pass \
-            calculation-engine/internal/graphdata/edges.json \
-            calculation-engine/go.mod \
-            calculation-engine/go.sum)
-          TICKET_SOURCE_HASH=$(hash_files \
-            calculation-engine/cmd/precompute-ticket-fares \
-            calculation-engine/internal/domain \
-            calculation-engine/internal/graphdata \
-            calculation-engine/internal/ticket \
-            calculation-engine/go.mod \
-            calculation-engine/go.sum)
-
-          lookup_metadata() {
-            local object="$1"
-            local error_file="$RUNNER_TEMP/r2-head-$(basename "$object").log"
-            local metadata_json checksum source_hash
-
-            if ! metadata_json=$(aws s3api head-object --bucket "$R2_BUCKET" --key "$object" --endpoint-url "$R2_ENDPOINT" 2>"$error_file"); then
-              if grep -Eqi 'not[ _-]?found|404' "$error_file"; then
-                return 2
-              fi
-              cat "$error_file" >&2
-              return 1
-            fi
-            checksum=$(jq -r '.Metadata.sha256 // empty' <<< "$metadata_json")
-            source_hash=$(jq -r '.Metadata["precompute-source-sha256"] // empty' <<< "$metadata_json")
-            if [ -z "$checksum" ] || [ -z "$source_hash" ]; then
-              echo "R2オブジェクトのSHA-256または生成元メタデータを取得できません: $object" >&2
-              return 1
-            fi
-            printf '%s\t%s\n' "$checksum" "$source_hash"
-          }
-
-          if PASS_METADATA=$(lookup_metadata "$PASS_OBJECT"); then
-            IFS=$'\t' read -r PASS_CHECKSUM PASS_SOURCE_METADATA <<< "$PASS_METADATA"
-            PASS_MISSING=false
-          else
-            STATUS=$?
-            if [ "$STATUS" -eq 2 ]; then
-              PASS_CHECKSUM="missing-${GITHUB_SHA}"
-              PASS_SOURCE_METADATA=""
-              PASS_MISSING=true
-            else
-              exit "$STATUS"
-            fi
-          fi
-
-          if TICKET_METADATA=$(lookup_metadata "$TICKET_OBJECT"); then
-            IFS=$'\t' read -r TICKET_CHECKSUM TICKET_SOURCE_METADATA <<< "$TICKET_METADATA"
-            TICKET_MISSING=false
-          else
-            STATUS=$?
-            if [ "$STATUS" -eq 2 ]; then
-              TICKET_CHECKSUM="missing-${GITHUB_SHA}"
-              TICKET_SOURCE_METADATA=""
-              TICKET_MISSING=true
-            else
-              exit "$STATUS"
-            fi
-          fi
-
-          if [ -f ./calculation-engine/internal/graphdata/edges.json ]; then
-            GRAPH_PATH=./calculation-engine/internal/graphdata/edges.json
-          else
-            GRAPH_PATH=./calculation-engine/internal/pass/graph/data/edges.json
-          fi
-          GRAPH_STATIONS=$(jq -r '.[].station0, .[].station1' "$GRAPH_PATH" | sort -u | wc -l | tr -d ' ')
-          PASS_NEEDS_GENERATION=$([ "$PASS_SOURCE_METADATA" = "$PASS_SOURCE_HASH" ] && echo false || echo true)
-          TICKET_NEEDS_GENERATION=$([ "$TICKET_SOURCE_METADATA" = "$TICKET_SOURCE_HASH" ] && echo false || echo true)
-          echo "pass_checksum=$PASS_CHECKSUM" >> $GITHUB_OUTPUT
-          echo "ticket_checksum=$TICKET_CHECKSUM" >> $GITHUB_OUTPUT
-          echo "pass_missing=$PASS_MISSING" >> $GITHUB_OUTPUT
-          echo "ticket_missing=$TICKET_MISSING" >> $GITHUB_OUTPUT
-          echo "pass_source_hash=$PASS_SOURCE_HASH" >> $GITHUB_OUTPUT
-          echo "ticket_source_hash=$TICKET_SOURCE_HASH" >> $GITHUB_OUTPUT
-          echo "pass_needs_generation=$PASS_NEEDS_GENERATION" >> $GITHUB_OUTPUT
-          echo "ticket_needs_generation=$TICKET_NEEDS_GENERATION" >> $GITHUB_OUTPUT
-          echo "graph_path=$GRAPH_PATH" >> $GITHUB_OUTPUT
-          echo "graph_stations=$GRAPH_STATIONS" >> $GITHUB_OUTPUT
-
-      - name: Cache Precomputed Server Binary
-        id: cache-bin
-        if: github.ref != 'refs/heads/main'
+      - name: Cache precomputed pass fares
+        id: cache-pass
         uses: actions/cache@v5
         with:
-          path: |
-            ./calculation-engine/data/precomputed/pass.bin
-            ./calculation-engine/data/precomputed/ticket.bin
-          key: precomputed-server-${{ env.SERVICE_NAME }}-${{ steps.r2-meta.outputs.pass_checksum }}-${{ steps.r2-meta.outputs.ticket_checksum }}-${{ steps.r2-meta.outputs.pass_source_hash }}-${{ steps.r2-meta.outputs.ticket_source_hash }}
+          path: ./calculation-engine/data/precomputed/pass.bin
+          key: precomputed-pass-v2-${{ hashFiles('calculation-engine/cmd/precompute-pass-fares/**', 'calculation-engine/internal/domain/**', 'calculation-engine/internal/pass/**', 'calculation-engine/internal/graphdata/edges.json', 'calculation-engine/go.mod', 'calculation-engine/go.sum') }}
 
-      - name: Download or generate Precomputed Server Binary
-        id: prepare-data
-        if: github.ref == 'refs/heads/main' || steps.cache-bin.outputs.cache-hit != 'true'
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_READ_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_READ_SECRET_ACCESS_KEY }}
-          PASS_OBJECT: pass_precomputed_server.bin
-          TICKET_OBJECT: ticket_precomputed_server.bin
-          PASS_MISSING: ${{ steps.r2-meta.outputs.pass_missing }}
-          TICKET_MISSING: ${{ steps.r2-meta.outputs.ticket_missing }}
-          PASS_NEEDS_GENERATION: ${{ steps.r2-meta.outputs.pass_needs_generation }}
-          TICKET_NEEDS_GENERATION: ${{ steps.r2-meta.outputs.ticket_needs_generation }}
-          GRAPH_PATH: ${{ steps.r2-meta.outputs.graph_path }}
+      - name: Generate precomputed pass fares
+        if: steps.cache-pass.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          PASS_GENERATED=false
-          TICKET_GENERATED=false
-          GRAPH_INPUT="${GRAPH_PATH#./calculation-engine/}"
+          cd calculation-engine
+          mkdir -p data/precomputed
+          go run ./cmd/precompute-pass-fares ./internal/graphdata/edges.json ./data/precomputed/pass.bin
 
-          if [ "$PASS_MISSING" = true ] || [ "$PASS_NEEDS_GENERATION" = true ]; then
-            if [ "$PASS_MISSING" = true ]; then
-              echo "定期券用R2データが無いため、現行グラフから生成します。"
-            else
-              echo "定期券用R2データの生成元フィンガープリントが古いため、現行ソースから再生成します。"
-            fi
-            (
-              cd calculation-engine
-              mkdir -p data/precomputed
-              go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./data/precomputed/pass.bin
-            )
-            PASS_GENERATED=true
-          else
-            mkdir -p ./calculation-engine/data/precomputed
-            aws s3 cp "s3://$R2_BUCKET/$PASS_OBJECT" ./calculation-engine/data/precomputed/pass.bin --endpoint-url "$R2_ENDPOINT"
-          fi
+      - name: Cache precomputed ticket fares
+        id: cache-ticket
+        uses: actions/cache@v5
+        with:
+          path: ./calculation-engine/data/precomputed/ticket.bin
+          key: precomputed-ticket-v2-${{ hashFiles('calculation-engine/cmd/precompute-ticket-fares/**', 'calculation-engine/internal/domain/**', 'calculation-engine/internal/graphdata/**', 'calculation-engine/internal/ticket/**', 'calculation-engine/go.mod', 'calculation-engine/go.sum') }}
 
-          if [ "$TICKET_MISSING" = true ] || [ "$TICKET_NEEDS_GENERATION" = true ]; then
-            if [ "$TICKET_MISSING" = true ]; then
-              echo "乗車券用R2データが無いため、現行グラフから生成します。"
-            else
-              echo "乗車券用R2データの生成元フィンガープリントが古いため、現行ソースから再生成します。"
-            fi
-            (
-              cd calculation-engine
-              mkdir -p data/precomputed
-              go run ./cmd/precompute-ticket-fares ./data/precomputed/ticket.bin
-            )
-            TICKET_GENERATED=true
-          else
-            mkdir -p ./calculation-engine/data/precomputed
-            aws s3 cp "s3://$R2_BUCKET/$TICKET_OBJECT" ./calculation-engine/data/precomputed/ticket.bin --endpoint-url "$R2_ENDPOINT"
-          fi
-
-          echo "pass_generated=$PASS_GENERATED" >> "$GITHUB_OUTPUT"
-          echo "ticket_generated=$TICKET_GENERATED" >> "$GITHUB_OUTPUT"
-
-      - name: Validate or regenerate precomputed binaries
-        id: validate-data
-        env:
-          PASS_OBJECT_CHECKSUM: ${{ steps.r2-meta.outputs.pass_checksum }}
-          TICKET_OBJECT_CHECKSUM: ${{ steps.r2-meta.outputs.ticket_checksum }}
-          PASS_NEEDS_GENERATION: ${{ steps.r2-meta.outputs.pass_needs_generation }}
-          TICKET_NEEDS_GENERATION: ${{ steps.r2-meta.outputs.ticket_needs_generation }}
+      - name: Generate precomputed ticket fares
+        if: steps.cache-ticket.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          verify_checksum() {
-            local path="$1"
-            local expected="$2"
-            local actual
-            actual=$(sha256sum "$path" | awk '{print $1}')
-            if [ "$actual" != "$expected" ]; then
-              echo "事前計算データのSHA-256が一致しません: $path (R2=$expected, local=$actual)" >&2
-              return 1
-            fi
-          }
+          cd calculation-engine
+          mkdir -p data/precomputed
+          go run ./cmd/precompute-ticket-fares ./data/precomputed/ticket.bin
 
+      - name: Validate precomputed binaries
+        run: |
+          set -euo pipefail
           verify_magic() {
             local path="$1"
             local expected="$2"
             local actual
+            test -s "$path"
             actual=$(od -An -t x1 -N8 "$path" | tr -d ' \n')
             if [ "$actual" != "$expected" ]; then
-              echo "事前計算データのmagicが不正です: $path (expected=$expected, actual=$actual)" >&2
+              echo "事前計算データのmagicが不正です: $path" >&2
               return 1
             fi
           }
 
-          PASS_BINARY_PATH=./calculation-engine/data/precomputed/pass.bin
-          TICKET_BINARY_PATH=./calculation-engine/data/precomputed/ticket.bin
-          if [ "$PASS_NEEDS_GENERATION" = false ]; then
-            verify_checksum "$PASS_BINARY_PATH" "$PASS_OBJECT_CHECKSUM"
-          fi
-          if [ "$TICKET_NEEDS_GENERATION" = false ]; then
-            verify_checksum "$TICKET_BINARY_PATH" "$TICKET_OBJECT_CHECKSUM"
-          fi
-          verify_magic "$PASS_BINARY_PATH" "5352565242494e00"
-          verify_magic "$TICKET_BINARY_PATH" "544b535256320000"
+          pass_path=./calculation-engine/data/precomputed/pass.bin
+          ticket_path=./calculation-engine/data/precomputed/ticket.bin
+          verify_magic "$pass_path" "5352565242494e00"
+          verify_magic "$ticket_path" "544b535256320000"
 
-          BINARY_PATH="$PASS_BINARY_PATH"
-          EXPECTED_STATIONS="${{ steps.r2-meta.outputs.graph_stations }}"
-          ACTUAL_STATIONS=$(od -An -t u4 -j8 -N4 "$BINARY_PATH" | tr -d ' ')
-
-          if [ "$EXPECTED_STATIONS" = "$ACTUAL_STATIONS" ]; then
-            echo "定期券事前計算データを検証しました: ${ACTUAL_STATIONS}駅"
-            exit 0
-          fi
-
-          GRAPH_INPUT="${{ steps.r2-meta.outputs.graph_path }}"
-          GRAPH_INPUT="${GRAPH_INPUT#./calculation-engine/}"
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "本番用事前計算データを現行グラフから再生成します: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
-          else
-            echo "ステージング用事前計算データを現行グラフから再生成します: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
-          fi
-          (
-            cd calculation-engine
-            go run ./cmd/precompute-pass-fares "$GRAPH_INPUT" ./data/precomputed/pass.bin
-          )
-
-          ACTUAL_STATIONS=$(od -An -t u4 -j8 -N4 "$BINARY_PATH" | tr -d ' ')
-          if [ "$EXPECTED_STATIONS" != "$ACTUAL_STATIONS" ]; then
-            echo "再生成後も駅数が一致しません: グラフ=${EXPECTED_STATIONS}, データ=${ACTUAL_STATIONS}"
+          expected_stations=$(jq -r '.[].station0, .[].station1' ./calculation-engine/internal/graphdata/edges.json | sort -u | wc -l | tr -d '[:space:]')
+          actual_stations=$(od -An -t u4 -j8 -N4 "$pass_path" | tr -d '[:space:]')
+          if [ "$expected_stations" != "$actual_stations" ]; then
+            echo "定期券事前計算データの駅数が一致しません: graph=$expected_stations, data=$actual_stations" >&2
             exit 1
           fi
-          echo "pass_generated=true" >> "$GITHUB_OUTPUT"
-          echo "事前計算データを検証しました: ${ACTUAL_STATIONS}駅"
-
-      - name: Publish generated precomputed binaries
-        if: >-
-          github.ref == 'refs/heads/main' &&
-          (steps.prepare-data.outputs.pass_generated == 'true' ||
-           steps.prepare-data.outputs.ticket_generated == 'true' ||
-           steps.validate-data.outputs.pass_generated == 'true')
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_WRITE_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_WRITE_SECRET_ACCESS_KEY }}
-          PASS_OBJECT: pass_precomputed_server.bin
-          TICKET_OBJECT: ticket_precomputed_server.bin
-          PASS_GENERATED_ON_FETCH: ${{ steps.prepare-data.outputs.pass_generated }}
-          TICKET_GENERATED: ${{ steps.prepare-data.outputs.ticket_generated }}
-          PASS_GENERATED_ON_VALIDATE: ${{ steps.validate-data.outputs.pass_generated }}
-          PASS_SOURCE_HASH: ${{ steps.r2-meta.outputs.pass_source_hash }}
-          TICKET_SOURCE_HASH: ${{ steps.r2-meta.outputs.ticket_source_hash }}
-        run: |
-          set -euo pipefail
-          publish_and_verify() {
-            local path="$1"
-            local object="$2"
-            local source_hash="$3"
-            local local_checksum uploaded_checksum uploaded_source_hash downloaded_checksum verify_path
-
-            local_checksum=$(sha256sum "$path" | awk '{print $1}')
-            aws s3 cp "$path" "s3://$R2_BUCKET/$object" \
-              --endpoint-url "$R2_ENDPOINT" \
-              --content-type application/octet-stream \
-              --metadata "precompute-source-sha256=${source_hash},sha256=${local_checksum}"
-            uploaded_checksum=$(aws s3api head-object --bucket "$R2_BUCKET" --key "$object" --endpoint-url "$R2_ENDPOINT" --query 'Metadata.sha256' --output text)
-            uploaded_source_hash=$(aws s3api head-object --bucket "$R2_BUCKET" --key "$object" --endpoint-url "$R2_ENDPOINT" --query 'Metadata."precompute-source-sha256"' --output text)
-            if [ "$local_checksum" != "$uploaded_checksum" ] || [ "$source_hash" != "$uploaded_source_hash" ]; then
-              echo "R2へアップロードしたメタデータが一致しません: $object" >&2
-              return 1
-            fi
-            verify_path="$RUNNER_TEMP/$(basename "$object").verify"
-            aws s3 cp "s3://$R2_BUCKET/$object" "$verify_path" --endpoint-url "$R2_ENDPOINT"
-            downloaded_checksum=$(sha256sum "$verify_path" | awk '{print $1}')
-            rm -f "$verify_path"
-            if [ "$local_checksum" != "$downloaded_checksum" ]; then
-              echo "R2から再取得したデータのSHA-256が一致しません: $object" >&2
-              return 1
-            fi
-          }
-
-          if [ "$PASS_GENERATED_ON_FETCH" = true ] || [ "$PASS_GENERATED_ON_VALIDATE" = true ]; then
-            publish_and_verify \
-              ./calculation-engine/data/precomputed/pass.bin \
-              "$PASS_OBJECT" \
-              "$PASS_SOURCE_HASH"
-          fi
-          if [ "$TICKET_GENERATED" = true ]; then
-            publish_and_verify \
-              ./calculation-engine/data/precomputed/ticket.bin \
-              "$TICKET_OBJECT" \
-              "$TICKET_SOURCE_HASH"
+          ticket_stations=$(od -An -t u4 -j8 -N4 "$ticket_path" | tr -d '[:space:]')
+          if [ "$ticket_stations" -le 0 ]; then
+            echo "乗車券事前計算データの駅数が不正です: $ticket_stations" >&2
+            exit 1
           fi
 
       - name: Build and Push Docker Image
@@ -400,7 +156,7 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-          flags: '--invoker-iam-check --service-account=${{ env.RUNTIME_SERVICE_ACCOUNT }} --memory=768Mi --concurrency=2'
+          flags: '--invoker-iam-check --service-account=${{ env.RUNTIME_SERVICE_ACCOUNT }} --memory=512Mi --concurrency=2 --timeout=30s'
 
       - name: Restrict Cloud Run invocation to Cloudflare
         run: |
