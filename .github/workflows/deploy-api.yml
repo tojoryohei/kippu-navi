@@ -58,7 +58,7 @@ jobs:
 
       - name: Cache precomputed pass fares
         id: cache-pass
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ./calculation-engine/data/precomputed/pass.bin
           key: precomputed-pass-v2-${{ hashFiles('calculation-engine/cmd/precompute-pass-fares/**', 'calculation-engine/internal/domain/**', 'calculation-engine/internal/pass/**', 'calculation-engine/internal/graphdata/edges.json', 'calculation-engine/go.mod', 'calculation-engine/go.sum') }}
@@ -73,7 +73,7 @@ jobs:
 
       - name: Cache precomputed ticket fares
         id: cache-ticket
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ./calculation-engine/data/precomputed/ticket.bin
           key: precomputed-ticket-v2-${{ hashFiles('calculation-engine/cmd/precompute-ticket-fares/**', 'calculation-engine/internal/domain/**', 'calculation-engine/internal/graphdata/**', 'calculation-engine/internal/ticket/**', 'calculation-engine/go.mod', 'calculation-engine/go.sum') }}
