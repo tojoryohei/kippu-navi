@@ -30,7 +30,8 @@
     },
     "production": {
       "name": "production",
-      "workers_dev": true,
+      "workers_dev": false,
+      "preview_urls": false,
       "secrets": {
         "required": ["SENTRY_DSN", "GCP_SERVICE_ACCOUNT_EMAIL", "GCP_SERVICE_ACCOUNT_PRIVATE_KEY"]
       },
