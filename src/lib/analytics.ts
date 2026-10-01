@@ -4,6 +4,7 @@ import type { EngineReadiness } from "@/lib/engine-client";
 import { buildSearchCompletedProperties, buildSearchUrl, type SearchAnalyticsInput, type SearchOutcome, type SearchResultAnalytics } from "@/lib/analytics-events";
 import { initializeGoogleAnalytics, trackGooglePageView } from "@/lib/google-analytics";
 import { classifyCalculationError, SearchOperationError, type EngineCapability } from "@/lib/search-errors";
+import { sentryDataCollection } from "@/lib/sentry-data-collection";
 
 const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY;
 const googleAnalyticsId = import.meta.env.PUBLIC_GOOGLE_ANALYTICS_ID;
@@ -48,7 +49,7 @@ function initialize() {
       tunnel: "/monitoring",
       environment: __DEPLOY_ENVIRONMENT__,
       release: `${__APP_VERSION__}+${__DEPLOY_COMMIT__}`,
-      sendDefaultPii: false,
+      dataCollection: sentryDataCollection,
       sendClientReports: false,
       tracesSampleRate: 0,
       denyUrls: [

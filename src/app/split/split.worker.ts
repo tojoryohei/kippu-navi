@@ -1,6 +1,8 @@
 /// <reference lib="webworker" />
 import * as Sentry from "@sentry/browser";
 import { classifyCalculationError } from "@/lib/search-errors";
+import { sentryDataCollection } from "@/lib/sentry-data-collection";
+
 interface SplitCalculationSegment {
   start: string;
   end: string;
@@ -54,7 +56,7 @@ if (sentryDsn) {
     tunnel: `${baseOrigin}/monitoring`,
     environment: __DEPLOY_ENVIRONMENT__,
     release: `${__APP_VERSION__}+${__DEPLOY_COMMIT__}`,
-    sendDefaultPii: false,
+    dataCollection: sentryDataCollection,
     sendClientReports: false,
     tracesSampleRate: 0,
     integrations(defaultIntegrations) {
