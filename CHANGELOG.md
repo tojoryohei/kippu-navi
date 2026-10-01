@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.16](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.15...kippu-navi-v3.3.16) (2026-10-01)
+
+
+### Bug Fixes
+
+* DOMPurifyの脆弱性に対応しSentryとDependabotを更新 ([#780](https://github.com/tojoryohei/kippu-navi/issues/780)) ([8d7b784](https://github.com/tojoryohei/kippu-navi/commit/8d7b784be1a6ab89869202ebc9242599517bf645))
+
 ## [3.3.15](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.14...kippu-navi-v3.3.15) (2026-09-29)
 
 
