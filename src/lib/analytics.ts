@@ -60,6 +60,8 @@ function initialize() {
       // failure.
       ignoreErrors: [
         /Old view transition aborted by new view transition/,
+        /View transition was skipped because document visibility state is hidden\.?/,
+        /Transition was aborted because of invalid state\. Viewport size changed/,
         /Non-Error promise rejection captured with value: undefined/,
       ],
       integrations(defaultIntegrations) {
