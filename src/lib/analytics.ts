@@ -68,8 +68,9 @@ function initialize() {
       beforeSend(event) {
         const exception = event.exception?.values?.[0];
         const frames = exception?.stacktrace?.frames || [];
-        // Browser extensions can inject a one-line script into our page. The
-        // Firefox reader global is not referenced by the application.
+        // Sentry's browser-extension inbound filter is enabled. These
+        // one-line inline-script events expose no extension URL in their frames.
+        // The Firefox reader global is not referenced by the application.
         const isInjectedFirefoxReader = frames.length === 1
           && /\/split\/ticket$/.test(frames[0].filename || "")
           && /^(?:Can't find variable: __firefox__|undefined is not an object \(evaluating 'window\.__firefox__\.reader'\))$/.test(exception?.value || "");
