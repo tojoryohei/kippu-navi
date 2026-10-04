@@ -16,6 +16,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Local Sentry daily monitoring log
+/docs/sentry-monitoring-log.md
+
 # IDE/Editor specific files
 .vscode/
 .idea/
