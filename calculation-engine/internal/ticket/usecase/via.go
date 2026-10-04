@@ -204,14 +204,9 @@ func (p *viaPrinter) appendStation(station string) {
 	p.tokens = append(p.tokens, viaToken{station: station, isStation: true})
 }
 
-// shinkansenViaStationKana は計算用の大阪〜新神戸でも実際の接続駅コードを返します。
+// shinkansenViaStationKana は実際の新幹線接続駅のコードを返します。
 func shinkansenViaStationKana(path []ViaStep, i int) string {
-	station := path[i].StationName
-	if station == "大阪" && (i > 0 && path[i-1].StationName == "新神戸" && path[i-1].LineName == "シンカ" ||
-		i+1 < len(path) && path[i+1].StationName == "新神戸" && path[i].LineName == "シンカ") {
-		station = "新大阪"
-	}
-	return viaData.shinkansenStationKana[station]
+	return viaData.shinkansenStationKana[path[i].StationName]
 }
 
 func (p *viaPrinter) appendLine(kana string) {
@@ -774,15 +769,6 @@ func getFareViaForResult(path []ViaStep, finalPath []int, g graph.StationProvide
 	endZoneName := g.GetName(finalPath[len(finalPath)-1])
 	startBoundary := g.GetName(finalPath[1])
 	endBoundary := g.GetName(finalPath[len(finalPath)-2])
-	// 運賃計算用の大阪〜新神戸の仮想エッジを、入力経路の市内境界へ戻す。
-	if len(finalPath) >= 3 {
-		if startZoneName == "大阪市内" && startBoundary == "大阪" && g.GetName(finalPath[2]) == "新神戸" {
-			startBoundary = "新大阪"
-		}
-		if endZoneName == "大阪市内" && endBoundary == "大阪" && g.GetName(finalPath[len(finalPath)-3]) == "新神戸" {
-			endBoundary = "新大阪"
-		}
-	}
 	if zones != nil {
 		if zone := zones.FindZoneByName(startZoneName); zone != nil {
 			start = fareViaBoundary(path, zone.Stations, startBoundary, true)

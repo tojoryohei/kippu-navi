@@ -19,9 +19,8 @@ func TestSpecialFareRuleResolverUncorrectKeepsInputPath(t *testing.T) {
 	input := []int{startID, middleID, endID}
 
 	resolver := &SpecialFareRuleResolver{
-		osakaCityCorrector: preOsakaCorrector{},
-		graph:              g,
-		zoneRegistry:       &graphio.SpecialZoneRegistry{},
+		graph:        g,
+		zoneRegistry: &graphio.SpecialZoneRegistry{},
 	}
 	got, err := resolver.Resolve(input, "uncorrect")
 	if err != nil {
@@ -109,47 +108,6 @@ func TestSpecialFareRuleResolverUncorrectAppliesTokyoZones(t *testing.T) {
 	}
 }
 
-type preOsakaCorrector struct{}
-
-func (preOsakaCorrector) Correct(path []int, _ graph.Graph) ([]int, error) {
-	if !reflect.DeepEqual(path, []int{1, 2}) {
-		return path, nil
-	}
-	// 大阪市内の事後補正を表すテスト用の変換。第88条がこの変換後の
-	// 経路に対して評価されることを確認する。
-	return []int{3, 4}, nil
-}
-
-func TestSpecialFareRuleResolverAppliesOsakaCityCorrectionBeforeArticle88(t *testing.T) {
-	g := &mockGraphCorrector{
-		names: map[int]string{
-			1: "入力発駅",
-			2: "入力着駅",
-			3: "大阪",
-			4: "姫路",
-			5: "大阪・新大阪",
-		},
-	}
-	resolver := &SpecialFareRuleResolver{
-		osakaCityCorrector: preOsakaCorrector{},
-		zoneRegistry:       &graphio.SpecialZoneRegistry{},
-		graph:              g,
-	}
-
-	candidates, err := resolver.Resolve([]int{1, 2}, "normal")
-	if err != nil {
-		t.Fatalf("通常モードの解決に失敗しました: %v", err)
-	}
-	if len(candidates) < 2 {
-		t.Fatalf("第88条候補が生成されませんでした: %+v", candidates)
-	}
-
-	wantArticle88Path := []int{5, 3, 4}
-	if !reflect.DeepEqual(candidates[0].Path, wantArticle88Path) {
-		t.Fatalf("事後補正後に第88条が適用されていません: got %v, want %v", candidates[0].Path, wantArticle88Path)
-	}
-}
-
 type suburbanResolverGraph struct {
 	graph.Graph
 	names       map[int]string
@@ -173,10 +131,6 @@ func (g *suburbanResolverGraph) FindShortestPathGiseiSuburban(startID, endID int
 	return nil, fmt.Errorf("path not found")
 }
 
-type noopPathCorrector struct{}
-
-func (noopPathCorrector) Correct(path []int, _ graph.Graph) ([]int, error) { return path, nil }
-
 func TestSpecialFareRuleResolverUsesOneSideZoneForPureJRSuburbanPath(t *testing.T) {
 	g := &suburbanResolverGraph{
 		names: map[int]string{1: "立川", 2: "新宿", 3: "東京", 4: "東京山手線内"},
@@ -199,10 +153,9 @@ func TestSpecialFareRuleResolverUsesOneSideZoneForPureJRSuburbanPath(t *testing.
 		StationToZones: map[string][]ticketdomain.SpecialZone{"新宿": {zone}},
 	}
 	resolver := &SpecialFareRuleResolver{
-		applier:            NewSpecialZoneApplier(g, registry),
-		osakaCityCorrector: noopPathCorrector{},
-		zoneRegistry:       registry,
-		graph:              g,
+		applier:      NewSpecialZoneApplier(g, registry),
+		zoneRegistry: registry,
+		graph:        g,
 	}
 
 	candidates, err := resolver.Resolve([]int{1, 2}, "normal")
@@ -243,7 +196,7 @@ func TestSpecialFareRuleResolverSkipsOneSideZoneForMixedPath(t *testing.T) {
 	}
 	zone := ticketdomain.SpecialZone{Name: "東京山手線内", Stations: []string{"新宿", "東京"}, MinDistanceDeciKilo: 1000, MaxDistanceDeciKilo: 2000}
 	registry := &graphio.SpecialZoneRegistry{Zones: []ticketdomain.SpecialZone{zone}, StationToZones: map[string][]ticketdomain.SpecialZone{"新宿": {zone}}}
-	resolver := &SpecialFareRuleResolver{applier: NewSpecialZoneApplier(g, registry), osakaCityCorrector: noopPathCorrector{}, zoneRegistry: registry, graph: g}
+	resolver := &SpecialFareRuleResolver{applier: NewSpecialZoneApplier(g, registry), zoneRegistry: registry, graph: g}
 	if _, err := resolver.Resolve([]int{1, 2, 3, 4}, "normal"); err != nil {
 		t.Fatalf("混在経路の解決に失敗しました: %v", err)
 	}

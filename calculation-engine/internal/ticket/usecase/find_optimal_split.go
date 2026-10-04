@@ -42,7 +42,7 @@ func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode 
 	}
 	var lastErr error
 	for _, candidate := range candidates {
-		res, err := u.calc.Execute(candidate.Path)
+		res, err := u.calc.execute(candidate.Path, candidate.AllowOsakaCityDistanceAdjustment)
 		if err != nil {
 			lastErr = err
 			continue
@@ -61,19 +61,17 @@ func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode 
 // TicketSegmentEvaluator は分割探索から利用される乗車券評価器です。
 // 実際の特例解決と運賃計算はTicketCalculationUseCaseへ委譲します。
 type TicketSegmentEvaluator struct {
-	splitCorrector    PathCorrector
-	calculation       *TicketCalculationUseCase
-	graph             graph.Graph
-	postZoneCorrector PathCorrector
+	splitCorrector PathCorrector
+	calculation    *TicketCalculationUseCase
+	graph          graph.Graph
 }
 
 // NewTicketSegmentEvaluator は新しい TicketSegmentEvaluator を作成します。
 func NewTicketSegmentEvaluator(calc *CalculateAmount, applier *SpecialZoneApplier, postZoneCorrector PathCorrector, reg *graphio.SpecialZoneRegistry, g graph.Graph) *TicketSegmentEvaluator {
 	resolver := NewSpecialFareRuleResolver(applier, postZoneCorrector, reg, g)
 	return &TicketSegmentEvaluator{
-		calculation:       NewTicketCalculationUseCase(calc, resolver),
-		graph:             g,
-		postZoneCorrector: postZoneCorrector,
+		calculation: NewTicketCalculationUseCase(calc, resolver),
+		graph:       g,
 	}
 }
 
@@ -125,28 +123,6 @@ func NormalizeFareEvaluationMode(mode string) string {
 		return "uncorrect"
 	}
 	return "normal"
-}
-
-func (e *TicketSegmentEvaluator) applyPostZoneCorrections(path []int, applyOsakaCityCorrection bool) ([]int, error) {
-	if !applyOsakaCityCorrection {
-		return path, nil
-	}
-	correctedPath := path
-	if applyOsakaCityCorrection {
-		var err error
-		correctedPath, err = NewOsakaCityShinOsakaCorrector().Correct(correctedPath, e.graph)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if e.postZoneCorrector != nil {
-		var err error
-		correctedPath, err = e.postZoneCorrector.Correct(correctedPath, e.graph)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return correctedPath, nil
 }
 
 // EvaluatedSegment は、評価済みの区間の経路と結果を保持します。

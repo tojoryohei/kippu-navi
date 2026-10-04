@@ -12,8 +12,8 @@ import (
 type CalculationResult struct {
 	Fare               int
 	BarrierFreeFee     int
-	TotalEigyoKilo     domain.DeciKilo // 物理経路におけるJRの合計（表示・閾値判定用）
-	TotalPathEigyoKilo domain.DeciKilo // 物理経路における全経路の合計（有効日数計算用）
+	TotalEigyoKilo     domain.DeciKilo // 中心駅の距離控除を反映したJRの合計（表示・閾値判定用）
+	TotalPathEigyoKilo domain.DeciKilo // 中心駅の距離控除を反映した全経路の合計（有効日数計算用）
 	FinalPath          []int
 }
 
@@ -134,7 +134,12 @@ func (u *CalculateAmount) analyzePath(path []int) (*routeSummary, error) {
 	return summary, nil
 }
 
+// Execute は距離控除を許可しない従来の直接計算入口です。
 func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
+	return u.execute(path, false)
+}
+
+func (u *CalculateAmount) execute(path []int, allowOsakaCityDistanceAdjustment bool) (*CalculationResult, error) {
 	if len(path) < 2 {
 		return nil, fmt.Errorf("CalculateAmount.Execute: %w", domain.ErrInvalidPath)
 	}
@@ -152,6 +157,22 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 		physicalSummary, err = u.analyzePath(farePathBeforeKitashinchi)
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	if allowOsakaCityDistanceAdjustment {
+		eigyo, gisei, err := u.osakaCityDistanceDeduction(path)
+		if err != nil {
+			return nil, err
+		}
+		if err := summary.deductOsakaCityDistance(eigyo, gisei); err != nil {
+			return nil, err
+		}
+		// 北新地置換がなければ同一集計なので、二重に控除しない。
+		if physicalSummary != summary {
+			if err := physicalSummary.deductOsakaCityDistance(eigyo, gisei); err != nil {
+				return nil, err
+			}
 		}
 	}
 
