@@ -57,3 +57,39 @@ test('network retry delay is interrupted by the API timeout', async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+test('transient HTTP 502 is retried once and a successful response is returned', async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return new Response(calls === 1 ? '<html>Bad Gateway</html>' : '{"ok":true}', {
+      status: calls === 1 ? 502 : 200,
+    });
+  };
+
+  try {
+    const response = await fetchWithNetworkRetry('https://example.invalid');
+    assert.equal(calls, 2);
+    assert.deepEqual(await response.json(), { ok: true });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('HTTP 400 is returned without retrying', async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return new Response('{"error":"bad request"}', { status: 400 });
+  };
+
+  try {
+    const response = await fetchWithNetworkRetry('https://example.invalid');
+    assert.equal(response.status, 400);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
