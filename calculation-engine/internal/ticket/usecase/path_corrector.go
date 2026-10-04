@@ -119,7 +119,7 @@ func NewRule69Corrector() *SpecificSectionCorrector {
 				from:        []string{"赤羽", "北赤羽", "浮間舟渡", "戸田公園", "（北）戸田", "北戸田", "武蔵浦和", "中浦和", "南与野", "与野本町", "北与野", "大宮"},
 				to:          []string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"},
 				validBefore: []string{"尾久", "東十条", "十条"},
-				validAfter:  []string{"土呂", "宮原", "日進"},
+				validAfter:  []string{"土呂", "宮原", "（川）日進"},
 			},
 			{
 				// （4）品川以遠（東京、高輪ゲートウェイ又は大崎方面）の各駅と、鶴見以遠（新子安、国道又は羽沢横浜国大方面）の各駅との相互間
@@ -329,7 +329,7 @@ func NewPostZoneCleanupCorrector() *SpecificSectionCorrector {
 	}
 }
 
-// OsakaCityShinOsakaCorrector は大阪市内の特例適用後に、
+// OsakaCityShinOsakaCorrector は大阪市内・大阪新大阪の特例適用後に、
 // 新幹線へ接続する大阪市内の出口駅を大阪駅へ置き換えます。
 // 大阪駅→新神戸駅の仮想エッジを使って運賃を計算するための補正です。
 type OsakaCityShinOsakaCorrector struct{}
@@ -344,11 +344,25 @@ func (c *OsakaCityShinOsakaCorrector) Correct(path []int, g graph.Graph) ([]int,
 	}
 
 	result := append([]int(nil), path...)
-	forwardMatch := g.GetName(result[0]) == "大阪市内" &&
+	isOsakaZone := func(id int) bool {
+		name := g.GetName(id)
+		return name == "大阪市内" || name == "大阪・新大阪"
+	}
+	// 大阪発着で新大阪を経由する場合は、計算用の大阪〜新神戸へ直結する。
+	if len(result) >= 4 {
+		if g.GetName(result[0]) == "大阪・新大阪" && g.GetName(result[1]) == "大阪" && g.GetName(result[2]) == "新大阪" && g.GetName(result[3]) == "新神戸" {
+			result = append(result[:2], result[3:]...)
+		}
+		last := len(result) - 1
+		if last >= 3 && g.GetName(result[last]) == "大阪・新大阪" && g.GetName(result[last-1]) == "大阪" && g.GetName(result[last-2]) == "新大阪" && g.GetName(result[last-3]) == "新神戸" {
+			result = append(result[:last-2], result[last-1:]...)
+		}
+	}
+	forwardMatch := isOsakaZone(result[0]) &&
 		g.GetName(result[1]) == "新大阪" &&
 		g.GetName(result[2]) == "新神戸"
 	last := len(result) - 1
-	reverseMatch := g.GetName(result[last]) == "大阪市内" &&
+	reverseMatch := isOsakaZone(result[last]) &&
 		g.GetName(result[last-1]) == "新大阪" &&
 		g.GetName(result[last-2]) == "新神戸"
 	if !forwardMatch && !reverseMatch {
@@ -513,7 +527,6 @@ func NewShinkansenOverlapCorrector() *ShinkansenOverlapCorrector {
 		{"浦上", "長崎"},
 		{"宇土", "富合", "川尻", "西熊本", "熊本"},
 		{"上野", "鶯谷", "日暮里"},
-		{"東京", "神田", "秋葉原", "御徒町", "上野", "鶯谷", "日暮里"},
 	}
 
 	// 片道ルートから「分岐駅 -> 折り返し駅 -> 分岐駅」の完全な往復パターンを自動生成する
@@ -680,12 +693,17 @@ func (c *ShinkansenOverlapCorrector) Correct(path []int, g graph.Graph) ([]int, 
 	return result, nil
 }
 
-// CorrectPathForMode はモードに応じて、一般的な経路補正パイプラインを選択します。
-// 通常・最安では第69条・第70条などのcorrectorを適用し、補正禁止では省略します。
+// 補正禁止モードでも適用する二つの特例。
+func newUncorrectPathCorrector() PathCorrector {
+	return NewPipelineCorrector(NewShinkansenOverlapCorrector(), NewRule43_2Corrector())
+}
+
+// CorrectPathForMode はモードに応じて経路補正パイプラインを選択します。
+// 通常・最安では指定された全補正を適用し、補正禁止では上記二つの特例だけを適用します。
 // 特定都区市内・東京山手線内・大阪新大阪特例などの運賃特例は、その後SpecialFareRuleResolverがモードごとの順序で適用します。
 func CorrectPathForMode(path []int, g graph.Graph, corrector PathCorrector, mode string) ([]int, error) {
 	if mode == "uncorrect" {
-		return path, nil
+		return newUncorrectPathCorrector().Correct(path, g)
 	}
 	return corrector.Correct(path, g)
 }
@@ -694,7 +712,8 @@ func CorrectPathForMode(path []int, g graph.Graph, corrector PathCorrector, mode
 // 大都市近郊区間判定に使う新幹線展開直前の経路を返します。
 func correctPathForModeWithPreShinkansenPath(path []int, g graph.Graph, corrector PathCorrector, mode string) (corrected []int, before []int, err error) {
 	if mode == "uncorrect" {
-		return path, append([]int(nil), path...), nil
+		corrected, err = newUncorrectPathCorrector().Correct(path, g)
+		return corrected, append([]int(nil), path...), err
 	}
 
 	if traced, ok := corrector.(preShinkansenPathCorrector); ok {
@@ -723,14 +742,15 @@ func CorrectPathForModeWithRouteExtensions(path []int, g graph.Graph, corrector 
 // CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath は、対応表に一致する
 // 最安モードの経路、運賃評価モード、新幹線展開直前の判定経路を返します。
 func CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(path []int, g graph.Graph, corrector PathCorrector, extensions *RouteExtensionMatcher, mode string) ([]int, string, []int, error) {
-	if mode == "cheapest" && extensions != nil {
-		if extended, ok := extensions.MatchEither(path); ok {
-			return extended, "normal", append([]int(nil), extended...), nil
-		}
-	}
+	allowExtension := mode == "cheapest" && extensions != nil && !IsSuburbanAreaComplete(path, g)
 	corrected, before, err := correctPathForModeWithPreShinkansenPath(path, g, corrector, mode)
 	if err != nil {
 		return nil, NormalizeFareEvaluationMode(mode), nil, err
+	}
+	if allowExtension {
+		if extended, ok := extensions.MatchEither(corrected); ok {
+			return extended, "normal", append([]int(nil), extended...), nil
+		}
 	}
 	return corrected, NormalizeFareEvaluationMode(mode), before, nil
 }

@@ -111,7 +111,10 @@ func TestSpecialFareRuleResolverUncorrectAppliesTokyoZones(t *testing.T) {
 
 type preOsakaCorrector struct{}
 
-func (preOsakaCorrector) Correct(_ []int, _ graph.Graph) ([]int, error) {
+func (preOsakaCorrector) Correct(path []int, _ graph.Graph) ([]int, error) {
+	if !reflect.DeepEqual(path, []int{1, 2}) {
+		return path, nil
+	}
 	// 大阪市内の事後補正を表すテスト用の変換。第88条がこの変換後の
 	// 経路に対して評価されることを確認する。
 	return []int{3, 4}, nil

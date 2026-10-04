@@ -87,11 +87,11 @@ func TestCorrectPathForModeWithRouteExtensions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("最安モードの補正に失敗しました: %v", err)
 	}
-	if !reflect.DeepEqual(got, []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C")}) || evalMode != "normal" {
+	if !reflect.DeepEqual(got, []int{99}) || evalMode != "normal" {
 		t.Fatalf("対応表経路または評価モードが不正です: path=%v mode=%s", got, evalMode)
 	}
 	got, evalMode, before, err := CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(input, g, corrector, matcher, "cheapest")
-	if err != nil || evalMode != "normal" || !reflect.DeepEqual(got, before) {
+	if err != nil || evalMode != "normal" || !reflect.DeepEqual(before, input) {
 		t.Fatalf("対応表経路が有効日数判定経路として返されませんでした: path=%v before=%v mode=%s err=%v", got, before, evalMode, err)
 	}
 
@@ -123,7 +123,7 @@ func TestSelectCheapestPathWithRouteExtensionsSequentiallyExtendsUntilThreshold(
 	if err != nil {
 		t.Fatalf("空の対応表初期化に失敗しました: %v", err)
 	}
-	corrected, err := SelectCheapestPathWithRouteExtensions(input, g, extensionTestCorrector{}, matcher, zones, func(path []int) (int, error) {
+	corrected, err := SelectCheapestPathWithRouteExtensions(input, g, nil, matcher, zones, func(path []int) (int, error) {
 		if len(path) == 7 {
 			return 900, nil
 		}
@@ -244,8 +244,8 @@ func TestSelectCheapestPathWithRouteExtensionsSkipsSequentialExtensionsOnMatch(t
 	if !reflect.DeepEqual(selected, output) {
 		t.Fatalf("対応表の出力経路が選択されませんでした: got=%v want=%v", selected, output)
 	}
-	if len(evaluated) != 0 {
-		t.Fatalf("対応表一致時に運賃比較を行いました: evaluated=%v", evaluated)
+	if !reflect.DeepEqual(evaluated, [][]int{input, output}) {
+		t.Fatalf("補正後経路と対応表候補の比較が不正です: evaluated=%v", evaluated)
 	}
 }
 
@@ -280,8 +280,8 @@ func TestSelectCheapestPathWithRouteExtensionsSkipsSequentialExtensionsOnReverse
 	if !reflect.DeepEqual(selected, output) {
 		t.Fatalf("逆方向の対応表出力経路が選択されませんでした: got=%v want=%v", selected, output)
 	}
-	if len(evaluated) != 0 {
-		t.Fatalf("逆方向の対応表一致時に運賃比較を行いました: evaluated=%v", evaluated)
+	if !reflect.DeepEqual(evaluated, [][]int{input, output}) {
+		t.Fatalf("逆方向の補正後経路と対応表候補の比較が不正です: evaluated=%v", evaluated)
 	}
 }
 
@@ -483,5 +483,80 @@ func addExtensionTestEdge(g *graph.RailwayGraph, from, to string) {
 		{FromID: b, ToID: a, Company: domain.JREast},
 	} {
 		g.AddEdge(ticketdomain.TicketEdge{Edge: edge})
+	}
+}
+
+func TestSuburbanCheapestSkipsRouteExtensions(t *testing.T) {
+	g := graph.NewGraph(3)
+	addExtensionTestEdge(g, "A", "B")
+	addExtensionTestEdge(g, "B", "C")
+	for id := range g.Edges {
+		for i := range g.Edges[id] {
+			g.Edges[id][i].SuburbanArea = domain.SuburbanAreaTokyo
+		}
+	}
+	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
+	matcher, err := NewRouteExtensionMatcher([]ticketdomain.RouteExtension{{InputPath: []string{"A", "B"}, OutputPath: []string{"A", "B", "C"}}}, g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, extensions := range []*RouteExtensionMatcher{matcher, nil} {
+		got, _, err := SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(input, g, extensionTestCorrector{}, extensions, extensionTestZones("A", "A", 2000), func([]int) (int, error) {
+			t.Fatal("近郊区間内で延長候補を評価しました")
+			return 0, nil
+		})
+		if err != nil || !reflect.DeepEqual(got, []int{99}) {
+			t.Fatalf("通常補正が採用されません: %v %v", got, err)
+		}
+	}
+	got, mode, err := CorrectPathForModeWithRouteExtensions(input, g, extensionTestCorrector{}, matcher, "cheapest")
+	if err != nil || mode != "normal" || !reflect.DeepEqual(got, []int{99}) {
+		t.Fatalf("path=%v mode=%s err=%v", got, mode, err)
+	}
+}
+
+type extensionCorrectorFunc func([]int, graph.Graph) ([]int, error)
+
+func (f extensionCorrectorFunc) Correct(p []int, g graph.Graph) ([]int, error) { return f(p, g) }
+
+func TestCheapestCorrectsBeforeExtendingAndKeepsCorrectedBase(t *testing.T) {
+	g := graph.NewGraph(4)
+	addExtensionTestEdge(g, "A", "B")
+	addExtensionTestEdge(g, "B", "C")
+	addExtensionTestEdge(g, "C", "D")
+	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
+	base := []int{g.GetOrAddID("B"), g.GetOrAddID("C")}
+	extended := append(append([]int(nil), base...), g.GetOrAddID("D"))
+	matcher, err := NewRouteExtensionMatcher([]ticketdomain.RouteExtension{{InputPath: []string{"B", "C"}, OutputPath: []string{"B", "C", "D"}}}, g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, extensionFare := range []int{90, 100, 110} {
+		calls := 0
+		corrector := extensionCorrectorFunc(func(p []int, _ graph.Graph) ([]int, error) {
+			calls++
+			if !reflect.DeepEqual(p, input) {
+				t.Fatal("補正入力が異なります")
+			}
+			return base, nil
+		})
+		var evaluated [][]int
+		got, before, err := SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(input, g, corrector, matcher, nil, func(p []int) (int, error) {
+			evaluated = append(evaluated, p)
+			if reflect.DeepEqual(p, base) {
+				return 100, nil
+			}
+			return extensionFare, nil
+		})
+		want := base
+		if extensionFare < 100 {
+			want = extended
+		}
+		if err != nil || calls != 1 || !reflect.DeepEqual(got, want) || !reflect.DeepEqual(evaluated, [][]int{base, extended}) {
+			t.Fatalf("fare=%d got=%v evaluated=%v calls=%d err=%v", extensionFare, got, evaluated, calls, err)
+		}
+		if extensionFare >= 100 && !reflect.DeepEqual(before, input) {
+			t.Fatalf("展開前経路が失われました: %v", before)
+		}
 	}
 }

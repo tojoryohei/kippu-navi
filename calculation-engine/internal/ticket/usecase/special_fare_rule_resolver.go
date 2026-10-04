@@ -226,7 +226,7 @@ func (r *SpecialFareRuleResolver) applyArticle88Candidates(path []int) ([]FarePa
 		return []FarePathCandidate{{Path: fallback}}, nil
 	}
 
-	corrected, err := r.applyPostZoneCleanup(info.TransformedPath)
+	corrected, err := r.applyPostZoneCorrections(info.TransformedPath)
 	if err != nil {
 		return []FarePathCandidate{{Path: fallback}}, nil
 	}

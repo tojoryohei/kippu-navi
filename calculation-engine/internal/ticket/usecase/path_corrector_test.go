@@ -473,3 +473,73 @@ func TestCorrectPathForMode(t *testing.T) {
 		})
 	}
 }
+
+func TestUncorrectAppliesOnlyShinkansenOverlap(t *testing.T) {
+	g := &mockGraphCorrector{names: map[int]string{
+		1: "御茶ノ水", 2: "神田", 3: "東京", 4: "秋葉原",
+	}}
+	path := []int{1, 2, 3, 2, 4}
+	want := []int{1, 2, 4}
+	otherCorrection := fixedPathCorrector{path: []int{3}}
+	pipeline := NewPipelineCorrector(NewShinkansenOverlapCorrector(), otherCorrection)
+
+	got, err := CorrectPathForMode(path, g, pipeline, "uncorrect")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("CorrectPathForMode = %v, want %v", got, want)
+	}
+
+	got, _, before, err := CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(path, g, pipeline, nil, "uncorrect")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(before, path) {
+		t.Fatalf("corrected=%v, before=%v, want=%v, %v", got, before, want, path)
+	}
+}
+
+func TestUncorrectAppliesRule43_2(t *testing.T) {
+	g := &mockGraphCorrector{names: map[int]string{
+		1: "城野", 2: "南小倉", 3: "西小倉", 4: "小倉",
+		5: "博多", 6: "吉塚", 7: "柚須", 8: "原町",
+		9: "竹下", 10: "新下関",
+	}}
+	for _, tt := range []struct {
+		name string
+		path []int
+		want []int
+	}{
+		{"西小倉", []int{1, 2, 3, 4, 5, 9}, []int{1, 2, 3, 5, 9}},
+		{"吉塚", []int{10, 4, 5, 6, 7, 8}, []int{10, 4, 6, 7, 8}},
+		{"両方", []int{1, 2, 3, 4, 5, 6, 7, 8}, []int{1, 2, 3, 6, 7, 8}},
+		{"逆方向", []int{9, 5, 4, 3, 2, 1}, []int{9, 5, 3, 2, 1}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			otherCorrection := fixedPathCorrector{path: []int{10}}
+			pipeline := NewPipelineCorrector(NewShinkansenOverlapCorrector(), NewRule43_2Corrector(), otherCorrection)
+			got, err := CorrectPathForMode(tt.path, g, pipeline, "uncorrect")
+			if err != nil || !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("CorrectPathForMode = %v, %v; want %v", got, err, tt.want)
+			}
+			got, _, before, err := CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(tt.path, g, pipeline, nil, "uncorrect")
+			if err != nil || !reflect.DeepEqual(got, tt.want) || !reflect.DeepEqual(before, tt.path) {
+				t.Fatalf("corrected=%v, before=%v, err=%v; want %v, %v", got, before, err, tt.want, tt.path)
+			}
+		})
+	}
+}
+
+func TestNormalStillAppliesRule43_2(t *testing.T) {
+	g := &mockGraphCorrector{names: map[int]string{
+		1: "城野", 2: "南小倉", 3: "西小倉", 4: "小倉", 5: "博多", 6: "竹下",
+	}}
+	path := []int{1, 2, 3, 4, 5, 6}
+	want := []int{1, 2, 3, 5, 6}
+	corrector := NewPipelineCorrector(NewShinkansenOverlapCorrector(), NewRule43_2Corrector())
+	got, err := CorrectPathForMode(path, g, corrector, "normal")
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("CorrectPathForMode(normal) = %v, %v; want %v", got, err, want)
+	}
+}

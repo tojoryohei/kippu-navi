@@ -8,6 +8,7 @@ import (
 
 // TicketSplitSegment は分割された個々の区間とその運賃計算結果を保持します。
 type TicketSplitSegment struct {
+	SourcePath     []int // 延長・補正前の乗車券経路（近郊区間判定用）
 	Path           []int
 	Result         *CalculationResult
 	StartStationID int
@@ -126,7 +127,7 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 						continue
 					}
 				} else {
-					res, _, err := u.evaluator.Execute(subPath, 0)
+					res, _, err := u.evaluator.ExecuteForSplit(subPath, 0)
 					if err != nil {
 						continue
 					}
@@ -313,7 +314,7 @@ func (u *SearchOptimalSplit) segmentFare(path []int) (int, bool) {
 		return int(u.fares[idx]), true
 	}
 
-	res, _, err := u.evaluator.Execute(path, 0)
+	res, _, err := u.evaluator.ExecuteForSplit(path, 0)
 	if err != nil {
 		return 0, false
 	}
@@ -336,10 +337,11 @@ func (u *SearchOptimalSplit) GetCheapestTicketSegments(start, end int) ([]Ticket
 	minFare := math.MaxInt
 	var bestPaths [][]int
 	var bestResults []*CalculationResult
+	var bestSourcePaths [][]int
 
 	for _, pr := range pathsResult {
 		path := pr.StationIDs
-		res, transformedPath, err := u.evaluator.Execute(path, 0)
+		res, transformedPath, err := u.evaluator.ExecuteForSplit(path, 0)
 		if err != nil {
 			continue
 		}
@@ -348,10 +350,12 @@ func (u *SearchOptimalSplit) GetCheapestTicketSegments(start, end int) ([]Ticket
 			minFare = fare
 			bestPaths = [][]int{transformedPath}
 			bestResults = []*CalculationResult{res}
+			bestSourcePaths = [][]int{path}
 		} else if fare == minFare {
 			if !containsPath(bestPaths, transformedPath) {
 				bestPaths = append(bestPaths, transformedPath)
 				bestResults = append(bestResults, res)
+				bestSourcePaths = append(bestSourcePaths, path)
 			}
 		}
 	}
@@ -364,6 +368,7 @@ func (u *SearchOptimalSplit) GetCheapestTicketSegments(start, end int) ([]Ticket
 	for i, path := range bestPaths {
 		segs = append(segs, TicketSplitSegment{
 			Path:           path,
+			SourcePath:     bestSourcePaths[i],
 			Result:         bestResults[i],
 			StartStationID: start,
 			EndStationID:   end,
