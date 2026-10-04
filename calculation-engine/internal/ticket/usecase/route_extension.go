@@ -230,17 +230,24 @@ func SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(
 	if len(path) < 2 {
 		return nil, nil, domain.ErrInvalidPath
 	}
-	if fareEval == nil {
-		corrected, before, err := correctPathForModeWithPreShinkansenPath(path, g, corrector, "cheapest")
-		return corrected, before, err
+	if IsSuburbanAreaComplete(path, g) {
+		if corrector == nil {
+			corrector = NewSuburbanAreaCorrector(fareEval)
+		}
+		return correctPathForModeWithPreShinkansenPath(path, g, corrector, "normal")
 	}
 
-	if extensions != nil {
-		if extended, ok := extensions.MatchEither(path); ok {
-			// 対応表は事前に定義された経路変換です。入力経路との運賃差や
-			// 同額判定を行わず、出力経路を通常モードの最終評価へ渡します。
-			return append([]int(nil), extended...), append([]int(nil), extended...), nil
+	// 延長候補は、通常の経路補正を済ませた経路を基準に生成する。
+	before := append([]int(nil), path...)
+	if corrector != nil {
+		var err error
+		path, before, err = correctPathForModeWithPreShinkansenPath(path, g, corrector, "normal")
+		if err != nil {
+			return nil, nil, err
 		}
+	}
+	if fareEval == nil {
+		return path, before, nil
 	}
 
 	candidates := make([][]int, 0, 8)
@@ -258,13 +265,14 @@ func SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(
 	}
 	addCandidate(path)
 
+	matched := false
 	if extensions != nil {
-		if zones != nil {
-			for _, extended := range sequentialRouteExtensions(path, g, zones) {
-				addCandidate(extended)
-			}
+		if extended, ok := extensions.MatchEither(path); ok {
+			addCandidate(extended)
+			matched = true
 		}
-	} else if zones != nil {
+	}
+	if !matched && zones != nil {
 		for _, extended := range sequentialRouteExtensions(path, g, zones) {
 			addCandidate(extended)
 		}
@@ -272,11 +280,9 @@ func SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(
 
 	var best []int
 	bestFare := 0
-	var lastErr error
 	for _, candidate := range candidates {
 		fare, err := fareEval(candidate)
 		if err != nil {
-			lastErr = err
 			continue
 		}
 		if best == nil || fare < bestFare {
@@ -285,18 +291,13 @@ func SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(
 		}
 	}
 	if best != nil {
+		if extensionPathKey(best) == extensionPathKey(path) {
+			return best, before, nil
+		}
 		return best, append([]int(nil), best...), nil
 	}
-
-	// 候補の評価がすべて失敗した場合は、既存の最安モード補正へ戻します。
-	corrected, before, err := correctPathForModeWithPreShinkansenPath(path, g, corrector, "cheapest")
-	if err != nil {
-		if lastErr != nil {
-			return nil, nil, lastErr
-		}
-		return nil, nil, err
-	}
-	return corrected, before, nil
+	// 延長候補を採用できなくても補正前の入力経路には戻さない。
+	return path, before, nil
 }
 
 func sequentialRouteExtensions(path []int, g graph.Graph, zones *graphio.SpecialZoneRegistry) [][]int {

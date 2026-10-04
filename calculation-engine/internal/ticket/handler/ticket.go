@@ -51,6 +51,18 @@ type RouteRequest struct {
 	CalculationMode string     `json:"calculationMode"`
 }
 
+// ViaSteps は入力経路のカナコードを経由印字用に渡します。
+func (r RouteRequest) ViaSteps() []usecase.ViaStep {
+	steps := make([]usecase.ViaStep, len(r.FullPath))
+	for i, step := range r.FullPath {
+		steps[i].StationName = step.StationName
+		if step.LineName != nil {
+			steps[i].LineName = *step.LineName
+		}
+	}
+	return steps
+}
+
 type KippuData struct {
 	TotalEigyoKilo   int      `json:"totalEigyoKilo"`
 	DepartureStation string   `json:"departureStation"`
@@ -131,7 +143,7 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 運賃計算（TicketSegmentEvaluator に委譲）
-	res, _, err := h.evaluator.ExecuteWithMode(correctedPath, 0, evaluationMode)
+	res, transformedPath, err := h.evaluator.ExecuteWithMode(correctedPath, 0, evaluationMode)
 	if err != nil {
 		h.writeError(w, http.StatusInternalServerError, "運賃計算に失敗しました: "+err.Error(), start)
 		return
@@ -139,12 +151,13 @@ func (h *Ticket) HandleCalculateFare(w http.ResponseWriter, r *http.Request) {
 
 	// 有効日数の計算（JR・他社線の合計営業キロから算出）
 	validDays := usecase.CalculateTicketValidDays(res.TotalPathEigyoKilo, suburbanPath, h.graph)
+	printedViaLines := usecase.GetCalculatedFareVia(req.CalculationMode, req.ViaSteps(), pathIDs, transformedPath, res.FinalPath, h.graph, h.zoneRegistry)
 
 	kippuData := KippuData{
 		TotalEigyoKilo:   int(res.TotalEigyoKilo),
 		DepartureStation: h.graph.GetName(res.FinalPath[0]),
 		ArrivalStation:   h.graph.GetName(res.FinalPath[len(res.FinalPath)-1]),
-		PrintedViaLines:  []string{}, // 経由印字は現在未実装のため空配列
+		PrintedViaLines:  printedViaLines,
 		Fare:             res.TotalAmount(),
 		ValidDays:        validDays,
 	}

@@ -372,6 +372,8 @@ func run() error {
 		ticketusecase.NewArticle70Corrector(ticketArticle70Routes),
 	)
 
+	ticketSegmentEvaluator.SetSplitCorrector(ticketCorrector)
+
 	ticketHandler := tickethandler.NewTicketWithRouteExtensionsAndZones(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneReg)
 
 	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)

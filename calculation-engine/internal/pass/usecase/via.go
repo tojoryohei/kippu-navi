@@ -191,11 +191,11 @@ func GetVia(
 		}
 
 		// 2. 通常の分岐駅判定（3駅以上の経路でのみ実行される）
-		if len(g.GetEdges(path[i])) > 2 {
+		if isViaJunction(g, path[i]) {
 			if i < len(path)-2 {
 				via = append(via, stationNameList[i+1])
 			} else {
-				if i > 0 && len(g.GetEdges(path[i-1])) <= 2 {
+				if i > 0 && !isViaJunction(g, path[i-1]) {
 					via = append(via, stationNameList[i])
 				} else if i == 0 {
 					via = append(via, stationNameList[i])
@@ -263,6 +263,17 @@ func isViaRuleMatch(path []string, i int, rule viaBypassRule) bool {
 func containsStationName(list []string, item string) bool {
 	for _, s := range list {
 		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+// isViaJunction は、その駅に接続する路線コードが2種類以上あるかを判定します。
+func isViaJunction(g graph.TopologyProvider, stationID int) bool {
+	edges := g.GetEdges(stationID)
+	for _, edge := range edges {
+		if edge.Line != edges[0].Line {
 			return true
 		}
 	}

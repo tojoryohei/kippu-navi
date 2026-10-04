@@ -4,6 +4,7 @@ import (
 	"calculation-engine/internal/pass/graph/data"
 	"calculation-engine/internal/pass/infra/graphio"
 	"calculation-engine/internal/pass/usecase"
+	"encoding/json"
 	"testing"
 )
 
@@ -14,11 +15,38 @@ func TestGetViaStations_Integration(t *testing.T) {
 		t.Fatalf("グラフの読み込みに失敗: %v", err)
 	}
 
+	// 経由印字はWASMで利用する。HTTP用JSONLoaderは路線コードを保持しないため、
+	// このテストではWASMと同様に駅間データからコードを補う。
+	var records []struct {
+		Line     string `json:"line"`
+		Station0 string `json:"station0"`
+		Station1 string `json:"station1"`
+	}
+	if err := json.NewDecoder(data.GetEdgesReader()).Decode(&records); err != nil {
+		t.Fatal(err)
+	}
+	for _, record := range records {
+		from, _ := g.GetID(record.Station0)
+		to, _ := g.GetID(record.Station1)
+		for _, pair := range [][2]int{{from, to}, {to, from}} {
+			for i := range g.Edges[pair[0]] {
+				if g.Edges[pair[0]][i].ToID == pair[1] {
+					g.Edges[pair[0]][i].Line = record.Line
+				}
+			}
+		}
+	}
+
 	tests := []struct {
 		name string
 		path []string
 		want []string
 	}{
+		{
+			name: "館山から勝浦",
+			path: []string{"館山", "九重", "千倉", "（房）千歳", "南三原", "和田浦", "江見", "太海", "安房鴨川", "安房天津", "安房小湊", "行川アイランド", "上総興津", "鵜原", "勝浦"},
+			want: []string{"安房天津"},
+		},
 		{
 			name: "東京から黒磯（東北線経由）",
 			path: []string{"東京", "神田", "秋葉原", "御徒町", "上野", "鶯谷", "日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮", "土呂", "東大宮", "蓮田", "白岡", "新白岡", "久喜", "東鷲宮", "栗橋", "古河", "野木", "間々田", "小山", "小金井", "自治医大", "石橋", "雀宮", "宇都宮", "岡本", "宝積寺", "氏家", "蒲須坂", "片岡", "矢板", "（北）野崎", "西那須野", "那須塩原", "黒磯"},

@@ -168,6 +168,30 @@ func run(args []string) (runErr error) {
 		ticketFullGraph,
 	)
 
+	article70JSON, err := io.ReadAll(ticketgraphdata.GetArticle70RoutesReader())
+	if err != nil {
+		return err
+	}
+	article70Routes, err := ticketdomain.LoadArticle70RoutesFromBytes(article70JSON)
+	if err != nil {
+		return err
+	}
+	fareEval := func(path []int) (int, error) {
+		res, _, err := ticketSegmentEvaluator.ExecuteWithMode(path, 0, "normal")
+		if err != nil {
+			return 0, err
+		}
+		return res.TotalAmount(), nil
+	}
+	ticketSegmentEvaluator.SetSplitCorrector(ticketusecase.NewPipelineCorrector(
+		ticketusecase.NewSuburbanAreaCorrector(fareEval),
+		ticketusecase.NewShinkansenOverlapCorrector(),
+		ticketusecase.NewRule43_2Corrector(),
+		ticketusecase.NewRule69Corrector(),
+		ticketusecase.NewRule157Corrector(),
+		ticketusecase.NewArticle70Corrector(article70Routes),
+	))
+
 	log.Println("物理グラフの全点対最短経路を事前計算しています...")
 	basePrevGisei := make([][]int, numStations)
 	baseDistGisei := make([][]domain.DeciKilo, numStations)
@@ -272,7 +296,7 @@ func run(args []string) (runErr error) {
 
 				minFare := math.MaxInt32
 				if len(pathGisei) > 0 {
-					res, _, err := ticketSegmentEvaluator.Execute(pathGisei, 0)
+					res, _, err := ticketSegmentEvaluator.ExecuteForSplit(pathGisei, 0)
 					if err == nil && res != nil {
 						minFare = res.TotalAmount()
 					}
@@ -290,7 +314,7 @@ func run(args []string) (runErr error) {
 						pathEigyo = append([]int{startID}, pathEigyo...)
 					}
 					if len(pathEigyo) > 0 {
-						resE, _, err := ticketSegmentEvaluator.Execute(pathEigyo, 0)
+						resE, _, err := ticketSegmentEvaluator.ExecuteForSplit(pathEigyo, 0)
 						if err == nil && resE != nil {
 							if resE.TotalAmount() < minFare {
 								minFare = resE.TotalAmount()

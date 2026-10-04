@@ -1,0 +1,272 @@
+[
+  {
+    "station0": "池袋",
+    "station1": "板橋",
+    "kana": "アカハネ"
+  },
+  {
+    "station0": "板橋",
+    "station1": "十条",
+    "kana": "アカハネ"
+  },
+  {
+    "station0": "十条",
+    "station1": "赤羽",
+    "kana": "アカハネ"
+  },
+  {
+    "station0": "東京",
+    "station1": "新日本橋",
+    "kana": "ソウフ"
+  },
+  {
+    "station0": "新日本橋",
+    "station1": "馬喰町",
+    "kana": "ソウフ"
+  },
+  {
+    "station0": "馬喰町",
+    "station1": "錦糸町",
+    "kana": "ソウフ"
+  },
+  {
+    "station0": "御茶ノ水",
+    "station1": "秋葉原",
+    "kana": "ソウフ"
+  },
+  {
+    "station0": "秋葉原",
+    "station1": "浅草橋",
+    "kana": "ソウフ"
+  },
+  {
+    "station0": "浅草橋",
+    "station1": "両国",
+    "kana": "ソウフ"
+  },
+  {
+    "station0": "両国",
+    "station1": "錦糸町",
+    "kana": "ソウフ"
+  },
+  {
+    "station0": "神田",
+    "station1": "御茶ノ水",
+    "kana": "チユト"
+  },
+  {
+    "station0": "御茶ノ水",
+    "station1": "水道橋",
+    "kana": "チユト"
+  },
+  {
+    "station0": "水道橋",
+    "station1": "飯田橋",
+    "kana": "チユト"
+  },
+  {
+    "station0": "飯田橋",
+    "station1": "市ケ谷",
+    "kana": "チユト"
+  },
+  {
+    "station0": "市ケ谷",
+    "station1": "四ツ谷",
+    "kana": "チユト"
+  },
+  {
+    "station0": "四ツ谷",
+    "station1": "信濃町",
+    "kana": "チユト"
+  },
+  {
+    "station0": "信濃町",
+    "station1": "千駄ケ谷",
+    "kana": "チユト"
+  },
+  {
+    "station0": "千駄ケ谷",
+    "station1": "代々木",
+    "kana": "チユト"
+  },
+  {
+    "station0": "代々木",
+    "station1": "新宿",
+    "kana": null
+  },
+  {
+    "station0": "東京",
+    "station1": "有楽町",
+    "kana": "トウカ"
+  },
+  {
+    "station0": "有楽町",
+    "station1": "新橋",
+    "kana": "トウカ"
+  },
+  {
+    "station0": "新橋",
+    "station1": "浜松町",
+    "kana": "トウカ"
+  },
+  {
+    "station0": "浜松町",
+    "station1": "田町",
+    "kana": "トウカ"
+  },
+  {
+    "station0": "田町",
+    "station1": "高輪ゲートウェイ",
+    "kana": "トウカ"
+  },
+  {
+    "station0": "高輪ゲートウェイ",
+    "station1": "品川",
+    "kana": "トウカ"
+  },
+  {
+    "station0": "東京",
+    "station1": "神田",
+    "kana": null
+  },
+  {
+    "station0": "神田",
+    "station1": "秋葉原",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "秋葉原",
+    "station1": "御徒町",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "御徒町",
+    "station1": "上野",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "上野",
+    "station1": "鶯谷",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "鶯谷",
+    "station1": "日暮里",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "日暮里",
+    "station1": "尾久",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "尾久",
+    "station1": "赤羽",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "田端",
+    "station1": "上中里",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "上中里",
+    "station1": "王子",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "王子",
+    "station1": "東十条",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "東十条",
+    "station1": "赤羽",
+    "kana": "トウホ"
+  },
+  {
+    "station0": "品川",
+    "station1": "大崎",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "大崎",
+    "station1": "五反田",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "五反田",
+    "station1": "目黒",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "目黒",
+    "station1": "恵比寿",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "恵比寿",
+    "station1": "渋谷",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "渋谷",
+    "station1": "原宿",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "原宿",
+    "station1": "代々木",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "日暮里",
+    "station1": "西日暮里",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "西日暮里",
+    "station1": "田端",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "田端",
+    "station1": "駒込",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "駒込",
+    "station1": "巣鴨",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "巣鴨",
+    "station1": "大塚",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "大塚",
+    "station1": "池袋",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "池袋",
+    "station1": "目白",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "目白",
+    "station1": "高田馬場",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "高田馬場",
+    "station1": "新大久保",
+    "kana": "ヤマテ"
+  },
+  {
+    "station0": "新大久保",
+    "station1": "新宿",
+    "kana": "ヤマテ"
+  }
+]

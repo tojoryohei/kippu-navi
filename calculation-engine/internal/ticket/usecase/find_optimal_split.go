@@ -61,6 +61,7 @@ func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode 
 // TicketSegmentEvaluator は分割探索から利用される乗車券評価器です。
 // 実際の特例解決と運賃計算はTicketCalculationUseCaseへ委譲します。
 type TicketSegmentEvaluator struct {
+	splitCorrector    PathCorrector
 	calculation       *TicketCalculationUseCase
 	graph             graph.Graph
 	postZoneCorrector PathCorrector
@@ -80,6 +81,34 @@ func NewTicketSegmentEvaluator(calc *CalculateAmount, applier *SpecialZoneApplie
 // ※ months は定期券とのインターフェース互換用であり、乗車券では無視されます。
 func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationResult, []int, error) {
 	return e.calculation.Execute(path, months)
+}
+
+// SetSplitCorrector は分割券の近郊区間内完結時に使う通常モードの補正器を設定します。
+func (e *TicketSegmentEvaluator) SetSplitCorrector(corrector PathCorrector) {
+	e.splitCorrector = corrector
+}
+
+// ExecuteForSplit は延長前の乗車券ごとに近郊区間を判定します。
+// 候補比較は ExecuteWithMode を直接使い、補正の再帰を避けます。
+func (e *TicketSegmentEvaluator) ExecuteForSplit(path []int, months int) (*CalculationResult, []int, error) {
+	if IsSuburbanAreaComplete(path, e.graph) {
+		corrector := e.splitCorrector
+		if corrector == nil {
+			corrector = NewSuburbanAreaCorrector(func(candidate []int) (int, error) {
+				res, _, err := e.ExecuteWithMode(candidate, months, "normal")
+				if err != nil {
+					return 0, err
+				}
+				return res.TotalAmount(), nil
+			})
+		}
+		var err error
+		path, err = corrector.Correct(path, e.graph)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return e.ExecuteWithMode(path, months, "normal")
 }
 
 // ExecuteWithMode は通常または補正禁止の運賃評価モードで経路を評価します。
