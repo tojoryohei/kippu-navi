@@ -123,6 +123,10 @@ function createApiTimeoutError(capability: "ticket" | "pass") {
     });
 }
 
+function createApiHttpError(status: number, capability: "ticket" | "pass") {
+    return new SearchOperationError({ message: `経路APIがエラーを返しました (${status})`, code: "api_http_failed", source: "api", stage: "api_fetch", capability, exceptionName: "HttpError", httpStatus: status, retryable: status === 408 || status === 429 || status >= 500, retryCount: 0, workerRestartCount: 0 });
+}
+
 export default function SplitForm({
     pathname,
     initialFrom,
@@ -310,13 +314,14 @@ export default function SplitForm({
                 rawResponse = await apiRes.json();
             } catch (parseError) {
                 if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
+                if (!apiRes.ok) throw createApiHttpError(apiRes.status, capability);
                 throw new SearchOperationError({ message: "経路APIの応答を解析できませんでした。", code: "api_response_invalid", source: "api", stage: "api_response_parse", capability, exceptionName: parseError instanceof Error ? parseError.name : "SyntaxError", retryable: false, retryCount: 0, workerRestartCount: 0 });
             }
             if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
             const res = validateSplitStationResponse(rawResponse, capability);
             apiTimeout.dispose();
             if (!apiRes.ok && !res.error) {
-                throw new SearchOperationError({ message: `経路APIがエラーを返しました (${apiRes.status})`, code: "api_http_failed", source: "api", stage: "api_fetch", capability, exceptionName: "HttpError", httpStatus: apiRes.status, retryable: apiRes.status === 408 || apiRes.status === 429 || apiRes.status >= 500, retryCount: 0, workerRestartCount: 0 });
+                throw createApiHttpError(apiRes.status, capability);
             }
             if (abort.signal.aborted) return;
             setServerTime(performance.now() - calculationStartedAt);

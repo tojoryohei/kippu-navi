@@ -71,7 +71,10 @@ function waitForRetry(delayMs: number, signal: AbortSignal | undefined): Promise
 export async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     for (let attempt = 0; attempt <= NETWORK_RETRY_DELAYS_MS.length; attempt++) {
         try {
-            return await fetch(input, init);
+            const response = await fetch(input, init);
+            const retryableStatus = response.status === 408 || response.status === 429 || response.status >= 500;
+            if (!retryableStatus || attempt === NETWORK_RETRY_DELAYS_MS.length) return response;
+            await waitForRetry(NETWORK_RETRY_DELAYS_MS[attempt], init?.signal ?? undefined);
         } catch (error) {
             const aborted = init?.signal?.aborted || (error instanceof DOMException && error.name === "AbortError");
             if (aborted || attempt === NETWORK_RETRY_DELAYS_MS.length) throw error;
