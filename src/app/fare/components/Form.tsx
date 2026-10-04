@@ -308,7 +308,7 @@ export default function Form({
             workerRef.current.postMessage({
                 type: "calculateRouteTicket",
                 payload: {
-                    fullPath: apiRequestBody.fullPath.map(p => p.stationName),
+                    fullPath: apiRequestBody.fullPath,
                     calculationMode: data.calculationMode,
                     requestId: calcId
                 }

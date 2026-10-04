@@ -362,7 +362,7 @@ onmessage = async (e: MessageEvent) => {
     const { fullPath, calculationMode, requestId } = payload;
     try {
       const reqJsonStr = JSON.stringify({
-        fullPath: fullPath.map((stationName: string) => ({ stationName, lineName: null })),
+        fullPath,
         calculationMode: calculationMode || "normal"
       });
       const resultJsonStr = workerSelf.calculateRouteTicket(reqJsonStr);

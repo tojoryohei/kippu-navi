@@ -1091,6 +1091,26 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 	return js.ValueOf(string(resBytes))
 }
 
+// ticketSplitPresentation は近郊区間内の計算済み結果をそのまま印字に使います。
+func ticketSplitPresentation(seg ticketusecase.TicketSplitSegment) ([]int, *ticketusecase.CalculationResult, []string) {
+	if ticketusecase.IsSuburbanAreaComplete(seg.SourcePath, ticketFullGraph) {
+		ticketusecase.LogAutomaticViaKanas(ticketFullGraph, seg.Path)
+		return seg.Path, seg.Result, ticketusecase.GetAutomaticFareViaForResult(ticketFullGraph, seg.Path, seg.Result.FinalPath)
+	}
+	// 近郊区間外は従来の表示用補正を維持する。
+	path, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
+	if len(path) == 0 {
+		path = seg.Path
+	}
+	result, transformed, _ := ticketSegmentEvaluator.Execute(path, 0)
+	if result != nil {
+		path = transformed
+	} else {
+		result = seg.Result
+	}
+	return path, result, ticketusecase.GetSplitViaForResult(ticketFullGraph, seg.Path, path)
+}
+
 func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 	splitStationsJson := args[0].String()
 
@@ -1168,23 +1188,12 @@ func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 		var apiSegments []SegmentResponse
 		totalAmount := 0
 		for _, seg := range combo {
-			correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
-			if len(correctedPath) == 0 {
-				correctedPath = seg.Path
-			}
-			correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
-			if correctedResult != nil {
-				correctedPath = correctedTransformedPath
-			}
-			if correctedResult == nil {
-				correctedResult = seg.Result
-			}
+			correctedPath, correctedResult, viaNames := ticketSplitPresentation(seg)
 
 			pathNames := make([]string, len(correctedPath))
 			for k, id := range correctedPath {
 				pathNames[k] = ticketFullGraph.GetName(id)
 			}
-			viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
 			var eigyo domain.DeciKilo
 			if correctedResult != nil {
 				eigyo = correctedResult.TotalEigyoKilo
@@ -1212,23 +1221,12 @@ func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 	var normalResult ResultResponse
 	if err == nil && len(normalSegs) > 0 {
 		seg := normalSegs[0]
-		correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
-		if len(correctedPath) == 0 {
-			correctedPath = seg.Path
-		}
-		correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
-		if correctedResult != nil {
-			correctedPath = correctedTransformedPath
-		}
-		if correctedResult == nil {
-			correctedResult = seg.Result
-		}
+		correctedPath, correctedResult, viaNames := ticketSplitPresentation(seg)
 
 		pathNames := make([]string, len(correctedPath))
 		for k, id := range correctedPath {
 			pathNames[k] = ticketFullGraph.GetName(id)
 		}
-		viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
 		var eigyo domain.DeciKilo
 		if correctedResult != nil {
 			eigyo = correctedResult.TotalEigyoKilo
@@ -1494,6 +1492,8 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketusecase.NewArticle70Corrector(ticketArticle70Routes),
 	)
 
+	ticketSegmentEvaluator.SetSplitCorrector(ticketCorrector)
+
 	ticketHandler = tickethandler.NewTicketWithRouteExtensionsAndZones(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneReg)
 
 	// 初期化完了に伴い、一時バッファへのピン留めを解除しGCに開放
@@ -1567,7 +1567,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 		return js.ValueOf(fmt.Sprintf(`{"error": "運賃計算エラー: %v"}`, err))
 	}
 
-	var printStrings = []string{} // 経由印字は未実装
+	printStrings := ticketusecase.GetCalculatedFareVia(req.CalculationMode, req.ViaSteps(), pathIDs, transformedPath, evaluationResult.FinalPath, ticketFullGraph, ticketZoneRegistry)
 
 	depStation := ticketFullGraph.GetName(evaluationResult.FinalPath[0])
 	arrStation := ticketFullGraph.GetName(evaluationResult.FinalPath[len(evaluationResult.FinalPath)-1])
@@ -1707,23 +1707,12 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 			var apiSegments []SegmentResponse
 			totalAmount := 0
 			for _, seg := range combo {
-				correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
-				if len(correctedPath) == 0 {
-					correctedPath = seg.Path
-				}
-				correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
-				if correctedResult != nil {
-					correctedPath = correctedTransformedPath
-				}
-				if correctedResult == nil {
-					correctedResult = seg.Result
-				}
+				correctedPath, correctedResult, viaNames := ticketSplitPresentation(seg)
 
 				pathNames := make([]string, len(correctedPath))
 				for k, id := range correctedPath {
 					pathNames[k] = ticketFullGraph.GetName(id)
 				}
-				viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
 				var eigyo domain.DeciKilo
 				if correctedResult != nil {
 					eigyo = correctedResult.TotalEigyoKilo
@@ -1752,23 +1741,12 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 	var normalResult ResultResponse
 	if err == nil && len(normalSegs) > 0 {
 		seg := normalSegs[0]
-		correctedPath, _ := ticketCorrector.Correct(seg.Path, ticketFullGraph)
-		if len(correctedPath) == 0 {
-			correctedPath = seg.Path
-		}
-		correctedResult, correctedTransformedPath, _ := ticketSegmentEvaluator.Execute(correctedPath, 0)
-		if correctedResult != nil {
-			correctedPath = correctedTransformedPath
-		}
-		if correctedResult == nil {
-			correctedResult = seg.Result
-		}
+		correctedPath, correctedResult, viaNames := ticketSplitPresentation(seg)
 
 		pathNames := make([]string, len(correctedPath))
 		for k, id := range correctedPath {
 			pathNames[k] = ticketFullGraph.GetName(id)
 		}
-		viaNames := ticketusecase.GetVia(ticketFullGraph, correctedPath)
 		var eigyo domain.DeciKilo
 		if correctedResult != nil {
 			eigyo = correctedResult.TotalEigyoKilo
