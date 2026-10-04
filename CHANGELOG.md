@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.4.0...kippu-navi-v3.4.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* 第157条の大阪周辺経路補正と市内経由表示を修正 ([#786](https://github.com/tojoryohei/kippu-navi/issues/786)) ([2243198](https://github.com/tojoryohei/kippu-navi/commit/2243198af04fad13907e3f323cdbb29ebf41cd04))
+
 ## [3.4.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.16...kippu-navi-v3.4.0) (2026-10-04)
 
 
