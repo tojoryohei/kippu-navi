@@ -393,6 +393,9 @@ func getFareViaWithSections(path []ViaStep, printStartStation, printEndStation b
 		station := path[i].StationName
 		pair := stationPair(station, path[i+1].StationName)
 		if codes := sections.replacements[station]; len(codes) > 0 {
+			// 置換前の到着路線と置換後の先頭路線で接続駅を判定する。
+			// 例: 姫路からの新幹線を西明石で山陽へ接続する逆方向。
+			printer.addBoundaryStation(station, codes[0], shinkansenViaStationKana(path, i), true, (i > 0 || printStartStation) && !suppressedStations[station])
 			appendViaReplacement(&printer, codes)
 		}
 		omitted := sections.omitted[pair]
@@ -468,8 +471,9 @@ func rule157ViaCodes(index int, reverse bool) []string {
 }
 
 type ruleViaSection struct {
-	start, end string
-	codes      []string
+	start, end           string
+	startIndex, endIndex int // 照合元の経路上の位置
+	codes                []string
 }
 
 func findRule69ViaSections(names []string) []ruleViaSection {
@@ -502,7 +506,11 @@ func findRuleViaSections(names []string, corrector *SpecificSectionCorrector, co
 			if i > 0 && !containsStation(before, names[i-1]) || i+len(rule.from) < len(names) && !containsStation(after, names[i+len(rule.from)]) {
 				continue
 			}
-			sections = append(sections, ruleViaSection{names[i], names[i+len(rule.from)-1], codes(index, reverse && !forward)})
+			sections = append(sections, ruleViaSection{
+				start: names[i], end: names[i+len(rule.from)-1],
+				startIndex: i, endIndex: i + len(rule.from) - 1,
+				codes: codes(index, reverse && !forward),
+			})
 			i += len(rule.from) - 1
 			break
 		}
@@ -533,11 +541,11 @@ func applyRuleViaSections(sections *viaSections, printNames []string, rules []ru
 	}
 }
 
-func sectionsForPath(sourceNames, printNames []string, g graph.Graph, selected map[string]string) viaSections {
+func sectionsForPath(sourceNames, printNames []string, g graph.Graph, selected map[string]string, rule157Sections []ruleViaSection) viaSections {
 	loadViaData()
 	sections := viaSections{omitted: make(map[string]bool), replacements: make(map[string][]string), replacementLineByEdge: make(map[string]string), article70Entry: make(map[string]bool)}
 	applyRuleViaSections(&sections, printNames, findRule69ViaSections(sourceNames))
-	applyRuleViaSections(&sections, printNames, findRule157ViaSections(sourceNames))
+	applyRuleViaSections(&sections, printNames, rule157Sections)
 	for _, segment := range boldViaSegments(sourceNames, g) {
 		// 太線エリア内だけで完結する乗車は第70条の印字処理をしない。
 		if segment.start == 0 && segment.end == len(sourceNames)-1 {
@@ -764,20 +772,46 @@ func getFareViaForResult(path []ViaStep, finalPath []int, g graph.StationProvide
 	start, end := 0, len(path)-1
 	startZoneName := g.GetName(finalPath[0])
 	endZoneName := g.GetName(finalPath[len(finalPath)-1])
-	if zones != nil {
-		if zone := zones.FindZoneByName(startZoneName); zone != nil {
-			start = fareViaBoundary(path, zone.Stations, g.GetName(finalPath[1]), true)
+	startBoundary := g.GetName(finalPath[1])
+	endBoundary := g.GetName(finalPath[len(finalPath)-2])
+	// 運賃計算用の大阪〜新神戸の仮想エッジを、入力経路の市内境界へ戻す。
+	if len(finalPath) >= 3 {
+		if startZoneName == "大阪市内" && startBoundary == "大阪" && g.GetName(finalPath[2]) == "新神戸" {
+			startBoundary = "新大阪"
 		}
-		if zone := zones.FindZoneByName(endZoneName); zone != nil {
-			end = fareViaBoundary(path, zone.Stations, g.GetName(finalPath[len(finalPath)-2]), false)
+		if endZoneName == "大阪市内" && endBoundary == "大阪" && g.GetName(finalPath[len(finalPath)-3]) == "新神戸" {
+			endBoundary = "新大阪"
 		}
 	}
-	osakaStart, osakaEnd := osakaShinOsakaViaBounds(viaStepNames(path), finalPath, g)
+	if zones != nil {
+		if zone := zones.FindZoneByName(startZoneName); zone != nil {
+			start = fareViaBoundary(path, zone.Stations, startBoundary, true)
+		}
+		if zone := zones.FindZoneByName(endZoneName); zone != nil {
+			end = fareViaBoundary(path, zone.Stations, endBoundary, false)
+		}
+	}
+	sourceNames := viaStepNames(path)
+	osakaStart, osakaEnd := osakaShinOsakaViaBounds(sourceNames, finalPath, g)
 	if osakaStart > start {
 		start = osakaStart
 	}
 	if osakaEnd < end {
 		end = osakaEnd
+	}
+	var rule157Sections []ruleViaSection
+	if sectionGraph != nil {
+		// 方面条件は市内区間の省略前に判定する。第88条の切り詰めで
+		// 第157条(26)の大阪駅を失う場合は、置換区間を表示対象に残す。
+		rule157Sections = findRule157ViaSections(sourceNames)
+		for _, rule := range rule157Sections {
+			if startZoneName == "大阪・新大阪" && rule.start == "大阪" && rule.startIndex < start && start <= rule.endIndex {
+				start = rule.startIndex
+			}
+			if endZoneName == "大阪・新大阪" && rule.end == "大阪" && rule.startIndex <= end && end < rule.endIndex {
+				end = rule.endIndex
+			}
+		}
 	}
 	if start > end {
 		return getFareVia(path, true, true, nil)
@@ -787,7 +821,7 @@ func getFareViaForResult(path []ViaStep, finalPath []int, g graph.StationProvide
 	sections := viaSections{specialVia: selected}
 	if sectionGraph != nil {
 		names := viaStepNames(trimmed)
-		sections = sectionsForPath(names, names, sectionGraph, selected)
+		sections = sectionsForPath(names, names, sectionGraph, selected, rule157Sections)
 		sections.specialVia = selected
 	}
 	printPath, suppressedStations := removeOverlapViaWithSuppression(trimmed)
@@ -959,7 +993,7 @@ func GetAutomaticFareViaForResult(g graph.Graph, printPath, finalPath []int) []s
 	}
 	names = viaStepNames(steps)
 	selected := automaticSpecialViaOverrides(steps, steps)
-	sections := sectionsForPath(names, names, g, selected)
+	sections := sectionsForPath(names, names, g, selected, findRule157ViaSections(names))
 	sections.specialVia = selected
 	printStart, printEnd := true, true
 	if len(finalPath) > 0 {
@@ -979,7 +1013,7 @@ func getSplitViaForResult(g graph.Graph, sourcePath, printPath []int) []string {
 		printNames[i] = g.GetName(id)
 	}
 	selected := automaticSpecialViaOverrides(physicalViaSteps(g, sourcePath), physicalViaSteps(g, printPath))
-	sections := sectionsForPath(sourceNames, printNames, g, selected)
+	sections := sectionsForPath(sourceNames, printNames, g, selected, findRule157ViaSections(sourceNames))
 	sections.specialVia = selected
 	return getSplitVia(g, printPath, sections)
 }

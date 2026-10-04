@@ -139,8 +139,10 @@ func TestRule157ViaReplacement(t *testing.T) {
 		before, after           string
 		want, uncorrect, logged []string
 	}{
-		{"赤穂線を山陽に置換して前後と集約", 2, "竜野", "高島", []string{"山陽"}, []string{"山陽", "赤穂", "山陽"}, []string{"サンヨ", "アコウ", "サンヨ"}},
+		{"赤穂線を山陽に置換して前後と集約", 3, "竜野", "高島", []string{"山陽"}, []string{"山陽", "赤穂", "山陽"}, []string{"サンヨ", "アコウ", "サンヨ"}},
 		{"新幹線と接続駅を東海道と山陽に置換", 1, "天満", "（陽）大久保", []string{"大阪環状", "東海道", "山陽"}, []string{"大阪環状", "東海道", "新大阪", "新幹線", "西明石", "山陽"}, []string{"オオサ", "トウカ", "オサシオＢ", "シンカ", "オサニアＢ", "サンヨ"}},
+		{"西明石から姫路への新幹線を残す", 1, "天満", "姫路", []string{"大阪環状", "東海道", "山陽", "西明石", "新幹線", "姫路"}, []string{"大阪環状", "東海道", "新大阪", "新幹線", "姫路"}, []string{"オオサ", "トウカ", "オサシオＢ", "シンカ", "オサヒメＢ"}},
+		{"第27号で東淀川方面から在来線に置換", 2, "東淀川", "姫路", []string{"東海道", "山陽", "西明石", "新幹線", "姫路"}, []string{"東海道", "新大阪", "新幹線", "姫路"}, []string{"トウカ", "オサシオＢ", "シンカ", "オサヒメＢ"}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			rule := NewRule157Corrector().rules[tt.rule]
@@ -161,10 +163,14 @@ func TestRule157ViaReplacement(t *testing.T) {
 					return path
 				}
 				sourcePath, printedPath := ids(source), ids(printed)
+				corrected, err := NewRule157Corrector().Correct(sourcePath, g)
+				if err != nil || !reflect.DeepEqual(corrected, printedPath) {
+					t.Fatalf("corrected path (reverse=%v) = %v, err=%v, want %v", reverse, corrected, err, printedPath)
+				}
 				steps := physicalViaSteps(g, sourcePath)
 				for i := 0; i < len(steps)-1; i++ {
 					pair := stationPair(steps[i].StationName, steps[i+1].StationName)
-					if pair == stationPair("新大阪", "新神戸") || pair == stationPair("新神戸", "西明石") {
+					if pair == stationPair("新大阪", "新神戸") || pair == stationPair("新神戸", "西明石") || pair == stationPair("西明石", "姫路") {
 						steps[i].LineName = "シンカ"
 					}
 				}
@@ -177,7 +183,7 @@ func TestRule157ViaReplacement(t *testing.T) {
 				if got := inputViaKanas(steps); !reflect.DeepEqual(got, logged) {
 					t.Fatalf("logged = %v, want %v", got, logged)
 				}
-				if tt.rule == 2 {
+				if tt.rule == 3 {
 					if got := GetSplitViaForResult(g, sourcePath, printedPath); !reflect.DeepEqual(got, want) {
 						t.Fatalf("split = %v, want %v", got, want)
 					}
@@ -185,7 +191,7 @@ func TestRule157ViaReplacement(t *testing.T) {
 				if got := GetCheapestFareViaForResult(g, printedPath, printedPath); !reflect.DeepEqual(got, want) {
 					t.Fatalf("cheapest = %v, want %v", got, want)
 				}
-				if tt.rule == 1 {
+				if tt.rule == 1 || tt.rule == 2 {
 					// 大阪側が環状線ではなく塚本方面なら、この157条の条件に該当しない。
 					outside := 0
 					if reverse {
@@ -373,6 +379,24 @@ func TestGetFareViaForResultOmitsAppliedZones(t *testing.T) {
 			[]ViaStep{{"京橋", "オオサ"}, {"新大阪", "シンカ"}, {"新神戸", ""}},
 			[]string{"大阪市内", "大阪", "新神戸"},
 			[]string{"新大阪", "新幹線", "新神戸"},
+		},
+		{
+			"補正後の入口駅が入力にない大阪市内",
+			[]ViaStep{{"新神戸", "シンカ"}, {"新大阪", "オオサ"}, {"京橋", ""}},
+			[]string{"新神戸", "大阪", "大阪市内"},
+			[]string{"新神戸", "新幹線", "新大阪"},
+		},
+		{
+			"大阪市内発で計算用の大阪駅が入力にもある",
+			[]ViaStep{{"大阪", "トウカ"}, {"新大阪", "シンカ"}, {"新神戸", ""}},
+			[]string{"大阪市内", "大阪", "新神戸"},
+			[]string{"新大阪", "新幹線", "新神戸"},
+		},
+		{
+			"大阪市内着で計算用の大阪駅が入力にもある",
+			[]ViaStep{{"新神戸", "シンカ"}, {"新大阪", "トウカ"}, {"大阪", ""}},
+			[]string{"新神戸", "大阪", "大阪市内"},
+			[]string{"新神戸", "新幹線", "新大阪"},
 		},
 	}
 	for _, tt := range tests {
