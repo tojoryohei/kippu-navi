@@ -75,6 +75,7 @@ type EdgeBinary struct {
 
 // WasmGraph はバイナリデータからキャストされたグラフデータを提供する Graph 実装
 type WasmGraph struct {
+	lineByPair  map[[2]int]string
 	numStations int32
 	numEdges    int32
 	indptr      []int32
@@ -107,6 +108,7 @@ func (g *WasmGraph) GetEdges(id int) []passdomain.PassEdge {
 				IsBarrierFreeSection:   eb.IsBarrierFreeSection,
 				SuburbanArea:           domain.SuburbanAreaID(eb.SuburbanArea),
 			},
+			Line:           g.lineByPair[[2]int{id, int(eb.ToID)}],
 			IsIcPassArea:   eb.IsIcPassArea,
 			IsBoldLineArea: eb.IsBoldLineArea,
 		}
@@ -196,7 +198,26 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		nameMap[name] = int32(i)
 	}
 
+	// バイナリ形式には路線コードがないため、同梱の駅間データから補う。
+	var lineRecords []struct {
+		Line     string `json:"line"`
+		Station0 string `json:"station0"`
+		Station1 string `json:"station1"`
+	}
+	if err := json.NewDecoder(ticketgraphdata.GetEdgesReader()).Decode(&lineRecords); err != nil {
+		return js.ValueOf(fmt.Sprintf("error: pass line data: %v", err))
+	}
+	lineByPair := make(map[[2]int]string, len(lineRecords)*2)
+	for _, record := range lineRecords {
+		from, ok0 := nameMap[record.Station0]
+		to, ok1 := nameMap[record.Station1]
+		if ok0 && ok1 {
+			lineByPair[[2]int{int(from), int(to)}] = record.Line
+			lineByPair[[2]int{int(to), int(from)}] = record.Line
+		}
+	}
 	passWasmGraph = &WasmGraph{
+		lineByPair:  lineByPair,
 		numStations: numStations,
 		numEdges:    numEdges,
 		indptr:      indptr,
