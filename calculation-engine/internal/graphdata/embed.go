@@ -9,6 +9,16 @@ import (
 //go:embed edges.json
 var edgesJSON []byte
 
+//go:embed printings.json
+var printingsJSON []byte
+
+//go:embed private_via.json
+var privateViaJSON []byte
+
+func GetPrivateViaReader() *bytes.Reader {
+	return bytes.NewReader(privateViaJSON)
+}
+
 //go:embed shinkansen_edges.json
 var shinkansenEdgesJSON []byte
 
@@ -24,6 +34,11 @@ var zoneRoutesJSON []byte
 // GetEdgesReader はグラフデータ(edges.json)のReaderを返すゲッターメソッドです。
 func GetEdgesReader() *bytes.Reader {
 	return bytes.NewReader(edgesJSON)
+}
+
+// GetPrintingsReader はカナコードから経由印字への対応表を返します。
+func GetPrintingsReader() *bytes.Reader {
+	return bytes.NewReader(printingsJSON)
 }
 
 // GetShinkansenEdgesReader は新幹線の運賃計算用エッジデータ(shinkansen_edges.json)のReaderを返します。
@@ -54,7 +69,15 @@ func GetZoneRoutesReader() *bytes.Reader {
 //go:embed article70_routes.json
 var article70RoutesJSON []byte
 
+//go:embed article70_kana.json
+var article70KanaJSON []byte
+
 // GetArticle70RoutesReader は70条特例のルートデータ(article70_routes.json)のReaderを返すゲッターメソッドです。
 func GetArticle70RoutesReader() *bytes.Reader {
 	return bytes.NewReader(article70RoutesJSON)
+}
+
+// GetArticle70KanaReader は太線駅間の印字用カナコードを返します。
+func GetArticle70KanaReader() *bytes.Reader {
+	return bytes.NewReader(article70KanaJSON)
 }
