@@ -118,7 +118,7 @@ func TestFareViaOsakaShinOsakaToOkayama(t *testing.T) {
 	if got := g.GetName(result.FinalPath[0]); got != "大阪・新大阪" {
 		t.Fatalf("final departure = %q, want 大阪・新大阪", got)
 	}
-	want := []string{"新大阪", "新幹線", "岡山"}
+	want := []string{"東海道", "山陽", "西明石", "新幹線", "岡山"}
 	if got := usecase.GetFareViaForResultWithSections(steps, result.FinalPath, g, zones); !reflect.DeepEqual(got, want) {
 		t.Fatalf("fare via = %v, want %v", got, want)
 	}
@@ -203,12 +203,13 @@ func TestArticle88ShinkansenCorrectionRespectsMode(t *testing.T) {
 	for _, reverse := range []bool{false, true} {
 		for _, mode := range []string{"normal", "cheapest", "uncorrect"} {
 			names := []string{"新大阪", "新神戸", "西明石", "姫路"}
-			want := []string{"大阪・新大阪", "大阪", "新神戸", "西明石", "姫路"}
+			want := []string{"大阪・新大阪", "大阪", "塚本", "尼崎", "立花", "甲子園口", "西宮", "さくら夙川", "芦屋", "甲南山手", "摂津本山", "（東）住吉", "六甲道", "摩耶", "灘", "三ノ宮", "元町", "神戸", "兵庫", "新長田", "鷹取", "須磨海浜公園", "須磨", "塩屋", "垂水", "舞子", "朝霧", "明石", "西明石", "姫路"}
 			wantKilo := 879
 			if mode == "uncorrect" {
-				want[1] = "新大阪"
+				want = []string{"大阪・新大阪", "新大阪", "新神戸", "西明石", "姫路"}
 				wantKilo = 955
 			}
+			want = append(want[:len(want)-1], "（陽）大久保", "魚住", "土山", "東加古川", "加古川", "宝殿", "曽根", "ひめじ別所", "御着", "東姫路", "姫路")
 			if reverse {
 				slices.Reverse(names)
 				slices.Reverse(want)
@@ -217,15 +218,32 @@ func TestArticle88ShinkansenCorrectionRespectsMode(t *testing.T) {
 			for i, name := range names {
 				path[i], _ = g.GetID(name)
 			}
-			result, transformed, err := evaluator.ExecuteWithMode(path, 0, mode)
+			corrected, err := usecase.CorrectPathForMode(path, g, usecase.NewPipelineCorrector(usecase.NewShinkansenOverlapCorrector(), usecase.NewRule157Corrector()), mode)
 			if err != nil {
 				t.Fatal(err)
 			}
-			wantVia := []string{"新大阪", "新幹線", "姫路"}
+			result, transformed, err := evaluator.ExecuteWithMode(corrected, 0, mode)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantVia := []string{"東海道", "山陽", "西明石", "新幹線", "姫路"}
+			if mode == "cheapest" {
+				wantVia = []string{"東海道", "山陽"}
+			}
+			if mode == "uncorrect" {
+				wantVia = []string{"新大阪", "新幹線", "姫路"}
+			}
+			steps := make([]usecase.ViaStep, len(names))
+			for i, name := range names {
+				steps[i].StationName = name
+				if i+1 < len(names) {
+					steps[i].LineName = "シンカ"
+				}
+			}
 			if reverse {
 				slices.Reverse(wantVia)
 			}
-			if via := usecase.GetAutomaticFareViaForResult(g, transformed, result.FinalPath); !slices.Equal(via, wantVia) {
+			if via := usecase.GetCalculatedFareVia(mode, steps, path, transformed, result.FinalPath, g, zones); !slices.Equal(via, wantVia) {
 				t.Fatalf("mode=%s reverse=%v via=%v want=%v", mode, reverse, via, wantVia)
 			}
 			got := make([]string, len(transformed))
@@ -308,7 +326,7 @@ func TestOsakaViaShinOsakaToHimeji(t *testing.T) {
 				t.Fatalf("days=%d", days)
 			}
 			want := []string{"新大阪", "新幹線", "西明石", "山陽"}
-			if mode == "cheapest" {
+			if mode != "uncorrect" {
 				want = []string{"東海道", "山陽"}
 			}
 			if reverse {

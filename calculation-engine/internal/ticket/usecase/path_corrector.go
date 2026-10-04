@@ -188,7 +188,15 @@ func NewRule157Corrector() *SpecificSectionCorrector {
 				from:        []string{"大阪", "新大阪", "新神戸", "西明石"},
 				to:          []string{"大阪", "塚本", "尼崎", "立花", "甲子園口", "西宮", "さくら夙川", "芦屋", "甲南山手", "摂津本山", "（東）住吉", "六甲道", "摩耶", "灘", "三ノ宮", "元町", "神戸", "兵庫", "新長田", "鷹取", "須磨海浜公園", "須磨", "塩屋", "垂水", "舞子", "朝霧", "明石", "西明石"},
 				validBefore: []string{"天満", "（環）福島"},
-				validAfter:  []string{"（陽）大久保"},
+				validAfter:  []string{"（陽）大久保", "姫路"},
+			},
+			{
+				// （27）新大阪以遠（東淀川又は南吹田方面）と西明石以遠（大久保方面）の選択乗車。
+				// 新大阪を残して在来線へ置換し、大阪起点への変更は第88条で行う。
+				from:        []string{"新大阪", "新神戸", "西明石"},
+				to:          []string{"新大阪", "大阪", "塚本", "尼崎", "立花", "甲子園口", "西宮", "さくら夙川", "芦屋", "甲南山手", "摂津本山", "（東）住吉", "六甲道", "摩耶", "灘", "三ノ宮", "元町", "神戸", "兵庫", "新長田", "鷹取", "須磨海浜公園", "須磨", "塩屋", "垂水", "舞子", "朝霧", "明石", "西明石"},
+				validBefore: []string{"東淀川", "南吹田", "京都"},
+				validAfter:  []string{"（陽）大久保", "姫路"},
 			},
 			{
 				// （30）相生以遠（竜野方面）の各駅と東岡山以遠（高島方面）の各駅との相互間（山陽本線経由、赤穂線経由）
@@ -329,7 +337,7 @@ func NewPostZoneCleanupCorrector() *SpecificSectionCorrector {
 	}
 }
 
-// OsakaCityShinOsakaCorrector は大阪市内・大阪新大阪の特例適用後に、
+// OsakaCityShinOsakaCorrector は大阪市内の特例適用後に、
 // 新幹線へ接続する大阪市内の出口駅を大阪駅へ置き換えます。
 // 大阪駅→新神戸駅の仮想エッジを使って運賃を計算するための補正です。
 type OsakaCityShinOsakaCorrector struct{}
@@ -344,25 +352,11 @@ func (c *OsakaCityShinOsakaCorrector) Correct(path []int, g graph.Graph) ([]int,
 	}
 
 	result := append([]int(nil), path...)
-	isOsakaZone := func(id int) bool {
-		name := g.GetName(id)
-		return name == "大阪市内" || name == "大阪・新大阪"
-	}
-	// 大阪発着で新大阪を経由する場合は、計算用の大阪〜新神戸へ直結する。
-	if len(result) >= 4 {
-		if g.GetName(result[0]) == "大阪・新大阪" && g.GetName(result[1]) == "大阪" && g.GetName(result[2]) == "新大阪" && g.GetName(result[3]) == "新神戸" {
-			result = append(result[:2], result[3:]...)
-		}
-		last := len(result) - 1
-		if last >= 3 && g.GetName(result[last]) == "大阪・新大阪" && g.GetName(result[last-1]) == "大阪" && g.GetName(result[last-2]) == "新大阪" && g.GetName(result[last-3]) == "新神戸" {
-			result = append(result[:last-2], result[last-1:]...)
-		}
-	}
-	forwardMatch := isOsakaZone(result[0]) &&
+	forwardMatch := g.GetName(result[0]) == "大阪市内" &&
 		g.GetName(result[1]) == "新大阪" &&
 		g.GetName(result[2]) == "新神戸"
 	last := len(result) - 1
-	reverseMatch := isOsakaZone(result[last]) &&
+	reverseMatch := g.GetName(result[last]) == "大阪市内" &&
 		g.GetName(result[last-1]) == "新大阪" &&
 		g.GetName(result[last-2]) == "新神戸"
 	if !forwardMatch && !reverseMatch {

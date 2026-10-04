@@ -133,6 +133,55 @@ func TestPipelineCorrectorCapturesPathBeforeShinkansenExpansion(t *testing.T) {
 	}
 }
 
+func TestRule157ShinOsakaDirections(t *testing.T) {
+	for _, tt := range []struct {
+		before, after string
+		match         bool
+	}{
+		{"", "姫路", true},
+		{"東淀川", "姫路", true},
+		{"南吹田", "（陽）大久保", true},
+		{"京都", "姫路", true},
+		{"東淀川", "", true},
+		{"塚本", "姫路", false},
+		{"南吹田", "明石", false},
+	} {
+		for _, reverse := range []bool{false, true} {
+			names := []string{"新大阪", "新神戸", "西明石"}
+			if tt.before != "" {
+				names = append([]string{tt.before}, names...)
+			}
+			if tt.after != "" {
+				names = append(names, tt.after)
+			}
+			if reverse {
+				names = reverseStrings(names)
+			}
+			g := graph.NewGraph(40)
+			corrector := NewRule157Corrector()
+			for _, rule := range corrector.rules {
+				for _, name := range rule.to {
+					g.GetOrAddID(name)
+				}
+			}
+			path := make([]int, len(names))
+			for i, name := range names {
+				path[i] = g.GetOrAddID(name)
+			}
+			corrected, err := corrector.Correct(path, g)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if changed := !reflect.DeepEqual(path, corrected); changed != tt.match {
+				t.Errorf("path=%v: corrected=%v, want match=%v", names, corrected, tt.match)
+			}
+			if matched := len(findRule157ViaSections(names)) > 0; matched != tt.match {
+				t.Errorf("path=%v: via match=%v, want %v", names, matched, tt.match)
+			}
+		}
+	}
+}
+
 func TestOsakaCityShinOsakaCorrector(t *testing.T) {
 	g := &mockGraphCorrector{
 		names: map[int]string{
@@ -141,6 +190,7 @@ func TestOsakaCityShinOsakaCorrector(t *testing.T) {
 			3: "新神戸",
 			4: "大阪",
 			5: "岡山",
+			6: "大阪・新大阪",
 		},
 	}
 
@@ -164,6 +214,26 @@ func TestOsakaCityShinOsakaCorrector(t *testing.T) {
 			name:     "対象外の経路",
 			input:    []int{1, 2, 5},
 			expected: []int{1, 2, 5},
+		},
+		{
+			name:     "第88条の新大阪発では仮想エッジを作らない",
+			input:    []int{6, 2, 3, 5},
+			expected: []int{6, 2, 3, 5},
+		},
+		{
+			name:     "第88条の大阪発でも新大阪を削除しない",
+			input:    []int{6, 4, 2, 3, 5},
+			expected: []int{6, 4, 2, 3, 5},
+		},
+		{
+			name:     "第88条の新大阪着では仮想エッジを作らない",
+			input:    []int{5, 3, 2, 6},
+			expected: []int{5, 3, 2, 6},
+		},
+		{
+			name:     "第88条の大阪着でも新大阪を削除しない",
+			input:    []int{5, 3, 2, 4, 6},
+			expected: []int{5, 3, 2, 4, 6},
 		},
 	}
 
