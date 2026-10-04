@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.16...kippu-navi-v3.4.0) (2026-10-04)
+
+
+### Features
+
+* 乗車券の経由印字を実装し運賃補正・定期券の分岐判定を改善 ([#784](https://github.com/tojoryohei/kippu-navi/issues/784)) ([7ab5890](https://github.com/tojoryohei/kippu-navi/commit/7ab58902316dd13544b96fbf36d5721607283e24))
+
 ## [3.3.16](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.3.15...kippu-navi-v3.3.16) (2026-10-01)
 
 
