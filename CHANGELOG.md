@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.4.2...kippu-navi-v3.4.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* 大阪周辺の補正ロジックを距離控除方式に統一 ([#793](https://github.com/tojoryohei/kippu-navi/issues/793)) ([66a86dc](https://github.com/tojoryohei/kippu-navi/commit/66a86dce1222dad21525a8f999adaef3c51bfdea))
+
 ## [3.4.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.4.1...kippu-navi-v3.4.2) (2026-10-05)
 
 
