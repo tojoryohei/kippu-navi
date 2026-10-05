@@ -47,7 +47,15 @@ func TestOsakaShinkansenFareViaResult(t *testing.T) {
 			segments: []segment{
 				{"シンカ", []string{"新大阪", "新神戸", "西明石", "姫路"}},
 			},
-			want: osakaFareResult{TotalEigyoKilo: 879, DepartureStation: "大阪・新大阪", ArrivalStation: "姫路", PrintedViaLines: []string{"東海道", "山陽", "西明石", "新幹線", "姫路"}, Fare: 1460, ValidDays: 1},
+			want: osakaFareResult{TotalEigyoKilo: 879, DepartureStation: "大阪・新大阪", ArrivalStation: "姫路", PrintedViaLines: []string{"新大阪", "新幹線", "姫路"}, Fare: 1460, ValidDays: 1},
+		},
+		{
+			name: "新大阪発で西明石から山陽本線",
+			segments: []segment{
+				{"シンカ", []string{"新大阪", "新神戸", "西明石"}},
+				{"サンヨ", []string{"西明石", "（陽）大久保", "魚住", "土山", "東加古川", "加古川", "宝殿", "曽根", "ひめじ別所", "御着", "東姫路", "姫路"}},
+			},
+			want: osakaFareResult{TotalEigyoKilo: 879, DepartureStation: "大阪・新大阪", ArrivalStation: "姫路", PrintedViaLines: []string{"新大阪", "新幹線", "西明石", "山陽"}, Fare: 1460, ValidDays: 1},
 		},
 		{
 			name: "姫路まで新幹線",

@@ -139,10 +139,9 @@ func TestRule157ViaReplacement(t *testing.T) {
 		before, after           string
 		want, uncorrect, logged []string
 	}{
-		{"赤穂線を山陽に置換して前後と集約", 3, "竜野", "高島", []string{"山陽"}, []string{"山陽", "赤穂", "山陽"}, []string{"サンヨ", "アコウ", "サンヨ"}},
+		{"赤穂線を山陽に置換して前後と集約", 2, "竜野", "高島", []string{"山陽"}, []string{"山陽", "赤穂", "山陽"}, []string{"サンヨ", "アコウ", "サンヨ"}},
 		{"新幹線と接続駅を東海道と山陽に置換", 1, "天満", "（陽）大久保", []string{"大阪環状", "東海道", "山陽"}, []string{"大阪環状", "東海道", "新大阪", "新幹線", "西明石", "山陽"}, []string{"オオサ", "トウカ", "オサシオＢ", "シンカ", "オサニアＢ", "サンヨ"}},
 		{"西明石から姫路への新幹線を残す", 1, "天満", "姫路", []string{"大阪環状", "東海道", "山陽", "西明石", "新幹線", "姫路"}, []string{"大阪環状", "東海道", "新大阪", "新幹線", "姫路"}, []string{"オオサ", "トウカ", "オサシオＢ", "シンカ", "オサヒメＢ"}},
-		{"第27号で東淀川方面から在来線に置換", 2, "東淀川", "姫路", []string{"東海道", "山陽", "西明石", "新幹線", "姫路"}, []string{"東海道", "新大阪", "新幹線", "姫路"}, []string{"トウカ", "オサシオＢ", "シンカ", "オサヒメＢ"}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			rule := NewRule157Corrector().rules[tt.rule]
@@ -183,7 +182,7 @@ func TestRule157ViaReplacement(t *testing.T) {
 				if got := inputViaKanas(steps); !reflect.DeepEqual(got, logged) {
 					t.Fatalf("logged = %v, want %v", got, logged)
 				}
-				if tt.rule == 3 {
+				if tt.rule == 2 {
 					if got := GetSplitViaForResult(g, sourcePath, printedPath); !reflect.DeepEqual(got, want) {
 						t.Fatalf("split = %v, want %v", got, want)
 					}
@@ -191,7 +190,7 @@ func TestRule157ViaReplacement(t *testing.T) {
 				if got := GetCheapestFareViaForResult(g, printedPath, printedPath); !reflect.DeepEqual(got, want) {
 					t.Fatalf("cheapest = %v, want %v", got, want)
 				}
-				if tt.rule == 1 || tt.rule == 2 {
+				if tt.rule == 1 {
 					// 大阪側が環状線ではなく塚本方面なら、この157条の条件に該当しない。
 					outside := 0
 					if reverse {

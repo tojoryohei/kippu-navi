@@ -13,7 +13,7 @@ type FarePathCandidate struct {
 	Path                             []int
 	ThresholdKilo                    domain.DeciKilo
 	CheckThreshold                   bool
-	AllowOsakaCityDistanceAdjustment bool
+	AllowOsakaZoneDistanceAdjustment bool
 }
 
 // SpecialFareRuleResolver は運賃計算前に適用する特例経路を、モードごとの順序で解決します。
@@ -104,13 +104,13 @@ func (r *SpecialFareRuleResolver) applySuburbanZoneCandidate(path []int, areaID 
 		Path:                             corrected,
 		ThresholdKilo:                    info.ThresholdKilo,
 		CheckThreshold:                   false,
-		AllowOsakaCityDistanceAdjustment: true,
+		AllowOsakaZoneDistanceAdjustment: true,
 	}}
 }
 
 // resolveUncorrect は補正禁止モードの特例候補を、指定された順序で解決します。
 // 補正禁止でも第86条・第87条・第88条は運賃計算上の特例として適用します。
-// 第69条・第70条などの一般的な経路補正と、大阪市内の距離控除は適用しません。
+// 第69条・第70条などの一般的な経路補正と、大阪発着ゾーンの距離控除は適用しません。
 func (r *SpecialFareRuleResolver) resolveUncorrect(path []int) []FarePathCandidate {
 	// 1. 特定都区市内・東京山手線内（第86条・第87条）
 	resolved := r.applyUncorrectZoneCandidates(path)
@@ -180,7 +180,7 @@ func (r *SpecialFareRuleResolver) applyNormalZoneCandidates(path []int) []FarePa
 			Path:                             corrected,
 			ThresholdKilo:                    info.ThresholdKilo,
 			CheckThreshold:                   true,
-			AllowOsakaCityDistanceAdjustment: true,
+			AllowOsakaZoneDistanceAdjustment: true,
 		})
 	}
 	return resolved
@@ -227,9 +227,10 @@ func (r *SpecialFareRuleResolver) applyArticle88Candidates(path []int) ([]FarePa
 	}
 	return []FarePathCandidate{
 		{
-			Path:           corrected,
-			ThresholdKilo:  info.ThresholdKilo,
-			CheckThreshold: false,
+			Path:                             corrected,
+			ThresholdKilo:                    info.ThresholdKilo,
+			CheckThreshold:                   false,
+			AllowOsakaZoneDistanceAdjustment: true,
 		},
 		{Path: fallback},
 	}, nil
