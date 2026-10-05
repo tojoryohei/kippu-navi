@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestOsakaCityDistanceDeductionDirection(t *testing.T) {
+func TestOsakaZoneDistanceDeductionDirection(t *testing.T) {
 	g := graph.NewGraph(8)
 	id := g.GetOrAddID
 	g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{FromID: id("大阪"), ToID: id("新大阪"), Company: domain.JRWest, EigyoKilo: 38, GiseiKilo: 42}})
@@ -25,7 +25,12 @@ func TestOsakaCityDistanceDeductionDirection(t *testing.T) {
 		{"山陽方面", []string{"大阪市内", "新大阪", "新神戸"}, 1},
 		{"京都方面", []string{"大阪市内", "新大阪", "京都"}, 0},
 		{"在来線東側", []string{"大阪市内", "新大阪", "東淀川"}, 0},
-		{"第88条", []string{"大阪・新大阪", "新大阪", "新神戸"}, 0},
+		{"第88条京都方面", []string{"大阪・新大阪", "新大阪", "京都"}, 0},
+		{"第88条在来線", []string{"大阪・新大阪", "新大阪", "東淀川"}, 0},
+		{"東淀川通過", []string{"東淀川", "新大阪", "新神戸"}, 0},
+		{"南吹田通過", []string{"南吹田", "新大阪", "新神戸"}, 0},
+		{"京都通過", []string{"京都", "新大阪", "新神戸"}, 0},
+		{"第88条", []string{"大阪・新大阪", "新大阪", "新神戸"}, 1},
 		{"駅発着", []string{"大阪", "新大阪", "新神戸"}, 0},
 		{"途中の市内駅", []string{"別駅", "大阪市内", "新大阪", "新神戸", "終点"}, 0},
 		{"両端", []string{"大阪市内", "新大阪", "新神戸", "新大阪", "大阪市内"}, 2},
@@ -36,7 +41,7 @@ func TestOsakaCityDistanceDeductionDirection(t *testing.T) {
 				path[i] = id(name)
 			}
 			for range 2 {
-				e, gs, err := calc.osakaCityDistanceDeduction(path)
+				e, gs, err := calc.osakaZoneDistanceDeduction(path)
 				if err != nil || e != 76*tt.count || gs != 84*tt.count {
 					t.Fatalf("got %d/%d %v", e, gs, err)
 				}
@@ -49,17 +54,17 @@ func TestOsakaCityDistanceDeductionDirection(t *testing.T) {
 	}
 }
 
-func TestOsakaCityDistanceSummary(t *testing.T) {
+func TestOsakaZoneDistanceSummary(t *testing.T) {
 	s := &routeSummary{totalEigyo: 2100, totalGisei: 2200, totalPathEigyo: 2300, statsByCompany: make([]companyStats, domain.CompanyCount)}
 	s.statsByCompany[domain.JRWest] = companyStats{used: true, eigyo: 1000, gisei: 1100}
 	s.statsByCompany[domain.JRCentral] = companyStats{used: true, eigyo: 1100, gisei: 1100}
-	if err := s.deductOsakaCityDistance(76, 84); err != nil {
+	if err := s.deductOsakaZoneDistance(76, 84); err != nil {
 		t.Fatal(err)
 	}
 	if s.totalEigyo != 2024 || s.totalGisei != 2116 || s.totalPathEigyo != 2224 || s.statsByCompany[domain.JRWest].eigyo != 924 || s.statsByCompany[domain.JRWest].gisei != 1016 || s.statsByCompany[domain.JRCentral].eigyo != 1100 {
 		t.Fatalf("集計が不正: %+v", s)
 	}
-	if err := s.deductOsakaCityDistance(3000, 3000); err == nil {
+	if err := s.deductOsakaZoneDistance(3000, 3000); err == nil {
 		t.Fatal("過剰な控除を許可した")
 	}
 }

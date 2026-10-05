@@ -42,7 +42,7 @@ func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode 
 	}
 	var lastErr error
 	for _, candidate := range candidates {
-		res, err := u.calc.execute(candidate.Path, candidate.AllowOsakaCityDistanceAdjustment)
+		res, err := u.calc.execute(candidate.Path, candidate.AllowOsakaZoneDistanceAdjustment)
 		if err != nil {
 			lastErr = err
 			continue

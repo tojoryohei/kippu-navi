@@ -139,7 +139,7 @@ func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
 	return u.execute(path, false)
 }
 
-func (u *CalculateAmount) execute(path []int, allowOsakaCityDistanceAdjustment bool) (*CalculationResult, error) {
+func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment bool) (*CalculationResult, error) {
 	if len(path) < 2 {
 		return nil, fmt.Errorf("CalculateAmount.Execute: %w", domain.ErrInvalidPath)
 	}
@@ -160,17 +160,17 @@ func (u *CalculateAmount) execute(path []int, allowOsakaCityDistanceAdjustment b
 		}
 	}
 
-	if allowOsakaCityDistanceAdjustment {
-		eigyo, gisei, err := u.osakaCityDistanceDeduction(path)
+	if allowOsakaZoneDistanceAdjustment {
+		eigyo, gisei, err := u.osakaZoneDistanceDeduction(path)
 		if err != nil {
 			return nil, err
 		}
-		if err := summary.deductOsakaCityDistance(eigyo, gisei); err != nil {
+		if err := summary.deductOsakaZoneDistance(eigyo, gisei); err != nil {
 			return nil, err
 		}
 		// 北新地置換がなければ同一集計なので、二重に控除しない。
 		if physicalSummary != summary {
-			if err := physicalSummary.deductOsakaCityDistance(eigyo, gisei); err != nil {
+			if err := physicalSummary.deductOsakaZoneDistance(eigyo, gisei); err != nil {
 				return nil, err
 			}
 		}

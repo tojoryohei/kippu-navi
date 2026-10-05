@@ -138,11 +138,11 @@ func TestRule157ShinOsakaDirections(t *testing.T) {
 		before, after string
 		match         bool
 	}{
-		{"", "姫路", true},
-		{"東淀川", "姫路", true},
-		{"南吹田", "（陽）大久保", true},
-		{"京都", "姫路", true},
-		{"東淀川", "", true},
+		{"", "姫路", false},
+		{"東淀川", "姫路", false},
+		{"南吹田", "（陽）大久保", false},
+		{"京都", "姫路", false},
+		{"東淀川", "", false},
 		{"塚本", "姫路", false},
 		{"南吹田", "明石", false},
 	} {
@@ -175,8 +175,8 @@ func TestRule157ShinOsakaDirections(t *testing.T) {
 			if changed := !reflect.DeepEqual(path, corrected); changed != tt.match {
 				t.Errorf("path=%v: corrected=%v, want match=%v", names, corrected, tt.match)
 			}
-			if matched := len(findRule157ViaSections(names)) > 0; matched != tt.match {
-				t.Errorf("path=%v: via match=%v, want %v", names, matched, tt.match)
+			if sections := findRule157ViaSections(names); len(sections) != 0 {
+				t.Errorf("path=%v: article 27 must not produce printing sections: %v", names, sections)
 			}
 		}
 	}
