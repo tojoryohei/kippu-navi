@@ -1,5 +1,6 @@
 import kanaData from '@/app/fare/data/kanas.json';
 import linesData from '@/app/fare/data/lines.json';
+import privateViaData from '../../../../calculation-engine/internal/graphdata/private_via.json';
 import type { Kana, Line } from '@/app/types';
 
 function createRouteKey(line: string, station0: string, station1: string): string {
@@ -7,12 +8,7 @@ function createRouteKey(line: string, station0: string, station1: string): strin
 }
 
 const kanas = new Map<string, string>();
-// kanas.jsonの数字コードは、定期券計算で扱えない会社線（私鉄・第三セクター線）を示す。
-const privateLineNames = new Set(
-    (kanaData as Kana[])
-        .filter(({ kana }) => /^\d/.test(kana))
-        .map(({ line }) => line),
-);
+const privateLineNames = new Set(Object.keys(privateViaData.lines));
 
 try {
     for (const kana of kanaData as Kana[]) {
