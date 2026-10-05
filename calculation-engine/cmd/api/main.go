@@ -48,7 +48,7 @@ func allowLocalDevelopmentCORS(next http.Handler) http.Handler {
 		origin := r.Header.Get("Origin")
 		if _, allowed := localDevelopmentOrigins[origin]; allowed {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Request-ID")
 			w.Header().Set("Access-Control-Expose-Headers", "X-Request-ID")
 			w.Header().Add("Vary", "Origin")
@@ -275,10 +275,6 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("乗車券の運賃データのロードに失敗しました: %w", err)
 	}
-	ticketRouteExtensions, err := ticketusecase.NewRouteExtensionMatcherIDs(ticketfareio.GetGeneratedRouteExtensions(), ticketFullGraph)
-	if err != nil {
-		return fmt.Errorf("乗車券の経路延長対応表初期化に失敗しました: %w", err)
-	}
 
 	ticketSpecificMatcher := ticketfare.NewPathMatcher()
 	for _, f := range ticketFareioReg.GetSpecificFares() {
@@ -374,8 +370,6 @@ func run() error {
 
 	ticketSegmentEvaluator.SetSplitCorrector(ticketCorrector)
 
-	ticketHandler := tickethandler.NewTicketWithRouteExtensionsAndZones(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneReg)
-
 	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
 
 	ticketFares, ticketDistGisei, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares(filepath.Join(precomputedDataDir, "ticket.bin"))
@@ -391,20 +385,9 @@ func run() error {
 
 	ticketSplitHandler := tickethandler.NewSplit(ticketSearchGraph, ticketSearchUseCase)
 
-	// ルーティング
-	mux := http.NewServeMux()
-
-	// 定期券ルート
 	passSplitHandler := passhandler.NewSplit(g, passSearchUseCase)
-	mux.HandleFunc("/api/split-pass", passSplitHandler.HandleCalculate)
-
 	icPassSplitHandler := passhandler.NewSplit(icGraph, icPassSearchUseCase)
-	mux.HandleFunc("/api/split-icpass", icPassSplitHandler.HandleCalculate)
-
-	// 乗車券ルート
-	mux.HandleFunc("/api/fare", ticketHandler.HandleCalculateFare)
-	mux.HandleFunc("/api/fare/ticket", ticketHandler.HandleCalculateFare)
-	mux.HandleFunc("/api/split-ticket", ticketSplitHandler.HandleCalculate)
+	mux := newAPIMux(passSplitHandler.HandleCalculate, icPassSplitHandler.HandleCalculate, ticketSplitHandler.HandleCalculate)
 
 	server := &http.Server{
 		Addr:         listenAddr,
@@ -443,4 +426,13 @@ func run() error {
 
 	slog.Info("calculation-engine stopped")
 	return nil
+}
+
+// newAPIMux はサーバーで提供する分割検索APIを登録します。
+func newAPIMux(splitPass, splitICPass, splitTicket http.HandlerFunc) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/split-pass", splitPass)
+	mux.HandleFunc("/api/split-icpass", splitICPass)
+	mux.HandleFunc("/api/split-ticket", splitTicket)
+	return mux
 }

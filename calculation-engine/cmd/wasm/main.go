@@ -19,7 +19,6 @@ import (
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	ticketfare "calculation-engine/internal/ticket/fare"
 	ticketgraph "calculation-engine/internal/ticket/graph"
-	tickethandler "calculation-engine/internal/ticket/handler"
 	ticketfareio "calculation-engine/internal/ticket/infra/fareio"
 	ticketgraphio "calculation-engine/internal/ticket/infra/graphio"
 	ticketusecase "calculation-engine/internal/ticket/usecase"
@@ -53,7 +52,7 @@ var ticketSegmentEvaluator *ticketusecase.TicketSegmentEvaluator
 var ticketCorrector *ticketusecase.PipelineCorrector
 var ticketRouteExtensions *ticketusecase.RouteExtensionMatcher
 var ticketZoneRegistry *ticketgraphio.SpecialZoneRegistry
-var ticketHandler *tickethandler.Ticket
+var ticketGraphInitialized bool
 
 // 実行中のコンテキスト
 var activeGraph *graph.RailwayGraph
@@ -1285,6 +1284,7 @@ func prepareTicketGraphBuffer(this js.Value, args []js.Value) interface{} {
 }
 
 func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
+	ticketGraphInitialized = false
 	if len(ticketTempBuffer) < 16 {
 		return js.ValueOf("error: buffer is too small")
 	}
@@ -1494,7 +1494,7 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 
 	ticketSegmentEvaluator.SetSplitCorrector(ticketCorrector)
 
-	ticketHandler = tickethandler.NewTicketWithRouteExtensionsAndZones(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneReg)
+	ticketGraphInitialized = true
 
 	// 初期化完了に伴い、一時バッファへのピン留めを解除しGCに開放
 	ticketWasmGraph = nil
@@ -1509,7 +1509,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 		start = perf.Call("now").Float()
 	}
 
-	if ticketHandler == nil {
+	if !ticketGraphInitialized {
 		return js.ValueOf(`{"error": "ticket graph not initialized"}`)
 	}
 
@@ -1519,7 +1519,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 
 	jsonStr := args[0].String()
 
-	var req tickethandler.RouteRequest
+	var req RouteRequest
 	if err := json.Unmarshal([]byte(jsonStr), &req); err != nil {
 		return js.ValueOf(fmt.Sprintf(`{"error": "invalid json: %s"}`, err.Error()))
 	}
@@ -1580,8 +1580,8 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 		elapsed = perf.Call("now").Float() - start
 	}
 
-	resp := tickethandler.RouteResponse{
-		Data: tickethandler.KippuData{
+	resp := RouteResponse{
+		Data: KippuData{
 			Fare:             evaluationResult.TotalAmount(),
 			ValidDays:        validDays,
 			TotalEigyoKilo:   int(evaluationResult.TotalPathEigyoKilo),
