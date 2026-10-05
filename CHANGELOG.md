@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.4.1...kippu-navi-v3.4.2) (2026-10-05)
+
+
+### Bug Fixes
+
+* 定期券の私鉄線入力をバリデーションで拒否する ([#794](https://github.com/tojoryohei/kippu-navi/issues/794)) ([1bd2702](https://github.com/tojoryohei/kippu-navi/commit/1bd270203853ff6fa89bf53517659bb0ed24344d))
+
 ## [3.4.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.4.0...kippu-navi-v3.4.1) (2026-10-04)
 
 
