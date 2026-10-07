@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@utility calculator-card {
+  @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

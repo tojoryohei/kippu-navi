@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"calculation-engine/internal/domain"
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/usecase"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -89,7 +91,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	startGroupID := h.graph.GetGroupID(startID)
 	endGroupID := h.graph.GetGroupID(endID)
 	if startGroupID == 0 || endGroupID == 0 || startGroupID != endGroupID {
-		writeErrorResponse(w, http.StatusUnprocessableEntity, "指定された区間は対象外エリア、または異なるエリア間にまたがっています")
+		writeErrorResponse(w, http.StatusUnprocessableEntity, domain.DisconnectedRouteErrorMessage)
 		return
 	}
 
@@ -105,6 +107,10 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}
 	optResult, err := h.search.ExecuteWithOptions(startID, endID, reqMonths, maxSections, lockedStations)
 	if err != nil {
+		if errors.Is(err, graph.ErrPathNotFound) {
+			writeErrorResponse(w, http.StatusUnprocessableEntity, domain.DisconnectedRouteErrorMessage)
+			return
+		}
 		slog.Error("split pass calculation failed", "request_id", requestID, "error_type", fmt.Sprintf("%T", err))
 
 		errMsg := err.Error()

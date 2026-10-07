@@ -18,17 +18,27 @@ export function GET() {
             priority: 0.9,
         },
         {
-            url: `${baseUrl}/split/ticket`,
+            url: `${baseUrl}/split/auto/ticket`,
             changeFrequency: 'monthly',
             priority: 0.9,
         },
         {
-            url: `${baseUrl}/split/pass`,
+            url: `${baseUrl}/split/route/ticket`,
             changeFrequency: 'monthly',
             priority: 0.9,
         },
         {
-            url: `${baseUrl}/split/ic-pass`,
+            url: `${baseUrl}/split/route/pass`,
+            changeFrequency: 'monthly',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/split/auto/pass`,
+            changeFrequency: 'monthly',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/split/auto/ic-pass`,
             changeFrequency: 'monthly',
             priority: 0.9,
         },

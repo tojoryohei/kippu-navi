@@ -1,97 +1,308 @@
 ---
-import { MdHome } from "react-icons/md";
-import { RiBookOpenFill, RiGuideLine, RiScissorsFill } from "react-icons/ri";
+import {
+  RiArrowDownSLine,
+  RiBook2Fill,
+  RiGuideLine,
+  RiMenu3Fill,
+  RiScissorsFill,
+  RiShuffleFill,
+} from "react-icons/ri";
+
 const items = [
-  { href: "/", icon: MdHome, label: "ホーム" },
-  { href: "/guide", icon: RiBookOpenFill, label: "はじめての方へ" },
+  { href: "/guide", icon: RiBook2Fill, label: "はじめての方へ" },
   { href: "/fare/ticket", icon: RiGuideLine, label: "運賃計算" },
-  { href: "/split/ticket", icon: RiScissorsFill, label: "分割きっぷ" },
+  { href: "/split/auto/ticket", icon: RiScissorsFill, label: "分割きっぷ" },
+];
+
+const splitMethods = [
+  { href: "/split/auto/ticket", icon: RiShuffleFill, label: "経路自動検索" },
+  { href: "/split/route/ticket", icon: RiMenu3Fill, label: "経路入力検索" },
 ];
 ---
 
 <header
-  class="sticky top-0 z-50 border-b border-slate-200 h-16 bg-white/90 backdrop-blur-md"
+  class="sticky top-0 z-50 h-16 border-b border-slate-200 bg-white/90 backdrop-blur-md"
 >
   <site-navigation
-    class="flex items-center justify-between h-full px-4 sm:px-6"
+    class="flex h-full items-center justify-between px-4 sm:px-6"
   >
     <a
       href="/"
-      class="text-2xl font-bold tracking-tight text-blue-600 hover:opacity-80 transition-opacity font-logo"
-      >きっぷナビ</a
+      class="font-logo text-2xl font-bold tracking-tight text-blue-600 transition-opacity hover:opacity-80"
     >
+      きっぷナビ
+    </a>
+
     <button
       type="button"
       data-toggle
-      class="relative z-50 md:hidden text-3xl text-slate-700"
+      class="relative z-50 text-3xl text-slate-700 md:hidden"
       aria-label="メニューバーを開く"
       aria-expanded="false"
-      aria-controls="site-menu">☰</button
+      aria-controls="site-menu"
     >
+      ☰
+    </button>
+
     <button
       type="button"
       data-overlay
       hidden
-      class="fixed top-16 inset-x-0 h-screen bg-slate-900/50 md:hidden"
-      aria-label="メニューを閉じる"></button>
+      class="fixed inset-x-0 top-16 h-screen bg-slate-900/50 md:hidden"
+      aria-label="メニューを閉じる"
+    >
+    </button>
+
     <nav
       id="site-menu"
-      class="max-md:hidden fixed top-16 right-0 h-[calc(100dvh-4rem)] w-64 bg-white shadow-2xl md:relative md:top-auto md:h-auto md:w-auto md:shadow-none md:bg-transparent"
+      class="fixed right-0 top-16 h-[calc(100dvh-4rem)] w-72 overflow-y-auto bg-white shadow-2xl max-md:hidden md:relative md:top-auto md:h-auto md:w-auto md:overflow-visible md:bg-transparent md:shadow-none"
     >
-      <ul class="flex flex-col md:flex-row gap-2 p-4 md:p-0">
+      <ul class="flex flex-col gap-2 p-4 md:flex-row md:p-0">
         {
-          items.map(({ href, icon: Icon, label }) => (
-            <li>
-              <a
-                href={href}
-                class="group flex items-center px-4 py-3 md:py-2 md:px-3 rounded-lg hover:bg-blue-50 transition-colors"
-              >
-                <Icon className="mr-3 md:mr-2 text-xl text-slate-500 group-hover:text-blue-600" />
-                <span class="text-base font-medium text-slate-700 group-hover:text-blue-600">
-                  {label}
-                </span>
-              </a>
-            </li>
-          ))
+          items.map(({ href, icon: Icon, label }) =>
+            href === "/split/auto/ticket" ? (
+              <li class="relative" data-split-group>
+                {/* PC用メニュー */}
+                <button
+                  type="button"
+                  data-split-trigger
+                  aria-controls="split-methods"
+                  aria-expanded="false"
+                  aria-label="分割きっぷの検索方法を選択"
+                  class="group hidden w-full items-center rounded-lg border border-transparent px-3 py-2 transition-colors hover:bg-blue-50 md:flex"
+                >
+                  <Icon
+                    className="mr-2 text-xl text-slate-500 transition-colors group-hover:text-blue-600"
+                    aria-hidden="true"
+                  />
+
+                  <span class="text-base font-medium text-slate-700 transition-colors group-hover:text-blue-600">
+                    {label}
+                  </span>
+
+                  <RiArrowDownSLine
+                    className="split-icon-down ml-1 size-5 shrink-0 text-slate-400 transition-transform duration-200 group-hover:text-blue-600"
+                    aria-hidden="true"
+                  />
+                </button>
+
+                {/* スマホ用メニュー */}
+                <div class="flex items-center rounded-lg px-4 py-3 md:hidden">
+                  <Icon
+                    className="mr-3 text-xl text-slate-500"
+                    aria-hidden="true"
+                  />
+
+                  <span class="text-base font-medium text-slate-700">
+                    {label}
+                  </span>
+                </div>
+
+                {/* 子メニュー */}
+                <div
+                  id="split-methods"
+                  class="split-methods md:absolute md:right-0 md:top-full md:z-50 md:w-full md:overflow-hidden md:rounded-b-lg md:border md:border-t-0 md:border-slate-200 md:bg-white md:p-1 md:shadow-sm"
+                >
+                  <ul class="ml-9 border-l border-slate-200 pl-3 md:ml-0 md:border-0 md:pl-0">
+                    {splitMethods.map(({ href, icon: MethodIcon, label }) => (
+                      <li>
+                        <a
+                          href={href}
+                          class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-m font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-blue-600"
+                        >
+                          <MethodIcon
+                            className="size-4 shrink-0"
+                            aria-hidden="true"
+                          />
+                          <span>{label}</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </li>
+            ) : (
+              <li>
+                <a
+                  href={href}
+                  class="group flex items-center rounded-lg px-4 py-3 transition-colors hover:bg-blue-50 md:px-3 md:py-2"
+                >
+                  <Icon
+                    className="mr-3 text-xl text-slate-500 transition-colors group-hover:text-blue-600 md:mr-2"
+                    aria-hidden="true"
+                  />
+
+                  <span class="text-base font-medium text-slate-700 transition-colors group-hover:text-blue-600">
+                    {label}
+                  </span>
+                </a>
+              </li>
+            ),
+          )
         }
       </ul>
     </nav>
   </site-navigation>
 </header>
+
+<style>
+  @media (min-width: 48rem) {
+    .split-methods {
+      display: none;
+    }
+
+    [data-split-open] .split-methods {
+      display: block;
+      animation: split-menu-in 120ms ease-out;
+    }
+
+    [data-split-open] [data-split-trigger] {
+      border-color: rgb(226 232 240);
+      border-bottom-color: transparent;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      background: rgb(239 246 255);
+    }
+
+    [data-split-open] [data-split-trigger] span {
+      color: rgb(37 99 235);
+    }
+
+    [data-split-open] .split-icon-down {
+      color: rgb(37 99 235);
+      transform: rotate(180deg);
+    }
+  }
+
+  @keyframes split-menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-split-open] .split-methods {
+      animation: none;
+    }
+
+    .split-icon-down {
+      transition: none;
+    }
+  }
+</style>
+
 <script>
   class SiteNavigation extends HTMLElement {
+    private cleanup?: () => void;
+
     connectedCallback() {
+      this.cleanup?.();
+
+      const controller = new AbortController();
+      const { signal } = controller;
+
+      const desktop = window.matchMedia("(min-width: 48rem)");
+
+      const group = this.querySelector<HTMLElement>("[data-split-group]")!;
+      const trigger = this.querySelector<HTMLButtonElement>(
+        "[data-split-trigger]",
+      )!;
+
+      const setSplitOpen = (open: boolean) => {
+        group.toggleAttribute("data-split-open", open);
+        trigger.setAttribute("aria-expanded", String(open));
+      };
+
+      group.addEventListener(
+        "focusout",
+        (event) => {
+          if (!group.contains(event.relatedTarget as Node | null)) {
+            setSplitOpen(false);
+          }
+        },
+        { signal },
+      );
+
+      document.addEventListener(
+        "click",
+        (event) => {
+          if (!group.contains(event.target as Node)) {
+            setSplitOpen(false);
+          }
+        },
+        { signal },
+      );
+
+      trigger.onclick = (event) => {
+        event.stopPropagation();
+        setSplitOpen(!group.hasAttribute("data-split-open"));
+      };
+
       const toggle = this.querySelector<HTMLButtonElement>("[data-toggle]")!;
       const overlay = this.querySelector<HTMLButtonElement>("[data-overlay]")!;
       const menu = this.querySelector("nav")!;
+
       const setOpen = (open: boolean) => {
+        setSplitOpen(false);
+
         toggle.setAttribute("aria-expanded", String(open));
         toggle.setAttribute(
           "aria-label",
           open ? "メニューバーを閉じる" : "メニューバーを開く",
         );
+
         toggle.textContent = open ? "×" : "☰";
         overlay.hidden = !open;
         menu.classList.toggle("max-md:hidden", !open);
+
         document.body.style.overflow = open ? "hidden" : "";
       };
-      toggle.onclick = () =>
+
+      toggle.onclick = () => {
         setOpen(toggle.getAttribute("aria-expanded") !== "true");
+      };
+
       overlay.onclick = () => setOpen(false);
+
       this.querySelectorAll("a").forEach((link) => {
         link.onclick = () => setOpen(false);
       });
+
       this.onkeydown = (event) => {
-        if (event.key === "Escape") {
+        if (event.key !== "Escape") return;
+
+        if (!desktop.matches) {
           setOpen(false);
           toggle.focus();
+          return;
+        }
+
+        if (group.hasAttribute("data-split-open")) {
+          setSplitOpen(false);
+          trigger.focus();
         }
       };
+
+      desktop.addEventListener("change", () => setOpen(false), { signal });
+
+      setOpen(false);
+
+      this.cleanup = () => controller.abort();
     }
+
     disconnectedCallback() {
+      this.cleanup?.();
       document.body.style.overflow = "";
     }
   }
-  if (!customElements.get("site-navigation"))
+
+  if (!customElements.get("site-navigation")) {
     customElements.define("site-navigation", SiteNavigation);
+  }
 </script>

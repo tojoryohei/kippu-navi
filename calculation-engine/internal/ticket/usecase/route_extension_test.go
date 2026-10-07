@@ -117,7 +117,7 @@ func TestSelectCheapestPathWithRouteExtensionsSequentiallyExtendsUntilThreshold(
 		}
 		addFareExtensionEdge(g, from, station, 100, domain.JREast)
 	}
-	zones := extensionTestZones("東京", "A", 2000)
+	zones := extensionTestZones("A", 2000)
 	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
 	matcher, err := NewRouteExtensionMatcher(nil, g)
 	if err != nil {
@@ -220,7 +220,7 @@ func TestSelectCheapestPathWithRouteExtensionsSkipsSequentialExtensionsOnMatch(t
 	addFareExtensionEdge(g, "B", "C", 200, domain.JREast)
 	addFareExtensionEdge(g, "B", "X", 200, domain.JREast)
 	addFareExtensionEdge(g, "X", "Y", 200, domain.JREast)
-	zone := extensionTestZones("東京", "A", 400)
+	zone := extensionTestZones("A", 400)
 	matcher, err := NewRouteExtensionMatcher([]ticketdomain.RouteExtension{{
 		InputPath:  []string{"A", "B"},
 		OutputPath: []string{"A", "B", "X"},
@@ -256,7 +256,7 @@ func TestSelectCheapestPathWithRouteExtensionsSkipsSequentialExtensionsOnReverse
 	addFareExtensionEdge(g, "B", "C", 200, domain.JREast)
 	addFareExtensionEdge(g, "B", "X", 200, domain.JREast)
 	addFareExtensionEdge(g, "X", "Y", 200, domain.JREast)
-	zone := extensionTestZones("東京", "A", 400)
+	zone := extensionTestZones("A", 400)
 	matcher, err := NewRouteExtensionMatcher([]ticketdomain.RouteExtension{{
 		InputPath:  []string{"A", "B"},
 		OutputPath: []string{"A", "B", "X"},
@@ -290,7 +290,7 @@ func TestSequentialRouteExtensionsAcceptsPrivateEdges(t *testing.T) {
 	addFareExtensionEdge(g, "東京", "A", 1000, domain.JREast)
 	addFareExtensionEdge(g, "A", "B", 900, domain.JREast)
 	addFareExtensionEdge(g, "B", "C", 200, domain.Other)
-	zones := extensionTestZones("東京", "A", 2000)
+	zones := extensionTestZones("A", 2000)
 	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
 	candidates := sequentialRouteExtensions(input, g, zones)
 	want := []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C")}
@@ -328,7 +328,7 @@ func TestSequentialRouteExtensionsMeasuresVirtualInputEdges(t *testing.T) {
 	g.PhysicalEdgeCounts[virtualStation] -= 2
 	g.PhysicalEdgeCounts[virtualTo]--
 
-	zones := extensionTestZones("東京", "A", 2000)
+	zones := extensionTestZones("A", 2000)
 	input := []int{g.GetOrAddID("A"), g.GetOrAddID("東京"), g.GetOrAddID("B"), virtualStation, virtualTo}
 	candidates := sequentialRouteExtensions(input, g, zones)
 	want := []int{g.GetOrAddID("A"), g.GetOrAddID("東京"), g.GetOrAddID("B"), virtualStation, virtualTo, g.GetOrAddID("Y")}
@@ -356,7 +356,7 @@ func TestSequentialRouteExtensionsNeverUsesVirtualEdges(t *testing.T) {
 	g.PhysicalEdgeCounts[virtualFrom]--
 	g.PhysicalEdgeCounts[virtualTo]--
 
-	zones := extensionTestZones("東京", "A", 200)
+	zones := extensionTestZones("A", 200)
 	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
 	if candidates := sequentialRouteExtensions(input, g, zones); len(candidates) != 0 {
 		t.Fatalf("仮想エッジを延長候補に含めました: %v", candidates)
@@ -392,14 +392,14 @@ func TestSequentialRouteExtensionsStopsAtTenAddedStations(t *testing.T) {
 		addFareExtensionEdge(g, previous, station, 100, domain.JREast)
 		previous = station
 	}
-	zones := extensionTestZones("東京", "A", 2000)
+	zones := extensionTestZones("A", 2000)
 	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
 	if got := sequentialRouteExtensions(input, g, zones); len(got) != 0 {
 		t.Fatalf("11駅目で初めて閾値を超える分岐を候補にしました: %v", got)
 	}
 }
 
-func extensionTestZones(center, station string, threshold domain.DeciKilo) *ticketgraphio.SpecialZoneRegistry {
+func extensionTestZones(station string, threshold domain.DeciKilo) *ticketgraphio.SpecialZoneRegistry {
 	return extensionTestZonesNamed("東京都区内", station, threshold)
 }
 
@@ -501,7 +501,7 @@ func TestSuburbanCheapestSkipsRouteExtensions(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, extensions := range []*RouteExtensionMatcher{matcher, nil} {
-		got, _, err := SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(input, g, extensionTestCorrector{}, extensions, extensionTestZones("A", "A", 2000), func([]int) (int, error) {
+		got, _, err := SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(input, g, extensionTestCorrector{}, extensions, extensionTestZones("A", 2000), func([]int) (int, error) {
 			t.Fatal("近郊区間内で延長候補を評価しました")
 			return 0, nil
 		})

@@ -21,11 +21,18 @@ export type SearchErrorCode =
 const DUPLICATE_ROUTE_ERROR = "経路が重複しています。";
 const INVALID_REQUEST_INTERVAL_ERROR = "再考：要求区間誤り";
 const UNREGISTERED_FARE_ERROR = "運賃が未登録です:";
+const PATH_NOT_FOUND_ERROR = "経路が見つかりませんでした";
+const DISCONNECTED_ROUTE_ERROR = "指定された区間はJR在来線のみで繋がっていません。経路入力検索を利用してください。";
+
+export function normalizeCalculationError(message: string): string {
+  return message === PATH_NOT_FOUND_ERROR ? DISCONNECTED_ROUTE_ERROR : message;
+}
 
 export function classifyCalculationError(message: string, httpStatus?: number): SearchErrorCode {
   if (httpStatus === 422) return "path_invalid";
   if (message === DUPLICATE_ROUTE_ERROR) return "duplicate_route";
   if (message === INVALID_REQUEST_INTERVAL_ERROR) return "path_invalid";
+  if (message === PATH_NOT_FOUND_ERROR || message === DISCONNECTED_ROUTE_ERROR) return "path_invalid";
   if (message.includes(UNREGISTERED_FARE_ERROR)) return "fare_unregistered";
   return "calculation_failed";
 }

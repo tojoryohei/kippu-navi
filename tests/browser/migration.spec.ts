@@ -33,14 +33,14 @@ test("直接URL・再読み込み・別のクエリから入力とWASM計算を�
   await isolateServices(page);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   await expectTicket(page);
   await expect(page.getByRole("combobox").first()).toHaveValue("新茂原");
   await page.reload();
   await expectTicket(page);
   await page.evaluate(() => {
     const link = document.createElement("a");
-    link.href = "/split/ticket?from=茂原&to=新茂原";
+    link.href = "/split/auto/ticket?from=茂原&to=新茂原";
     link.textContent = "逆方向の検索";
     document.body.append(link);
     link.click();
@@ -58,26 +58,26 @@ test("乗車券・定期券・IC定期券の遷移と履歴でWorkerを再生成
   await isolateServices(page);
   let workers = 0;
   page.on("worker", () => workers++);
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   await expectTicket(page);
   await page.getByRole("button", { name: "定期券", exact: true }).click();
-  await expect(page).toHaveURL(/\/split\/pass\?/);
+  await expect(page).toHaveURL(/\/split\/auto\/pass\?/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("定期券");
   await expect(page.getByRole("combobox").first()).toHaveValue("新茂原");
   await expect(
     page.getByRole("heading", { name: "計算結果", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "IC定期券", exact: true }).click();
-  await expect(page).toHaveURL(/\/split\/ic-pass\?/);
+  await expect(page).toHaveURL(/\/split\/auto\/ic-pass\?/);
   await expect(
     page.getByRole("heading", { name: "計算結果", exact: true }),
   ).toBeVisible();
   await page.goBack();
-  await expect(page).toHaveURL(/\/split\/pass\?/);
+  await expect(page).toHaveURL(/\/split\/auto\/pass\?/);
   await page.goBack();
   await expectTicket(page);
   await page.goForward();
-  await expect(page).toHaveURL(/\/split\/pass\?/);
+  await expect(page).toHaveURL(/\/split\/auto\/pass\?/);
   await expect(
     page.getByRole("heading", { name: "計算結果", exact: true }),
   ).toBeVisible();
@@ -115,7 +115,8 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
   );
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  await page.locator('header a[href="/split/ticket"]').click();
+  await page.locator("header [data-split-trigger]").click();
+  await page.locator("header").getByRole("link", { name: "経路自動検索", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "乗車券を計算" }),
   ).toBeVisible();
@@ -197,13 +198,13 @@ test("臨時駅を含む分割計算の期間変更でエラーにならない",
 }) => {
   await isolateServices(page);
   await page.goto(
-    `/split/ticket?${new URLSearchParams({
+    `/split/auto/ticket?${new URLSearchParams({
       from: "鹿島サッカースタジアム",
       to: "鹿島神宮",
     })}`,
   );
   await page.getByRole("button", { name: "定期券", exact: true }).click();
-  await expect(page).toHaveURL(/\/split\/pass\?/);
+  await expect(page).toHaveURL(/\/split\/auto\/pass\?/);
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
   await expect(page.locator("p.text-red-500")).toHaveCount(0);
 
@@ -216,7 +217,7 @@ test("WASMのロード失敗を表示する", async ({ page }) => {
   await page.route("**/main.wasm", (route) =>
     route.fulfill({ status: 404, body: "missing" }),
   );
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   await expect(page.getByText(/main\.wasm.*404/)).toBeVisible();
 });
 
@@ -229,7 +230,7 @@ test("エンジン初期化失敗後もメインの計算ボタンから再試�
       : route.fulfill({ status: 503, body: "temporary" }),
   );
 
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   const retryCalculationButton = page.getByRole("button", { name: "計算を再試行", exact: true });
   await expect(retryCalculationButton).toBeVisible();
   await expect(page.getByRole("button", { name: "再試行", exact: true })).toHaveCount(0);
@@ -293,7 +294,7 @@ for (const staleStatus of [403, 404]) test(`古いエンジンURLの${staleStatu
     return route.continue();
   });
 
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   await expectTicket(page);
   expect(staleWasmRuntimeFailures).toBe(1);
   expect(staleTicketGraphFailures).toBe(1);
@@ -313,7 +314,7 @@ test("経路APIの一時的なネットワーク失敗を再試行して検索�
     });
   });
 
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   await expectTicket(page);
   expect(attempts).toBe(2);
 });
@@ -322,7 +323,7 @@ test("APIが15秒でタイムアウトして計算中表示を解除する", asy
   await isolateServices(page);
   await page.route("**/api/split-ticket**", async () => new Promise(() => { }));
 
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   await expect(page.getByText("APIから15秒以内に応答がありませんでした。しばらくしてから再試行してください。", { exact: true })).toBeVisible({ timeout: 17_000 });
   await expect(page.getByRole("button", { name: "計算中...", exact: true })).toHaveCount(0);
 });
@@ -335,7 +336,7 @@ test("WASMの一時的な503を再試行して検索を継続する", async ({ p
     if (attempts <= 2) return route.fulfill({ status: 503, body: "temporary" });
     return route.continue();
   });
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   await expectTicket(page);
   expect(attempts).toBe(3);
 });
@@ -343,29 +344,32 @@ test("WASMの一時的な503を再試行して検索を継続する", async ({ p
 test("定期券グラフの障害中も乗車券検索を継続する", async ({ page }) => {
   await isolateServices(page);
   await page.route("**/pass_graph_data.bin", route => route.fulfill({ status: 503, body: "temporary" }));
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   await expectTicket(page);
 });
 
 test("2駅未満のAPI経路をWorkerへ渡さず拒否する", async ({ page }) => {
   await isolateServices(page);
   await page.route("**/api/split-ticket**", route => route.fulfill({ json: { normal: ["新茂原"], results: [] } }));
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   await expect(page.getByText("経路データの取得に失敗しました。", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);
 });
 
-test("在来線でつながっていない区間の業務エラーを表示する", async ({ page }) => {
+for (const kind of ["ticket", "pass"] as const) {
+test(`${kind === "ticket" ? "乗車券" : "定期券"}で在来線でつながっていない区間の業務エラーを表示する`, async ({ page }) => {
   await isolateServices(page);
-  const message = "指定された区間はJR在来線のみで繋がっていません。新幹線や私鉄線を利用する経路は検索対象外です。";
-  await page.route("**/api/split-ticket**", route => route.fulfill({
+  const message = "指定された区間はJR在来線のみで繋がっていません。経路入力検索を利用してください。";
+  await page.route(`**/api/split-${kind}**`, route => route.fulfill({
     status: 422,
     json: { normal: null, results: [], error: message },
   }));
-  await page.goto("/split/ticket?from=函館&to=新青森");
+  const month = kind === "pass" ? "&month=6" : "";
+  await page.goto(`/split/auto/${kind}?from=函館&to=新青森${month}`);
   await expect(page.getByText(message, { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);
 });
+}
 
 test("初期化中も入力画面が表示され、完了後に計算できる", async ({ page }) => {
   await isolateServices(page);
@@ -377,7 +381,7 @@ test("初期化中も入力画面が表示され、完了後に計算できる",
     await gate;
     await route.continue();
   });
-  await page.goto(`/split/ticket?${query}`);
+  await page.goto(`/split/auto/ticket?${query}`);
   await expect(page.getByRole("combobox").first()).toHaveValue("新茂原");
   await expect(page.getByText("計算中です...", { exact: true })).toBeVisible();
   release();
@@ -452,7 +456,7 @@ test("記事ページはReactをhydrateせず、プリフェッチとモバイ�
 
 test("駅候補のアクセシビリティ通知を画面に露出させない", async ({ page }) => {
   await isolateServices(page);
-  for (const route of ["/fare/ticket", "/split/pass"]) {
+  for (const route of ["/fare/ticket", "/split/auto/pass"]) {
     await page.goto(route);
     await expect(page.getByRole("combobox").first()).toBeVisible();
     const placeholder = page
@@ -527,17 +531,21 @@ const routes = [
   "/guide",
   "/logic",
   "/privacy",
-  "/split/ticket",
-  "/split/pass",
-  "/split/ic-pass",
+  "/split/auto/ticket",
+  "/split/auto/pass",
+  "/split/auto/ic-pass",
+  "/split/route/ticket",
+  "/split/route/pass",
 ];
 
 const calculatorRoutes = [
   "/fare/ticket",
   "/fare/pass",
-  "/split/ticket",
-  "/split/pass",
-  "/split/ic-pass",
+  "/split/auto/ticket",
+  "/split/auto/pass",
+  "/split/auto/ic-pass",
+  "/split/route/ticket",
+  "/split/route/pass",
 ];
 
 test("計算ページ下部を関連リンクに整理する", async ({
@@ -552,7 +560,7 @@ test("計算ページ下部を関連リンクに整理する", async ({
   }
 
   const splitTicketHtml = await (
-    await request.get("/split/ticket")
+    await request.get("/split/auto/ticket")
   ).text();
   expect(splitTicketHtml).not.toContain("FAQPage");
   expect(splitTicketHtml).not.toContain("分割きっぷは違法ではありませんか？");
@@ -567,7 +575,7 @@ test("関連情報がモバイルで横にはみ出さない", async ({
 }) => {
   await isolateServices(page);
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto("/split/ticket");
+  await page.goto("/split/auto/ticket");
 
   await expect(page.getByRole("heading", { name: "関連情報" })).toBeVisible();
   await expect(page.locator('section[aria-labelledby="calculator-resources-title"] a')).toHaveCount(3);
@@ -580,7 +588,7 @@ test("関連情報がモバイルで横にはみ出さない", async ({
   ).toBe(true);
 });
 
-test("全既存URLのHTML・canonical・sitemap・404を維持する", async ({
+test("全ページのHTML・canonical・sitemap・404を確認する", async ({
   request,
 }) => {
   for (const route of routes) {
@@ -590,7 +598,7 @@ test("全既存URLのHTML・canonical・sitemap・404を維持する", async ({
     expect(html, route).toContain(
       `rel="canonical" href="https://kippu-navi.com${route}"`,
     );
-    expect(html, route).toMatch(/<title>[^<]+きっぷナビ<\/title>/);
+    expect(html, route).toMatch(/<title>[^<]*きっぷナビ[^<]*<\/title>/);
     expect(html, route).toContain('name="description"');
     expect(html, route).toContain('property="og:url"');
     expect(html, route).toContain("application/ld+json");

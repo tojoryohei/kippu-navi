@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"calculation-engine/internal/domain"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/usecase"
 	"encoding/json"
@@ -81,7 +82,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	startGroupID := h.graph.GetGroupID(startID)
 	endGroupID := h.graph.GetGroupID(endID)
 	if startGroupID < 0 || endGroupID < 0 || startGroupID != endGroupID {
-		writeErrorResponse(w, http.StatusUnprocessableEntity, "指定された区間はJR在来線のみで繋がっていません。新幹線や私鉄線を利用する経路は検索対象外です。")
+		writeErrorResponse(w, http.StatusUnprocessableEntity, domain.DisconnectedRouteErrorMessage)
 		return
 	}
 

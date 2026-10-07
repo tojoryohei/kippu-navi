@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 import * as Sentry from "@sentry/browser";
-import { classifyCalculationError } from "@/lib/search-errors";
+import { classifyCalculationError, normalizeCalculationError } from "@/lib/search-errors";
 import { sentryDataCollection } from "@/lib/sentry-data-collection";
 
 interface SplitCalculationSegment {
@@ -116,6 +116,8 @@ interface WorkerGlobalScope {
   reconstructAndCalculateTicket(splitStationsJson: string): string;
   calculateRoutePass(stationNamesJson: string, months: number, isIc: boolean, calculationMode: string): string;
   calculateRouteTicket(jsonStr: string): string;
+  calculateRouteSplitTicket(jsonStr: string): string;
+  calculateRouteSplitPass(jsonStr: string): string;
   calculateOptimalSplitTicket(startStationName: string, endStationName: string, maxSplits?: number, noSplitStationsJson?: string): string;
 }
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
@@ -242,9 +244,10 @@ function initFailure(error: unknown, stage: InitStage, retryCount: number, capab
 
 function postWorkerError(error: unknown, requestId: unknown, capability: 'ticket' | 'pass', stage: 'calculation' | 'calculation_result_parse' = 'calculation') {
   const exception = error instanceof Error ? error : new Error(String(error));
+  const message = normalizeCalculationError(exception.message);
   const details = {
-    message: exception.message,
-    code: classifyCalculationError(exception.message),
+    message,
+    code: classifyCalculationError(message),
     source: 'worker',
     stage,
     exceptionName: exception.name,
@@ -253,7 +256,7 @@ function postWorkerError(error: unknown, requestId: unknown, capability: 'ticket
     retryCount: 0,
     workerRestartCount: 0,
   };
-  postMessage({ type: 'error', requestId, error: exception.message, details });
+  postMessage({ type: 'error', requestId, error: message, details });
 }
 
 async function initWasm() {
@@ -334,7 +337,16 @@ initWasm();
 onmessage = async (e: MessageEvent) => {
   const { type, payload } = e.data;
 
-  if (type === 'calculateRoutePass') {
+  if (type === 'getRouteSplitCandidates') {
+    const capability = payload.isPass ? 'pass' : 'ticket';
+    try {
+      if (payload.isPass ? !passGraphInitialized : !ticketGraphInitialized) throw new Error('計算エンジンが準備されていません');
+      const args = JSON.stringify({ ...payload, candidatesOnly: true });
+      const result = JSON.parse(payload.isPass ? workerSelf.calculateRouteSplitPass(args) : workerSelf.calculateRouteSplitTicket(args));
+      if (result.error) throw new Error(result.error);
+      postMessage({ type: 'success_route_split_candidates', requestId: payload.requestId, result });
+    } catch (err) { postWorkerError(err, payload.requestId, capability); }
+  } else if (type === 'calculateRoutePass' || type === 'calculateRouteSplitPass') {
     if (!passGraphInitialized) {
       postMessage({ type: 'error', requestId: payload?.requestId, error: 'Wasm graph not initialized yet' });
       return;
@@ -343,17 +355,19 @@ onmessage = async (e: MessageEvent) => {
     const { stationNames, months, isIc, calculationMode, requestId } = payload;
     try {
       const stationNamesJson = JSON.stringify(stationNames);
-      const resultJsonStr = workerSelf.calculateRoutePass(stationNamesJson, months, isIc, calculationMode || 'normal');
+      const resultJsonStr = type === 'calculateRouteSplitPass'
+        ? workerSelf.calculateRouteSplitPass(JSON.stringify({ stationNames, months, calculationMode: calculationMode || 'normal', maxSplits: payload.maxSplits, noSplitStations: payload.noSplitStations }))
+        : workerSelf.calculateRoutePass(stationNamesJson, months, isIc, calculationMode || 'normal');
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
         postWorkerError(result.error, payload?.requestId, 'pass');
         return;
       }
-      postMessage({ type: 'success_route_pass', requestId, result });
+      postMessage({ type: type === 'calculateRouteSplitPass' ? 'success_route_split_pass' : 'success_route_pass', requestId, result });
     } catch (err) {
       postWorkerError(err, payload?.requestId, 'pass');
     }
-  } else if (type === 'calculateRouteTicket') {
+  } else if (type === 'calculateRouteTicket' || type === 'calculateRouteSplitTicket') {
     if (!ticketGraphInitialized) {
       postMessage({ type: 'error', requestId: payload?.requestId, error: 'Wasm graph not initialized yet' });
       return;
@@ -363,15 +377,18 @@ onmessage = async (e: MessageEvent) => {
     try {
       const reqJsonStr = JSON.stringify({
         fullPath,
+        maxSplits: payload.maxSplits, noSplitStations: payload.noSplitStations,
         calculationMode: calculationMode || "normal"
       });
-      const resultJsonStr = workerSelf.calculateRouteTicket(reqJsonStr);
+      const resultJsonStr = type === 'calculateRouteSplitTicket'
+        ? workerSelf.calculateRouteSplitTicket(reqJsonStr)
+        : workerSelf.calculateRouteTicket(reqJsonStr);
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
         postWorkerError(result.error, payload?.requestId, 'ticket');
         return;
       }
-      postMessage({ type: 'success_route_ticket', requestId, result });
+      postMessage({ type: type === 'calculateRouteSplitTicket' ? 'success_route_split_ticket' : 'success_route_ticket', requestId, result });
     } catch (err) {
       postWorkerError(err, payload?.requestId, 'ticket');
     }

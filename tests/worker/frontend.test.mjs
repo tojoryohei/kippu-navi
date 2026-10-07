@@ -12,7 +12,7 @@ import {
 } from '../../workers/frontend.mjs';
 import { buildSearchCompletedProperties, buildSearchUrl } from '../../src/lib/analytics-events.ts';
 import { initializeGoogleAnalytics, trackGooglePageView } from '../../src/lib/google-analytics.ts';
-import { classifyCalculationError, isRetryableEngineError, SearchOperationError } from '../../src/lib/search-errors.ts';
+import { classifyCalculationError, isRetryableEngineError, normalizeCalculationError, SearchOperationError } from '../../src/lib/search-errors.ts';
 
 const sentryDsn = 'https://public-key@o123.ingest.sentry.io/456';
 const sentryEnvelope = dsn => `${JSON.stringify({ dsn })}\n${JSON.stringify({ type: 'event' })}\n{}`;
@@ -31,7 +31,7 @@ function encodeTestJwt(payload) {
 function fakeGoogleAnalyticsBrowser() {
   const scripts = [];
   return {
-    targetWindow: { location: { href: 'https://kippu-navi.com/split/ticket?from=A&to=B#result' } },
+    targetWindow: { location: { href: 'https://kippu-navi.com/split/auto/ticket?from=A&to=B#result' } },
     targetDocument: {
       title: '分割乗車券 | きっぷナビ',
       head: { append: element => scripts.push(element) },
@@ -61,6 +61,8 @@ test('calculation errors distinguish business errors from system failures', () =
   assert.equal(classifyCalculationError('経路が重複しています。'), 'duplicate_route');
   assert.equal(classifyCalculationError('再考：要求区間誤り'), 'path_invalid');
   assert.equal(classifyCalculationError('指定された区間はJR在来線のみで繋がっていません。', 422), 'path_invalid');
+  assert.equal(classifyCalculationError('経路が見つかりませんでした'), 'path_invalid');
+  assert.equal(normalizeCalculationError('経路が見つかりませんでした'), '指定された区間はJR在来線のみで繋がっていません。経路入力検索を利用してください。');
   assert.equal(classifyCalculationError('unexpected failure'), 'calculation_failed');
 });
 
@@ -151,7 +153,7 @@ test('PostHog split search payload contains split settings and savings', () => {
     outcome: 'success',
     search: {
       searchSurface: 'split',
-      searchUrl: 'https://kippu-navi.com/split/pass?from=A&to=B&month=3&maxSplits=2',
+      searchUrl: 'https://kippu-navi.com/split/auto/pass?from=A&to=B&month=3&maxSplits=2',
       originStation: 'A',
       destinationStation: 'B',
       routeStations: ['A', 'B'],
@@ -224,11 +226,11 @@ test('Google Analytics initializes once and queues manual page views with absolu
   assert.deepEqual(commands[1], ['config', 'G-TEST ID', { send_page_view: false }]);
   assert.deepEqual(commands.slice(2), [
     ['event', 'page_view', {
-      page_location: 'https://kippu-navi.com/split/ticket?from=A&to=B#result',
+      page_location: 'https://kippu-navi.com/split/auto/ticket?from=A&to=B#result',
       page_title: '分割乗車券 | きっぷナビ',
     }],
     ['event', 'page_view', {
-      page_location: 'https://kippu-navi.com/split/ticket?from=A&to=B#result',
+      page_location: 'https://kippu-navi.com/split/auto/ticket?from=A&to=B#result',
       page_title: '分割乗車券 | きっぷナビ',
     }],
   ]);

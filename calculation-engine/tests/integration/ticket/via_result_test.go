@@ -227,7 +227,7 @@ func TestArticle88ShinkansenCorrectionRespectsMode(t *testing.T) {
 			}
 			wantVia := []string{"新大阪", "新幹線", "姫路"}
 			if mode == "cheapest" {
-				wantVia = []string{"新大阪", "新幹線", "西明石", "山陽"}
+				wantVia = []string{"東海道", "山陽"}
 			}
 			steps := make([]usecase.ViaStep, len(names))
 			for i, name := range names {

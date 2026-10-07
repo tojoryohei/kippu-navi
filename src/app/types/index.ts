@@ -81,7 +81,13 @@ export interface SplitFarePlan {
     totalFare: number;
 }
 
+interface RouteReplacement {
+    from: string;
+    to: string;
+    status: "replaced" | "retained_duplicate";
+}
 export interface SplitFareResult {
+    replacements?: RouteReplacement[];
     normal: SplitFareSummary;
     results: SplitFarePlan[];
 }

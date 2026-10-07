@@ -1,10 +1,44 @@
 package handler
 
 import (
+	"calculation-engine/internal/domain"
+	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
+	"calculation-engine/internal/pass/usecase"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 )
+
+func TestHandleCalculateRejectsDisconnectedRoutes(t *testing.T) {
+	g := graph.NewGraph(4)
+	aID := g.GetOrAddID("A")
+	bID := g.GetOrAddID("B")
+	cID := g.GetOrAddID("C")
+	dID := g.GetOrAddID("D")
+	for _, edge := range [][2]int{{aID, bID}, {bID, aID}, {cID, dID}, {dID, cID}} {
+		g.AddEdge(passdomain.PassEdge{Edge: domain.Edge{FromID: edge[0], ToID: edge[1], EigyoKilo: 10, GiseiKilo: 10}})
+	}
+
+	search := usecase.NewSearchOptimalSplit(g, nil, nil, 0, nil, int32(g.NumStations()))
+	h := NewSplit(g, search)
+	request := httptest.NewRequest(http.MethodGet, "/api/split-pass?from=A&to=C&months=6", nil)
+	response := httptest.NewRecorder()
+	h.HandleCalculate(response, request)
+
+	if response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusUnprocessableEntity)
+	}
+	var body CalculateResponse
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatalf("レスポンスの解析に失敗しました: %v", err)
+	}
+	if body.Error != domain.DisconnectedRouteErrorMessage {
+		t.Errorf("error = %q, want %q", body.Error, domain.DisconnectedRouteErrorMessage)
+	}
+}
 
 func TestValidResponsePaths(t *testing.T) {
 	tests := []struct {
