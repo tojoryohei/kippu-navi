@@ -1,3 +1,4 @@
+import CalculationProgress, { type RouteCalculationProgress } from "@/app/split/components/CalculationProgress";
 import RouteSplitOptions from "@/app/split/components/RouteSplitOptions";
 import SplitResults from "@/app/split/components/SplitResults";
 import type { SplitFareResult } from "@/app/types";
@@ -150,6 +151,7 @@ export default function Form({
     const [result, setResult] = useState<TicketFareResult | null>(null);
     const [serverTime, setServerTime] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [progress, setProgress] = useState<RouteCalculationProgress>({ phase: "preparing", completed: 0, total: 0 });
     const [error, setError] = useState<string | null>(null);
     const [isEngineRetryable, setIsEngineRetryable] = useState(false);
 
@@ -230,6 +232,7 @@ export default function Form({
         const calcId = ++latestCalcIdRef.current;
         const shouldRestartEngine = isRetryableEngineError(pendingErrorRef.current);
         pendingErrorRef.current = null;
+        setProgress({ phase: "preparing", completed: 0, total: 0 });
         setIsLoading(true);
         setError(null);
         setIsEngineRetryable(false);
@@ -357,7 +360,9 @@ export default function Form({
             worker.onmessage = (e) => {
                 const { type, result: wResult, error: wError, requestId, details } = e.data;
                 if (requestId !== undefined && requestId !== latestCalcIdRef.current) return;
-                if (type === "ready") {
+                if (type === "progress") {
+                    if (requestId === latestCalcIdRef.current) setProgress(e.data as RouteCalculationProgress);
+                } else if (type === "ready") {
                     setIsWasmReady(true);
                     isWasmReadyRef.current = true;
                 } else if (type === "success_route_pass") {
@@ -1050,7 +1055,7 @@ export default function Form({
             </form>
 
             <div className={isRouteSplit ? "my-8" : "my-8 p-4"}>
-                {isLoading && <p className="py-5 border-t text-center text-gray-500">計算中...</p>}
+                {isLoading && (isRouteSplit ? <CalculationProgress progress={progress} /> : <p className="py-5 border-t text-center text-gray-500">計算中...</p>)}
                 {!isLoading && serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
 
                 {!isLoading && error && (

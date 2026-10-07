@@ -95,7 +95,7 @@ function initialize() {
       settleFailure(details);
     } else {
       const request = requests.get(requestId);
-      requests.delete(requestId);
+      if (type !== "progress") requests.delete(requestId);
       if (request) notify(request.client, { ...event.data, requestId: request.requestId });
     }
   };

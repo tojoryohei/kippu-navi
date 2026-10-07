@@ -137,7 +137,7 @@ func (c *RouteTicketCalculator) Split(steps []ViaStep, mode string, options ...s
 	for _, name := range opts.NoSplitStations {
 		forbidden[name] = true
 	}
-	plans, err := split.OptimizeFixedRoute(len(target), func(i, j int) (RouteSplitSegment, error) {
+	plans, err := split.OptimizeFixedRouteWithProgress(len(target), func(i, j int) (RouteSplitSegment, error) {
 		if (i > 0 && forbidden[c.graph.GetName(target[i])]) || (j < len(target)-1 && forbidden[c.graph.GetName(target[j])]) {
 			return RouteSplitSegment{}, domain.ErrInvalidPath
 		}
@@ -148,7 +148,7 @@ func (c *RouteTicketCalculator) Split(steps []ViaStep, mode string, options ...s
 		}
 		fare, _, err := c.calculate(target[i:j+1], via, mode, false)
 		return RouteSplitSegment{DepartureStation: c.graph.GetName(target[i]), ArrivalStation: c.graph.GetName(target[j]), Fare: fare}, err
-	}, opts.MaxSplits)
+	}, opts.Progress, opts.MaxSplits)
 	if err != nil {
 		return nil, err
 	}
