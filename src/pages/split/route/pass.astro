@@ -1,0 +1,139 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { RiMenu3Line } from "react-icons/ri";
+import CalculatorResources from "@/components/CalculatorResources.astro";
+
+const metadata = {
+  title: "分割定期券計算（経路入力検索）",
+  description:
+    "発着駅と経由路線を指定して、1・3・6箇月の分割定期券を計算。通常・最安・補正禁止の3モードで、分割前の定期代と最安パターン・節約額を比較できます。",
+  alternates: {
+    canonical: "/split/route/pass",
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "分割定期券計算（経路入力検索）",
+  description: "経路を入力して分割定期券の最安パターンと節約額を計算します。",
+  url: "https://kippu-navi.com/split/route/pass",
+  applicationCategory: "UtilityApplication",
+  operatingSystem: "All",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "JPY",
+  },
+  author: {
+    "@type": "Person",
+    name: "きっぷナビ運営者",
+    url: "https://kippu-navi.com/about",
+  },
+};
+
+import Calculator from "@/app/fare/components/FormWithSearchParams";
+---
+
+<Layout metadata={metadata}>
+  <>
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(jsonLd)}
+    />
+    <div class="py-12 px-4 sm:px-6 lg:px-8">
+      <main class="max-w-xl mx-auto">
+        {/* ページヘッダー領域 */}
+        <div class="text-center mb-4">
+          <div
+            class="inline-flex items-center justify-center p-4 bg-blue-100 rounded-full mb-4 shadow-sm"
+          >
+            <RiMenu3Line className="w-8 h-8 text-blue-600" />
+          </div>
+          <h1
+            class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-3"
+          >
+            {"分割定期券計算"}<br class="sm:hidden" />{"（経路入力検索）"}
+          </h1>
+
+          <div class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
+            <p>
+              {"発着駅および経由路線を入力してください。"}
+            </p>
+            <p>
+              {"入力経路の分割定期券と分割前の運賃を比較します。"}
+            </p>
+          </div>
+        </div>
+
+        {/* フォーム領域（カードスタイル） */}
+        <div class="calculator-card p-6 sm:p-10">
+          <Calculator
+            pathname="/split/route/pass"
+            client:load
+            transition:persist="route-split-calculator"
+          />
+        </div>
+        <section
+          class="calculator-card mt-8 p-6 text-sm leading-relaxed text-slate-600 sm:p-10"
+          aria-labelledby="calculation-mode-description-title"
+        >
+          <h2
+            id="calculation-mode-description-title"
+            class="mb-3 text-base font-semibold text-slate-600"
+          >
+            計算モードの違い
+          </h2>
+          <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2">
+            <dt class="font-semibold text-slate-600">通常</dt>
+            <dd class="min-w-0">
+              入力経路の各駅を分割候補にし、各券を通常モードで計算します。
+            </dd>
+            <dt class="font-semibold text-slate-600">最安</dt>
+            <dd class="min-w-0">
+              延長を伴わない経路補正を行ってから分割し、各券の計算時に延長を含めた最安運賃を求めます。
+            </dd>
+            <dt class="font-semibold text-slate-600">補正禁止</dt>
+            <dd class="min-w-0">
+              入力経路の各駅を分割候補にし、各券を補正禁止モードで計算します。
+            </dd>
+          </dl>
+          <p class="mt-3">
+            分割なしも含め、同額の最安パターンをすべて表示します。計算はお使いの端末で行います。
+          </p>
+        </section>
+        <CalculatorResources
+          links={[
+            {
+              href: "/split/route/pass",
+              title: "分割定期券計算（経路入力検索）",
+              description: "定期券の分割パターンを比較できます。",
+            },
+            {
+              href: "/split/auto/pass",
+              title: "経路自動検索",
+              description:
+                "発着駅と期間から、安くなる経路と分割パターンを探します。",
+            },
+            {
+              href: "/guide#route-split",
+              title: "使い方",
+              description: "駅と経由路線の入力方法を確認します。",
+            },
+            {
+              href: "/logic",
+              title: "計算の仕組み",
+              description: "運賃計算エンジンの技術情報を紹介します。",
+            },
+            {
+              href: "/articles/jr-fare-system",
+              title: "JR運賃の解説",
+              description: "距離と運賃の関係や制度を解説します。",
+            },
+          ]}
+        />
+      </main>
+    </div>
+  </>
+</Layout>

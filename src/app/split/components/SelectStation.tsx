@@ -8,7 +8,7 @@ import { useState, type FocusEvent, useId } from "react";
 import stationDatas from "@/app/split/data/stationDatas.json";
 
 import type { Station, SelectStationProps } from "@/app/types";
-import { stationSelectStyles } from "./stationSelectStyles";
+import { stationSelectStyles } from "@/app/split/components/stationSelectStyles";
 
 interface StationInputProps extends SelectStationProps {
   mode?: "input" | "add";

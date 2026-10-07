@@ -1,3 +1,6 @@
+import RouteSplitOptions from "@/app/split/components/RouteSplitOptions";
+import SplitResults from "@/app/split/components/SplitResults";
+import type { SplitFareResult } from "@/app/types";
 import { useForm, Controller, type SubmitHandler, useFieldArray, useWatch } from "react-hook-form";
 import type { SingleValue } from "react-select";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -22,11 +25,15 @@ import type { Station, Line, TicketFareResult, PassFareResult, TicketFareRespons
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 
 interface FormValues extends IFormInput {
+    maxSplits: number;
+    noSplitStations: string[];
     calculationMode: CalculationMode;
     searchType: SearchType;
 }
 
 interface FormProps {
+    initialMaxSplits?: number;
+    initialNoSplitStations?: string[];
     pathname: string;
     initialRoute?: string;
     initialFrom?: string;
@@ -109,12 +116,16 @@ const createApiRequestBody = (data: FormValues) => {
 
 export default function Form({
     initialRoute,
+    initialMaxSplits = 0,
+    initialNoSplitStations = [],
     pathname,
     initialFrom,
     initialTo,
     initialSearchType,
     initialCalculationMode = "normal",
 }: FormProps) {
+    const isRouteSplit = (pathname === "/split/route/ticket" || pathname === "/split/route/pass");
+    const [splitResult, setSplitResult] = useState<SplitFareResult | null>(null);
     const lastTrackedSearch = useRef<string | null>(null);
     const searchContextRef = useRef<SearchEventContext | null>(null);
     const pendingErrorRef = useRef<unknown>(null);
@@ -122,6 +133,8 @@ export default function Form({
     const { register, handleSubmit, control, setValue, getValues, trigger, clearErrors, formState: { isValid } } = useForm<FormValues>({
         mode: 'onChange',
         defaultValues: {
+            maxSplits: initialMaxSplits,
+            noSplitStations: initialNoSplitStations,
             startStation: null,
             segments: [{ viaLine: null, destinationStation: null }],
             calculationMode: "normal",
@@ -144,7 +157,7 @@ export default function Form({
     const [isWasmReady, setIsWasmReady] = useState(false);
     const isWasmReadyRef = useRef<boolean>(false);
     const latestCalcIdRef = useRef<number>(0);
-    const isPassPage = pathname === "/fare/pass";
+    const isPassPage = (pathname === "/fare/pass" || pathname === "/split/route/pass");
     const defaultSearchType = initialSearchType || (isPassPage ? "pass6" : "ticket");
     const [selectedPeriod, setSelectedPeriod] = useState<SearchType>(defaultSearchType);
 
@@ -191,7 +204,12 @@ export default function Form({
             newParams.set("month", mVal);
         }
 
-        const queryString = decodeURIComponent(newParams.toString());
+        if (isRouteSplit) {
+            const limit = getValues("maxSplits");
+            if (limit > 0) newParams.set("maxSplits", String(limit));
+            for (const name of getValues("noSplitStations")) newParams.append("noSplitStation", name);
+        }
+        const queryString = newParams.toString();
         const newUrl = queryString ? `${nextPath}?${queryString}` : nextPath;
 
         if (nextPath !== pathname) {
@@ -199,7 +217,7 @@ export default function Form({
         } else {
             replaceCalculatorUrl(newUrl);
         }
-    }, [setValue, getValues, initialCalculationMode, pathname, refreshValidationForTypeChange]);
+    }, [setValue, getValues, initialCalculationMode, pathname, refreshValidationForTypeChange, isRouteSplit]);
 
     const mountedRef = useRef(true);
     useEffect(() => {
@@ -216,6 +234,7 @@ export default function Form({
         setError(null);
         setIsEngineRetryable(false);
         setResult(null);
+        setSplitResult(null);
         setResultPass(null);
         setCorrectedStartPass("");
         setCorrectedEndPass("");
@@ -239,7 +258,7 @@ export default function Form({
             searchType: data.searchType,
             calculationMode: data.calculationMode,
             search: {
-                searchSurface: "fare",
+                searchSurface: isRouteSplit ? "split" : "fare",
                 searchUrl: buildSearchUrl(window.location),
                 originStation: data.startStation?.name ?? "",
                 destinationStation: routeStations.at(-1) ?? "",
@@ -291,10 +310,12 @@ export default function Form({
             const months = monthsMap[data.searchType] || 1;
 
             workerRef.current.postMessage({
-                type: "calculateRoutePass",
+                type: isRouteSplit ? "calculateRouteSplitPass" : "calculateRoutePass",
                 payload: {
                     stationNames,
                     calculationMode: data.calculationMode,
+                    maxSplits: data.maxSplits,
+                    noSplitStations: data.noSplitStations,
                     months,
                     isIc: false,
                     requestId: calcId
@@ -306,16 +327,18 @@ export default function Form({
         if (data.searchType === "ticket") {
             if (!mountedRef.current || calcId !== latestCalcIdRef.current) return;
             workerRef.current.postMessage({
-                type: "calculateRouteTicket",
+                type: isRouteSplit ? "calculateRouteSplitTicket" : "calculateRouteTicket",
                 payload: {
                     fullPath: apiRequestBody.fullPath,
                     calculationMode: data.calculationMode,
+                    maxSplits: data.maxSplits,
+                    noSplitStations: data.noSplitStations,
                     requestId: calcId
                 }
             });
             return;
         }
-    }, [pathname, updateUrlAndState]);
+    }, [pathname, updateUrlAndState, isRouteSplit]);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -347,6 +370,10 @@ export default function Form({
                     }
                     setIsLoading(false);
 
+                } else if ((type === "success_route_split_ticket" || type === "success_route_split_pass")) {
+                    setSplitResult(wResult.data as SplitFareResult);
+                    setServerTime(wResult.time);
+                    setIsLoading(false);
                 } else if (type === "success_route_ticket") {
                     if (requestId === latestCalcIdRef.current) {
                         const ticketResult = wResult as TicketFareResponse;
@@ -421,6 +448,7 @@ export default function Form({
             replace([{ viaLine: null, destinationStation: null }]);
             setTimeout(() => {
                 setResult(null);
+                setSplitResult(null);
                 setResultPass(null);
                 setError(null);
                 setServerTime(null);
@@ -461,11 +489,11 @@ export default function Form({
             const startVal = getValues("startStation");
             const segs = getValues("segments");
             const type = getValues("searchType");
-            if (startVal && segs?.[0]?.destinationStation && type !== "ticket" && !resultPass && !isLoading && !error) {
+            if (startVal && segs?.[0]?.destinationStation && type !== "ticket" && !resultPass && !splitResult && !isLoading && !error) {
                 handleSubmit(onSubmit)();
             }
         }
-    }, [isWasmReady, getValues, resultPass, isLoading, error, handleSubmit, onSubmit]);
+    }, [isWasmReady, getValues, resultPass, splitResult, isLoading, error, handleSubmit, onSubmit]);
 
     // 検索完了の匿名集計と障害通知（計算結果またはエラーが返ってきたタイミングで実行）
     useEffect(() => {
@@ -487,7 +515,17 @@ export default function Form({
             // 同じ検索条件での重複送信を防止
             if (lastTrackedSearch.current !== currentSearchKey) {
                 // 1. 乗車券の計算結果が返ってきた場合
-                if (result) {
+                if (splitResult) {
+                    const best = splitResult.results[0];
+                    if (context) captureSuccessfulSearch(context, {
+                        normalFareYen: splitResult.normal.fare,
+                        bestFareYen: best?.totalFare,
+                        savingsYen: best ? splitResult.normal.fare - best.totalFare : undefined,
+                        bestSplitCount: best?.segments.length,
+                        candidateCount: splitResult.results.length,
+                    });
+                    lastTrackedSearch.current = currentSearchKey;
+                } else if (result) {
                     const runTracking = () => {
                         if (context) captureSuccessfulSearch(context, {
                             totalFareYen: result.fare,
@@ -536,20 +574,26 @@ export default function Form({
                 }
             }
         }
-    }, [result, resultPass, error, getValues]);
+    }, [result, resultPass, splitResult, error, getValues]);
 
     const currentType = selectedPeriod;
+    const calculateButtonLabel = isRouteSplit
+        ? `${({ ticket: "乗車券", pass1: "定期券１箇月", pass3: "定期券３箇月", pass6: "定期券６箇月" } satisfies Record<SearchType, string>)[currentType]}を計算`
+        : "運賃計算をする";
     const isPeriodDisabled = currentType === "ticket";
 
     const handleTabChange = (tab: "ticket" | "pass") => {
         setResult(null);
+        setSplitResult(null);
         setResultPass(null);
         setCorrectedStartPass("");
         setCorrectedEndPass("");
         setError(null);
         setServerTime(null);
 
-        const nextPath = tab === "ticket" ? "/fare/ticket" : "/fare/pass";
+        const nextPath = isRouteSplit
+            ? (tab === "ticket" ? "/split/route/ticket" : "/split/route/pass")
+            : (tab === "ticket" ? "/fare/ticket" : "/fare/pass");
         const nextSearchType: SearchType = tab === "ticket" ? "ticket" : (selectedPeriod === "ticket" ? "pass6" : selectedPeriod);
 
         setSelectedPeriod(nextSearchType);
@@ -561,12 +605,19 @@ export default function Form({
         setValue("searchType", period);
         refreshValidationForTypeChange();
         setResult(null);
+        setSplitResult(null);
         setResultPass(null);
         setCorrectedStartPass("");
         setCorrectedEndPass("");
         setError(null);
         setServerTime(null);
     };
+
+    const changeForbiddenStations = useCallback((names: string[]) => {
+        setValue("noSplitStations", names);
+    }, [setValue]);
+    const completeSplitRoute = isRouteSplit && formValues.startStation && formValues.segments?.length && formValues.segments.every(segment => segment.viaLine && segment.destinationStation)
+        ? createApiRequestBody(formValues)?.fullPath ?? null : null;
 
     const lastSegment = formValues.segments?.[formValues.segments?.length - 1];
     const lastDestination = lastSegment?.destinationStation;
@@ -920,10 +971,10 @@ export default function Form({
                         </button>
                     </div>
 
-                    {/* 運賃計算モード選択（ラジオボタン） */}
+                    {/* 計算モード選択（ラジオボタン） */}
                     <div className="my-4 flex flex-col items-start bg-slate-50 p-4 rounded-md border border-slate-200 w-full">
                         <p className="block text-base font-bold text-slate-700 mb-3">
-                            {"運賃計算モード"}
+                            {"計算モード"}
                         </p>
                         <div className="flex flex-col gap-3 w-full px-2">
                             <label className="inline-flex items-center cursor-pointer w-fit">
@@ -970,6 +1021,19 @@ export default function Form({
                         </div>
                     </div>
 
+                    {isRouteSplit && <>
+                        <RouteSplitOptions
+                            path={completeSplitRoute}
+                            mode={formValues.calculationMode}
+                            isPass={isPassPage}
+                            maxSplits={formValues.maxSplits ?? 0}
+                            names={formValues.noSplitStations ?? []}
+                            onMaxSplitsChange={value => {
+                                setValue("maxSplits", value);
+                            }}
+                            onNamesChange={changeForbiddenStations}
+                        />
+                    </>}
                     <button
                         type="submit"
                         className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2 cursor-pointer disabled:cursor-not-allowed"
@@ -979,13 +1043,13 @@ export default function Form({
                             ? "計算中..."
                             : isEngineRetryable
                                 ? "計算を再試行"
-                                : "運賃計算をする"
+                                : calculateButtonLabel
                         }
                     </button>
                 </div>
             </form>
 
-            <div className="my-8 p-4">
+            <div className={isRouteSplit ? "my-8" : "my-8 p-4"}>
                 {isLoading && <p className="py-5 border-t text-center text-gray-500">計算中...</p>}
                 {!isLoading && serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
 
@@ -995,6 +1059,13 @@ export default function Form({
                     </div>
                 )}
 
+                {!isLoading && splitResult && (
+                    <SplitResults
+                        result={splitResult}
+                        beforeLabel={isPassPage ? `分割前の${({ ticket: "乗車券", pass1: "定期券１箇月", pass3: "定期券３箇月", pass6: "定期券６箇月" } satisfies Record<SearchType, string>)[currentType]}` : "分割前の乗車券"}
+                        searchedTypeLabel={isPassPage ? "定期券" : "乗車券"}
+                    />
+                )}
                 {!isLoading && result && (
                     <div>
                         <h2 className="py-5 text-2xl border-t">計算結果</h2>
@@ -1068,7 +1139,7 @@ export default function Form({
                     <li><strong>駅・路線の入力:</strong> 発駅から着駅までの経路を入力してください。</li>
                     <li><strong>経路の追加:</strong> 「経由路線を追加」ボタンで複数の路線を乗り継ぐことができます。</li>
                     <li><strong>経路の逆転:</strong> 経路を逆にしたい場合は「⇅ 経路を逆転」ボタンを押してください。</li>
-                    <li><strong>運賃の計算:</strong> 「運賃計算をする」ボタンを押すと、営業キロと運賃が算出されます。</li>
+                    <li><strong>{isRouteSplit ? "分割の計算:" : "運賃の計算:"}</strong> 「{calculateButtonLabel}」ボタンを押すと、{isRouteSplit ? "最安の分割パターンと運賃が算出されます。" : "営業キロと運賃が算出されます。"}</li>
                 </ol>
             </div>
         </>

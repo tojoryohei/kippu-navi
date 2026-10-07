@@ -1,5 +1,5 @@
 import type { Station } from "@/app/types";
-import SelectStation from "./SelectStation";
+import SelectStation from "@/app/split/components/SelectStation";
 
 interface SelectStationsProps {
   instanceId: string;

@@ -74,7 +74,7 @@ function initialize() {
         // one-line inline-script events expose no extension URL in their frames.
         // The Firefox reader global is not referenced by the application.
         const isInjectedFirefoxReader = frames.length === 1
-          && /\/(?:split\/ticket|logic)$/.test(frames[0].filename || "")
+          && /\/(?:split\/(?:auto\/)?ticket|logic)$/.test(frames[0].filename || "")
           && /^(?:Can't find variable: __firefox__|undefined is not an object \(evaluating 'window\.__firefox__\.reader'\))$/.test(exception?.value || "");
         if (isInjectedFirefoxReader) return null;
         // Sentry's wrapper can be the top frame for an AdSense callback, so

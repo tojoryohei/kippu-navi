@@ -1,24 +1,24 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import { RiScissorsFill } from "react-icons/ri";
+import { RiShuffleFill } from "react-icons/ri";
 import CalculatorResources from "@/components/CalculatorResources.astro";
 
 const metadata = {
-  title: "JR分割IC定期券計算機",
+  title: "分割IC定期券検索（経路自動検索）",
   description:
     "Kitaca・Suica・ICOCAエリアのIC定期券を分割購入した場合の最安パターンを自動計算。1箇月・3箇月・6箇月に対応。発駅と着駅を入力するだけで定期代の節約額がわかります。",
   alternates: {
-    canonical: "/split/ic-pass",
+    canonical: "/split/auto/ic-pass",
   },
 };
 
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "JR分割IC定期券計算機",
+  name: "分割IC定期券検索（経路自動検索）",
   description:
     "Kitaca・Suica・ICOCAエリアのIC定期券を分割購入した場合の最安パターンを自動計算します。",
-  url: "https://kippu-navi.com/split/ic-pass",
+  url: "https://kippu-navi.com/split/auto/ic-pass",
   applicationCategory: "UtilityApplication",
   operatingSystem: "All",
   offers: {
@@ -45,31 +45,31 @@ import Calculator from "@/app/split/components/FormWithSearchParams";
     />
     <div class="py-12 px-4 sm:px-6 lg:px-8">
       <main class="max-w-xl mx-auto">
-        <div class="text-center mb-8">
+        <div class="text-center mb-4">
           <div
             class="inline-flex items-center justify-center p-4 bg-blue-100 rounded-full mb-4 shadow-sm"
           >
-            <RiScissorsFill className="w-8 h-8 text-blue-600" />
+            <RiShuffleFill className="w-8 h-8 text-blue-600" />
           </div>
           <h1
             class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-3"
           >
-            {"JR分割IC定期券計算機"}
+            {"分割IC定期券検索"}<br class="sm:hidden" />{"（経路自動検索）"}
           </h1>
-          <p class="text-sm sm:text-base text-slate-600 min-h-20">
-            {"計算したい区間の発着駅と期間を入力・選択してください。"}
-            <br class="hidden sm:block" />
-            {
-              "Kitaca・Suica・ICOCAエリアにおいて最安となる分割パターンを自動で導出します。"
-            }
-          </p>
+          <div class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
+            <p>
+              {
+                "計算したい区間の発着駅と期間を入力・選択してください。Kitaca・Suica・ICOCAエリアにおいて最安となる分割パターンを自動で導出します。"
+              }
+            </p>
+          </div>
         </div>
 
         <div
           class="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200"
         >
           <Calculator
-            pathname="/split/ic-pass"
+            pathname="/split/auto/ic-pass"
             client:load
             transition:persist="split-calculator"
           />
@@ -77,9 +77,21 @@ import Calculator from "@/app/split/components/FormWithSearchParams";
 
         <CalculatorResources
           links={[
-            { href: "/guide#how-to-search", title: "使い方", description: "駅と定期期間の入力方法を確認します。" },
-            { href: "/guide#how-to-buy", title: "購入方法", description: "IC定期券の購入条件と手順を確認します。" },
-            { href: "/articles/how-to-buy-split-pass", title: "分割定期券の買い方", description: "購入時の注意点を画像付きで解説します。" },
+            {
+              href: "/guide#how-to-search",
+              title: "使い方",
+              description: "駅と定期期間の入力方法を確認します。",
+            },
+            {
+              href: "/guide#how-to-buy",
+              title: "購入方法",
+              description: "IC定期券の購入条件と手順を確認します。",
+            },
+            {
+              href: "/articles/how-to-buy-split-pass",
+              title: "分割定期券の買い方",
+              description: "購入時の注意点を画像付きで解説します。",
+            },
           ]}
         />
       </main>

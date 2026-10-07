@@ -1,0 +1,107 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { RiShuffleFill } from "react-icons/ri";
+import CalculatorResources from "@/components/CalculatorResources.astro";
+
+const metadata = {
+  title: "分割乗車券計算（経路自動検索）",
+  description:
+    "JR在来線の分割乗車券を自動計算。発駅と着駅を入力するだけで、最も安くなる分割パターンと節約額を表示します。独自の経路探索アルゴリズムにより、あらゆる組み合わせから最安値を導出します。",
+  alternates: {
+    canonical: "/split/auto/ticket",
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "分割乗車券計算（経路自動検索）",
+  description:
+    "JR在来線の分割乗車券を自動計算。発駅と着駅を入力するだけで、最も安くなる分割パターンと節約額を表示します。",
+  url: "https://kippu-navi.com/split/auto/ticket",
+  applicationCategory: "UtilityApplication",
+  operatingSystem: "All",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "JPY",
+  },
+  author: {
+    "@type": "Person",
+    name: "きっぷナビ運営者",
+    url: "https://kippu-navi.com/about",
+  },
+};
+
+import Calculator from "@/app/split/components/FormWithSearchParams";
+---
+
+<Layout metadata={metadata}>
+  <>
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(jsonLd)}
+    />
+    <div class="py-12 px-4 sm:px-6 lg:px-8">
+      <main class="max-w-xl mx-auto">
+        <div class="text-center mb-4">
+          <div
+            class="inline-flex items-center justify-center p-4 bg-blue-100 rounded-full mb-4 shadow-sm"
+          >
+            <RiShuffleFill className="w-8 h-8 text-blue-600" />
+          </div>
+          <h1
+            class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-3"
+          >
+            {"分割乗車券計算"}<br class="sm:hidden" />{"（経路自動検索）"}
+          </h1>
+          <div class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
+            <p>
+              {"計算したい区間の発着駅を入力してください。"}
+            </p>
+            <p>
+              {"JR在来線において最安となる分割パターンを自動で導出します。"}
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200"
+        >
+          <Calculator
+            pathname="/split/auto/ticket"
+            client:load
+            transition:persist="split-calculator"
+          />
+        </div>
+
+        <CalculatorResources
+          links={[
+            {
+              href: "/split/route/ticket",
+              title: "経路入力検索",
+              description:
+                "経由路線を入力して、その経路の分割パターンを比較します。",
+            },
+            {
+              href: "/guide#how-to-search",
+              title: "使い方",
+              description: "発着駅の入力から結果確認までを案内します。",
+            },
+            {
+              href: "/guide#how-to-buy",
+              title: "購入方法",
+              description: "分割乗車券を購入する手順を確認します。",
+            },
+            {
+              href: "/articles/what-is-split-ticket",
+              title: "分割きっぷの仕組み",
+              description: "なぜ分割すると安くなるのかを解説します。",
+            },
+          ]}
+        />
+      </main>
+    </div>
+  </>
+</Layout>

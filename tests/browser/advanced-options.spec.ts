@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("見出し・キーボード追加・削除・空表示", async ({ page }) => {
-  await page.goto("/split/ticket?noSplitStation=東京&maxSplits=2");
+  await page.goto("/split/auto/ticket?noSplitStation=東京&maxSplits=2");
   const details = page.locator("form details");
   await expect(details.locator("summary")).toHaveText("詳細オプション");
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("2回");
@@ -35,11 +35,13 @@ test("見出し・キーボード追加・削除・空表示", async ({ page }) 
   await expect(search).toBeFocused();
   await page.getByRole("button", { name: "東京を分割しない駅から削除", exact: true }).click();
   await expect(search).toBeFocused();
-  await expect(page.getByText("分割しない駅は設定されていません。")).toBeVisible();
+  await expect(page.locator("#selected-no-split-stations li")).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "選択済み：0駅" })).toBeVisible();
+  await expect(page.getByText("分割しない駅は設定されていません。", { exact: true })).toHaveCount(0);
 });
 
 test("券種切り替え・URL復元・計算要求の設定を維持", async ({ page }) => {
-  await page.goto("/split/ticket?from=新茂原&to=茂原&noSplitStation=東京&maxSplits=2");
+  await page.goto("/split/auto/ticket?from=新茂原&to=茂原&noSplitStation=東京&maxSplits=2");
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("2回");
   await page.locator("form summary").click();
   await page.locator(".split-options-search .station-select__control").first().click();
@@ -51,7 +53,7 @@ test("券種切り替え・URL復元・計算要求の設定を維持", async ({
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("3回");
   await expect(page.locator("#selected-no-split-stations li")).toHaveCount(1);
   await page.getByRole("button", { name: "定期券", exact: true }).click();
-  await expect(page).toHaveURL(/\/split\/pass\?/);
+  await expect(page).toHaveURL(/\/split\/auto\/pass\?/);
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("3回");
   await page.locator("form summary").click();
   await expect(page.locator(".split-options-search .station-select__control").last()).toHaveCSS("min-height", "38px");
@@ -73,14 +75,14 @@ test("券種切り替え・URL復元・計算要求の設定を維持", async ({
 });
 
 test("未指定の分割しない駅をURLへ追加しない", async ({ page }) => {
-  await page.goto("/split/ticket?from=新茂原&to=茂原&maxSplits=2");
+  await page.goto("/split/auto/ticket?from=新茂原&to=茂原&maxSplits=2");
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
   expect(new URL(page.url()).searchParams.getAll("noSplitStation")).toEqual([]);
 });
 
 test("無制限のmaxSplitsをURLとAPIリクエストから省略する", async ({ page }) => {
   const request = page.waitForRequest(req => req.url().includes("/api/split-ticket"));
-  await page.goto("/split/ticket?from=新茂原&to=茂原&maxSplits=0");
+  await page.goto("/split/auto/ticket?from=新茂原&to=茂原&maxSplits=0");
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
 
   expect(new URL((await request).url()).searchParams.has("maxSplits")).toBe(false);
@@ -96,12 +98,13 @@ test("無制限のmaxSplitsをURLとAPIリクエストから省略する", async
 for (const width of [320, 390, 1280]) {
   test(`駅の全件表示・入力欄の統一 ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
-    await page.goto("/split/ticket");
+    await page.goto("/split/auto/ticket");
     await page.locator("form summary").click();
     const list = page.getByRole("list", { name: "分割しない駅の一覧" });
     await expect(list.locator("li")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /残り\d+駅を表示|一部を隠す/ })).toHaveCount(0);
-    await expect(page.getByText("分割しない駅は設定されていません。", { exact: true })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "選択済み：0駅" })).toBeVisible();
+    await expect(page.getByText("分割しない駅は設定されていません。", { exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const controls = page.locator(".split-options-search .station-select__control");
     await expect(controls).toHaveCount(2);
@@ -131,7 +134,7 @@ for (const width of [320, 390, 1280]) {
 }
 
 test("発着駅を一覧と検索候補から除外", async ({ page }) => {
-  await page.goto("/split/ticket?from=新茂原&to=茂原&noSplitStation=新茂原&noSplitStation=東京");
+  await page.goto("/split/auto/ticket?from=新茂原&to=茂原&noSplitStation=新茂原&noSplitStation=東京");
   await expect(page.locator("#selected-no-split-stations li")).toHaveCount(1);
   await page.locator("form summary").click();
   await expect(page.getByRole("button", { name: "新茂原を分割しない駅から削除" })).toHaveCount(0);
