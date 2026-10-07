@@ -319,7 +319,6 @@ func (p *viaPrinter) addSelectedLine(station, nextStation, line, selected string
 
 // GetFareVia は運賃計算の入力路線を基準に印字します。
 func GetFareVia(path []ViaStep) []string {
-	LogInputViaKanas(path)
 	return getFareVia(path, true, true, nil)
 }
 
@@ -759,7 +758,6 @@ func GetFareViaForResultWithSections(path []ViaStep, finalPath []int, g graph.Gr
 }
 
 func getFareViaForResult(path []ViaStep, finalPath []int, g graph.StationProvider, zones *graphio.SpecialZoneRegistry, sectionGraph graph.Graph) []string {
-	LogInputViaKanas(path)
 	if len(path) < 2 || len(finalPath) < 2 {
 		return getFareVia(path, true, true, nil)
 	}
@@ -911,12 +909,10 @@ func fareViaBoundary(path []ViaStep, stations []string, resultBoundary string, o
 // GetCalculatedFareVia は近郊区間内完結時の通常・最安を同じ駅列印字へ振り分けます。
 func GetCalculatedFareVia(mode string, input []ViaStep, sourcePath, printPath, finalPath []int, g graph.Graph, zones *graphio.SpecialZoneRegistry) []string {
 	if mode != "uncorrect" && IsSuburbanAreaComplete(sourcePath, g) {
-		LogAutomaticViaKanas(g, printPath)
 		return GetAutomaticFareViaForResult(g, printPath, finalPath)
 	}
 	switch mode {
 	case "cheapest":
-		LogInputViaKanas(input)
 		return GetAutomaticFareViaForResult(g, printPath, finalPath)
 	case "uncorrect":
 		return GetFareViaForResult(input, finalPath, g, zones)
@@ -925,8 +921,22 @@ func GetCalculatedFareVia(mode string, input []ViaStep, sourcePath, printPath, f
 	}
 }
 
+// カナコードの出力は運賃計算だけが明示的に呼ぶ。経由印字の生成自体はログを出さない。
+func logCalculatedFareViaKanas(mode string, input []ViaStep, sourcePath, printPath []int, g graph.Graph) {
+	if mode == "cheapest" {
+		LogAutomaticViaKanas(g, printPath)
+	} else if mode != "uncorrect" && IsSuburbanAreaComplete(sourcePath, g) {
+		logViaKanas(automaticViaKanasForSteps(cheapestViaSteps(g, printPath)))
+	} else {
+		LogInputViaKanas(input)
+	}
+}
+
 func automaticViaKanas(g graph.Graph, path []int) []string {
-	steps := cheapestViaSteps(g, path)
+	return automaticViaKanasForSteps(conventionalThroughVia(cheapestViaSteps(g, path)))
+}
+
+func automaticViaKanasForSteps(steps []ViaStep) []string {
 	// 仮想ゾーンを除き、市内の切り詰めや印字省略を適用する前のコードを返す。
 	for len(steps) > 0 && len(viaData.zoneRoutes[steps[0].StationName]) > 0 {
 		steps = steps[1:]
@@ -939,7 +949,11 @@ func automaticViaKanas(g graph.Graph, path []int) []string {
 
 // LogAutomaticViaKanas は補正後の駅列を自動案内の特殊経由線コードで表示します。
 func LogAutomaticViaKanas(g graph.Graph, path []int) {
-	encoded, _ := json.Marshal(automaticViaKanas(g, path))
+	logViaKanas(automaticViaKanas(g, path))
+}
+
+func logViaKanas(codes []string) {
+	encoded, _ := json.Marshal(codes)
 	fmt.Printf("カナコード：%s\n", encoded)
 }
 
@@ -960,7 +974,7 @@ func GetCheapestFareViaForResult(g graph.Graph, printPath, finalPath []int) []st
 
 // GetAutomaticFareViaForResult は計算済みの駅列だけから経路自動案内の印字を生成します。
 func GetAutomaticFareViaForResult(g graph.Graph, printPath, finalPath []int) []string {
-	steps := cheapestViaSteps(g, printPath)
+	steps := conventionalThroughVia(cheapestViaSteps(g, printPath))
 	names := viaStepNames(steps)
 	start, end := osakaShinOsakaViaBounds(names, finalPath, g)
 	if start > end {
