@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.4.3...kippu-navi-v4.0.0) (2026-10-07)
+
+
+### Features
+
+* 経路指定の分割きっぷ計算を追加 ([#791](https://github.com/tojoryohei/kippu-navi/issues/791)) ([0bf5cd3](https://github.com/tojoryohei/kippu-navi/commit/0bf5cd3669570f928121a7747b4ad35631c4fdd0))
+
 ## [3.4.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.4.2...kippu-navi-v3.4.3) (2026-10-05)
 
 

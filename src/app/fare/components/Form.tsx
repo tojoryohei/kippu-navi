@@ -1131,7 +1131,7 @@ export default function Form({
             <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
                 <h3 className="font-bold text-gray-600 mb-2">💡 当システムについて</h3>
                 <p className="mb-4 leading-relaxed">
-                    {"出発駅と到着駅、および経由する路線を入力するだけで、JRの運賃を計算するプログラムです。"}
+                    {"出発駅と到着駅、および経由する路線を入力するだけで、JRの運賃を計算するプログラムです。一筆書ききっぷの計算に最適です。"}
                 </p>
 
                 <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
