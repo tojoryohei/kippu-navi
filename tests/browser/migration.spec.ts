@@ -598,7 +598,7 @@ test("全ページのHTML・canonical・sitemap・404を確認する", async ({
     expect(html, route).toContain(
       `rel="canonical" href="https://kippu-navi.com${route}"`,
     );
-    expect(html, route).toMatch(/<title>[^<]+きっぷナビ<\/title>/);
+    expect(html, route).toMatch(/<title>[^<]*きっぷナビ[^<]*<\/title>/);
     expect(html, route).toContain('name="description"');
     expect(html, route).toContain('property="og:url"');
     expect(html, route).toContain("application/ld+json");

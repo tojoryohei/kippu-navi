@@ -45,7 +45,7 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
     <div class="py-12 px-4 sm:px-6 lg:px-8">
       <main class="max-w-xl mx-auto">
         {/* ページヘッダー領域 */}
-        <div class="text-center mb-8">
+        <div class="text-center mb-4">
           <div
             class="inline-flex items-center justify-center p-4 bg-slate-100 rounded-full mb-4 shadow-sm"
           >
@@ -80,6 +80,7 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
 
         <CalculatorResources
           links={[
+            { href: "/split/route/pass", title: "経路入力検索", description: "経由路線と期間を入力して、その経路の分割パターンを比較します。" },
             { href: "/guide#how-to-search", title: "使い方", description: "駅と経由路線の入力方法を確認します。" },
             { href: "/logic", title: "計算の仕組み", description: "定期運賃計算の技術情報を紹介します。" },
             { href: "/articles/jr-fare-system", title: "JR運賃の解説", description: "距離と運賃の関係や制度を解説します。" },

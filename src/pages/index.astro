@@ -1,10 +1,16 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import { RiScissorsFill, RiGuideLine, RiBookOpenFill } from "react-icons/ri";
+import {
+  RiBook2Fill,
+  RiGuideLine,
+  RiMenu3Line,
+  RiShuffleFill,
+} from "react-icons/ri";
 import { getChangelogs } from "@/app/lib/changelog";
 
 const metadata = {
-  title: "きっぷナビ - JR分割きっぷと運賃計算",
+  title: "きっぷナビ - 分割きっぷと運賃計算",
+  absoluteTitle: true,
   description:
     "JR線の分割きっぷ（乗車券・定期券・IC定期券）の最安組み合わせを自動計算。発着駅を入力するだけで交通費の節約額がわかる無料のWebツールです。旅客営業規則の特例や新幹線の経由印字にも完全対応した高精度な運賃計算も備えています。",
 };
@@ -28,7 +34,7 @@ const recentChangelogs = await getChangelogs(3);
           {
             "発駅と着駅を指定するだけで、最も安い分割きっぷを計算するサービスです。"
           }
-          <br class="hidden sm:block" />
+          <br />
           {
             "また、開発の基盤となっている運賃計算のプログラムもお試しいただけます。"
           }
@@ -38,7 +44,7 @@ const recentChangelogs = await getChangelogs(3);
             href="/guide"
             class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center gap-2 group cursor-pointer hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0 duration-200"
           >
-            <RiBookOpenFill className="text-xl" />
+            <RiBook2Fill className="text-xl" />
             <span>はじめての方へ（使い方ガイド）</span>
           </a>
         </div>
@@ -46,27 +52,29 @@ const recentChangelogs = await getChangelogs(3);
 
       {/* リンクカードセクション */}
       <div class="grid md:grid-cols-2 gap-6">
-        {/* JR分割きっぷ計算機 */}
+        {/* 分割きっぷ検索（経路自動検索） */}
         <a
-          href="/split/ticket"
+          href="/split/auto/ticket"
           class="group bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-500 transition-all duration-300 flex flex-col h-full"
         >
           <div class="flex items-center space-x-4 mb-4">
             <div
               class="bg-blue-100 p-3 rounded-xl group-hover:bg-blue-600 transition-colors duration-300"
             >
-              <RiScissorsFill
+              <RiShuffleFill
                 className="w-7 h-7 text-blue-600 group-hover:text-white transition-colors duration-300"
               />
             </div>
             <h2
               class="text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors duration-300"
             >
-              {"JR分割きっぷ計算機"}
+              {"分割きっぷ検索"}
+              <br />
+              {"（経路自動検索）"}
             </h2>
           </div>
           <p class="text-slate-600 mb-6 grow">
-            {"最も安くなる分割きっぷの組み合わせを検索するプログラムです。"}
+            {"発着駅から、安くなる経路と分割パターンを探します。"}
             {
               "実際の旅行や通勤時の交通費の節約に活用したい方はこちらをご利用ください。"
             }
@@ -74,7 +82,50 @@ const recentChangelogs = await getChangelogs(3);
           <div
             class="text-blue-600 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300"
           >
-            {"分割計算をする"}
+            {"経路自動検索"}
+            <svg
+              class="w-5 h-5 ml-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width={2}
+                d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg
+            >
+          </div>
+        </a>
+
+        {/* 分割きっぷ検索（経路入力検索） */}
+        <a
+          href="/split/route/ticket"
+          class="group bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-500 transition-all duration-300 flex flex-col h-full"
+        >
+          <div class="flex items-center space-x-4 mb-4">
+            <div
+              class="bg-blue-100 p-3 rounded-xl group-hover:bg-blue-600 transition-colors duration-300"
+            >
+              <RiMenu3Line
+                className="w-7 h-7 text-blue-600 group-hover:text-white transition-colors duration-300"
+              />
+            </div>
+            <h2
+              class="text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors duration-300"
+            >
+              {"分割きっぷ検索"}
+              <br />
+              {"（経路入力検索）"}
+            </h2>
+          </div>
+          <p class="text-slate-600 mb-6 grow">
+            {"経由路線を入力して、その経路の分割パターンを比較します。"}
+            {"乗車券と1・3・6箇月の定期券に対応しています。"}
+          </p>
+          <div
+            class="text-blue-600 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300"
+          >
+            {"経路入力検索"}
             <svg
               class="w-5 h-5 ml-2"
               fill="none"
@@ -220,7 +271,7 @@ const recentChangelogs = await getChangelogs(3);
                       ${
                         item.tag === "新機能"
                           ? "bg-blue-100 text-blue-700"
-                          : item.tag === "バグ修正"
+                          : item.tag === "修正"
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-slate-200 text-slate-700"
                       }`}

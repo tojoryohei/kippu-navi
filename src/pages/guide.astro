@@ -23,10 +23,10 @@ const metadata = {
       </h1>
       <p class="mt-8 text-slate-500">
         <a
-          href="/split/ticket"
+          href="/split/auto/ticket"
           class="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1"
         >
-          {"分割きっぷ計算機"}
+          {"分割きっぷ検索（経路自動検索）"}
         </a>
         {"の操作方法から、購入手順や利用方法まで分かりやすく解説します。"}
       </p>
@@ -105,10 +105,10 @@ const metadata = {
               {"です。"}
               {"当サイトでは、発着駅間の最安解を求めるための"}
               <a
-                href="/split/ticket"
+                href="/split/auto/ticket"
                 class="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1"
               >
-                {"分割きっぷ計算機"}
+                {"分割きっぷ検索（経路自動検索）"}
               </a>
               {"を公開しています。"}
             </p>
@@ -167,10 +167,10 @@ const metadata = {
         <div class="space-y-6 text-slate-800 leading-relaxed">
           <p>
             <a
-              href="/split/ticket"
+              href="/split/auto/ticket"
               class="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1"
             >
-              {"分割きっぷ計算機"}
+              {"分割きっぷ検索（経路自動検索）"}
             </a>
             {"で出力された複数枚のきっぷを購入する手順です。"}
           </p>
@@ -331,10 +331,10 @@ const metadata = {
         <div class="space-y-6 text-slate-800 leading-relaxed">
           <p>
             <a
-              href="/split/ticket"
+              href="/split/auto/ticket"
               class="text-blue-600 hover:underline decoration-blue-600 underline-offset-2 mx-1"
             >
-              {"分割きっぷ計算機"}
+              {"分割きっぷ検索（経路自動検索）"}
             </a>
             {"で出力された複数枚のきっぷを利用する手順です。"}
           </p>
@@ -648,6 +648,29 @@ const metadata = {
             </a>
           </div>
         </div>
+      </section>
+      <section id="route-split" class="mt-10 space-y-3">
+        <h2 class="text-2xl font-bold">
+          経路入力検索で分割乗車券・定期券を計算する
+        </h2>
+        <p>
+          <a href="/split/route/ticket" class="text-blue-600 underline"
+            >分割乗車券計算（経路入力検索）</a
+          >では、運賃計算と同じ入力画面で発駅・経由路線・着駅を入力します。経由路線上の途中駅すべてを分割候補にします。
+        </p>
+        <p>
+          「詳細オプション」で最大分割数と分割禁止駅を指定できます。禁止駅は経路順の一覧からチェックして選択します。最安モードの乗車券では、対象の新幹線区間を在来線経由に置き換え、延長なしの通常補正後の途中駅を表示します。置き換えで重複する区間は新幹線のまま残し、各券の延長先は候補に含めません。経路変更で対象外になった指定は解除されます。
+        </p>
+        <p>
+          <a href="/split/route/pass" class="text-blue-600 underline">定期券</a
+          >もタブで選択でき、1・3・6箇月から期間を選べます。経路とモードは券種を切り替えても引き継がれます。定期券の比較額にはバリアフリー料金・加算額も含まれます。新幹線・他社線は定期券運賃計算と同じ入力制限です。
+        </p>
+        <p>
+          通常は入力経路を分割し、各券を通常モードで補正・計算します。最安は全体経路を延長せずに補正してから分割し、各券の評価時に延長も検討します。補正禁止は入力経路を分割し、各券を既存の補正禁止モードで計算します。
+        </p>
+        <p>
+          分割前運賃は、元の入力経路を同じモードで計算した金額です。分割なしも候補に含め、最安パターンが複数ある場合は2件目以降を展開して確認できます。計算はすべて端末内で行います。
+        </p>
       </section>
     </div>
   </div>

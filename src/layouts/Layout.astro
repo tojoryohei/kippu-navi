@@ -8,13 +8,18 @@ import "@/app/globals.css";
 interface Props {
   metadata?: {
     title?: string;
+    absoluteTitle?: boolean;
     description?: string;
     alternates?: { canonical: string };
   };
   noindex?: boolean;
 }
 const { metadata = {}, noindex = false } = Astro.props;
-const title = metadata.title ? `${metadata.title} | きっぷナビ` : "きっぷナビ";
+const title = metadata.title
+  ? metadata.absoluteTitle
+    ? metadata.title
+    : `${metadata.title} | きっぷナビ`
+  : "きっぷナビ";
 const description =
   metadata.description ??
   "JR在来線の分割きっぷ（乗車券・定期券・IC定期券）の最安組み合わせを自動計算。発駅と着駅を入力するだけで、交通費の節約額がすぐにわかる無料Webツールです。";
