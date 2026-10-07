@@ -39,7 +39,7 @@ func TestHandleCalculateRejectsDisconnectedLocalLineAreas(t *testing.T) {
 	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
 		t.Fatalf("レスポンスの解析に失敗しました: %v", err)
 	}
-	want := "指定された区間はJR在来線のみで繋がっていません。新幹線や私鉄線を利用する経路は検索対象外です。"
+	want := domain.DisconnectedRouteErrorMessage
 	if body.Error != want {
 		t.Errorf("error = %q, want %q", body.Error, want)
 	}

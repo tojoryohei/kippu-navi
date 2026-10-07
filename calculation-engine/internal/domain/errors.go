@@ -2,6 +2,9 @@ package domain
 
 import "errors"
 
+// DisconnectedRouteErrorMessage は、JR在来線だけでは接続できない区間に対する案内です。
+const DisconnectedRouteErrorMessage = "指定された区間はJR在来線のみで繋がっていません。経路入力検索を利用してください。"
+
 var (
 	// ErrInvalidMonths は不正な月数が指定された場合のエラーです。
 	ErrInvalidMonths = errors.New("不正な月数です（1, 3, 6のいずれかを指定してください）")

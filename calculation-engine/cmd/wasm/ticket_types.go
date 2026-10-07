@@ -26,17 +26,3 @@ func (r RouteRequest) ViaSteps() []ticketusecase.ViaStep {
 	}
 	return steps
 }
-
-type KippuData struct {
-	TotalEigyoKilo   int      `json:"totalEigyoKilo"`
-	DepartureStation string   `json:"departureStation"`
-	ArrivalStation   string   `json:"arrivalStation"`
-	PrintedViaLines  []string `json:"printedViaLines"`
-	Fare             int      `json:"fare"`
-	ValidDays        int      `json:"validDays"`
-}
-
-type RouteResponse struct {
-	Data KippuData `json:"data"`
-	Time float64   `json:"time"`
-}
