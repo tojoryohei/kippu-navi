@@ -6,7 +6,7 @@ import CalculatorResources from "@/components/CalculatorResources.astro";
 const metadata = {
   title: "JR乗車券運賃計算機",
   description:
-    "JR全線の乗車券の運賃と営業キロを正確に計算。一筆書きの旅など、発着駅と経由路線を入力して、特定区間運賃や大都市近郊区間の最安経路補正に対応して計算します。",
+    "JR全線の乗車券の運賃と営業キロを正確に計算。発着駅と経由路線を入力して、特定区間運賃や大都市近郊区間の最安経路補正に対応して計算します。",
   alternates: {
     canonical: "/fare/ticket",
   },
@@ -62,7 +62,7 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
               {"発着駅および経由路線を入力してください。"}
             </p>
             <p>
-              {"一筆書きの旅など、指定した経路の乗車券運賃を計算します。"}
+              {"指定した経路の乗車券運賃を計算します。"}
             </p>
           </div>
         </div>
@@ -80,10 +80,27 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
 
         <CalculatorResources
           links={[
-            { href: "/split/route/ticket", title: "経路入力検索", description: "経由路線を入力して、その経路の分割パターンを比較します。" },
-            { href: "/guide#how-to-search", title: "使い方", description: "駅と経由路線の入力方法を確認します。" },
-            { href: "/logic", title: "計算の仕組み", description: "運賃計算エンジンの技術情報を紹介します。" },
-            { href: "/articles/jr-fare-system", title: "JR運賃の解説", description: "距離と運賃の関係や制度を解説します。" },
+            {
+              href: "/split/route/ticket",
+              title: "経路入力検索",
+              description:
+                "経由路線を入力して、その経路の分割パターンを比較します。",
+            },
+            {
+              href: "/guide#how-to-search",
+              title: "使い方",
+              description: "駅と経由路線の入力方法を確認します。",
+            },
+            {
+              href: "/logic",
+              title: "計算の仕組み",
+              description: "運賃計算エンジンの技術情報を紹介します。",
+            },
+            {
+              href: "/articles/jr-fare-system",
+              title: "JR運賃の解説",
+              description: "距離と運賃の関係や制度を解説します。",
+            },
           ]}
         />
       </main>
