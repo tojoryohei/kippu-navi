@@ -77,6 +77,12 @@ function initialize() {
           && /\/(?:split\/(?:auto\/)?ticket|logic)$/.test(frames[0].filename || "")
           && /^(?:Can't find variable: __firefox__|undefined is not an object \(evaluating 'window\.__firefox__\.reader'\))$/.test(exception?.value || "");
         if (isInjectedFirefoxReader) return null;
+        // SymBrowser injects a global anchor modifier that is absent from the application.
+        const isInjectedSymBrowser = frames.length === 1
+          && frames[0].function === "global code"
+          && exception?.type === "ReferenceError"
+          && exception.value === "Can't find variable: SymBrowser_ModifyAnchorTagWithTarget";
+        if (isInjectedSymBrowser) return null;
         // Sentry's wrapper can be the top frame for an AdSense callback, so
         // denyUrls alone does not exclude these third-party exceptions.
         if (frames.some(frame => /(?:^|\/)pagead\/js\/.*\/rum_fy\d+\.js$/.test(frame.filename || ""))
