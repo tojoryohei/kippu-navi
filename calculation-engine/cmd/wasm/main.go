@@ -809,6 +809,12 @@ func calculateRouteSplitPass(this js.Value, args []js.Value) interface{} {
 		data, _ := json.Marshal(names)
 		return js.ValueOf(string(data))
 	}
+	if len(args) > 1 && args[1].Type() == js.TypeFunction {
+		callback := args[1]
+		req.Progress = func(progress split.Progress) {
+			callback.Invoke(progress.Phase, progress.Completed, progress.Total)
+		}
+	}
 	result, err := calculator.Split(req.StationNames, req.Months, req.CalculationMode, req.RouteSplitOptions)
 	if err != nil {
 		return routeTicketError(err)
@@ -1495,6 +1501,12 @@ func calculateRouteSplitTicket(this js.Value, args []js.Value) interface{} {
 		}
 		data, _ := json.Marshal(names)
 		return js.ValueOf(string(data))
+	}
+	if len(args) > 1 && args[1].Type() == js.TypeFunction {
+		callback := args[1]
+		req.Progress = func(progress split.Progress) {
+			callback.Invoke(progress.Phase, progress.Completed, progress.Total)
+		}
 	}
 	result, err := calculator.Split(req.ViaSteps(), req.CalculationMode, req.RouteSplitOptions)
 	if err != nil {

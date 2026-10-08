@@ -131,7 +131,7 @@ func (c *RoutePassCalculator) Split(names []string, months int, mode string, opt
 	for _, name := range opts.NoSplitStations {
 		forbidden[name] = true
 	}
-	plans, err := split.OptimizeFixedRoute(len(target), func(i, j int) (split.RouteSplitSegment, error) {
+	plans, err := split.OptimizeFixedRouteWithProgress(len(target), func(i, j int) (split.RouteSplitSegment, error) {
 		if (i > 0 && forbidden[c.graph.GetName(target[i])]) || (j < len(target)-1 && forbidden[c.graph.GetName(target[j])]) {
 			return split.RouteSplitSegment{}, domain.ErrInvalidPath
 		}
@@ -140,7 +140,7 @@ func (c *RoutePassCalculator) Split(names []string, months int, mode string, opt
 			return split.RouteSplitSegment{}, err
 		}
 		return split.RouteSplitSegment{DepartureStation: c.graph.GetName(target[i]), ArrivalStation: c.graph.GetName(target[j]), Fare: fare.summary()}, nil
-	}, opts.MaxSplits)
+	}, opts.Progress, opts.MaxSplits)
 	if err != nil {
 		return nil, err
 	}

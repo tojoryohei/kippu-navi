@@ -107,6 +107,13 @@ declare const Go: {
   new(): GoInstance;
 };
 
+type ProgressCallback = (phase: 'calculating' | 'organizing', completed: number, total: number) => void;
+
+function routeProgress(requestId: unknown): ProgressCallback {
+  postMessage({ type: 'progress', requestId, phase: 'exploring', completed: 0, total: 0 });
+  return (phase, completed, total) => postMessage({ type: 'progress', requestId, phase, completed, total });
+}
+
 interface WorkerGlobalScope {
   preparePassGraphBuffer(size: number): number;
   initPassGraphFromBuffer(size: number): boolean | string;
@@ -116,8 +123,8 @@ interface WorkerGlobalScope {
   reconstructAndCalculateTicket(splitStationsJson: string): string;
   calculateRoutePass(stationNamesJson: string, months: number, isIc: boolean, calculationMode: string): string;
   calculateRouteTicket(jsonStr: string): string;
-  calculateRouteSplitTicket(jsonStr: string): string;
-  calculateRouteSplitPass(jsonStr: string): string;
+  calculateRouteSplitTicket(jsonStr: string, progress?: ProgressCallback): string;
+  calculateRouteSplitPass(jsonStr: string, progress?: ProgressCallback): string;
   calculateOptimalSplitTicket(startStationName: string, endStationName: string, maxSplits?: number, noSplitStationsJson?: string): string;
 }
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
@@ -356,7 +363,7 @@ onmessage = async (e: MessageEvent) => {
     try {
       const stationNamesJson = JSON.stringify(stationNames);
       const resultJsonStr = type === 'calculateRouteSplitPass'
-        ? workerSelf.calculateRouteSplitPass(JSON.stringify({ stationNames, months, calculationMode: calculationMode || 'normal', maxSplits: payload.maxSplits, noSplitStations: payload.noSplitStations }))
+        ? workerSelf.calculateRouteSplitPass(JSON.stringify({ stationNames, months, calculationMode: calculationMode || 'normal', maxSplits: payload.maxSplits, noSplitStations: payload.noSplitStations }), routeProgress(requestId))
         : workerSelf.calculateRoutePass(stationNamesJson, months, isIc, calculationMode || 'normal');
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
@@ -381,7 +388,7 @@ onmessage = async (e: MessageEvent) => {
         calculationMode: calculationMode || "normal"
       });
       const resultJsonStr = type === 'calculateRouteSplitTicket'
-        ? workerSelf.calculateRouteSplitTicket(reqJsonStr)
+        ? workerSelf.calculateRouteSplitTicket(reqJsonStr, routeProgress(requestId))
         : workerSelf.calculateRouteTicket(reqJsonStr);
       const result = JSON.parse(resultJsonStr);
       if (result.error) {

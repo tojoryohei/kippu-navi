@@ -5,21 +5,73 @@ import (
 	"errors"
 	"math"
 	"sort"
+	"time"
 )
 
+type Progress struct {
+	Phase     string `json:"phase"`
+	Completed int    `json:"completed"`
+	Total     int    `json:"total"`
+}
+
+type ProgressCallback func(Progress)
+
+type progressReporter struct {
+	callback       ProgressCallback
+	visited, total int
+	last           time.Time
+}
+
+// 次の候補に入る直前に、それまでに完了した候補数を通知する。
+// スキップ・キャッシュ利用も1候補として数え、運賃評価の順序は変えない。
+func (p *progressReporter) beginCandidate() {
+	if p.callback == nil {
+		return
+	}
+	if time.Since(p.last) >= 100*time.Millisecond {
+		p.callback(Progress{"calculating", p.visited, p.total})
+		p.last = time.Now()
+	}
+	p.visited++
+}
+
+func (p *progressReporter) finish() {
+	if p.callback == nil {
+		return
+	}
+	p.callback(Progress{"calculating", p.visited, p.total})
+	p.callback(Progress{"organizing", p.visited, p.total})
+}
+
 type RouteSplitOptions struct {
-	MaxSplits       int      `json:"maxSplits"`
-	NoSplitStations []string `json:"noSplitStations"`
+	Progress        ProgressCallback `json:"-"`
+	MaxSplits       int              `json:"maxSplits"`
+	NoSplitStations []string         `json:"noSplitStations"`
 }
 
 // OptimizeFixedRoute は、各区間を一度だけ評価し、最安となる分割位置への遷移をすべて保持します。
 // 運賃評価と結果件数に依存する列挙処理を除いた計算量は O(n²) です。
 func OptimizeFixedRoute(n int, evaluate func(int, int) (RouteSplitSegment, error), limits ...int) ([]RouteSplitPlan, error) {
-	if len(limits) > 0 && limits[0] > 0 {
-		return optimizeLimitedRoute(n, limits[0], evaluate)
-	}
+	return OptimizeFixedRouteWithProgress(n, evaluate, nil, limits...)
+}
+
+func OptimizeFixedRouteWithProgress(n int, evaluate func(int, int) (RouteSplitSegment, error), callback ProgressCallback, limits ...int) ([]RouteSplitPlan, error) {
 	if n < 2 {
 		return nil, domain.ErrInvalidPath
+	}
+	total := n * (n - 1) / 2
+	if len(limits) > 0 && limits[0] > 0 {
+		if limits[0] > 10 {
+			return nil, domain.ErrInvalidPath
+		}
+		total *= min(limits[0]+1, n-1)
+	}
+	progress := &progressReporter{callback: callback, total: total, last: time.Now()}
+	if callback != nil {
+		callback(Progress{"calculating", 0, total})
+	}
+	if len(limits) > 0 && limits[0] > 0 {
+		return optimizeLimitedRoute(n, limits[0], evaluate, progress)
 	}
 	best := make([]int, n)
 	previous := make([][]int, n)
@@ -27,6 +79,7 @@ func OptimizeFixedRoute(n int, evaluate func(int, int) (RouteSplitSegment, error
 	for j := 1; j < n; j++ {
 		best[j] = math.MaxInt
 		for i := 0; i < j; i++ {
+			progress.beginCandidate()
 			if best[i] == math.MaxInt {
 				continue
 			}
@@ -50,6 +103,7 @@ func OptimizeFixedRoute(n int, evaluate func(int, int) (RouteSplitSegment, error
 	if best[n-1] == math.MaxInt {
 		return nil, domain.ErrNoValidPattern
 	}
+	progress.finish()
 	type indexedPlan struct {
 		plan RouteSplitPlan
 		cuts []int
@@ -95,7 +149,7 @@ func OptimizeFixedRoute(n int, evaluate func(int, int) (RouteSplitSegment, error
 }
 
 // 券の枚数ごとに層を分け、枚数が異なる同額の最安パターンもすべて保持します。
-func optimizeLimitedRoute(n, maxSplits int, evaluate func(int, int) (RouteSplitSegment, error)) ([]RouteSplitPlan, error) {
+func optimizeLimitedRoute(n, maxSplits int, evaluate func(int, int) (RouteSplitSegment, error), progress *progressReporter) ([]RouteSplitPlan, error) {
 	if n < 2 || maxSplits > 10 {
 		return nil, domain.ErrInvalidPath
 	}
@@ -118,6 +172,7 @@ func optimizeLimitedRoute(n, maxSplits int, evaluate func(int, int) (RouteSplitS
 	for k := 1; k <= layers; k++ {
 		for j := 1; j < n; j++ {
 			for i := 0; i < j; i++ {
+				progress.beginCandidate()
 				if costs[k-1][i] == math.MaxInt {
 					continue
 				}
@@ -157,6 +212,7 @@ func optimizeLimitedRoute(n, maxSplits int, evaluate func(int, int) (RouteSplitS
 	if best == math.MaxInt {
 		return nil, domain.ErrNoValidPattern
 	}
+	progress.finish()
 	type foundPlan struct {
 		plan RouteSplitPlan
 		cuts []int
