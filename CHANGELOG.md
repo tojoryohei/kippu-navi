@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.0.0...kippu-navi-v4.1.0) (2026-10-08)
+
+
+### Features
+
+* 経路入力の分割計算に進捗バーを追加 ([#800](https://github.com/tojoryohei/kippu-navi/issues/800)) ([8187148](https://github.com/tojoryohei/kippu-navi/commit/81871488ea262f18c1735aba434f6aa38f7302db))
+
 ## [4.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v3.4.3...kippu-navi-v4.0.0) (2026-10-07)
 
 
