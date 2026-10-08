@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.1.0...kippu-navi-v4.1.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* 70条補正で東京上野間の新幹線利用と経由印字の修正 ([#802](https://github.com/tojoryohei/kippu-navi/issues/802)) ([1ec386b](https://github.com/tojoryohei/kippu-navi/commit/1ec386b81bbf250a41cf3f560ef34ed173715b50))
+
 ## [4.1.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.0.0...kippu-navi-v4.1.0) (2026-10-08)
 
 
