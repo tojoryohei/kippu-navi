@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"encoding/json"
+	"io"
 	"reflect"
 	"testing"
 
@@ -730,7 +731,7 @@ func TestArticle70ViaKeepsTripWithinBoldArea(t *testing.T) {
 }
 
 func TestArticle70ViaPrintsShinkansenConnectionAtEntry(t *testing.T) {
-	g, err := (&graphio.JSONLoader{}).Load(graphdata.GetEdgesReader())
+	_, g, err := (&graphio.JSONLoader{}).LoadSeparatedGraphs([]io.Reader{graphdata.GetEdgesReader()}, graphdata.GetFareGraphEdgeReaders())
 	if err != nil {
 		t.Fatal(err)
 	}
