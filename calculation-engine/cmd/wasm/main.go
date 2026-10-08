@@ -16,6 +16,7 @@ import (
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/infra/fareio"
+	"calculation-engine/internal/pass/optimizer"
 	"calculation-engine/internal/pass/usecase"
 	"calculation-engine/internal/split"
 	ticketdomain "calculation-engine/internal/ticket/domain"
@@ -34,6 +35,7 @@ var passTempBuffer []byte
 var ticketTempBuffer []byte
 
 // passWasmGraph はロードされたバイナリグラフのグローバルインスタンス（定期券用）
+var passGraphInitialized bool
 var passWasmGraph *WasmGraph
 
 // ticketWasmGraph は乗車券用のWasmGraph
@@ -167,6 +169,7 @@ func preparePassGraphBuffer(this js.Value, args []js.Value) interface{} {
 }
 
 func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
+	passGraphInitialized = false
 	if len(passTempBuffer) < 16 {
 		return js.ValueOf("error: buffer is too small")
 	}
@@ -319,6 +322,7 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 
 	// 初期化完了に伴い、一時バッファへのピン留めを解除しGCに開放
 	passTempBuffer = nil
+	passGraphInitialized = true
 
 	return js.ValueOf(true)
 }
@@ -1011,6 +1015,7 @@ func main() {
 	js.Global().Set("calculateRouteTicket", js.FuncOf(calculateRouteTicket))
 	js.Global().Set("calculateRouteSplitTicket", js.FuncOf(calculateRouteSplitTicket))
 	js.Global().Set("calculateOptimalSplitTicket", js.FuncOf(calculateOptimalSplitTicket))
+	js.Global().Set("calculateOptimalSplitPass", js.FuncOf(calculateOptimalSplitPass))
 
 	<-c
 }
@@ -1293,6 +1298,9 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 }
 
 func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
+	if !ticketGraphInitialized {
+		return js.ValueOf(`{"error":"ticket graph not initialized"}`)
+	}
 	startName := args[0].String()
 	endName := args[1].String()
 	maxSections := 0
@@ -1520,4 +1528,85 @@ func calculateRouteSplitTicket(this js.Value, args []js.Value) interface{} {
 		return routeTicketError(err)
 	}
 	return js.ValueOf(string(data))
+}
+
+// calculateOptimalSplitPass はAPIと同形式の分割駅列を返し、既存の結果復元を利用します。
+func calculateOptimalSplitPass(this js.Value, args []js.Value) interface{} {
+	fail := func(message string) interface{} {
+		b, _ := json.Marshal(map[string]string{"error": message})
+		return js.ValueOf(string(b))
+	}
+	if !passGraphInitialized {
+		return fail("pass graph not initialized")
+	}
+	if len(args) != 1 {
+		return fail("invalid request")
+	}
+	var req struct {
+		From            string   `json:"from"`
+		To              string   `json:"to"`
+		Months          int      `json:"months"`
+		IsIc            bool     `json:"isIc"`
+		MaxSplits       int      `json:"maxSplits"`
+		NoSplitStations []string `json:"noSplitStations"`
+	}
+	if err := json.Unmarshal([]byte(args[0].String()), &req); err != nil {
+		return fail(err.Error())
+	}
+	if req.Months != 1 && req.Months != 3 && req.Months != 6 {
+		return fail("定期券の期間が不正です")
+	}
+	if !req.IsIc && (req.MaxSplits < 0 || req.MaxSplits > 10) {
+		return fail("分割回数が不正です")
+	}
+	g := passBaseGraph
+	maxSections := 0
+	if req.IsIc {
+		g = icGraph
+		maxSections = 2
+	} else if req.MaxSplits > 0 {
+		maxSections = req.MaxSplits + 1
+	}
+	start, okStart := g.GetID(req.From)
+	end, okEnd := g.GetID(req.To)
+	if !okStart || !okEnd {
+		return fail("存在しない駅名が含まれています")
+	}
+	if start == end {
+		return fail("出発駅と到着駅が同じです")
+	}
+	if g.GetGroupID(start) == 0 || g.GetGroupID(start) != g.GetGroupID(end) {
+		return fail(domain.DisconnectedRouteErrorMessage)
+	}
+	var locked []int
+	for _, name := range req.NoSplitStations {
+		id, ok := g.GetID(name)
+		if !ok {
+			return fail("存在しない分割禁止駅名が含まれています")
+		}
+		locked = append(locked, id)
+	}
+	// APIのIC事前計算も基底グラフの運賃計算器とIC探索グラフの組み合わせ。
+	split := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(passBaseAmountCalc), passBaseAmountCalc)
+	search := usecase.NewOnDemandSearch(g, split, bypassRules, maxSections)
+	paths, err := search.ExecuteWithOptions(start, end, req.Months, maxSections, locked)
+	if err != nil {
+		return fail(err.Error())
+	}
+	results := make([][]string, 0, len(paths))
+	for _, path := range paths {
+		names := make([]string, len(path))
+		for i, id := range path {
+			names[i] = g.GetName(id)
+		}
+		results = append(results, names)
+	}
+	response, err := json.Marshal(struct {
+		Normal  []string   `json:"normal"`
+		Results [][]string `json:"results"`
+	}{[]string{req.From, req.To}, results})
+	if err != nil {
+		return fail(err.Error())
+	}
+	return js.ValueOf(string(response))
 }

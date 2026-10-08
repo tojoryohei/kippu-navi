@@ -25,6 +25,7 @@ type SearchOptimalSplit struct {
 	rules       []passdomain.ResolvedBypassRule
 	maxSections int
 	fares       []int32
+	fareLookup  func(start, end, months int) int32
 	numStations int32
 }
 
@@ -45,6 +46,28 @@ func NewSearchOptimalSplit(
 		fares:       fares,
 		numStations: numStations,
 	}
+}
+
+// NewOnDemandSearch は全駅間の表を作らず、候補区間だけを同じ規則で評価します。
+// 検索ごとに作成し、参照を破棄することでキャッシュを解放してください。
+func NewOnDemandSearch(g *graph.RailwayGraph, u *FindOptimalSplit, rules []passdomain.ResolvedBypassRule, maxSections int) *SearchOptimalSplit {
+	search := NewSearchOptimalSplit(g, u, rules, maxSections, nil, int32(g.NumStations()))
+	// 最短経路木は評価中の始点の分だけ保持し、全国分の距離表を作らない。
+	previousStart := -1
+	var prevGisei, prevEigyo []int
+	search.fareLookup = func(start, end, months int) int32 {
+		if start == end {
+			return 0
+		}
+		if previousStart != start {
+			_, prevGisei = g.FindAllShortestPathsGisei(start)
+			_, prevEigyo = g.FindAllShortestPathsEigyo(start)
+			previousStart = start
+		}
+		return int32(ComputeCheapestNoSplit(g, u.calc, search.rules, prevGisei, prevEigyo, start, end, months))
+	}
+	// 候補区間の運賃は既存DPのlocalFaresに一度だけ格納され、各段で再利用される。
+	return search
 }
 
 // Execute は指定された発着駅間の最安分割結果を探索します。
@@ -344,7 +367,12 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPWithLocks(startID, endID, month
 			}
 
 			nextID := candStations[vIdx]
-			fareVal := u.fares[baseIdx+int32(nextID)]
+			var fareVal int32
+			if u.fareLookup != nil {
+				fareVal = u.fareLookup(currID, nextID, months)
+			} else {
+				fareVal = u.fares[baseIdx+int32(nextID)]
+			}
 			scratch.localFares[uOffset+vIdx] = fareVal
 		}
 	}
@@ -921,7 +949,12 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID
 			}
 
 			nextID := candStations[vIdx]
-			fareVal := u.fares[baseIdx+int32(nextID)]
+			var fareVal int32
+			if u.fareLookup != nil {
+				fareVal = u.fareLookup(currID, nextID, months)
+			} else {
+				fareVal = u.fares[baseIdx+int32(nextID)]
+			}
 			scratch.localFares[uOffset+vIdx] = fareVal
 		}
 	}

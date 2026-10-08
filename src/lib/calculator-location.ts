@@ -21,4 +21,5 @@ export function useCalculatorLocation() {
 export function replaceCalculatorUrl(url: string) {
   // ClientRouterの履歴番号やスクロール情報を消さず、入力中のURLだけ更新する。
   window.history.replaceState(window.history.state, "", url);
+    window.dispatchEvent(new Event("calculator:url-change"));
 }

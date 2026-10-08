@@ -1,6 +1,0 @@
----
-const destination = new URL("/split/auto/ticket", Astro.url);
-destination.search = Astro.url.search;
-
-return Astro.redirect(destination.toString(), 301);
----

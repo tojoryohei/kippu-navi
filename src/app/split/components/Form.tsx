@@ -196,7 +196,12 @@ export default function SplitForm({
     }, [clearErrors, getValues, trigger]);
 
     const apiAbortRef = useRef<AbortController | null>(null);
-    useEffect(() => () => apiAbortRef.current?.abort(), []);
+    const localWorkerRef = useRef<EngineClient | null>(null);
+    useEffect(() => () => {
+        apiAbortRef.current?.abort();
+        localWorkerRef.current?.terminate();
+        localWorkerRef.current = null;
+    }, []);
 
     const mountedRef = useRef(true);
     useEffect(() => {
@@ -213,6 +218,11 @@ export default function SplitForm({
         apiAbortRef.current?.abort();
         const abort = new AbortController();
         apiAbortRef.current = abort;
+        const stopLocalWorker = () => {
+            localWorkerRef.current?.terminate();
+            localWorkerRef.current = null;
+        };
+        stopLocalWorker();
         const calculationStartedAt = performance.now();
         const capability = data.searchType === "ticket" ? "ticket" : "pass";
         pendingErrorRef.current = null;
@@ -274,8 +284,31 @@ export default function SplitForm({
         // 検索タイプの確定
         setSearchedType(data.searchType);
 
+        const runLocally = async () => {
+            if (abort.signal.aborted || !workerRef.current) return;
+            // 通常検索は既存の共有Workerを維持し、重い端末内探索だけ終了可能なWorkerに分離する。
+            const localWorker = createEngineClient({ isolated: true });
+            localWorkerRef.current = localWorker;
+            localWorker.onmessage = event => {
+                workerRef.current?.onmessage?.(event);
+                if (event.data.type === "error" || String(event.data.type).startsWith("success")) {
+                    localWorker.terminate();
+                    if (localWorkerRef.current === localWorker) localWorkerRef.current = null;
+                }
+            };
+            const readiness = await localWorker.ensureReady(capability);
+            if (abort.signal.aborted || calcId !== latestCalcIdRef.current) return;
+            searchContext.readiness = readiness;
+            localWorker.postMessage({
+                type: capability === "ticket" ? "calculateOptimalSplitTicket" : "calculateOptimalSplitPass",
+                payload: { startStationName: data.startStation!.name, endStationName: data.endStation!.name,
+                    maxSplits: data.maxSplits, noSplitStations: data.forbiddenStations.map(station => station.name),
+                    months: monthsMap[data.searchType] || 1, isIc: isIcPass, requestId: calcId },
+            });
+        };
         const apiTimeout = createAbortTimeout(abort.signal);
         try {
+            if (!navigator.onLine) { apiTimeout.dispose(); await runLocally(); return; }
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
             const months = data.searchType !== "ticket" ? (monthsMap[data.searchType] || "6") : "6";
 
@@ -306,6 +339,7 @@ export default function SplitForm({
                 throw new SearchOperationError({ message: fetchError instanceof Error ? fetchError.message : String(fetchError), code: "api_network_failed", source: "api", stage: "api_fetch", capability, exceptionName: fetchError instanceof Error ? fetchError.name : "Error", retryable: true, retryCount: 0, workerRestartCount: 0 });
             }
             if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
+            if (apiRes.status >= 500) throw createApiHttpError(apiRes.status, capability);
             searchContext.requestId = apiRes.headers.get("X-Request-ID") || undefined;
             let rawResponse: unknown;
             try {
@@ -355,7 +389,14 @@ export default function SplitForm({
             }
         } catch (err: unknown) {
             apiTimeout.dispose();
-            if (abort.signal.aborted && !apiTimeout.didTimeout()) return;
+            if (abort.signal.aborted) return;
+            const details = err instanceof SearchOperationError ? err.details : null;
+            if (details && (details.code === "api_network_failed" || details.code === "api_timeout" ||
+                (details.code === "api_http_failed" && (details.httpStatus || 0) >= 500))) {
+                try { await runLocally(); return; } catch (localError) { err = localError; }
+            }
+            if (abort.signal.aborted) return;
+            stopLocalWorker();
             const errorInstance = err instanceof Error ? err : new Error(String(err));
             pendingErrorRef.current = err;
             setIsEngineRetryable(isRetryableEngineError(err));
@@ -379,7 +420,7 @@ export default function SplitForm({
             worker.onmessage = (e) => {
                 const { type, result, error, requestId, details } = e.data;
                 if (requestId !== undefined && requestId !== latestCalcIdRef.current) return;
-                if (type === "success") {
+                if (type === "success" || type === "success_calculate_optimal_split_ticket") {
                     // 最新のリクエストIDと一致する場合のみ結果を反映（古い計算結果を破棄）
                     if (requestId === latestCalcIdRef.current) {
                         const adaptedResult = adaptWasmResponseToSplitFareResult(result);
