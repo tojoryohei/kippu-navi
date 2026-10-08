@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.1.1...kippu-navi-v4.2.0) (2026-10-08)
+
+
+### Features
+
+* PWAと全券種のオフライン計算に対応 ([#804](https://github.com/tojoryohei/kippu-navi/issues/804)) ([badf992](https://github.com/tojoryohei/kippu-navi/commit/badf992be1382d281bc3d675c05359e253ec3ca9))
+
 ## [4.1.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.1.0...kippu-navi-v4.1.1) (2026-10-08)
 
 
