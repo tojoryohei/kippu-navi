@@ -9,6 +9,7 @@ import (
 	"calculation-engine/internal/pass/usecase"
 	"fmt"
 	"math"
+	"reflect"
 	"testing"
 )
 
@@ -52,7 +53,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 
 	t.Run("特例ルールなし: 最短経路(A-B-C)内の分割が最安になるケース", func(t *testing.T) {
 		fares := precomputeFaresForTest(g, calcAmount, nil)
-		search := usecase.NewSearchOptimalSplit(g, split, nil, 0, fares, int32(g.NumStations()))
+		search := newParitySearch(t, g, split, nil, 0, fares, int32(g.NumStations()))
 		// A-B-C (20km): 通し=2500, 分割(A-B, B-C)=1000+1000=2000
 		// A-C (21km): 通し=3000
 		// 特例なしの場合、最安は 2000
@@ -99,7 +100,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			fare.NewPathMatcher(), fare.NewPathMatcher(), nil,
 		)
 		tieSplit := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(tieCalc), tieCalc)
-		tieSearch := usecase.NewSearchOptimalSplit(g, tieSplit, nil, 0, precomputeFaresForTest(g, tieCalc, nil), int32(g.NumStations()))
+		tieSearch := newParitySearch(t, g, tieSplit, nil, 0, precomputeFaresForTest(g, tieCalc, nil), int32(g.NumStations()))
 
 		got, err := tieSearch.Execute(id("A"), id("C"), 1)
 		if err != nil {
@@ -130,7 +131,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 			},
 		}
 		fares := precomputeFaresForTest(g, calcAmount, rules)
-		search := usecase.NewSearchOptimalSplit(g, split, rules, 0, fares, int32(g.NumStations()))
+		search := newParitySearch(t, g, split, rules, 0, fares, int32(g.NumStations()))
 
 		// DからC(遠回り端点)を検索する。
 		// DFSは [D, A, C] を出力するはず。
@@ -149,7 +150,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 
 	t.Run("異常系：存在しない駅", func(t *testing.T) {
 		fares := precomputeFaresForTest(g, calcAmount, nil)
-		search := usecase.NewSearchOptimalSplit(g, split, nil, 0, fares, int32(g.NumStations()))
+		search := newParitySearch(t, g, split, nil, 0, fares, int32(g.NumStations()))
 		_, err := search.Execute(-1, 99, 1)
 		if err == nil {
 			t.Error("無効な駅IDに対するエラーが期待されますが、nilを取得しました")
@@ -206,21 +207,21 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		// maxSections=1(分割なし) の場合: 全ての分割が禁止されるため、通しの(5000円)が選ばれる。
 
 		// maxSections=0
-		search0 := usecase.NewSearchOptimalSplit(g2, split2, nil, 0, fares2, numStations2)
+		search0 := newParitySearch(t, g2, split2, nil, 0, fares2, numStations2)
 		got0, err0 := search0.Execute(id2("A"), id2("D"), 1)
 		if err0 != nil {
 			t.Fatalf("Execute(0) が失敗しました: %v", err0)
 		}
 
 		// maxSections=2
-		search2 := usecase.NewSearchOptimalSplit(g2, split2, nil, 2, fares2, numStations2)
+		search2 := newParitySearch(t, g2, split2, nil, 2, fares2, numStations2)
 		got2, err2 := search2.Execute(id2("A"), id2("D"), 1)
 		if err2 != nil {
 			t.Fatalf("Execute(2) が失敗しました: %v", err2)
 		}
 
 		// maxSections=1
-		search1 := usecase.NewSearchOptimalSplit(g2, split2, nil, 1, fares2, numStations2)
+		search1 := newParitySearch(t, g2, split2, nil, 1, fares2, numStations2)
 		got1, err1 := search1.Execute(id2("A"), id2("D"), 1)
 		if err1 != nil {
 			t.Fatalf("Execute(1) が失敗しました: %v", err1)
@@ -302,7 +303,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		split3 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount3), calcAmount3)
 		fares3 := precomputeFaresForTest(g3, calcAmount3, nil)
 
-		search := usecase.NewSearchOptimalSplit(g3, split3, nil, 0, fares3, int32(g3.NumStations()))
+		search := newParitySearch(t, g3, split3, nil, 0, fares3, int32(g3.NumStations()))
 
 		got, err := search.Execute(id3("A"), id3("D"), 1)
 		if err != nil {
@@ -369,7 +370,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		split4 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount4), calcAmount4)
 		fares4 := precomputeFaresForTest(g4, calcAmount4, nil)
 
-		search := usecase.NewSearchOptimalSplit(g4, split4, nil, 0, fares4, int32(g4.NumStations()))
+		search := newParitySearch(t, g4, split4, nil, 0, fares4, int32(g4.NumStations()))
 
 		segs, err := search.GetCheapestNoSplitSegments(id4("A"), id4("D"), 1)
 		if err != nil {
@@ -444,7 +445,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		split5 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount5), calcAmount5)
 		fares5 := precomputeFaresForTest(g5, calcAmount5, rules)
 
-		search := usecase.NewSearchOptimalSplit(g5, split5, rules, 0, fares5, int32(g5.NumStations()))
+		search := newParitySearch(t, g5, split5, rules, 0, fares5, int32(g5.NumStations()))
 
 		segs, err := search.GetCheapestNoSplitSegments(id5("B"), id5("C"), 1)
 		if err != nil {
@@ -502,7 +503,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		split6 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount6), calcAmount6)
 		fares6 := precomputeFaresForTest(g6, calcAmount6, nil)
 
-		search := usecase.NewSearchOptimalSplit(g6, split6, nil, 0, fares6, int32(g6.NumStations()))
+		search := newParitySearch(t, g6, split6, nil, 0, fares6, int32(g6.NumStations()))
 
 		segs, err := search.GetCheapestNoSplitSegments(id6("A"), id6("D"), 1)
 		if err != nil {
@@ -566,7 +567,7 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		split7 := usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calcAmount7), calcAmount7)
 		fares7 := precomputeFaresForTest(g7, calcAmount7, rules)
 
-		search := usecase.NewSearchOptimalSplit(g7, split7, rules, 0, fares7, int32(g7.NumStations()))
+		search := newParitySearch(t, g7, split7, rules, 0, fares7, int32(g7.NumStations()))
 
 		segs, err := search.GetCheapestNoSplitSegments(id7("A"), id7("C"), 1)
 		if err != nil {
@@ -867,4 +868,34 @@ func reverseSlice(s []int) []int {
 		res[len(s)-1-i] = v
 	}
 	return res
+}
+
+// 既存の特例・同額・制限・禁止駅ケースを、独立した事前計算表と都度計算の双方で実行する。
+type paritySearch struct {
+	*usecase.SearchOptimalSplit
+	local *usecase.SearchOptimalSplit
+	t     *testing.T
+}
+
+func newParitySearch(t *testing.T, g *graph.RailwayGraph, split *usecase.FindOptimalSplit, rules []passdomain.ResolvedBypassRule, limit int, fares []int32, n int32) *paritySearch {
+	return &paritySearch{usecase.NewSearchOptimalSplit(g, split, rules, limit, fares, n), usecase.NewOnDemandSearch(g, split, rules, limit), t}
+}
+func (s *paritySearch) Execute(a, b, months int) ([][]int, error) {
+	return s.ExecuteWithOptions(a, b, months, 0, nil)
+}
+func (s *paritySearch) ExecuteWithOptions(a, b, months, limit int, locked []int) ([][]int, error) {
+	s.t.Helper()
+	got, err := s.SearchOptimalSplit.ExecuteWithOptions(a, b, months, limit, locked)
+	local, localErr := s.local.ExecuteWithOptions(a, b, months, limit, locked)
+	if (err == nil) != (localErr == nil) || !reflect.DeepEqual(got, local) {
+		s.t.Fatalf("table=%v (%v), on-demand=%v (%v)", got, err, local, localErr)
+	}
+	for _, otherMonth := range []int{3, 6} {
+		tableOther, tableErr := s.SearchOptimalSplit.ExecuteWithOptions(a, b, otherMonth, limit, locked)
+		localOther, localErr := s.local.ExecuteWithOptions(a, b, otherMonth, limit, locked)
+		if (tableErr == nil) != (localErr == nil) || !reflect.DeepEqual(tableOther, localOther) {
+			s.t.Fatalf("month %d: table=%v (%v), on-demand=%v (%v)", otherMonth, tableOther, tableErr, localOther, localErr)
+		}
+	}
+	return got, err
 }

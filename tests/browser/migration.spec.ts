@@ -319,12 +319,13 @@ test("経路APIの一時的なネットワーク失敗を再試行して検索�
   expect(attempts).toBe(2);
 });
 
-test("APIが15秒でタイムアウトして計算中表示を解除する", async ({ page }) => {
+test("APIが15秒でタイムアウトしたら端末内計算で結果を表示する", async ({ page }) => {
   await isolateServices(page);
   await page.route("**/api/split-ticket**", async () => new Promise(() => { }));
 
   await page.goto(`/split/auto/ticket?${query}`);
-  await expect(page.getByText("APIから15秒以内に応答がありませんでした。しばらくしてから再試行してください。", { exact: true })).toBeVisible({ timeout: 17_000 });
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible({ timeout: 25_000 });
+  await expectTicket(page);
   await expect(page.getByRole("button", { name: "計算中...", exact: true })).toHaveCount(0);
 });
 

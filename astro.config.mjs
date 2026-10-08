@@ -1,3 +1,4 @@
+import { pwaManifestPlugin } from "./scripts/pwa-vite-plugin.mjs";
 import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
@@ -25,6 +26,7 @@ export default defineConfig({
   vite: {
     plugins: [
       tailwindcss(),
+      pwaManifestPlugin(),
       sentryVitePlugin({
         authToken: sentryAuthToken,
         org: sentryOrg,

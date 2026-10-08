@@ -4,6 +4,8 @@
     "scripts/**/*.{ts,mjs}",
     "workers/frontend.mjs",
     "src/lib/analytics.ts",
+    "src/pwa/client.ts",
+    "src/pwa/service-worker.js",
     "src/app/split/lib/getOptimalPassWithCache.ts"
   ],
   "ignore": [

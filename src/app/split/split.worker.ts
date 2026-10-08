@@ -125,6 +125,7 @@ interface WorkerGlobalScope {
   calculateRouteTicket(jsonStr: string): string;
   calculateRouteSplitTicket(jsonStr: string, progress?: ProgressCallback): string;
   calculateRouteSplitPass(jsonStr: string, progress?: ProgressCallback): string;
+  calculateOptimalSplitPass(request: string): string;
   calculateOptimalSplitTicket(startStationName: string, endStationName: string, maxSplits?: number, noSplitStationsJson?: string): string;
 }
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
@@ -422,14 +423,23 @@ onmessage = async (e: MessageEvent) => {
     } catch (err) {
       postWorkerError(err, payload?.requestId, 'ticket');
     }
-  } else if (type === 'calculate') {
-    const { splitPaths, months, isIc, isTicket, requestId } = payload;
+  } else if (type === 'calculate' || type === 'calculateOptimalSplitPass') {
+    const { months, isIc, isTicket, requestId } = payload;
+    let { splitPaths } = payload;
     if (isTicket ? !ticketGraphInitialized : !passGraphInitialized) {
       postMessage({ type: 'error', requestId: payload?.requestId, error: 'Wasm graph not initialized yet' });
       return;
     }
 
     try {
+      if (type === 'calculateOptimalSplitPass') {
+        const paths = JSON.parse(workerSelf.calculateOptimalSplitPass(JSON.stringify({
+          from: payload.startStationName, to: payload.endStationName, months, isIc,
+          maxSplits: payload.maxSplits, noSplitStations: payload.noSplitStations,
+        })));
+        if (paths.error) { postWorkerError(paths.error, requestId, 'pass'); return; }
+        splitPaths = paths.results?.length ? paths.results : [paths.normal];
+      }
       const combinedResults: SplitCalculationResult[] = [];
       let normalResult: SplitCalculationResult | null = null;
 

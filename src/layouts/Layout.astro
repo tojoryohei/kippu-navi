@@ -3,6 +3,7 @@ import { ClientRouter } from "astro:transitions";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import ScrollToTopButton from "@/components/ScrollToTopButton.astro";
+import "@fontsource-variable/noto-sans-jp";
 import "@/app/globals.css";
 
 interface Props {
@@ -48,13 +49,7 @@ const jsonLd = {
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.ico" sizes="any" />
-    <!-- Cloudflare Fonts rewrites this stylesheet and serves its subsets from /cf-fonts/. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap"
-    />
+    <link rel="manifest" href={`/manifest.webmanifest?${new URLSearchParams({ launch: pathname })}`} />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link
       rel="apple-touch-icon-precomposed"
@@ -91,6 +86,7 @@ const jsonLd = {
     <Footer />
     <ScrollToTopButton />
     <script>
+      import "@/pwa/client";
       import { trackPageView } from "@/lib/analytics";
       document.addEventListener("astro:page-load", trackPageView);
     </script>

@@ -9,7 +9,8 @@
     "run_worker_first": [
       "/api/*",
       "/ingest/*",
-      "/monitoring"
+      "/monitoring",
+      "/manifest.webmanifest"
     ]
   },
   "env": {

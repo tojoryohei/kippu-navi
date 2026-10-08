@@ -15,6 +15,7 @@ func assertTicketCalculationsUninitialized(t *testing.T) {
 		calculate func(js.Value, []js.Value) interface{}
 	}{
 		{"fare", calculateRouteTicket},
+		{"auto split", calculateOptimalSplitTicket},
 		{"route split", calculateRouteSplitTicket},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -52,4 +53,16 @@ func TestFailedTicketInitializationClearsReadyState(t *testing.T) {
 		t.Fatal("failed initialization left the graph ready")
 	}
 	assertTicketCalculationsUninitialized(t)
+}
+
+func TestPassAutoSearchRequiresSuccessfulInitialization(t *testing.T) {
+	previous, buffer := passGraphInitialized, passTempBuffer
+	t.Cleanup(func() { passGraphInitialized, passTempBuffer = previous, buffer })
+	passGraphInitialized = true
+	passTempBuffer = nil
+	initPassGraphFromBuffer(js.Undefined(), nil)
+	response := calculateOptimalSplitPass(js.Undefined(), nil).(js.Value).String()
+	if response != `{"error":"pass graph not initialized"}` {
+		t.Fatal(response)
+	}
 }

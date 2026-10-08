@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@astrojs/react": "^7.0.0",
+    "@fontsource-variable/noto-sans-jp": "5.3.0",
     "@sentry/browser": "^11.1.0",
     "astro": "^7.3.5",
     "posthog-js": "^1.436.1",

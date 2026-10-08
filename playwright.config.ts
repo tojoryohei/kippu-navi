@@ -11,7 +11,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "npm run start -- --port 4321 --host 127.0.0.1",
+    command: "node scripts/preview-pwa.mjs",
     url: "http://localhost:4321",
     reuseExistingServer: !process.env.CI,
     env: { ASTRO_TELEMETRY_DISABLED: "1", ASTRO_PREVIEW_BACKGROUND: "1" },

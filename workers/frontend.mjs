@@ -1,3 +1,4 @@
+import { manifestResponse } from "../src/pwa/manifest.mjs";
 const API_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
 const SENTRY_MAX_ENVELOPE_BYTES = 200 * 1024;
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
@@ -230,7 +231,7 @@ export async function fetchEngineAsset(request, assets) {
   if (!match || !['GET', 'HEAD'].includes(request.method)) return assets.fetch(request);
 
   const response = await assets.fetch(request);
-  if (response.status !== 403 && response.status !== 404) return response;
+  if (request.headers.has('X-Kippu-Exact-Asset') || (response.status !== 403 && response.status !== 404)) return response;
 
   try {
     const manifestUrl = new URL('/deployment.json', url);
@@ -282,6 +283,7 @@ function proxyPostHog(request) {
 export default {
   fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === '/manifest.webmanifest') return manifestResponse(request);
     if (url.pathname === '/monitoring') {
       return proxySentry(request, env.SENTRY_DSN);
     }
