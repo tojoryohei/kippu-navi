@@ -27,6 +27,9 @@ var (
 	// ErrDuplicateRoute は、発売不可となる駅重複を含む経路が指定された場合のエラーです。
 	ErrDuplicateRoute = errors.New("経路が重複しています。")
 
+	// ErrRequestedSection は、最短経路補正後に要求された新幹線区間を利用できない場合のエラーです。
+	ErrRequestedSection = errors.New("再考：要求区間誤り")
+
 	// ErrUnknownCompany は、指定された会社IDが未知の場合のエラーです。
 	ErrUnknownCompany = errors.New("未知の会社ID")
 

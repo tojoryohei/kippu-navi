@@ -564,6 +564,11 @@ func sectionsForPath(sourceNames, printNames []string, g graph.Graph, selected m
 		} else if segment.end == len(sourceNames)-1 {
 			mode = "to"
 		}
+		// 東京〜上野だけの新幹線は、最短経路へ復元済みの駅列を印字する。
+		// 乗換駅も必要なので、この区間を路線名だけの置換に潰さない。
+		if mode != "passing" && hasTokyoUenoVia(sourceNames[segment.start:segment.end+1]) {
+			continue
+		}
 		var codes []string
 		if mode != "passing" {
 			route := viaData.article70Routes.GetRoute(mode, startName, endName)
@@ -603,7 +608,12 @@ func sectionsForPath(sourceNames, printNames []string, g graph.Graph, selected m
 		}
 		for i := start; i < end; i++ {
 			pair := stationPair(printNames[i], printNames[i+1])
-			if i == start && !sections.omitted[pair] {
+			// 通過の省略でも、利用する新幹線とその接続駅は残す。
+			if pair == stationPair("東京", "上野") {
+				continue
+			}
+			afterShinkansen := i > start && stationPair(printNames[i-1], printNames[i]) == stationPair("東京", "上野")
+			if (i == start || afterShinkansen) && !sections.omitted[pair] {
 				sections.article70Entry[pair] = true
 			}
 			sections.omitted[pair] = true
@@ -618,34 +628,16 @@ func sectionsForPath(sourceNames, printNames []string, g graph.Graph, selected m
 	return sections
 }
 
-type boldViaSegment struct{ start, end int }
-
-func boldViaSegments(names []string, g graph.Graph) []boldViaSegment {
-	var segments []boldViaSegment
-	start := -1
-	for i := 0; i < len(names)-1; i++ {
-		from, okFrom := g.GetID(names[i])
-		to, okTo := g.GetID(names[i+1])
-		bold := false
-		if okFrom && okTo {
-			for _, edge := range g.GetEdges(from) {
-				if edge.ToID == to && edge.IsBoldLineArea {
-					bold = true
-					break
-				}
-			}
+func boldViaSegments(names []string, g graph.Graph) []article70Segment {
+	path := make([]int, len(names))
+	for i, name := range names {
+		id, ok := g.GetID(name)
+		if !ok {
+			id = -1
 		}
-		if bold && start < 0 {
-			start = i
-		} else if !bold && start >= 0 {
-			segments = append(segments, boldViaSegment{start, i})
-			start = -1
-		}
+		path[i] = id
 	}
-	if start >= 0 {
-		segments = append(segments, boldViaSegment{start, len(names) - 1})
-	}
-	return segments
+	return article70Segments(path, g)
 }
 
 // 折り返し特例の片道区間（分岐駅から新幹線との接続駅まで）。
@@ -762,6 +754,10 @@ func getFareViaForResult(path []ViaStep, finalPath []int, g graph.StationProvide
 		return getFareVia(path, true, true, nil)
 	}
 
+	sourceNames := viaStepNames(path)
+	if sectionGraph != nil {
+		path = article70FareViaPath(path, sectionGraph)
+	}
 	start, end := 0, len(path)-1
 	startZoneName := g.GetName(finalPath[0])
 	endZoneName := g.GetName(finalPath[len(finalPath)-1])
@@ -775,7 +771,6 @@ func getFareViaForResult(path []ViaStep, finalPath []int, g graph.StationProvide
 			end = fareViaBoundary(path, zone.Stations, endBoundary, false)
 		}
 	}
-	sourceNames := viaStepNames(path)
 	osakaStart, osakaEnd := osakaShinOsakaViaBounds(sourceNames, finalPath, g)
 	if osakaStart > start {
 		start = osakaStart

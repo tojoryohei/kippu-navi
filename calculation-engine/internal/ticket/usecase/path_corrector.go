@@ -13,7 +13,7 @@ type PathCorrector interface {
 // 新幹線展開直前の経路を返す内部インターフェースです。
 // 有効日数の大都市近郊区間判定では、後段の新幹線展開後の経路を使いません。
 type preShinkansenPathCorrector interface {
-	correctWithPreShinkansenPath(path []int, g graph.Graph) (corrected []int, before []int, found bool, err error)
+	correctWithPreShinkansenPath(path, source []int, g graph.Graph) (corrected []int, before []int, found bool, err error)
 }
 
 // PipelineCorrector は複数の Corrector を順番に適用します。
@@ -26,10 +26,14 @@ func NewPipelineCorrector(correctors ...PathCorrector) *PipelineCorrector {
 }
 
 func (p *PipelineCorrector) Correct(path []int, g graph.Graph) ([]int, error) {
+	return p.correctWithSource(path, path, g)
+}
+
+func (p *PipelineCorrector) correctWithSource(path, source []int, g graph.Graph) ([]int, error) {
 	currentPath := path
 	var err error
 	for _, c := range p.correctors {
-		currentPath, err = c.Correct(currentPath, g)
+		currentPath, err = correctWithSourcePath(c, currentPath, source, g)
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +44,7 @@ func (p *PipelineCorrector) Correct(path []int, g graph.Graph) ([]int, error) {
 // correctWithPreShinkansenPath はパイプラインを実行しながら、
 // ShinkansenOverlapCorrectorの直前の経路を記録します。
 // 同じ処理を含む入れ子のパイプラインにも対応します。
-func (p *PipelineCorrector) correctWithPreShinkansenPath(path []int, g graph.Graph) (corrected []int, before []int, found bool, err error) {
+func (p *PipelineCorrector) correctWithPreShinkansenPath(path, source []int, g graph.Graph) (corrected []int, before []int, found bool, err error) {
 	currentPath := append([]int(nil), path...)
 	before = append([]int(nil), path...)
 
@@ -48,7 +52,7 @@ func (p *PipelineCorrector) correctWithPreShinkansenPath(path []int, g graph.Gra
 		if traced, ok := c.(preShinkansenPathCorrector); ok {
 			var childBefore []int
 			var childFound bool
-			currentPath, childBefore, childFound, err = traced.correctWithPreShinkansenPath(currentPath, g)
+			currentPath, childBefore, childFound, err = traced.correctWithPreShinkansenPath(currentPath, source, g)
 			if err != nil {
 				return nil, nil, false, err
 			}
@@ -63,7 +67,7 @@ func (p *PipelineCorrector) correctWithPreShinkansenPath(path []int, g graph.Gra
 			before = append([]int(nil), currentPath...)
 			found = true
 		}
-		currentPath, err = c.Correct(currentPath, g)
+		currentPath, err = correctWithSourcePath(c, currentPath, source, g)
 		if err != nil {
 			return nil, nil, false, err
 		}
@@ -72,9 +76,19 @@ func (p *PipelineCorrector) correctWithPreShinkansenPath(path []int, g graph.Gra
 	return currentPath, before, found, nil
 }
 
+// 第70条補正では、新幹線の在来線展開前の要求区間も検証する。
+func correctWithSourcePath(c PathCorrector, path, source []int, g graph.Graph) ([]int, error) {
+	if sourceAware, ok := c.(interface {
+		correctWithSource(path, source []int, g graph.Graph) ([]int, error)
+	}); ok {
+		return sourceAware.correctWithSource(path, source, g)
+	}
+	return c.Correct(path, g)
+}
+
 // CorrectWithPreShinkansenPath は経路補正結果と、新幹線展開直前の経路を返します。
 func (p *PipelineCorrector) CorrectWithPreShinkansenPath(path []int, g graph.Graph) ([]int, []int, error) {
-	corrected, before, _, err := p.correctWithPreShinkansenPath(path, g)
+	corrected, before, _, err := p.correctWithPreShinkansenPath(path, path, g)
 	return corrected, before, err
 }
 
@@ -662,7 +676,7 @@ func correctPathForModeWithPreShinkansenPath(path []int, g graph.Graph, correcto
 	}
 
 	if traced, ok := corrector.(preShinkansenPathCorrector); ok {
-		corrected, before, _, err = traced.correctWithPreShinkansenPath(path, g)
+		corrected, before, _, err = traced.correctWithPreShinkansenPath(path, path, g)
 		return corrected, before, err
 	}
 
