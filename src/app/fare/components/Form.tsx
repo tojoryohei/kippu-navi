@@ -33,6 +33,7 @@ interface FormValues extends IFormInput {
 }
 
 interface FormProps {
+    isPreview?: boolean;
     initialMaxSplits?: number;
     initialNoSplitStations?: string[];
     pathname: string;
@@ -116,6 +117,7 @@ const createApiRequestBody = (data: FormValues) => {
 };
 
 export default function Form({
+    isPreview = false,
     initialRoute,
     initialMaxSplits = 0,
     initialNoSplitStations = [],
@@ -183,7 +185,7 @@ export default function Form({
         }
     }, [clearErrors, getValues, trigger]);
 
-    const updateUrlAndState = useCallback((nextPath: string, nextSearchType: SearchType) => {
+    const updateUrlAndState = useCallback((nextPath: string, nextSearchType: SearchType, overrideNoSplitStations?: string[]) => {
         setValue("searchType", nextSearchType);
         refreshValidationForTypeChange();
 
@@ -207,9 +209,10 @@ export default function Form({
         }
 
         if (isRouteSplit) {
-            const limit = getValues("maxSplits");
+            const limit = getValues("maxSplits") || 0;
             if (limit > 0) newParams.set("maxSplits", String(limit));
-            for (const name of getValues("noSplitStations")) newParams.append("noSplitStation", name);
+            const noSplitStations = overrideNoSplitStations ?? getValues("noSplitStations") ?? [];
+            for (const name of noSplitStations) newParams.append("noSplitStation", name);
         }
         const queryString = newParams.toString();
         const newUrl = queryString ? `${nextPath}?${queryString}` : nextPath;
@@ -244,7 +247,9 @@ export default function Form({
         setServerTime(null);
 
         // 検索実行時に URL にクエリパラメータ route / month を付与・更新
-        updateUrlAndState(pathname, data.searchType);
+        // data.noSplitStations を明示的に渡すことで、RouteSplitOptions の useEffect が
+        // setValue した後でも getValues が古い値を返す競合状態を回避する。
+        updateUrlAndState(pathname, data.searchType, data.noSplitStations ?? []);
 
         const routeStations = [
             data.startStation?.name,
@@ -318,7 +323,7 @@ export default function Form({
                     stationNames,
                     calculationMode: data.calculationMode,
                     maxSplits: data.maxSplits,
-                    noSplitStations: data.noSplitStations,
+                    noSplitStations: data.noSplitStations || [],
                     months,
                     isIc: false,
                     requestId: calcId
@@ -335,7 +340,7 @@ export default function Form({
                     fullPath: apiRequestBody.fullPath,
                     calculationMode: data.calculationMode,
                     maxSplits: data.maxSplits,
-                    noSplitStations: data.noSplitStations,
+                    noSplitStations: data.noSplitStations || [],
                     requestId: calcId
                 }
             });
@@ -344,7 +349,7 @@ export default function Form({
     }, [pathname, updateUrlAndState, isRouteSplit]);
 
     useEffect(() => {
-        if (typeof window === "undefined") return;
+        if (isPreview || typeof window === "undefined") return;
 
         const initWorker = () => {
             if (workerRef.current) {
@@ -404,11 +409,12 @@ export default function Form({
             }
             isWasmReadyRef.current = false;
         };
-    }, []);
+    }, [isPreview]);
 
     const initialAutoExecutedRef = useRef(false);
 
     // 初期ルート/パラメータによるフォーム状態の復元
+    // エンジン起動時には再実行しない。操作開始後の入力を初期値で上書きしないため。
     useEffect(() => {
         const routeParam = initialRoute;
         const fromParam = initialFrom;
@@ -479,14 +485,14 @@ export default function Form({
         if (startStation && initialSegments[0].destinationStation) {
             if (!initialAutoExecutedRef.current) {
                 initialAutoExecutedRef.current = true;
-                if (currentSearchType === "ticket" || isWasmReady) {
+                if (currentSearchType === "ticket" || isWasmReadyRef.current) {
                     setTimeout(() => {
                         handleSubmit(onSubmit)();
                     }, 150);
                 }
             }
         }
-    }, [pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, onSubmit, isWasmReady]);
+    }, [pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, onSubmit]);
 
     // WASMが後から初期化完了(isWasmReady=true)したタイミングで、初期アクセス時自動計算をフォールバック実行
     useEffect(() => {

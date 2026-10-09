@@ -11,9 +11,12 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "node scripts/preview-pwa.mjs",
+    // ハッシュ付きエンジン資材とPWA保存一覧まで生成してから配信する。
+    command: "npm run build && node scripts/preview-pwa.mjs",
     url: "http://localhost:4321",
-    reuseExistingServer: !process.env.CI,
+    // 別ビルドを配信する既存サーバーで誤って検証しない。
+    reuseExistingServer: false,
+    timeout: 180_000,
     env: { ASTRO_TELEMETRY_DISABLED: "1", ASTRO_PREVIEW_BACKGROUND: "1" },
   },
 });

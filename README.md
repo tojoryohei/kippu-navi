@@ -71,11 +71,12 @@ npm run generate:ticket-fares
 npm run typecheck
 npm run lint
 npm run knip
-npm run build
 npx playwright install chromium
 npm run test:e2e
 npm start
 ```
+
+`npm run test:e2e`（または`npx playwright test`）は、テストサーバー起動前に`npm run build`を実行し、ハッシュ付きエンジン資材とPWA保存一覧を生成します。ポート4321を使用中のプレビューサーバーは停止してから実行してください。
 
 ブラウザ回帰テストは公開グラフから生成した本物のWASMを使い、APIの探索結果を固定します。非公開データや稼働中のAPIは不要です。インストール済みChromeを使う場合は`PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`を実行できます。
 
