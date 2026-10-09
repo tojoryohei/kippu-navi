@@ -65,6 +65,10 @@ jobs:
           go-version-file: calculation-engine/go.mod
           cache: false
 
+      - name: Setup Takumi Guard for Go
+        if: github.actor != 'dependabot[bot]'
+        uses: flatt-security/setup-takumi-guard-golang@v1
+
       - name: Install dependencies
         if: github.actor != 'dependabot[bot]'
         run: npm ci
