@@ -25,6 +25,17 @@ JR線の運賃、定期券運賃、最安分割きっぷを計算するWebアプ
 
 Node.js 24以上、および`calculation-engine/go.mod`に指定されたGoが必要です。
 
+初回はGoの依存取得にTakumiGuardを設定します（認証不要のブロック機能を使用）。この設定は端末のGo設定に永続保存され、ほかのGoプロジェクトにも適用されます。
+
+```sh
+go env -w GOPROXY=https://golang.flatt.tech
+go env GOPROXY
+```
+
+`https://golang.flatt.tech` と表示されることを確認してください。シェルで`GOPROXY`を設定している場合はそちらが優先されるため、同じURLに揃えてください。保護を迂回しないように、`,direct`や`|direct`などのフォールバックは追加しません。`go get`、`go mod download`、ビルド時の依存取得に適用されます。取得済みのモジュールキャッシュは再検査されません。
+
+npmはリポジトリの`.npmrc`、GoのCI・デプロイは公式Action、APIのDockerビルドはビルドステージの`GOPROXY`で設定しています。詳細は[TakumiGuardのGo向け公式手順](https://shisho.dev/docs/t/guard/quickstart/golang/)を参照してください。
+
 ```sh
 npm ci
 npm run dev:api

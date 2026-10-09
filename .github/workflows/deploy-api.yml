@@ -49,6 +49,9 @@ jobs:
         with:
           go-version-file: './calculation-engine/go.mod'
 
+      - name: Setup Takumi Guard for Go
+        uses: flatt-security/setup-takumi-guard-golang@v1
+
       - name: Login to Artifact Registry
         uses: docker/login-action@v4
         with:

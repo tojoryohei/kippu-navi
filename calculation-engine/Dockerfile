@@ -1,6 +1,7 @@
 # 1. ビルド環境 (コンパイル用)
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
+ENV GOPROXY=https://golang.flatt.tech
 
 # 依存関係のキャッシュを効かせるため、先にgo.modとgo.sumをコピー
 COPY go.mod go.sum* ./
