@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.2.0...kippu-navi-v4.3.0) (2026-10-09)
+
+
+### Features
+
+* セキュリティヘッダーをアプリ側で管理する ([#808](https://github.com/tojoryohei/kippu-navi/issues/808)) ([c64f42d](https://github.com/tojoryohei/kippu-navi/commit/c64f42d11c60b4e16f3f0aa616b96ba49c1dab58))
+
 ## [4.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.1.1...kippu-navi-v4.2.0) (2026-10-08)
 
 
