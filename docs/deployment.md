@@ -6,6 +6,23 @@ GitHub Actionsの`deploy-frontend.yml`がフロントエンドを配信します
 
 Go APIのCloud Runデプロイは`deploy-api.yml`が行います。pushによるデプロイでは同一コミットのCloudflareデプロイ成功を待ってからCloud Runを更新するため、認証切替時も旧Workerとの競合は発生しません。`workflow_dispatch`でAPIだけを手動デプロイする場合は、対応するWorkerが反映済みであることを先に確認します。
 
+## セキュリティヘッダー
+
+Astroは`output: "static"`のため、HTML・JS・WASMなどの静的レスポンスのヘッダーは`public/_headers`で管理します。ビルド時に`dist/_headers`へコピーされ、Cloudflare Static Assetsが適用します。Astro middlewareやHTMLのmetaタグではHTTPレスポンスヘッダーの代替になりません。Workerが生成する`/api/*`、`/ingest/*`、`/monitoring`、`/manifest.webmanifest`のレスポンスにはこの設定は適用されません。
+
+現行ポリシーは互換性を優先した移行用CSPであり、厳格なXSS対策が完成した状態ではありません。
+
+- `script-src`の`unsafe-inline`はAstroの生成するインラインコードなどのために維持しています。任意のインラインスクリプトも許可するため、XSS防御には限界があります。
+- `unsafe-eval`はAdSenseの公式CSP例にも含まれるため維持しています。WASMだけなら`wasm-unsafe-eval`で足りますが、`unsafe-eval`がWASMも許可するため重複指定を除去しています。
+- GoogleはAdSenseのドメイン列挙方式を保証していません。nonceと`strict-dynamic`への移行には、リクエストごとに予測不能なnonceを発行し、HTMLのスクリプトとヘッダーを一致させる配信設計、およびAstro ClientRouterの遷移検証が必要です。固定nonceをビルド成果物へ埋め込んではいけません。
+- フォントは`@fontsource-variable/noto-sans-jp`で自己配信しています。外部Google Fonts、Firebase、旧`assets.kippu-navi.com`への直接通信は現在のソースにないため許可を削除しています。広告が動的に使う通信先・画像・スタイル、および従来のPostHog許可は、実通信を検証するまで維持しています。
+- `object-src 'none'`、`base-uri 'none'`、`form-action 'self'`で埋め込みオブジェクト・baseタグ・外部フォーム送信を制限します。問い合わせ先のGoogle Formsは別オリジンのiframe内で動作するため、親文書の`form-action`の対象ではありません。
+- `Permissions-Policy`、`Referrer-Policy`、同一オリジンの埋め込みのみ許可する`frame-ancestors`と`X-Frame-Options`を維持し、MIME sniffingを防ぐ`X-Content-Type-Options: nosniff`を追加しています。
+
+移行時は、まずステージングでレスポンスヘッダー、広告、GA4、PostHog、問い合わせフォーム、計算用WASM、PWAとページ遷移を確認してください。Cloudflareの既存レスポンスヘッダールールが残っていると上書き・重複によって新しい設定を正しく検証できないため、対象環境のルールも確認します。本番デプロイ後にアプリのヘッダーが返ることを確認してから旧ルールを無効化し、再度確認してください。`astro dev`や通常のpreviewは`_headers`を適用しないため、そこで表示できるだけでは本番互換性の確認になりません。
+
+参考: [Cloudflare Static Assetsのヘッダー](https://developers.cloudflare.com/workers/static-assets/headers/)、[AdSenseとCSP](https://support.google.com/adsense/answer/16283098?hl=en)、[MDN script-src](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/script-src)。
+
 ## Cloud Run認証の初期設定
 
 Cloud RunはIAM認証を必須とし、Cloudflare Workerだけに`roles/run.invoker`を付与します。API実行用サービスアカウントにはプロジェクトロールを付与しません。以下は初回のみ、Google Cloud管理権限を持つ端末で実行します。`GITHUB_DEPLOY_SA`には`WIF_PROVIDER`から利用しているGitHub Actions用サービスアカウントを指定してください。
