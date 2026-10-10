@@ -1,3 +1,4 @@
+import { StationMenuList } from "@/components/StationMenuList";
 import Select, {
   components,
   type OptionProps,
@@ -129,6 +130,7 @@ const SelectStation = ({
           DropdownIndicator: () => null,
           IndicatorSeparator: () => null,
           Option: CustomOption,
+          MenuList: StationMenuList,
           Input: CustomInput,
         }}
       />
