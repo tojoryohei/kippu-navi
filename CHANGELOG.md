@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.3.0...kippu-navi-v4.3.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* 計算フォームを初期HTMLに含めて表示時のレイアウト移動を防止 ([#811](https://github.com/tojoryohei/kippu-navi/issues/811)) ([83dad5f](https://github.com/tojoryohei/kippu-navi/commit/83dad5f8fea99d4860ac2ff34a305f0fa5502b6f))
+
 ## [4.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.2.0...kippu-navi-v4.3.0) (2026-10-09)
 
 
