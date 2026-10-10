@@ -79,7 +79,6 @@ jobs:
       - uses: flatt-security/setup-takumi-guard-npm@v1
       - run: npm ci
       - run: npm run typecheck
-      - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v7

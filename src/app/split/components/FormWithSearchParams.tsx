@@ -1,3 +1,4 @@
+import CalculatorHydration from "@/components/CalculatorHydration";
 import Form from "@/app/split/components/Form";
 import CalculatorErrorBoundary from "@/components/CalculatorErrorBoundary";
 import { useCalculatorLocation } from "@/lib/calculator-location";
@@ -5,8 +6,7 @@ import type { SearchType } from "@/app/types";
 
 export default function FormWithSearchParams({ pathname }: { pathname: string }) {
     const location = useCalculatorLocation();
-    if (location === null) return <p role="status">計算画面を読み込んでいます</p>;
-    const url = new URL(location, "https://kippu-navi.com");
+    const url = new URL(location ?? pathname, "https://kippu-navi.com");
     if (url.pathname.split("/")[1] !== pathname.split("/")[1]) return null;
     if (!url.pathname.startsWith("/split/auto/")) return null;
     const activePathname = url.pathname;
@@ -20,7 +20,9 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
     const initialMaxSplits = activePathname.endsWith("/ic-pass") ? 1 : parsedMaxSplitsValue;
     return (
         <CalculatorErrorBoundary key={location}>
+            <CalculatorHydration hydrated={location !== null}>
             <Form
+                isPreview={location === null}
                 pathname={activePathname}
                 initialFrom={searchParams.get("from") || undefined}
                 initialTo={searchParams.get("to") || undefined}
@@ -28,6 +30,7 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
                 initialForbiddenStations={searchParams.has("noSplitStation") ? searchParams.getAll("noSplitStation") : undefined}
                 initialMaxSplits={initialMaxSplits}
             />
+            </CalculatorHydration>
         </CalculatorErrorBoundary>
     );
 }

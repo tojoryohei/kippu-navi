@@ -1,3 +1,4 @@
+import CalculatorHydration from "@/components/CalculatorHydration";
 import Form from "@/app/fare/components/Form";
 import CalculatorErrorBoundary from "@/components/CalculatorErrorBoundary";
 import { useCalculatorLocation } from "@/lib/calculator-location";
@@ -5,8 +6,7 @@ import type { SearchType, CalculationMode } from "@/app/types";
 
 export default function FormWithSearchParams({ pathname }: { pathname: string }) {
     const location = useCalculatorLocation();
-    if (location === null) return <p role="status">計算画面を読み込んでいます</p>;
-    const url = new URL(location, "https://kippu-navi.com");
+    const url = new URL(location ?? pathname, "https://kippu-navi.com");
     const isRouteSplit = pathname.startsWith("/split/route/");
     if (isRouteSplit ? !["/split/route/ticket", "/split/route/pass"].includes(url.pathname) : !url.pathname.startsWith("/fare/")) return null;
     if (url.pathname.split("/")[1] !== pathname.split("/")[1]) return null;
@@ -20,7 +20,9 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
     const initialSearchType: SearchType = (activePathname === "/split/route/ticket" || activePathname.endsWith("/ticket")) ? "ticket" : month === "1" ? "pass1" : month === "3" ? "pass3" : "pass6";
     return (
         <CalculatorErrorBoundary key={location}>
+            <CalculatorHydration hydrated={location !== null}>
             <Form
+                isPreview={location === null}
                 pathname={activePathname}
                 initialMaxSplits={/^(?:[0-9]|10)$/.test(searchParams.get("maxSplits") ?? "") ? Number(searchParams.get("maxSplits")) : 0}
                 initialNoSplitStations={[...new Set(searchParams.getAll("noSplitStation"))]}
@@ -30,6 +32,7 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
                 initialRoute={searchParams.get("route") || undefined}
                 initialCalculationMode={initialCalculationMode}
             />
+            </CalculatorHydration>
         </CalculatorErrorBoundary>
     );
 }

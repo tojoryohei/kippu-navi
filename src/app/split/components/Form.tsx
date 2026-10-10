@@ -36,6 +36,7 @@ interface ExtendedSplitFormInput {
 }
 
 interface SplitFormProps {
+    isPreview?: boolean;
     pathname: string;
     initialFrom?: string;
     initialTo?: string;
@@ -128,6 +129,7 @@ function createApiHttpError(status: number, capability: "ticket" | "pass") {
 }
 
 export default function SplitForm({
+    isPreview = false,
     pathname,
     initialFrom,
     initialTo,
@@ -406,7 +408,7 @@ export default function SplitForm({
     }, [pathname, isIcPass]);
 
     useEffect(() => {
-        if (typeof window === "undefined") return;
+        if (isPreview || typeof window === "undefined") return;
 
         const initWorker = () => {
             if (workerRef.current) {
@@ -444,7 +446,7 @@ export default function SplitForm({
                 workerRef.current = null;
             }
         };
-    }, []);
+    }, [isPreview]);
 
     const initialAutoExecutedRef = useRef(false);
     const initialForbiddenStationsKey = initialForbiddenStations?.join("\u0000") ?? "";
