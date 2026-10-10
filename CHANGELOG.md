@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.3.1...kippu-navi-v4.3.2) (2026-10-10)
+
+
+### Performance Improvements
+
+* 駅候補を仮想化して入力時の描画負荷を軽減 ([#813](https://github.com/tojoryohei/kippu-navi/issues/813)) ([83fa39d](https://github.com/tojoryohei/kippu-navi/commit/83fa39d454e11d9f275aaf75dea6f59aa6c95260))
+
 ## [4.3.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.3.0...kippu-navi-v4.3.1) (2026-10-10)
 
 
