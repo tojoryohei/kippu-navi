@@ -254,3 +254,16 @@ body {
 .line-select__control--is-disabled .line-select__placeholder {
   color: hsl(0deg 0% 50%);
 }
+
+/* 仮想化した候補の配置を画面遷移後も維持する。 */
+.station-virtual-space {
+  position: relative;
+  width: 100%;
+}
+
+.station-virtual-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
