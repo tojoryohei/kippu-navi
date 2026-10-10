@@ -132,20 +132,45 @@ test("読み上げ対象を画面外でも保持し、ホイール操作で戻�
   await expect(page.locator(`[id="${lastActive}"]`)).toBeInViewport();
 });
 
-test("タッチ操作で候補リストをスクロールできる", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: true });
-  await page.goto("/fare/ticket");
-  await expect(page.locator('[data-calculator-ready="true"]')).toBeVisible();
-  await page.getByRole("combobox").first().fill("し");
-  const menu = page.locator(".station-select__menu-list");
-  const rect = await menu.boundingBox();
-  await cdp.send("Input.synthesizeScrollGesture", {
-    x: Math.round(rect!.x + rect!.width / 2),
-    y: Math.round(rect!.y + rect!.height / 2),
-    yDistance: -200,
-    gestureSourceType: "touch",
+test.describe("タッチ環境の駅候補", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+
+  test("タッチ操作で候補リストをスクロールできる", async ({ page }) => {
+    await page.goto("/fare/ticket");
+    await expect(page.locator('[data-calculator-ready="true"]')).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    await page.getByRole("combobox").first().fill("し");
+    const menu = page.locator(".station-select__menu-list");
+    await expect(menu).toBeVisible();
+    await menu.scrollIntoViewIfNeeded();
+    // レイアウト確定とコンポジタへの反映を待ってから座標を取得する。
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    const rect = (await menu.boundingBox())!;
+    const x = Math.round(rect.x + rect.width / 2);
+    const startY = Math.floor(Math.min(rect.y + rect.height, 844) - 20);
+    const endY = Math.ceil(Math.max(rect.y, 0) + 20);
+    expect(startY - endY).toBeGreaterThan(100);
+    expect(await menu.evaluate((node, point) => node.contains(document.elementFromPoint(point.x, point.y)), { x, y: startY })).toBe(true);
+
+    expect(await menu.evaluate(node => node.scrollTop)).toBe(0);
+
+    // 一括の合成スクロールではなく、押下から移動・離すまで実際のタッチ入力を送る。
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y: startY }] });
+    try {
+      for (let step = 1; step <= 10; step++) {
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [{ x, y: Math.round(startY + (endY - startY) * step / 10) }],
+        });
+        // 各移動を別フレームで処理し、タッチスワイプとして認識させる。
+        await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
+      }
+    } finally {
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    }
+    await expect.poll(() => menu.evaluate(node => node.scrollTop)).toBeGreaterThan(50);
+    await expect(page.getByRole("option").first()).toBeAttached();
+    expect(await page.getByRole("option").count()).toBeLessThan(25);
   });
-  await expect.poll(() => menu.evaluate(node => node.scrollTop)).toBeGreaterThan(50);
 });
