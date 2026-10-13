@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.4.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.3.2...kippu-navi-v4.4.0) (2026-10-13)
+
+
+### Features
+
+* 更新履歴にPWA状態表示と即時更新を追加 ([#820](https://github.com/tojoryohei/kippu-navi/issues/820)) ([433ff96](https://github.com/tojoryohei/kippu-navi/commit/433ff9620e059a2f75ea328d31baabdf670ebb12))
+
 ## [4.3.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.3.1...kippu-navi-v4.3.2) (2026-10-10)
 
 
