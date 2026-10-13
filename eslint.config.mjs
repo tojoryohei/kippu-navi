@@ -63,6 +63,13 @@ export default [
         },
     },
     {
+        files: ["src/**/*.{ts,tsx,js,jsx,astro}"],
+        rules: {
+            "no-debugger": "error",
+            "no-console": ["error", { allow: ["warn", "error"] }],
+        },
+    },
+    {
         files: ["scripts/**/*.mjs"],
         rules: {
             // ビルド成果物のパスはリポジトリ内で生成・検証した値を使用する。
