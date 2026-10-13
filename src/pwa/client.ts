@@ -14,8 +14,8 @@ async function updateOfflineAssets() {
   try {
     const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' });
     await registration.update();
-  } catch (error) {
-    console.debug('[PWA] Preparation deferred', error);
+  } catch {
+    // 通信・容量制限で準備できない場合は、次のオンライン起動で再試行する。
   } finally { updating = false; }
 }
 document.addEventListener('astro:page-load', () => { updateManifest(); void updateOfflineAssets(); });

@@ -26,7 +26,6 @@ self.addEventListener('install', event => {
       }));
       const failure = results.find(result => result.status === 'rejected');
       if (failure) throw failure.reason;
-      console.debug('[PWA] Prepared', RELEASE.version, RELEASE.bytes);
     } catch (error) { await caches.delete(CACHE); throw error; }
     // skipWaitingしない。入力・計算中のページには旧Workerを使わせる。
   })());
@@ -34,7 +33,6 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     for (const key of await caches.keys()) if (key.startsWith(PREFIX) && key !== CACHE) await caches.delete(key);
-    console.debug('[PWA] Active', RELEASE.version);
     // 初回もclaimしない。保存した版と異なる、開いたままのページを取り込まない。
   })());
 });
