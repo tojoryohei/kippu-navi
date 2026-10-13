@@ -4,30 +4,56 @@ const PREFIX = 'kippu-pwa-';
 const CACHE = PREFIX + RELEASE.version;
 const assets = new Map(RELEASE.assets.map(asset => [asset.url, asset]));
 const digest = async bytes => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('');
+function errorDetail(error, stage, asset) {
+  return error?.pwaDetail || { stage, asset, name: error?.name || 'Error', message: error?.message || String(error) };
+}
+async function operation(stage, asset, run) {
+  try { return await run(); } catch (error) {
+    const failure = new Error(error?.message || String(error));
+    failure.pwaDetail = errorDetail(error, stage, asset);
+    throw failure;
+  }
+}
+async function notifyFailure(error) {
+  try {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clients) client.postMessage({ type: 'PWA_FAILURE', detail: errorDetail(error, '保存') });
+  } catch { /* 通知先がない場合も失敗したインストールは終了させる。 */ }
+}
 async function checkedFetch(asset) {
-  const response = await fetch(asset.url, { cache: 'no-store', redirect: 'error', headers: { 'X-Kippu-Exact-Asset': '1' } });
-  if (!response.ok) throw new Error(`Asset unavailable: ${asset.url}`);
-  if (await digest(await response.clone().arrayBuffer()) !== asset.sha256) throw new Error(`Asset version mismatch: ${asset.url}`);
+  const response = await operation('資材取得', asset.url, async () => {
+    const response = await fetch(asset.url, { cache: 'no-store', redirect: 'error', headers: { 'X-Kippu-Exact-Asset': '1' } });
+    if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    return response;
+  });
+  await operation('整合性検証', asset.url, async () => {
+    if (await digest(await response.clone().arrayBuffer()) !== asset.sha256) throw new Error('SHA-256が一致しません');
+  });
   return response;
 }
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
-    const cache = await caches.open(CACHE);
     try {
+      const cache = await operation('保存領域の準備', undefined, () => caches.open(CACHE));
       // 全Promiseを待ってから失敗キャッシュを削除し、遅い書き込みによる復活を防ぐ。
       let next = 0;
       const results = await Promise.allSettled(Array.from({ length: 4 }, async () => {
         while (next < RELEASE.assets.length) {
           const asset = RELEASE.assets[next++];
-          const prior = await cache.match(asset.url);
+          const prior = await operation('保存済み資材の確認', asset.url, () => cache.match(asset.url));
           if (prior && await digest(await prior.clone().arrayBuffer()) === asset.sha256) continue;
-          await cache.put(asset.url, await checkedFetch(asset));
+          const response = await checkedFetch(asset);
+          await operation('端末への保存', asset.url, () => cache.put(asset.url, response));
         }
       }));
       const failure = results.find(result => result.status === 'rejected');
       if (failure) throw failure.reason;
-    } catch (error) { await caches.delete(CACHE); throw error; }
-    // skipWaitingしない。入力・計算中のページには旧Workerを使わせる。
+    } catch (error) {
+      await notifyFailure(error);
+      try { await caches.delete(CACHE); } catch { /* 元の失敗理由を保持する。 */ }
+      throw error;
+    }
+    // 自動ではskipWaitingしない。更新履歴の明示操作だけで適用する。
   })());
 });
 self.addEventListener('activate', event => {
@@ -58,6 +84,44 @@ self.addEventListener('fetch', event => {
     } catch {
       // 取得できない旧版を別の版で補わない。次のオンライン起動で再準備する。
       return new Response(null, { status: 503, statusText: 'Offline asset unavailable' });
+    }
+  })());
+});
+
+// 保存完了した待機版だけを、更新履歴ページから明示的に有効化する。
+async function releaseStatus() {
+  const cache = await caches.open(CACHE);
+  const present = await Promise.all(RELEASE.assets.map(asset => cache.match(asset.url)));
+  return { version: RELEASE.version, appVersion: RELEASE.appVersion, complete: present.every(Boolean) };
+}
+self.addEventListener('message', event => {
+  if (event.origin !== self.location.origin) return;
+  const port = event.ports?.[0];
+  const source = event.source;
+  if (!port || !source?.url || new URL(source.url).origin !== self.location.origin) return;
+  event.waitUntil((async () => {
+    try {
+      if (event.data?.type === 'PWA_STATUS') {
+        port.postMessage(await releaseStatus());
+      } else if (event.data?.type === 'PWA_APPLY_UPDATE') {
+        if (new URL(source.url).pathname !== '/changelog' || self.registration.waiting?.state !== 'installed') {
+          port.postMessage({ ok: false, reason: 'not-ready' });
+          return;
+        }
+        const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        if (windows.some(client => client.id !== source.id)) {
+          port.postMessage({ ok: false, reason: 'other-windows' });
+          return;
+        }
+        if (!(await releaseStatus()).complete) {
+          port.postMessage({ ok: false, reason: 'incomplete' });
+          return;
+        }
+        await self.skipWaiting();
+        port.postMessage({ ok: true });
+      }
+    } catch (error) {
+      port.postMessage({ ok: false, reason: 'failed', detail: errorDetail(error, event.data?.type === 'PWA_STATUS' ? '状態取得' : '更新の適用') });
     }
   })());
 });

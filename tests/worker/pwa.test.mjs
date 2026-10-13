@@ -35,12 +35,14 @@ test('exact engine requests never substitute the current deployment', async () =
 
 const source = readFileSync('src/pwa/service-worker.js', 'utf8');
 const sha = body => createHash('sha256').update(body).digest('hex');
-function worker({ fail = '', mismatch = '', quota = false } = {}) {
+function worker({ fail = '', mismatch = '', quota = false, windows = [{ id: 'current' }] } = {}) {
   const events = new Map();
   const stores = new Map([['kippu-pwa-old', new Map()], ['unrelated', new Map()]]);
   const bodies = new Map([['/', 'html-v1'], ['/engine/v1/main.wasm', 'wasm-v1'], ['/_astro/font.woff2', 'font-v1'], ['/deployment.json', '{"enginePath":"/engine/v1"}']]);
   const requests = [];
+  const notifications = [];
   let offline = false;
+  let applied = 0;
   const caches = {
     keys: async () => [...stores.keys()], delete: async key => stores.delete(key),
     open: async key => {
@@ -54,7 +56,7 @@ function worker({ fail = '', mismatch = '', quota = false } = {}) {
   };
   const context = vm.createContext({
     RELEASE: { version: 'v1', assets: [...bodies].map(([url, body]) => ({ url, sha256: sha(body), size: body.length })) },
-    self: { location: { origin }, addEventListener: (name, handler) => { events.set(name, handler); } },
+    self: { location: { origin }, registration: { waiting: { state: 'installed' } }, clients: { matchAll: async () => windows.map(client => ({ ...client, postMessage: message => notifications.push(message) })) }, skipWaiting: async () => { applied++; }, addEventListener: (name, handler) => { events.set(name, handler); } },
     crypto: webcrypto, caches, Response, URL, console: { debug() {} },
     fetch: async url => {
       requests.push(url);
@@ -64,7 +66,13 @@ function worker({ fail = '', mismatch = '', quota = false } = {}) {
   });
   vm.runInContext(source, context);
   const run = async name => { let promise; events.get(name)({ waitUntil(p) { promise = p; } }); await promise; };
-  return { stores, requests, run, setOffline() { offline = true; }, fetch(path, method = 'GET') {
+  return { stores, requests, notifications, run, get applied() { return applied; }, async message(type, path = '/changelog', messageOrigin = origin, sourceOrigin = origin) {
+    let promise;
+    let reply;
+    events.get('message')({ origin: messageOrigin, data: { type }, source: { id: 'current', url: sourceOrigin + path }, ports: [{ postMessage(value) { reply = value; } }], waitUntil(value) { promise = value; } });
+    await promise;
+    return reply;
+  }, setOffline() { offline = true; }, fetch(path, method = 'GET') {
     let response;
     events.get("fetch")({ request: new Request(new URL(path, origin), { method }), respondWith(p) { response = Promise.resolve(p); } });
     return response;
@@ -107,3 +115,54 @@ test('development and preview middleware return a manifest before static HTML ha
     assert.match(headers.get('content-type'), /manifest/);
   }
 });
+
+test('manual update requires a complete release, changelog source, and no other windows', async () => {
+  const sw = worker();
+  assert.equal((await sw.message('PWA_APPLY_UPDATE')).ok, false);
+  await sw.run('install');
+  assert.equal((await sw.message('PWA_STATUS')).complete, true);
+  assert.equal(sw.applied, 0);
+  assert.equal((await sw.message('PWA_APPLY_UPDATE', '/split/auto/ticket')).ok, false);
+  assert.equal(sw.applied, 0);
+  assert.equal((await sw.message('PWA_APPLY_UPDATE')).ok, true);
+  assert.equal(sw.applied, 1);
+  const multi = worker({ windows: [{ id: 'current' }, { id: 'editing' }] });
+  await multi.run('install');
+  assert.equal((await multi.message('PWA_APPLY_UPDATE')).reason, 'other-windows');
+  assert.equal(multi.applied, 0);
+  assert.ok(multi.stores.has('kippu-pwa-old'));
+  multi.stores.get('kippu-pwa-v1').delete('/_astro/font.woff2');
+  assert.equal((await multi.message('PWA_STATUS')).complete, false);
+});
+
+test('messages require both event origin and source URL to match the service worker origin', async () => {
+  const sw = worker();
+  await sw.run('install');
+  for (const type of ['PWA_STATUS', 'PWA_APPLY_UPDATE']) {
+    for (const untrusted of ['https://evil.example', '', 'null']) {
+      assert.equal(await sw.message(type, '/changelog', untrusted), undefined);
+    }
+    assert.equal(await sw.message(type, '/changelog', origin, 'https://evil.example'), undefined);
+  }
+  assert.equal(sw.applied, 0);
+  assert.equal((await sw.message('PWA_STATUS')).complete, true);
+  assert.equal((await sw.message('PWA_APPLY_UPDATE')).ok, true);
+  assert.equal(sw.applied, 1);
+});
+
+for (const [failure, stage, asset] of [
+  [{ fail: '/_astro/font.woff2' }, '資材取得', '/_astro/font.woff2'],
+  [{ mismatch: '/' }, '整合性検証', '/'],
+  [{ quota: true }, '端末への保存', '/'],
+]) {
+  test(`failed installation reports transient details before discarding its cache: ${stage}`, async () => {
+    const sw = worker(failure);
+    await assert.rejects(sw.run('install'));
+    assert.equal(sw.notifications[0].type, 'PWA_FAILURE');
+    assert.equal(sw.notifications[0].detail.stage, stage);
+    assert.equal(sw.notifications[0].detail.asset, asset);
+    assert.ok(sw.notifications[0].detail.message);
+    assert.ok(!sw.stores.has('kippu-pwa-v1'));
+    assert.ok(sw.stores.has('kippu-pwa-old'));
+  });
+}
