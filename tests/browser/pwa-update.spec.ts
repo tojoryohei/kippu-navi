@@ -15,7 +15,7 @@ test('通常ブラウザの更新履歴に状態を表示し、一括保存を�
   await expect(page.locator('[data-pwa-status]')).toHaveCount(0);
 });
 
-test('新版は待機し、別画面を閉じて更新ボタンを押したときだけ切り替わる', async ({ page, context }) => {
+test('新版はすべての旧画面を閉じるまで待機し、次に開いた画面で反映される', async ({ page, context }) => {
   test.setTimeout(180000);
   const script = readFileSync('dist/sw.js', 'utf8');
   const release = JSON.parse(readFileSync('dist/pwa-assets.json', 'utf8'));
@@ -94,11 +94,26 @@ test('新版は待機し、別画面を閉じて更新ボタンを押したと�
     await expect(page.locator('[data-pwa-state]')).toHaveText('次回起動で反映予定', { timeout: 60000 });
     await expect(page.locator('[data-pwa-error]')).toBeEmpty();
     expect(await page.locator('html').getAttribute('data-test-release')).toBeNull();
-    await page.getByRole('button', { name: '今すぐ更新' }).click();
-    await expect(page.locator('[data-pwa-error]')).toContainText('ほかのきっぷナビの画面を閉じて');
-    expect(await page.locator('html').getAttribute('data-test-release')).toBeNull();
+    await expect(page.getByRole('button', { name: '今すぐ更新' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'アップデートを確認' })).toHaveCount(0);
+    const waitingVersion = await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.getRegistration();
+      return new Promise<string>(resolve => {
+        const channel = new MessageChannel();
+        channel.port1.onmessage = event => { channel.port1.close(); resolve(event.data.version); };
+        registration!.waiting!.postMessage({ type: 'PWA_STATUS' }, [channel.port2]);
+      });
+    });
+    const workers = context.serviceWorkers();
+    const versions = await Promise.all(workers.map(worker => worker.evaluate<string>('RELEASE.version')));
+    const waitingWorker = workers[versions.indexOf(waitingVersion)];
+    expect(waitingWorker).toBeDefined();
+    await page.goto('about:blank');
+    // 別画面が旧版を使っている間は、新版を有効化しない。
+    expect(await other.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.waiting?.state)).toBe('installed');
     await other.close();
-    await page.getByRole('button', { name: '今すぐ更新' }).click();
+    await expect.poll(() => waitingWorker.evaluate<boolean>('self.registration.waiting === null && self.registration.active?.state === "activated"')).toBe(true);
+    await page.goto(`${origin}/changelog`);
     await expect(page.locator('html')).toHaveAttribute('data-test-release', 'new', { timeout: 30000 });
     await expect(page.getByRole('button', { name: '今すぐ更新' })).toBeHidden();
     await context.setOffline(true);

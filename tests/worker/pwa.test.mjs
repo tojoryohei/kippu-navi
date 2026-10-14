@@ -7,7 +7,7 @@ import { manifestResponse, normalizeLaunch } from '../../src/pwa/manifest.mjs';
 import { fetchEngineAsset } from '../../workers/frontend.mjs';
 
 const origin = 'https://kippu-navi.com';
-test('manifest preserves calculator conditions without accepting arbitrary URLs or tracking', async () => {
+test('マニフェストは任意のURLや追跡パラメーターを受け付けず計算条件を保持する', async () => {
   const launch = '/split/route/pass?route=東京[東海道]熱海&month=3&noSplitStation=品川&noSplitStation=品川&utm_source=x';
   const request = new Request(`${origin}/manifest.webmanifest?${new URLSearchParams({ launch })}`);
   const response = manifestResponse(request);
@@ -24,7 +24,7 @@ test('manifest preserves calculator conditions without accepting arbitrary URLs 
   }
   assert.equal(normalizeLaunch('/guide?from=東京', origin), '/guide');
 });
-test('exact engine requests never substitute the current deployment', async () => {
+test('版を厳密に指定したエンジンリクエストは現行の配信版で代用しない', async () => {
   let calls = 0;
   const response = await fetchEngineAsset(new Request(`${origin}/engine/${'a'.repeat(64)}/main.wasm`, { headers: { 'X-Kippu-Exact-Asset': '1' } }), {
     fetch: () => { calls++; return new Response(null, { status: 404 }); },
@@ -78,9 +78,9 @@ function worker({ fail = '', mismatch = '', quota = false, windows = [{ id: 'cur
     return response;
   } };
 }
-test('complete release caches fonts and query-independent pages, leaves APIs alone', async () => {
+test('保存済みの一式はフォントとクエリに依存しないページをキャッシュし、API通信には介入しない', async () => {
   const sw = worker(); await sw.run('install');
-  assert.ok(sw.stores.has('kippu-pwa-old')); // waiting worker must retain the active release
+  assert.ok(sw.stores.has('kippu-pwa-old')); // 待機中のWorkerは使用中の版を保持する。
   await sw.run('activate');
   assert.ok(!sw.stores.has('kippu-pwa-old'));
   assert.ok(sw.stores.has('unrelated'));
@@ -93,7 +93,7 @@ test('complete release caches fonts and query-independent pages, leaves APIs alo
   assert.equal((await sw.fetch('/_astro/font.woff2')).status, 503);
 });
 for (const failure of [{ fail: '/_astro/font.woff2' }, { mismatch: '/' }, { quota: true }]) {
-  test(`incomplete release never replaces old cache: ${JSON.stringify(failure)}`, async () => {
+  test(`保存が未完了の版は旧版のキャッシュを置き換えない: ${JSON.stringify(failure)}`, async () => {
     const sw = worker(failure);
     await assert.rejects(sw.run('install'));
     assert.ok(sw.stores.has('kippu-pwa-old'));
@@ -101,7 +101,7 @@ for (const failure of [{ fail: '/_astro/font.woff2' }, { mismatch: '/' }, { quot
   });
 }
 
-test('development and preview middleware return a manifest before static HTML handling', async () => {
+test('開発・プレビュー用ミドルウェアは静的HTMLの処理前にマニフェストを返す', async () => {
   const { pwaManifestPlugin } = await import('../../scripts/pwa-vite-plugin.mjs');
   for (const configure of [pwaManifestPlugin().configureServer, pwaManifestPlugin().configurePreviewServer]) {
     let middleware;
@@ -116,29 +116,22 @@ test('development and preview middleware return a manifest before static HTML ha
   }
 });
 
-test('manual update requires a complete release, changelog source, and no other windows', async () => {
+test('版の状態は保存完了を通知し、旧方式の更新要求でも有効化を強制しない', async () => {
   const sw = worker();
-  assert.equal((await sw.message('PWA_APPLY_UPDATE')).ok, false);
+  assert.equal((await sw.message('PWA_STATUS')).complete, false);
   await sw.run('install');
   assert.equal((await sw.message('PWA_STATUS')).complete, true);
+  assert.equal(await sw.message('PWA_APPLY_UPDATE'), undefined);
   assert.equal(sw.applied, 0);
-  assert.equal((await sw.message('PWA_APPLY_UPDATE', '/split/auto/ticket')).ok, false);
-  assert.equal(sw.applied, 0);
-  assert.equal((await sw.message('PWA_APPLY_UPDATE')).ok, true);
-  assert.equal(sw.applied, 1);
-  const multi = worker({ windows: [{ id: 'current' }, { id: 'editing' }] });
-  await multi.run('install');
-  assert.equal((await multi.message('PWA_APPLY_UPDATE')).reason, 'other-windows');
-  assert.equal(multi.applied, 0);
-  assert.ok(multi.stores.has('kippu-pwa-old'));
-  multi.stores.get('kippu-pwa-v1').delete('/_astro/font.woff2');
-  assert.equal((await multi.message('PWA_STATUS')).complete, false);
+  assert.ok(sw.stores.has('kippu-pwa-old'));
+  sw.stores.get('kippu-pwa-v1').delete('/_astro/font.woff2');
+  assert.equal((await sw.message('PWA_STATUS')).complete, false);
 });
 
-test('messages require both event origin and source URL to match the service worker origin', async () => {
+test('メッセージはイベントのオリジンと送信元URLの両方がService Workerのオリジンと一致する必要がある', async () => {
   const sw = worker();
   await sw.run('install');
-  for (const type of ['PWA_STATUS', 'PWA_APPLY_UPDATE']) {
+  for (const type of ['PWA_STATUS']) {
     for (const untrusted of ['https://evil.example', '', 'null']) {
       assert.equal(await sw.message(type, '/changelog', untrusted), undefined);
     }
@@ -146,8 +139,7 @@ test('messages require both event origin and source URL to match the service wor
   }
   assert.equal(sw.applied, 0);
   assert.equal((await sw.message('PWA_STATUS')).complete, true);
-  assert.equal((await sw.message('PWA_APPLY_UPDATE')).ok, true);
-  assert.equal(sw.applied, 1);
+  assert.equal(sw.applied, 0);
 });
 
 for (const [failure, stage, asset] of [
@@ -155,7 +147,7 @@ for (const [failure, stage, asset] of [
   [{ mismatch: '/' }, '整合性検証', '/'],
   [{ quota: true }, '端末への保存', '/'],
 ]) {
-  test(`failed installation reports transient details before discarding its cache: ${stage}`, async () => {
+  test(`インストール失敗時はキャッシュの破棄前に一時的なエラー詳細を通知する: ${stage}`, async () => {
     const sw = worker(failure);
     await assert.rejects(sw.run('install'));
     assert.equal(sw.notifications[0].type, 'PWA_FAILURE');
