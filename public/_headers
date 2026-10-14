@@ -4,7 +4,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
-  Cache-Control: no-cache, no-transform
+  Cache-Control: no-cache
   Link: </guide>; rel="service-doc", </sitemap.xml>; rel="sitemap"
 
 /.well-known/traffic-advice
