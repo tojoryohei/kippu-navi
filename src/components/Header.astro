@@ -207,6 +207,23 @@ const splitMethods = [
       const controller = new AbortController();
       const { signal } = controller;
 
+      const routePaths = ["/fare/ticket", "/fare/pass", "/split/route/ticket", "/split/route/pass"];
+      const routeLinks = Array.from(this.querySelectorAll<HTMLAnchorElement>("a"))
+        .map(link => ({ link, pathname: new URL(link.href).pathname }))
+        .filter(({ pathname }) => pathname === "/fare/ticket" || pathname === "/split/route/ticket");
+      const updateRouteLinks = () => {
+        const search = routePaths.includes(window.location.pathname) ? window.location.search : "";
+        routeLinks.forEach(({ link, pathname }) => {
+          link.href = pathname + search;
+        });
+      };
+
+      // 計算済みのURLを引き継ぐ。未計算のフォーム入力は対象にしない。
+      updateRouteLinks();
+      document.addEventListener("astro:page-load", updateRouteLinks, { signal });
+      window.addEventListener("popstate", updateRouteLinks, { signal });
+      window.addEventListener("calculator:url-change", updateRouteLinks, { signal });
+
       const desktop = window.matchMedia("(min-width: 48rem)");
 
       const group = this.querySelector<HTMLElement>("[data-split-group]")!;
