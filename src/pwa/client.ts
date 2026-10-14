@@ -1,5 +1,5 @@
 import { standalone, workerRequest, describeError, type ErrorDetail, type ReleaseStatus } from "./status";
-// 状態表示と手動更新は更新履歴ページに限定する。
+// 更新状態の表示は更新履歴ページに限定する。
 function updateManifest() {
   const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
   if (link) link.href = `/manifest.webmanifest?${new URLSearchParams({ launch: location.pathname + location.search })}`;
@@ -8,8 +8,6 @@ let updating = false;
 let registration: ServiceWorkerRegistration | undefined;
 let checkState: 'idle' | 'checking' | 'checked' | 'failed' = 'idle';
 let installFailed = false;
-let applying = false;
-let actionError = '';
 let preparationError = '';
 let attemptWorker: ServiceWorker | null = null;
 function failureText(error: unknown, stage: string) {
@@ -53,10 +51,7 @@ async function renderStatus() {
   };
   set('mode', standalone() ? 'PWA' : '通常ブラウザ');
   set('version', `${__APP_VERSION__} (${__DEPLOY_COMMIT__.slice(0, 7)})`);
-  const button = panel.querySelector<HTMLButtonElement>('[data-pwa-update]')!;
-  button.hidden = true;
-  button.disabled = applying;
-  set('error', actionError || preparationError);
+  set('error', preparationError);
   if (!('serviceWorker' in navigator)) {
     set('next', '確認できません');
     set('storage', 'この環境では利用できません');
@@ -84,47 +79,16 @@ async function renderStatus() {
     waiting ? workerRequest<ReleaseStatus>(waiting, 'PWA_STATUS').then(value => { next = value; }).catch(error => { statusError = failureText(error, '状態取得'); }) : undefined,
   ]);
   if (sequence !== renderSequence || !panel.isConnected) return;
-  set('error', actionError || preparationError || statusError);
+  set('error', preparationError || statusError);
   set('storage', current?.installing ? '保存中' : installFailed ? '保存失敗（次回オンライン時に再試行）' : saved?.complete || next?.complete ? '保存済み' : saved?.complete === false ? '保存データが不足しています' : active ? '保存状態を確認できません' : '未準備');
   set('next', next ? `${next.appVersion || '版不明'} (${next.version.slice(0, 8)})` : waiting ? '確認できません' : 'なし');
   const ready = !!waiting && next?.complete === true;
-  set('state', applying ? '更新を適用中' : ready ? '次回起動で反映予定' : waiting ? '新版の保存状態を確認できません' : current?.installing ? statusError ? '更新処理の状態を確認できませんでした' : '新版を保存中' : installFailed ? '新版の保存に失敗しました' : statusError ? '更新処理の状態を確認できませんでした' : checkState === 'checking' ? '確認中' : checkState === 'failed' ? '更新確認に失敗しました' : !navigator.onLine ? 'オフラインのため確認できません' : checkState === 'checked' ? '更新なし' : standalone() ? '未確認' : 'PWAから開くと更新を確認できます');
-  button.hidden = !ready || !standalone();
-  button.onclick = () => { void applyUpdate(); };
-}
-async function applyUpdate() {
-  const waiting = registration?.waiting;
-  if (!waiting || applying || location.pathname !== '/changelog') return;
-  applying = true;
-  actionError = '';
-  void renderStatus();
-  try {
-    const result = await workerRequest<{ ok: boolean; reason?: string }>(waiting, 'PWA_APPLY_UPDATE');
-    if (!result.ok) throw new Error(result.reason === 'other-windows'
-      ? 'ほかのきっぷナビの画面を閉じてから、もう一度押してください。'
-      : '更新を適用できませんでした。ページを開き直して再試行してください。');
-    await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => { waiting.removeEventListener('statechange', changed); reject(new Error('更新の有効化を確認できませんでした。ページを開き直してください。')); }, 15000);
-      const changed = () => {
-        if (waiting.state === 'activated') { clearTimeout(timer); waiting.removeEventListener('statechange', changed); resolve(); }
-        else if (waiting.state === 'redundant') { clearTimeout(timer); waiting.removeEventListener('statechange', changed); reject(new Error('更新に失敗しました。')); }
-      };
-      waiting.addEventListener('statechange', changed);
-      changed();
-    });
-    if (location.pathname === '/changelog') location.reload();
-  } catch (error) {
-    actionError = error instanceof Error ? error.message : '更新に失敗しました。';
-  } finally {
-    applying = false;
-    void renderStatus();
-  }
+  set('state', ready ? '次回起動で反映予定' : waiting ? '新版の保存状態を確認できません' : current?.installing ? statusError ? '更新処理の状態を確認できませんでした' : '新版を保存中' : installFailed ? '新版の保存に失敗しました' : statusError ? '更新処理の状態を確認できませんでした' : checkState === 'checking' ? '確認中' : checkState === 'failed' ? '更新確認に失敗しました' : !navigator.onLine ? 'オフラインのため確認できません' : checkState === 'checked' ? '更新なし' : standalone() ? '未確認' : 'PWAから開くと更新を確認できます');
 }
 async function updateOfflineAssets() {
   if (!standalone() || !navigator.onLine || !('serviceWorker' in navigator) || updating) return;
   updating = true;
   checkState = 'checking';
-  actionError = '';
   if (!registration?.installing) { installFailed = false; preparationError = ''; }
   void renderStatus();
   try {

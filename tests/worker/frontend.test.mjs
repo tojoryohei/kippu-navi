@@ -57,7 +57,7 @@ async function generatePrivateKeyPem() {
   return `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----\n`;
 }
 
-test('calculation errors distinguish business errors from system failures', () => {
+test('計算エラーは業務上のエラーとシステム障害を区別する', () => {
   assert.equal(classifyCalculationError('経路が重複しています。'), 'duplicate_route');
   assert.equal(classifyCalculationError('再考：要求区間誤り'), 'path_invalid');
   assert.equal(classifyCalculationError('指定された区間はJR在来線のみで繋がっていません。', 422), 'path_invalid');
@@ -66,7 +66,7 @@ test('calculation errors distinguish business errors from system failures', () =
   assert.equal(classifyCalculationError('unexpected failure'), 'calculation_failed');
 });
 
-test('retryable engine initialization failures can recover through the UI', () => {
+test('再試行可能なエンジン初期化失敗は画面操作で復旧できる', () => {
   const baseDetails = {
     message: 'engine failed',
     code: 'engine_initialization_timeout',
@@ -99,7 +99,7 @@ test('retryable engine initialization failures can recover through the UI', () =
   })), false);
 });
 
-test('PostHog fare search payload contains route, URL, and exact result values', () => {
+test('PostHogの運賃検索データは経路、URL、正確な計算結果を含む', () => {
   const properties = buildSearchCompletedProperties({
     searchType: 'ticket',
     calculationMode: 'normal',
@@ -142,7 +142,7 @@ test('PostHog fare search payload contains route, URL, and exact result values',
   }
 });
 
-test('PostHog split search payload contains split settings and savings', () => {
+test('PostHogの分割検索データは分割条件と節約額を含む', () => {
   const properties = buildSearchCompletedProperties({
     searchType: 'pass3',
     capability: 'pass',
@@ -180,7 +180,7 @@ test('PostHog split search payload contains split settings and savings', () => {
   assert.equal(properties.candidate_count, 4);
 });
 
-test('PostHog business errors retain search details without result fields', () => {
+test('PostHogの業務上のエラーは計算結果を含めず検索条件を保持する', () => {
   const properties = buildSearchCompletedProperties({
     searchType: 'ticket',
     capability: 'ticket',
@@ -203,7 +203,7 @@ test('PostHog business errors retain search details without result fields', () =
   assert.equal(Object.hasOwn(properties, 'total_fare_yen'), false);
 });
 
-test('search URL is absolute, keeps all query parameters, and excludes hash', () => {
+test('検索URLは絶対URLで全クエリパラメーターを保持し、ハッシュを除外する', () => {
   const location = new URL('https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn#result');
   assert.equal(
     buildSearchUrl(location),
@@ -211,7 +211,7 @@ test('search URL is absolute, keeps all query parameters, and excludes hash', ()
   );
 });
 
-test('Google Analytics initializes once and queues manual page views with absolute URLs', () => {
+test('Google Analyticsは一度だけ初期化し、絶対URLの手動ページビューをキューに登録する', () => {
   const { targetWindow, targetDocument, scripts } = fakeGoogleAnalyticsBrowser();
 
   initializeGoogleAnalytics('G-TEST ID', targetWindow, targetDocument);
@@ -236,7 +236,7 @@ test('Google Analytics initializes once and queues manual page views with absolu
   ]);
 });
 
-test('Google Analytics stays disabled without a measurement ID', () => {
+test('測定IDがなければGoogle Analyticsは無効のままになる', () => {
   const { targetWindow, targetDocument, scripts } = fakeGoogleAnalyticsBrowser();
 
   initializeGoogleAnalytics('', targetWindow, targetDocument);
@@ -246,7 +246,7 @@ test('Google Analytics stays disabled without a measurement ID', () => {
   assert.deepEqual(scripts, []);
 });
 
-test('cacheable API query is allowlisted and normalized', () => {
+test('キャッシュ可能なAPIのクエリは許可項目だけを残して正規化する', () => {
   const normalized = normalizeCacheableApiUrl(new URL(
     'https://kippu-navi.com/api/split-pass?to=B&ignored=x&noSplitStation=Z&from=A&noSplitStation=Y&noSplitStation=Z&months=3',
   ));
@@ -256,11 +256,11 @@ test('cacheable API query is allowlisted and normalized', () => {
   );
 });
 
-test('non-cacheable API path is not normalized', () => {
+test('キャッシュ対象外のAPIパスは正規化しない', () => {
   assert.equal(normalizeCacheableApiUrl(new URL('https://kippu-navi.com/api/fare')), null);
 });
 
-test('cacheable GET strips private and bypass headers and applies edge caching', async t => {
+test('キャッシュ可能なGETは機密情報とキャッシュ回避ヘッダーを除去し、エッジキャッシュを適用する', async t => {
   const originalFetch = globalThis.fetch;
   let capturedRequest;
   let capturedOptions;
@@ -299,7 +299,7 @@ test('cacheable GET strips private and bypass headers and applies edge caching',
   assert.equal(response.headers.get('X-Request-ID'), capturedRequest.headers.get('x-request-id'));
 });
 
-test('POST requests do not enable shared caching', async t => {
+test('POSTリクエストでは共有キャッシュを有効にしない', async t => {
   const originalFetch = globalThis.fetch;
   let capturedOptions = 'not called';
   globalThis.fetch = async (_request, options) => {
@@ -316,7 +316,7 @@ test('POST requests do not enable shared caching', async t => {
   assert.equal(capturedOptions, undefined);
 });
 
-test('unsuccessful GET responses are not exposed as cacheable', async t => {
+test('失敗したGETレスポンスはキャッシュ可能として返さない', async t => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => Response.json(
     { error: 'bad request' },
@@ -332,7 +332,7 @@ test('unsuccessful GET responses are not exposed as cacheable', async t => {
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
 });
 
-test('Google token exchange signs the expected service account assertion', async () => {
+test('Googleのトークン交換では想定したサービスアカウントのアサーションに署名する', async () => {
   const privateKey = await generatePrivateKeyPem();
   let request;
   const idToken = encodeTestJwt({ exp: 4_600 });
@@ -361,7 +361,7 @@ test('Google token exchange signs the expected service account assertion', async
   assert.equal(result.expiresAt, 4_600);
 });
 
-test('Google ID token is cached until its refresh window', async t => {
+test('Google IDトークンは更新時期までキャッシュする', async t => {
   const originalFetch = globalThis.fetch;
   const privateKey = await generatePrivateKeyPem();
   const credentials = { ...googleCredentials, privateKey };
@@ -385,7 +385,7 @@ test('Google ID token is cached until its refresh window', async t => {
   assert.equal(calls, 2);
 });
 
-test('API proxy returns 502 without calling the origin when token exchange fails', async t => {
+test('APIプロキシはトークン交換に失敗するとオリジンを呼び出さず502を返す', async t => {
   const originalFetch = globalThis.fetch;
   let originCalls = 0;
   globalThis.fetch = async () => {
@@ -406,13 +406,13 @@ test('API proxy returns 502 without calling the origin when token exchange fails
   assert.equal(originCalls, 0);
 });
 
-test('Sentry tunnel only accepts POST', async () => {
+test('SentryトンネルはPOSTだけを受け付ける', async () => {
   const response = await proxySentry(new Request('https://kippu-navi.com/monitoring'), sentryDsn);
   assert.equal(response.status, 405);
   assert.equal(response.headers.get('Allow'), 'POST');
 });
 
-test('Sentry tunnel rejects oversized envelopes before forwarding', async () => {
+test('Sentryトンネルはサイズ上限を超えたエンベロープを転送前に拒否する', async () => {
   const response = await proxySentry(new Request('https://kippu-navi.com/monitoring', {
     method: 'POST',
     headers: { 'Content-Length': String(201 * 1024) },
@@ -421,7 +421,7 @@ test('Sentry tunnel rejects oversized envelopes before forwarding', async () => 
   assert.equal(response.status, 413);
 });
 
-test('Sentry tunnel rejects an envelope for another DSN', async () => {
+test('Sentryトンネルは別のDSN宛てのエンベロープを拒否する', async () => {
   const response = await proxySentry(new Request('https://kippu-navi.com/monitoring', {
     method: 'POST',
     body: sentryEnvelope('https://other@o999.ingest.sentry.io/999'),
@@ -429,7 +429,7 @@ test('Sentry tunnel rejects an envelope for another DSN', async () => {
   assert.equal(response.status, 403);
 });
 
-test('Sentry tunnel forwards a valid envelope to its fixed project endpoint', async t => {
+test('Sentryトンネルは有効なエンベロープを固定のプロジェクトエンドポイントへ転送する', async t => {
   const originalFetch = globalThis.fetch;
   let capturedUrl;
   let capturedBody;
@@ -451,7 +451,7 @@ test('Sentry tunnel forwards a valid envelope to its fixed project endpoint', as
   assert.equal(capturedBody, envelope);
 });
 
-for (const staleStatus of [403, 404]) test(`stale engine asset paths fall back after ${staleStatus}`, async () => {
+for (const staleStatus of [403, 404]) test(`古いエンジン資材のパスはHTTP ${staleStatus}の後に現行版へフォールバックする`, async () => {
   const staleUrl = 'https://kippu-navi.com/engine/' + 'a'.repeat(64) + '/main.wasm';
   const currentPath = '/engine/' + 'b'.repeat(64);
   const requested = [];
@@ -482,7 +482,7 @@ for (const staleStatus of [403, 404]) test(`stale engine asset paths fall back a
   ]);
 });
 
-test('a 403 for the current engine asset is preserved', async () => {
+test('現行エンジン資材のHTTP 403はそのまま返す', async () => {
   const currentPath = '/engine/' + 'b'.repeat(64);
   const requested = [];
   const assets = {
@@ -500,7 +500,7 @@ test('a 403 for the current engine asset is preserved', async () => {
   assert.deepEqual(requested, [`${currentPath}/main.wasm`, '/deployment.json']);
 });
 
-test('engine asset fallback rejects an external deployment manifest path', async () => {
+test('エンジン資材のフォールバックは配信情報にある外部URLを拒否する', async () => {
   const staleUrl = 'https://kippu-navi.com/engine/' + 'a'.repeat(64) + '/wasm_exec.js';
   let fallbackRequested = false;
   const assets = {

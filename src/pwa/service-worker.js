@@ -53,7 +53,7 @@ self.addEventListener('install', event => {
       try { await caches.delete(CACHE); } catch { /* 元の失敗理由を保持する。 */ }
       throw error;
     }
-    // 自動ではskipWaitingしない。更新履歴の明示操作だけで適用する。
+    // skipWaitingは使わず、旧版を使用する画面がすべて閉じるまで待つ。
   })());
 });
 self.addEventListener('activate', event => {
@@ -88,7 +88,7 @@ self.addEventListener('fetch', event => {
   })());
 });
 
-// 保存完了した待機版だけを、更新履歴ページから明示的に有効化する。
+// 更新履歴に表示する保存状態を返す。
 async function releaseStatus() {
   const cache = await caches.open(CACHE);
   const present = await Promise.all(RELEASE.assets.map(asset => cache.match(asset.url)));
@@ -103,25 +103,9 @@ self.addEventListener('message', event => {
     try {
       if (event.data?.type === 'PWA_STATUS') {
         port.postMessage(await releaseStatus());
-      } else if (event.data?.type === 'PWA_APPLY_UPDATE') {
-        if (new URL(source.url).pathname !== '/changelog' || self.registration.waiting?.state !== 'installed') {
-          port.postMessage({ ok: false, reason: 'not-ready' });
-          return;
-        }
-        const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-        if (windows.some(client => client.id !== source.id)) {
-          port.postMessage({ ok: false, reason: 'other-windows' });
-          return;
-        }
-        if (!(await releaseStatus()).complete) {
-          port.postMessage({ ok: false, reason: 'incomplete' });
-          return;
-        }
-        await self.skipWaiting();
-        port.postMessage({ ok: true });
       }
     } catch (error) {
-      port.postMessage({ ok: false, reason: 'failed', detail: errorDetail(error, event.data?.type === 'PWA_STATUS' ? '状態取得' : '更新の適用') });
+      port.postMessage({ ok: false, reason: 'failed', detail: errorDetail(error, '状態取得') });
     }
   })());
 });
