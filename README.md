@@ -63,7 +63,7 @@ npm run generate:pass-fares
 npm run generate:ticket-fares
 ```
 
-定期券用・乗車券用の事前計算ファイルは、`calculation-engine/data/precomputed/pass.bin` と `calculation-engine/data/precomputed/ticket.bin` に配置します。これらの大きなファイルはサーバー専用で、ブラウザへ配信しません。APIは `PRECOMPUTED_DATA_DIR` で配置ディレクトリを変更できます。
+定期券用・乗車券用の事前計算ファイルは、`calculation-engine/data/precomputed/pass.bin` と `calculation-engine/data/precomputed/ticket.bin` に配置します。これらの大きなファイルはサーバー専用で、ブラウザへ配信しません。APIは `PRECOMPUTED_DATA_DIR` で配置ディレクトリを変更できます。 定期券（磁気・IC）・乗車券とも、事前計算ファイルがない場合や読み込み失敗・駅数不一致の場合でもAPIは起動し、リクエスト時に都度計算します。有効な事前計算データがある場合は引き続き優先して使用します。
 
 ## ビルド・検証
 

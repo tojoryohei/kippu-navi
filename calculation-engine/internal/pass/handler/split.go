@@ -20,7 +20,7 @@ type Split struct {
 		graph.StationProvider
 		graph.TopologyProvider
 	}
-	search *usecase.SearchOptimalSplit
+	newSearch func() *usecase.SearchOptimalSplit
 }
 
 // NewSplit は新しい Split を作成します。
@@ -31,10 +31,19 @@ func NewSplit(
 	},
 	search *usecase.SearchOptimalSplit,
 ) *Split {
-	return &Split{
-		graph:  g,
-		search: search,
-	}
+	return NewSplitWithSearchFactory(g, func() *usecase.SearchOptimalSplit { return search })
+}
+
+// NewSplitWithSearchFactory はリクエストごとに検索を取得します。
+// 都度計算では、可変キャッシュを共有しない新しい検索を返してください。
+func NewSplitWithSearchFactory(
+	g interface {
+		graph.StationProvider
+		graph.TopologyProvider
+	},
+	newSearch func() *usecase.SearchOptimalSplit,
+) *Split {
+	return &Split{graph: g, newSearch: newSearch}
 }
 
 // CalculateResponse はレスポンスのペイロードを表現します。
@@ -95,7 +104,8 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	maxSections, err := resolveMaxSections(query, h.search.MaxSectionsLimit())
+	search := h.newSearch()
+	maxSections, err := resolveMaxSections(query, search.MaxSectionsLimit())
 	if err != nil {
 		writeErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
@@ -105,7 +115,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		writeErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	optResult, err := h.search.ExecuteWithOptions(startID, endID, reqMonths, maxSections, lockedStations)
+	optResult, err := search.ExecuteWithOptions(startID, endID, reqMonths, maxSections, lockedStations)
 	if err != nil {
 		if errors.Is(err, graph.ErrPathNotFound) {
 			writeErrorResponse(w, http.StatusUnprocessableEntity, domain.DisconnectedRouteErrorMessage)
