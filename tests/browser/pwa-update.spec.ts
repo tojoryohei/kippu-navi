@@ -57,6 +57,11 @@ test('新版は待機し、別画面を閉じて更新ボタンを押したと�
   });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  // 実際の広告・監視通信がWorkerの切り替えに干渉しないよう、テスト用の配信元だけを許可する。
+  await context.route('**/*', route => {
+    const url = new URL(route.request().url());
+    return url.origin === origin ? route.continue() : route.abort();
+  });
   try {
     for (const path of ['@evil.example/', '//evil.example/', 'http://evil.example/', '/\\evil.example/']) {
       const status = await new Promise<number | undefined>((resolve, reject) => {
