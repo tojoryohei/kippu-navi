@@ -657,6 +657,9 @@ export default function SplitForm({
 
         if (tab === "icpass" && maxSplits !== 1) {
             setValue("maxSplits", 1);
+        } else if (isIcPass && tab !== "icpass") {
+            // IC定期券専用の固定上限を他の券種へ引き継がない。
+            setValue("maxSplits", 0);
         }
         setSelectedPeriod(nextSearchType);
         updateUrlAndState(nextPath, nextSearchType);

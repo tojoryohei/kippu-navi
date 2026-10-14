@@ -71,7 +71,8 @@ test("券種切り替え・URL復元・計算要求の設定を維持", async ({
   await expect(page.getByLabel("最大分割数", { exact: true })).toHaveCount(0);
   await expect(page.getByText("1回（固定）", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "乗車券", exact: true }).click();
-  await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("1回");
+  await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("制限なし");
+  await expect.poll(() => new URL(page.url()).searchParams.has("maxSplits")).toBe(false);
 });
 
 test("未指定の分割しない駅をURLへ追加しない", async ({ page }) => {
