@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.1...kippu-navi-v4.5.2) (2026-10-14)
+
+
+### Bug Fixes
+
+* 定期券APIを事前計算データなしでも利用可能にする ([#835](https://github.com/tojoryohei/kippu-navi/issues/835)) ([f637ccb](https://github.com/tojoryohei/kippu-navi/commit/f637ccbfaf51d49df9ffdc3f890a940d3f58820d))
+
 ## [4.5.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.0...kippu-navi-v4.5.1) (2026-10-14)
 
 
