@@ -136,11 +136,22 @@ test("全最安パターンの展開・折りたたみと画面遷移", async ({
   await page.goto(`/split/route/ticket?${new URLSearchParams({ route: "東京[新幹線]名古屋", mode: "normal" })}`);
   const result = await lastResult(page, "success_route_split_ticket");
   expect(result.data.results.length).toBeGreaterThan(1);
-  const expand = page.getByRole("button", { name: "残りのパターンを展開する" });
+  const expand = page.getByRole("button", { name: `他のパターンを表示（残り${result.data.results.length - 1}件）`, exact: true });
+  await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(1);
+  await expect(expand).toHaveAttribute("aria-expanded", "false");
   await expect(expand).toBeVisible();
-  await expand.click();
+  await expand.focus();
+  await page.keyboard.press("Enter");
+  const close = page.getByRole("button", { name: "他のパターンを閉じる", exact: true });
+  await expect(close.first()).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(result.data.results.length);
-  await page.getByRole("button", { name: "追加のパターンを閉じる" }).click();
+  await close.first().focus();
+  await page.keyboard.press("Space");
+  await expect(expand).toHaveAttribute("aria-expanded", "false");
+  await expand.click();
+  await close.last().click();
+  await expect(expand).toBeFocused();
+  await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(1);
   await expect(expand).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("kippu-route-split-desktop.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -393,4 +404,67 @@ for (const [route, via] of [
     await expect(page.getByText(`経由：${via}`, { exact: true })).toBeVisible();
     expect(calls).toEqual([]);
   });
+}
+
+for (const search of ["auto", "route"]) {
+  for (const ticketType of ["ticket", "pass"]) {
+    test(`追加パターンの件数と再計算 ${search} ${ticketType}`, async ({ page }) => {
+      await localCalculationOnly(page, {
+        "/api/split-ticket": { normal: ["新茂原", "茂原"], results: [["新茂原", "茂原"]] },
+        "/api/split-pass": { normal: ["新茂原", "茂原"], results: [["新茂原", "茂原"]] },
+      });
+      // 表示件数の境界条件を実際のWASM結果から作り、計算の内容には依存させない。
+      await page.addInitScript(() => {
+        const OriginalWorker = window.Worker;
+        Object.assign(window, { patternCount: 2 });
+        window.Worker = class extends OriginalWorker {
+          constructor(url: string | URL, options?: WorkerOptions) {
+            super(url, options);
+            this.addEventListener("message", event => {
+              const data = event.data.result?.data ?? event.data.result;
+              if (!data?.results?.length || !data.normal) return;
+              const count = (window as unknown as { patternCount: number }).patternCount;
+              data.results = Array.from({ length: count }, () => structuredClone(data.results[0]));
+            });
+          }
+        };
+      });
+      const query = new URLSearchParams(search === "auto"
+        ? { from: "新茂原", to: "茂原", mode: "normal", month: "1" }
+        : { route: "新茂原[外房]茂原", mode: "normal", month: "1" });
+      await page.goto(`/split/${search}/${ticketType}?${query}`);
+      const calculate = page.getByRole("button", { name: ticketType === "ticket" ? "乗車券を計算" : "定期券１箇月を計算", exact: true });
+      for (const count of [2, 3, 1, 0]) {
+        if (count !== 2) {
+          await page.evaluate(count => Object.assign(window, { patternCount: count }), count);
+          await calculate.click();
+        }
+        const toggle = page.getByRole("button", { name: /^他のパターンを表示/ });
+        if (count < 2) {
+          await expect(toggle).toHaveCount(0);
+          if (count === 0) await expect(page.getByText("有効な分割候補が見つかりませんでした。", { exact: true })).toBeVisible();
+          else await expect(page.getByText("利用区間", { exact: true })).toHaveCount(1);
+          continue;
+        }
+        await expect(toggle).toHaveText(`他のパターンを表示（残り${count - 1}件）`);
+        await expect(toggle).toHaveAttribute("aria-expanded", "false");
+        await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(1);
+        const controlledId = await toggle.getAttribute("aria-controls");
+        expect(controlledId).toBeTruthy();
+        await toggle.click();
+        await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(count);
+        for (const width of [1280, 320, 390]) {
+          await page.setViewportSize({ width, height: 900 });
+          const buttons = page.getByRole("button", { name: "他のパターンを閉じる", exact: true });
+          for (const button of await buttons.all()) {
+            const box = await button.boundingBox();
+            expect(box).not.toBeNull();
+            expect(box!.x).toBeGreaterThanOrEqual(0);
+            expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+          }
+        }
+        // 展開したまま次の計算へ進み、初期状態への復帰も検証する。
+      }
+    });
+  }
 }
