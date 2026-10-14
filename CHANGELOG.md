@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.0...kippu-navi-v4.5.1) (2026-10-14)
+
+
+### Bug Fixes
+
+* PWAの即時更新ボタンを削除 ([#833](https://github.com/tojoryohei/kippu-navi/issues/833)) ([95fe3cc](https://github.com/tojoryohei/kippu-navi/commit/95fe3ccc28b6d0ee01885ccdc9449063dc1e3208))
+
 ## [4.5.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.4.3...kippu-navi-v4.5.0) (2026-10-14)
 
 
