@@ -11,11 +11,11 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-test('API request timeout is 15 seconds', () => {
+test('APIリクエストのタイムアウトは15秒である', () => {
   assert.equal(API_REQUEST_TIMEOUT_MS, 15_000);
 });
 
-test('timeout signal distinguishes timeout from parent abort', () => {
+test('タイムアウトと親からの中断を区別する', () => {
   const parent = new AbortController();
   const timeout = createAbortTimeout(parent.signal, 100);
 
@@ -26,7 +26,7 @@ test('timeout signal distinguishes timeout from parent abort', () => {
   timeout.dispose();
 });
 
-test('disposing timeout prevents a later abort', async () => {
+test('タイムアウトを解除すると後から中断されない', async () => {
   const timeout = createAbortTimeout(undefined, 10);
   timeout.dispose();
 
@@ -36,7 +36,7 @@ test('disposing timeout prevents a later abort', async () => {
   assert.equal(timeout.didTimeout(), false);
 });
 
-test('network retry delay is interrupted by the API timeout', async () => {
+test('通信の再試行待機はAPIのタイムアウトで中断される', async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;
   globalThis.fetch = async () => {
@@ -58,7 +58,7 @@ test('network retry delay is interrupted by the API timeout', async () => {
   }
 });
 
-test('transient HTTP 502 is retried once and a successful response is returned', async () => {
+test('一時的なHTTP 502は1回再試行して成功レスポンスを返す', async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;
   globalThis.fetch = async () => {
@@ -77,7 +77,7 @@ test('transient HTTP 502 is retried once and a successful response is returned',
   }
 });
 
-test('HTTP 400 is returned without retrying', async () => {
+test('HTTP 400は再試行せずに返す', async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;
   globalThis.fetch = async () => {
