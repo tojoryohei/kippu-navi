@@ -114,6 +114,7 @@ test("読み上げ対象を画面外でも保持し、ホイール操作で戻�
     Object.defineProperty(navigator, "platform", { get: () => "Win32" });
     Object.defineProperty(navigator, "userAgentData", { get: () => ({ platform: "Windows" }) });
   });
+  await page.route("**/*", route => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
   await page.goto("/fare/ticket");
   await expect(page.locator('[data-calculator-ready="true"]')).toBeVisible();
   const input = page.getByRole("combobox").first();
