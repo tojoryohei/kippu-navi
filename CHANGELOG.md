@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.4.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.4.0...kippu-navi-v4.4.1) (2026-10-14)
+
+
+### Bug Fixes
+
+* 追加の分割パターンを一覧全体で開閉する ([#825](https://github.com/tojoryohei/kippu-navi/issues/825)) ([ed90e6b](https://github.com/tojoryohei/kippu-navi/commit/ed90e6b6e2b78daca7a1521aaf107aede5c2e9bb))
+
 ## [4.4.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.3.2...kippu-navi-v4.4.0) (2026-10-13)
 
 
