@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.4.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.4.2...kippu-navi-v4.4.3) (2026-10-14)
+
+
+### Bug Fixes
+
+* IC定期券からの券種切替で分割上限を解除 ([#829](https://github.com/tojoryohei/kippu-navi/issues/829)) ([1e5681f](https://github.com/tojoryohei/kippu-navi/commit/1e5681f7d00325dd56c8ca6b930ec625e5b5a53c))
+
 ## [4.4.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.4.1...kippu-navi-v4.4.2) (2026-10-14)
 
 
