@@ -296,6 +296,16 @@ test("不正な計算モードは通常モードに戻す", async ({ page }) => 
 for (const kind of ["ticket", "pass"]) {
   test(`経路入力検索${kind}の分割条件をチェックボックスとクエリで指定する`, async ({ page }, testInfo) => {
     const apiCalls = await localCalculationOnly(page);
+    // 初期表示の「選択済み：0駅」を準備完了と取り違えないよう、候補取得を遅らせる。
+    await page.addInitScript(() => {
+      const OriginalWorker = window.Worker;
+      window.Worker = class extends OriginalWorker {
+        postMessage(message: { type: string }) {
+          if (message.type === "getRouteSplitCandidates") setTimeout(() => super.postMessage(message), 500);
+          else super.postMessage(message);
+        }
+      };
+    });
     const params = new URLSearchParams({ route: "新茂原[外房]上総一ノ宮", mode: "normal", maxSplits: "1", noSplitStation: "茂原", month: "3" });
     await page.goto(`/split/route/${kind}?${params}`);
     await page.getByText("詳細オプション", { exact: true }).click();
@@ -321,7 +331,10 @@ for (const kind of ["ticket", "pass"]) {
     await expect(page.getByRole("checkbox").first()).toHaveAccessibleName("八積");
     expect(new URL(page.url()).searchParams.get("maxSplits")).toBe("1");
     await page.goto(`/split/route/${kind}?${new URLSearchParams({ route: "新茂原[外房]茂原", noSplitStation: "八積", maxSplits: "1" })}`);
-    await expect(page.getByText("選択済み：0駅", { exact: true })).toHaveCount(1);
+    await page.getByText("詳細オプション", { exact: true }).click();
+    // この表示は候補取得の完了後だけ現れる。初期表示の選択数だけでは待機できない。
+    await expect(page.getByText("分割できる途中駅はありません。", { exact: true })).toBeVisible();
+    await expect(page.getByText("選択済み：0駅", { exact: true })).toBeVisible();
     await expect(page.getByText("経路外になった分割禁止駅を解除しました。", { exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: kind === "ticket" ? "乗車券を計算" : "定期券６箇月を計算", exact: true }).click();
     await expect.poll(() => new URL(page.url()).searchParams.getAll("noSplitStation")).toEqual([]);

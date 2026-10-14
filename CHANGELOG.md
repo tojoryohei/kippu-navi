@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.4.3...kippu-navi-v4.5.0) (2026-10-14)
+
+
+### Features
+
+* ヘッダー移動で経路と計算条件を引き継ぐ ([#831](https://github.com/tojoryohei/kippu-navi/issues/831)) ([e8e5bf2](https://github.com/tojoryohei/kippu-navi/commit/e8e5bf2d007287214357c30ec46c6288c3076b25))
+
 ## [4.4.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.4.2...kippu-navi-v4.4.3) (2026-10-14)
 
 
