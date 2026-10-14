@@ -207,29 +207,14 @@ func run() error {
 	passOptimizer := passopt.NewDPOptimizer(passAmountCalc)
 	passSplitUseCase := passusecase.NewFindOptimalSplit(passOptimizer, passAmountCalc)
 
-	// 事前計算された運賃および経路データのロード
-	baseFares, icFares, baseDistGisei, icDistGisei, numStations, err := passdata.LoadPrecomputedFares(filepath.Join(precomputedDataDir, "pass.bin"))
-	if err != nil {
-		return fmt.Errorf("事前計算された運賃データのロードに失敗しました: %w", err)
-	}
-	if int32(g.NumStations()) != numStations {
-		return fmt.Errorf("データ不整合: edges.jsonの駅数(%d)が事前計算データの駅数(%d)と一致しません。事前計算ファイルを再生成してください", g.NumStations(), numStations)
-	}
-
-	// グラフに事前計算されたマトリクスを格納
-	g.DistGisei = baseDistGisei
-
-	// 磁気定期券用: 区間数無制限 (0)
-	passSearchUseCase := passusecase.NewSearchOptimalSplit(g, passSplitUseCase, passBypassRules, 0, baseFares, numStations)
-
-	// IC分割乗車券用
 	icGraph, err := passgraph.NewIcPassGraph(g)
 	if err != nil {
 		return fmt.Errorf("ICグラフの生成に失敗しました: %w", err)
 	}
-	icGraph.DistGisei = icDistGisei
-
-	icPassSearchUseCase := passusecase.NewSearchOptimalSplit(icGraph, passSplitUseCase, passBypassRules, 2, icFares, numStations)
+	passSearchFactory, icPassSearchFactory := newPassSearchFactories(
+		filepath.Join(precomputedDataDir, "pass.bin"), g, icGraph, passSplitUseCase, passBypassRules,
+	)
+	defer passdata.ClosePrecomputedFares()
 
 	// 乗車券用コンポーネント初期化
 	zoneRoutesBytes, err := io.ReadAll(graphdata.GetZoneRoutesReader())
@@ -385,8 +370,8 @@ func run() error {
 
 	ticketSplitHandler := tickethandler.NewSplit(ticketSearchGraph, ticketSearchUseCase)
 
-	passSplitHandler := passhandler.NewSplit(g, passSearchUseCase)
-	icPassSplitHandler := passhandler.NewSplit(icGraph, icPassSearchUseCase)
+	passSplitHandler := passhandler.NewSplitWithSearchFactory(g, passSearchFactory)
+	icPassSplitHandler := passhandler.NewSplitWithSearchFactory(icGraph, icPassSearchFactory)
 	mux := newAPIMux(passSplitHandler.HandleCalculate, icPassSplitHandler.HandleCalculate, ticketSplitHandler.HandleCalculate)
 
 	server := &http.Server{
@@ -435,4 +420,32 @@ func newAPIMux(splitPass, splitICPass, splitTicket http.HandlerFunc) *http.Serve
 	mux.HandleFunc("/api/split-icpass", splitICPass)
 	mux.HandleFunc("/api/split-ticket", splitTicket)
 	return mux
+}
+
+// newPassSearchFactories は有効な事前計算表を優先し、利用できなければリクエスト単位で計算します。
+func newPassSearchFactories(
+	path string,
+	g, icGraph *passgraph.RailwayGraph,
+	split *passusecase.FindOptimalSplit,
+	rules []passdomain.ResolvedBypassRule,
+) (func() *passusecase.SearchOptimalSplit, func() *passusecase.SearchOptimalSplit) {
+	baseFares, icFares, baseDist, icDist, n, err := passdata.LoadPrecomputedFares(path)
+	if err != nil {
+		slog.Error("failed to load precomputed pass fares; using on-demand calculation", "error", err)
+	} else if int32(g.NumStations()) != n {
+		slog.Error("pass precomputed data station count mismatch; using on-demand calculation", "graph_stations", g.NumStations(), "precomputed_stations", n)
+		passdata.ClosePrecomputedFares()
+	} else {
+		g.DistGisei = baseDist
+		icGraph.DistGisei = icDist
+		baseSearch := passusecase.NewSearchOptimalSplit(g, split, rules, 0, baseFares, n)
+		icSearch := passusecase.NewSearchOptimalSplit(icGraph, split, rules, 2, icFares, n)
+		return func() *passusecase.SearchOptimalSplit { return baseSearch },
+			func() *passusecase.SearchOptimalSplit { return icSearch }
+	}
+	return func() *passusecase.SearchOptimalSplit {
+			return passusecase.NewOnDemandSearch(g, split, rules, 0)
+		}, func() *passusecase.SearchOptimalSplit {
+			return passusecase.NewOnDemandSearch(icGraph, split, rules, 2)
+		}
 }
