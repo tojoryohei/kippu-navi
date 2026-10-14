@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.4.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.4.1...kippu-navi-v4.4.2) (2026-10-14)
+
+
+### Performance Improvements
+
+* 共通ヘッダーの圧縮禁止を解除する ([#827](https://github.com/tojoryohei/kippu-navi/issues/827)) ([f0facdd](https://github.com/tojoryohei/kippu-navi/commit/f0facdd38db45f7bcc805c7aec69912f411cadfd))
+
 ## [4.4.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.4.0...kippu-navi-v4.4.1) (2026-10-14)
 
 
