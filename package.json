@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@astrojs/react": "^7.0.1",
-    "@fontsource-variable/noto-sans-jp": "5.3.0",
+    "@fontsource-variable/noto-sans-jp": "5.3.1",
     "@sentry/browser": "^11.6.0",
     "@tanstack/react-virtual": "^3.14.15",
     "astro": "^7.3.8",
