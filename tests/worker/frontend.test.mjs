@@ -248,7 +248,7 @@ test('測定IDがなければGoogle Analyticsは無効のままになる', () =>
 
 test('キャッシュ可能なAPIのクエリは許可項目だけを残して正規化する', () => {
   const normalized = normalizeCacheableApiUrl(new URL(
-    'https://kippu-navi.com/api/split-pass?to=B&ignored=x&noSplitStation=Z&from=A&noSplitStation=Y&noSplitStation=Z&months=3',
+    'https://kippu-navi.com/api/split-pass?to=B&ignored=x&noSplitStation=Z&from=A&noSplitStation=%20Y%20&noSplitStation=Z&noSplitStation=&noSplitStation=%20&months=3',
   ));
   assert.equal(
     normalized?.toString(),

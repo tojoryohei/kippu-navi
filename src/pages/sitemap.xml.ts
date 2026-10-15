@@ -3,6 +3,11 @@ export function GET() {
 
     const entries = [
         {
+            url: `${baseUrl}/developers/api`,
+            changeFrequency: 'monthly',
+            priority: 0.7,
+        },
+        {
             url: baseUrl,
             changeFrequency: 'monthly',
             priority: 1.0,

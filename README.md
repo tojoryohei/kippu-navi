@@ -5,6 +5,15 @@ JR線の運賃、定期券運賃、最安分割きっぷを計算するWebアプ
 - 本番: https://kippu-navi.com
 - ステージング: https://staging.kippu-navi.com
 
+## 公開API
+
+認証・APIキー不要の分割検索APIを公開しています。金額は含まず、分割境界の駅名を返します。
+
+- [APIの使い方](https://kippu-navi.com/developers/api)・[Markdown版](https://kippu-navi.com/developers/api.md)
+- [OpenAPI仕様](https://kippu-navi.com/openapi.json)・[正式駅名一覧](https://kippu-navi.com/developers/stations.json)・[AI向け案内](https://kippu-navi.com/llms.txt)
+
+駅名は一覧の`name`と完全一致が必要です（例: `（中）大久保`、`ＪＲ総持寺`、`姉ケ崎`）。同名駅は路線で確認してください。
+
 ## 構成
 
 | 役割 | 実装 |
