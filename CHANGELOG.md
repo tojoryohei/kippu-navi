@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.3...kippu-navi-v4.5.4) (2026-10-15)
+
+
+### Bug Fixes
+
+* 普通乗車券の分割計算APIから不要な期間を除外 ([#843](https://github.com/tojoryohei/kippu-navi/issues/843)) ([2e46c5f](https://github.com/tojoryohei/kippu-navi/commit/2e46c5ffe9685940b7e9e7ef5366c6529bc86bcc))
+
 ## [4.5.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.2...kippu-navi-v4.5.3) (2026-10-15)
 
 
