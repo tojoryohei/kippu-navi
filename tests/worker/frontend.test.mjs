@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {
+import frontend, {
   clearGoogleIdTokenCache,
   fetchEngineAsset,
   fetchGoogleIdToken,
@@ -15,6 +15,47 @@ import { initializeGoogleAnalytics, trackGooglePageView } from '../../src/lib/go
 import { classifyCalculationError, isRetryableEngineError, normalizeCalculationError, SearchOperationError } from '../../src/lib/search-errors.ts';
 
 const sentryDsn = 'https://public-key@o123.ingest.sentry.io/456';
+
+test('stagingの静的資材とWorker生成応答はすべて検索対象外にする', async () => {
+  for (const [host, environment, excluded] of [
+    ['staging.kippu-navi.com', undefined, true],
+    ['preview.example.workers.dev', 'staging', true],
+    ['kippu-navi.com', 'production', false],
+  ]) {
+    for (const [path, status] of [['/', 200], ['/api/split-ticket', 503], ['/monitoring', 405], ['/manifest.webmanifest', 200]]) {
+      const response = await frontend.fetch(new Request(`https://${host}${path}`), {
+        DEPLOY_ENVIRONMENT: environment,
+        ASSETS: { fetch: async () => new Response('静的資材') },
+      });
+      assert.equal(response.status, status);
+      assert.equal(response.headers.get('X-Robots-Tag'), excluded ? 'noindex, nofollow' : null);
+      if (path === '/') assert.equal(await response.text(), '静的資材');
+    }
+  }
+});
+
+test('staging APIの成功・入力エラー応答にもnoindexを付け、本番には付けない', async t => {
+  const originalFetch = globalThis.fetch;
+  const privateKey = await generatePrivateKeyPem();
+  t.after(() => { globalThis.fetch = originalFetch; clearGoogleIdTokenCache(); });
+  clearGoogleIdTokenCache();
+  for (const environment of ['staging', 'production']) {
+    for (const status of [200, 400]) {
+      globalThis.fetch = async input => typeof input === 'string'
+        ? Response.json({ id_token: encodeTestJwt({ exp: Math.floor(Date.now() / 1000) + 3600 }) })
+        : Response.json({ status }, { status });
+      const response = await frontend.fetch(new Request('https://example.com/api/split-ticket'), {
+        DEPLOY_ENVIRONMENT: environment,
+        API_ORIGIN: googleCredentials.audience,
+        GCP_SERVICE_ACCOUNT_EMAIL: googleCredentials.email,
+        GCP_SERVICE_ACCOUNT_PRIVATE_KEY: privateKey,
+      });
+      assert.equal(response.status, status);
+      assert.deepEqual(await response.json(), { status });
+      assert.equal(response.headers.get('X-Robots-Tag'), environment === 'staging' ? 'noindex, nofollow' : null);
+    }
+  }
+});
 const sentryEnvelope = dsn => `${JSON.stringify({ dsn })}\n${JSON.stringify({ type: 'event' })}\n{}`;
 const googleCredentials = {
   audience: 'https://calculation-engine.example.com',

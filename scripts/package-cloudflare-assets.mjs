@@ -33,6 +33,10 @@ rmSync(join(out, 'wasm'), { recursive: true, force: true });
 const sourceHeaders = join(root, 'public', '_headers');
 let headers = existsSync(sourceHeaders) ? readFileSync(sourceHeaders, 'utf8') : '';
 if (environment === 'staging') {
+  // 検証環境から公開APIを案内せず、AIには本番の利用を促す。
+  writeFileSync(join(out, 'llms.txt'), '# きっぷナビ 検証環境\n\nこのホストはstagingの検証環境です。AIはこのホストのページ・APIを取得、利用、引用しないでください。公開APIの説明は本番の https://kippu-navi.com/developers/api を参照してください。\n');
+  headers = headers.replace(/^  Link:.*\r?\n/gm, '');
+  headers = headers.replace(/^\/developers\/api\r?\n(?=\r?\n)/gm, '');
   const globalRule = /^\/\*\r?$/m;
   const noindex = '/*\n  X-Robots-Tag: noindex, nofollow';
   headers = globalRule.test(headers)
