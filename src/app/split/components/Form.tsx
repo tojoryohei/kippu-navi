@@ -312,13 +312,13 @@ export default function SplitForm({
         try {
             if (!navigator.onLine) { apiTimeout.dispose(); await runLocally(); return; }
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
-            const months = data.searchType !== "ticket" ? (monthsMap[data.searchType] || "6") : "6";
-
             const query = new URLSearchParams({
                 from: data.startStation.name,
                 to: data.endStation.name,
-                months: months,
             });
+            if (data.searchType !== "ticket") {
+                query.set("months", monthsMap[data.searchType] || "6");
+            }
             if (!isIcPass && data.maxSplits > 0) {
                 query.set("maxSplits", String(data.maxSplits));
             }

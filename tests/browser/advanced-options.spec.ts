@@ -86,13 +86,17 @@ test("無制限のmaxSplitsをURLとAPIリクエストから省略する", async
   await page.goto("/split/auto/ticket?from=新茂原&to=茂原&maxSplits=0");
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
 
-  expect(new URL((await request).url()).searchParams.has("maxSplits")).toBe(false);
+  const ticketQuery = new URL((await request).url()).searchParams;
+  expect(ticketQuery.has("maxSplits")).toBe(false);
+  expect(ticketQuery.has("months")).toBe(false);
   expect(new URL(page.url()).searchParams.has("maxSplits")).toBe(false);
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("制限なし");
 
   const passRequest = page.waitForRequest(req => req.url().includes("/api/split-pass"));
   await page.getByRole("button", { name: "定期券", exact: true }).click();
-  expect(new URL((await passRequest).url()).searchParams.has("maxSplits")).toBe(false);
+  const passQuery = new URL((await passRequest).url()).searchParams;
+  expect(passQuery.has("maxSplits")).toBe(false);
+  expect(passQuery.get("months")).toBe("6");
   expect(new URL(page.url()).searchParams.has("maxSplits")).toBe(false);
 });
 
