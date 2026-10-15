@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.5...kippu-navi-v5.0.0) (2026-10-15)
+
+
+### Features
+
+* 公開APIの仕様とAI向け案内を追加 ([#848](https://github.com/tojoryohei/kippu-navi/issues/848)) ([c61a48e](https://github.com/tojoryohei/kippu-navi/commit/c61a48e935e548879360529f67ba4ae363717266))
+
 ## [4.5.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.4...kippu-navi-v4.5.5) (2026-10-15)
 
 
