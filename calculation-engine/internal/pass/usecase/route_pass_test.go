@@ -38,18 +38,18 @@ func TestRoutePassCorrectionAndExtensionBoundaries(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(result.Results) != 1 || len(result.Results[0].Segments) != 1 {
-				t.Fatalf("unexpected cuts: %+v", result)
+				t.Fatalf("予期しない分割位置です: %+v", result)
 			}
 			segment := result.Results[0].Segments[0]
 			if segment.DepartureStation != "B" || segment.ArrivalStation != "C" {
-				t.Fatal("extension changed split boundaries")
+				t.Fatal("経路延長によって分割区間の境界が変化しました")
 			}
 			wantStart, wantEnd, amount := "B", "C", 818*months
 			if mode == "cheapest" {
 				wantStart, wantEnd, amount = "A", "D", 618*months
 			}
 			if segment.Fare.DepartureStation != wantStart || segment.Fare.ArrivalStation != wantEnd || segment.Fare.Fare != amount || result.Results[0].TotalFare != amount || result.Normal.Fare != amount {
-				t.Fatalf("months=%d mode=%s result=%+v segment=%+v", months, mode, result, segment)
+				t.Fatalf("月数=%d モード=%s 結果=%+v 区間=%+v", months, mode, result, segment)
 			}
 		}
 	}
@@ -60,11 +60,11 @@ func TestRoutePassCorrectionAndExtensionBoundaries(t *testing.T) {
 			wantCandidates = []string{"B", "C"}
 		}
 		if candidateErr != nil || !reflect.DeepEqual(candidates, wantCandidates) {
-			t.Fatalf("candidates %s: %v %v", mode, candidates, candidateErr)
+			t.Fatalf("候補駅 %s: %v %v", mode, candidates, candidateErr)
 		}
 		extendedCandidates, candidateErr := calculator.SplitCandidates([]string{"B", "C"}, mode)
 		if candidateErr != nil || len(extendedCandidates) != 0 {
-			t.Fatalf("extended candidates: %v %v", extendedCandidates, candidateErr)
+			t.Fatalf("延長後の候補駅: %v %v", extendedCandidates, candidateErr)
 		}
 		result, err := calculator.Calculate([]int{a, x, d}, 1, mode)
 		if err != nil {
@@ -75,12 +75,12 @@ func TestRoutePassCorrectionAndExtensionBoundaries(t *testing.T) {
 			want = []string{"A", "X", "D"}
 		}
 		if !reflect.DeepEqual(result.CorrectedPath, want) {
-			t.Fatalf("mode=%s path=%v", mode, result.CorrectedPath)
+			t.Fatalf("モード=%s 経路=%v", mode, result.CorrectedPath)
 		}
 	}
 	corrected := calculator.CorrectPath([]int{d, x, a})
 	if !reflect.DeepEqual(corrected, []int{d, c, b, a}) {
-		t.Fatalf("reverse correction=%v", corrected)
+		t.Fatalf("逆方向の補正=%v", corrected)
 	}
 }
 
@@ -94,7 +94,7 @@ func TestRoutePassResolvePathRejectsOversizedRoutes(t *testing.T) {
 	}
 	calculator := NewRoutePassCalculator(g, nil, nil)
 	if _, err := calculator.ResolvePath(names); err != domain.ErrInvalidPath {
-		t.Fatalf("ResolvePath error = %v, want %v", err, domain.ErrInvalidPath)
+		t.Fatalf("ResolvePath エラー = %v, 期待値 %v", err, domain.ErrInvalidPath)
 	}
 }
 
@@ -118,6 +118,6 @@ func TestRoutePassCheapestRejectsLoopedExtensionCandidate(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(result.CorrectedPath, []string{"B", "C"}) || result.Fare != 10 {
-		t.Fatalf("looped candidate was selected: %+v", result)
+		t.Fatalf("循環する候補経路が選択されています: %+v", result)
 	}
 }

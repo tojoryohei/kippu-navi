@@ -26,10 +26,10 @@ func TestConventionalThroughViaBoundaries(t *testing.T) {
 			}
 			original := append([]ViaStep(nil), tc.steps...)
 			if got := conventionalThroughVia(tc.steps); !reflect.DeepEqual(got, want) {
-				t.Fatalf("got %v want %v", got, want)
+				t.Fatalf("実際 %v 期待値 %v", got, want)
 			}
 			if !reflect.DeepEqual(original, tc.steps) {
-				t.Fatal("input changed")
+				t.Fatal("入力が変更されています")
 			}
 		})
 	}

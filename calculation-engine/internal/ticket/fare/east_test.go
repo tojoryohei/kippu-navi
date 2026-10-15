@@ -74,11 +74,11 @@ func TestCalculateEastFare(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := CalculateEastFare(tt.params)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CalculateEastFare() err = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CalculateEastFare() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CalculateEastFare() = %v, want %v", got, tt.want)
+				t.Errorf("CalculateEastFare() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}

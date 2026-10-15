@@ -285,7 +285,7 @@ func TestTicketAmountCalculation_TemporaryStationEndpoints(t *testing.T) {
 				t.Fatalf("臨時駅発着の運賃計算結果が不正です: %+v", result)
 			}
 			if len(result.FinalPath) != len(tt.path) || result.FinalPath[0] != tt.path[0] || result.FinalPath[len(result.FinalPath)-1] != tt.path[len(tt.path)-1] {
-				t.Fatalf("発着駅が計算結果で維持されていません: got=%v want=%v", result.FinalPath, tt.path)
+				t.Fatalf("発着駅が計算結果で維持されていません: 実際=%v 期待値=%v", result.FinalPath, tt.path)
 			}
 		})
 	}

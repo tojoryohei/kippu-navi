@@ -155,7 +155,7 @@ func TestCalculateAmount_Execute(t *testing.T) {
 				}
 
 				if *got != tt.want {
-					t.Errorf("Execute() の内訳が一致しません。\ngot:  %+v\nwant: %+v", *got, tt.want)
+					t.Errorf("Execute() の内訳が一致しません。\n実際:  %+v\n期待値: %+v", *got, tt.want)
 				}
 
 				// TotalAmountメソッド自体の計算ロジックも壊れていないか検証する

@@ -123,7 +123,7 @@ func (l *JSONLoader) LoadSeparatedGraphs(physicalReaders []io.Reader, virtualRea
 // AddVirtualEdges は既存グラフへ運賃計算専用の仮想エッジを追加します。
 func (l *JSONLoader) AddVirtualEdges(g *graph.RailwayGraph, readers ...io.Reader) error {
 	if g == nil {
-		return fmt.Errorf("graphio: graph is nil")
+		return fmt.Errorf("graphio: グラフがnilです")
 	}
 	edges, err := decodeTicketEdges(readers, "virtual")
 	if err != nil {

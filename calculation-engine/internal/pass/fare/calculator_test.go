@@ -550,7 +550,7 @@ func runCalculatorTests(t *testing.T, calc calculator, tests []calcTestCase) {
 					return
 				}
 				if tt.wantErrIs != nil && !errors.Is(err, tt.wantErrIs) {
-					t.Errorf("エラーの種類が異なります: got %v, want %v", err, tt.wantErrIs)
+					t.Errorf("エラーの種類が異なります: 実際 %v, 期待値 %v", err, tt.wantErrIs)
 				}
 				return
 			}

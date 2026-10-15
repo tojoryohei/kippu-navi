@@ -171,12 +171,12 @@ func preparePassGraphBuffer(this js.Value, args []js.Value) interface{} {
 func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	passGraphInitialized = false
 	if len(passTempBuffer) < 16 {
-		return js.ValueOf("error: buffer is too small")
+		return js.ValueOf("error: バッファーが小さすぎます")
 	}
 
 	magic := string(passTempBuffer[:8])
 	if magic != "WASMGRA\x00" {
-		return js.ValueOf(fmt.Sprintf("error: invalid magic header: %q", magic))
+		return js.ValueOf(fmt.Sprintf("error: マジックヘッダーが不正です: %q", magic))
 	}
 
 	numStations := *(*int32)(unsafe.Pointer(&passTempBuffer[8]))
@@ -209,7 +209,7 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		Station1 string `json:"station1"`
 	}
 	if err := json.NewDecoder(ticketgraphdata.GetEdgesReader()).Decode(&lineRecords); err != nil {
-		return js.ValueOf(fmt.Sprintf("error: pass line data: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 定期券の路線データを読み込めませんでした: %v", err))
 	}
 	lineByPair := make(map[[2]int]string, len(lineRecords)*2)
 	for _, record := range lineRecords {
@@ -251,14 +251,14 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	// icGraph の構築
 	ic, err := graph.NewIcPassGraph(passBaseGraph)
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: NewIcPassGraph failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: IC定期券グラフの生成に失敗しました: %v", err))
 	}
 	icGraph = ic
 
 	// passBaseAmountCalc の構築
 	passBaseCalcs, err := fareio.InitRegistry(passBaseGraph)
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: InitRegistry failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 定期券運賃レジストリーの初期化に失敗しました: %v", err))
 	}
 
 	passAddonFareReg := passdomain.NewAddonRegistry()
@@ -281,7 +281,7 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 
 	passPrivateFareReg, err := fareio.NewPrivateFareRegistry()
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: passPrivateFareRegistry Init failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 会社線の定期券運賃レジストリーの初期化に失敗しました: %v", err))
 	}
 
 	passBaseAmountCalc = usecase.NewCalculateAmount(
@@ -298,7 +298,7 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	// passIcAmountCalc の構築
 	passIcCalcs, err := fareio.InitRegistry(icGraph)
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: ic InitRegistry failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: IC定期券運賃レジストリーの初期化に失敗しました: %v", err))
 	}
 	passIcAmountCalc = usecase.NewCalculateAmount(
 		icGraph,
@@ -317,7 +317,7 @@ func initPassGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		return passBaseGraph.GetID(name)
 	})
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: ResolveIDs failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 駅IDの解決に失敗しました: %v", err))
 	}
 
 	// 初期化完了に伴い、一時バッファへのピン留めを解除しGCに開放
@@ -342,18 +342,18 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 
 	var splitNames []string
 	if err := json.Unmarshal([]byte(splitStationsJson), &splitNames); err != nil {
-		return js.ValueOf(fmt.Sprintf(`{"error":"JSON unmarshal failed: %v"}`, err))
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSONの解析に失敗しました: %v"}`, err))
 	}
 
 	if len(splitNames) < 2 {
-		return js.ValueOf(`{"error":"at least 2 stations required"}`)
+		return js.ValueOf(`{"error":"少なくとも2駅が必要です"}`)
 	}
 
 	splitIDs := make([]int, len(splitNames))
 	for i, name := range splitNames {
 		id, ok := passWasmGraph.GetID(name)
 		if !ok {
-			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
+			return js.ValueOf(fmt.Sprintf(`{"error":"駅が見つかりません: %s"}`, name))
 		}
 		splitIDs[i] = id
 	}
@@ -362,7 +362,7 @@ func reconstructAndCalculate(this js.Value, args []js.Value) interface{} {
 	for i := 0; i < len(splitIDs)-1; i++ {
 		segs, err := getCheapestNoSplitSegmentsWasm(splitIDs[i], splitIDs[i+1], months, true)
 		if err != nil {
-			return js.ValueOf(fmt.Sprintf(`{"error":"failed to get segments: %v"}`, err))
+			return js.ValueOf(fmt.Sprintf(`{"error":"区間の取得に失敗しました: %v"}`, err))
 		}
 		allSegCandidates = append(allSegCandidates, segs)
 	}
@@ -857,18 +857,18 @@ func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 
 	var splitNames []string
 	if err := json.Unmarshal([]byte(splitStationsJson), &splitNames); err != nil {
-		return js.ValueOf(fmt.Sprintf(`{"error":"JSON unmarshal failed: %v"}`, err))
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSONの解析に失敗しました: %v"}`, err))
 	}
 
 	if len(splitNames) < 2 {
-		return js.ValueOf(`{"error":"at least 2 stations required"}`)
+		return js.ValueOf(`{"error":"少なくとも2駅が必要です"}`)
 	}
 
 	splitIDs := make([]int, len(splitNames))
 	for i, name := range splitNames {
 		id, ok := ticketFullGraph.GetID(name)
 		if !ok {
-			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
+			return js.ValueOf(fmt.Sprintf(`{"error":"駅が見つかりません: %s"}`, name))
 		}
 		splitIDs[i] = id
 	}
@@ -879,7 +879,7 @@ func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 	for i := 0; i < len(splitIDs)-1; i++ {
 		segs, err := search.GetCheapestTicketSegments(splitIDs[i], splitIDs[i+1])
 		if err != nil {
-			return js.ValueOf(fmt.Sprintf(`{"error":"failed to get segments: %v"}`, err))
+			return js.ValueOf(fmt.Sprintf(`{"error":"区間の取得に失敗しました: %v"}`, err))
 		}
 		allSegCandidates = append(allSegCandidates, segs)
 	}
@@ -995,7 +995,7 @@ func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 
 	respJSON, err := json.Marshal(resp)
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf(`{"error":"JSON marshal failed: %v"}`, err))
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSONの生成に失敗しました: %v"}`, err))
 	}
 
 	return js.ValueOf(string(respJSON))
@@ -1031,12 +1031,12 @@ func prepareTicketGraphBuffer(this js.Value, args []js.Value) interface{} {
 func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	ticketGraphInitialized = false
 	if len(ticketTempBuffer) < 16 {
-		return js.ValueOf("error: buffer is too small")
+		return js.ValueOf("error: バッファーが小さすぎます")
 	}
 
 	magic := string(ticketTempBuffer[:8])
 	if magic != "WASMGRA\x00" {
-		return js.ValueOf(fmt.Sprintf("error: invalid magic header: %q", magic))
+		return js.ValueOf(fmt.Sprintf("error: マジックヘッダーが不正です: %q", magic))
 	}
 
 	numStations := *(*int32)(unsafe.Pointer(&ticketTempBuffer[8]))
@@ -1100,32 +1100,32 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 		ticketFullGraph.PhysicalEdgeCounts[i] = len(ticketEdges)
 	}
 	if err := (&ticketgraphio.JSONLoader{}).AddVirtualEdges(ticketFullGraph, ticketgraphdata.GetFareGraphEdgeReaders()...); err != nil {
-		return js.ValueOf(fmt.Sprintf("error: failed to add virtual ticket edges: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 乗車券用の仮想辺の追加に失敗しました: %v", err))
 	}
 	ticketSearchGraph = ticketgraph.NewPhysicalGraphView(ticketFullGraph)
 
 	// 乗車券コンポーネント初期化
 	zoneRoutesBytes, err := io.ReadAll(ticketgraphdata.GetZoneRoutesReader())
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: failed to read zone routes data: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 特定都区市内の経路データの読み込みに失敗しました: %v", err))
 	}
 	ticketZoneRoutes, err := ticketdomain.LoadZoneRoutesFromBytes(zoneRoutesBytes)
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: ticket zone routes load failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 乗車券の特定都区市内の経路データの読み込みに失敗しました: %v", err))
 	}
 
 	arBytes, err := io.ReadAll(ticketgraphdata.GetArticle70RoutesReader())
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: failed to read article70 routes data: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 第70条の経路データの読み込みに失敗しました: %v", err))
 	}
 	ticketArticle70Routes, err := ticketdomain.LoadArticle70RoutesFromBytes(arBytes)
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: ticket article70 routes load failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 乗車券の第70条の経路データの読み込みに失敗しました: %v", err))
 	}
 
 	ticketZoneReg, err := ticketgraphio.LoadSpecialZones()
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: LoadSpecialZones failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 特定都区市内データの読み込みに失敗しました: %v", err))
 	}
 	ticketZoneRegistry = ticketZoneReg
 	for _, z := range ticketZoneReg.Zones {
@@ -1138,11 +1138,11 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	ticketFareReg := ticketfare.NewRegistry()
 	ticketFareioReg, err := ticketfareio.NewRegistry()
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: ticket fareio load failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 乗車券運賃データの読み込みに失敗しました: %v", err))
 	}
 	ticketRouteExtensions, err = ticketusecase.NewRouteExtensionMatcherIDs(ticketfareio.GetGeneratedRouteExtensions(), ticketFullGraph)
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: route extension data initialization failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 経路延長データの初期化に失敗しました: %v", err))
 	}
 
 	ticketSpecificMatcher := ticketfare.NewPathMatcher()
@@ -1188,12 +1188,12 @@ func initTicketGraphFromBuffer(this js.Value, args []js.Value) interface{} {
 	if err := ticketAddonFareReg.ResolveIDs(func(name string) (int, bool) {
 		return ticketFullGraph.GetID(name)
 	}); err != nil {
-		return js.ValueOf(fmt.Sprintf("error: ticket addon fare resolve failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 乗車券の加算運賃の解決に失敗しました: %v", err))
 	}
 
 	ticketPrivateFareReg, err := ticketfareio.NewPrivateFareRegistry()
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf("error: private fare load failed: %v", err))
+		return js.ValueOf(fmt.Sprintf("error: 会社線運賃の読み込みに失敗しました: %v", err))
 	}
 
 	ticketTrainSpecificCalc := ticketfare.NewTrainSpecificSectionCalculator()
@@ -1255,18 +1255,18 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 	}
 
 	if !ticketGraphInitialized {
-		return js.ValueOf(`{"error": "ticket graph not initialized"}`)
+		return js.ValueOf(`{"error": "乗車券グラフが初期化されていません"}`)
 	}
 
 	if len(args) < 1 {
-		return js.ValueOf(`{"error": "invalid arguments"}`)
+		return js.ValueOf(`{"error": "引数が不正です"}`)
 	}
 
 	jsonStr := args[0].String()
 
 	var req RouteRequest
 	if err := json.Unmarshal([]byte(jsonStr), &req); err != nil {
-		return js.ValueOf(fmt.Sprintf(`{"error": "invalid json: %s"}`, err.Error()))
+		return js.ValueOf(fmt.Sprintf(`{"error": "JSONが不正です: %s"}`, err.Error()))
 	}
 
 	calculator := ticketusecase.NewRouteTicketCalculator(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneRegistry)
@@ -1299,7 +1299,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 
 func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 	if !ticketGraphInitialized {
-		return js.ValueOf(`{"error":"ticket graph not initialized"}`)
+		return js.ValueOf(`{"error":"乗車券グラフが初期化されていません"}`)
 	}
 	startName := args[0].String()
 	endName := args[1].String()
@@ -1322,18 +1322,18 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 
 	startID, ok := ticketFullGraph.GetID(startName)
 	if !ok {
-		return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, startName))
+		return js.ValueOf(fmt.Sprintf(`{"error":"駅が見つかりません: %s"}`, startName))
 	}
 	endID, ok := ticketFullGraph.GetID(endName)
 	if !ok {
-		return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, endName))
+		return js.ValueOf(fmt.Sprintf(`{"error":"駅が見つかりません: %s"}`, endName))
 	}
 	lockedStations := make([]int, 0, len(lockedNames))
 	seenLocked := make(map[int]struct{}, len(lockedNames))
 	for _, name := range lockedNames {
 		id, exists := ticketFullGraph.GetID(name)
 		if !exists {
-			return js.ValueOf(fmt.Sprintf(`{"error":"station not found: %s"}`, name))
+			return js.ValueOf(fmt.Sprintf(`{"error":"駅が見つかりません: %s"}`, name))
 		}
 		if _, exists := seenLocked[id]; exists {
 			continue
@@ -1346,7 +1346,7 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 
 	bestResultPaths, err := search.ExecuteWithOptions(startID, endID, maxSections, lockedStations)
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf(`{"error":"failed to search optimal split: %v"}`, err))
+		return js.ValueOf(fmt.Sprintf(`{"error":"最適分割の検索に失敗しました: %v"}`, err))
 	}
 
 	type SegmentResponse struct {
@@ -1474,7 +1474,7 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 
 	respJSON, err := json.Marshal(resp)
 	if err != nil {
-		return js.ValueOf(fmt.Sprintf(`{"error":"JSON marshal failed: %v"}`, err))
+		return js.ValueOf(fmt.Sprintf(`{"error":"JSONの生成に失敗しました: %v"}`, err))
 	}
 
 	return js.ValueOf(string(respJSON))
@@ -1488,10 +1488,10 @@ func routeTicketError(err error) interface{} {
 func calculateRouteSplitTicket(this js.Value, args []js.Value) interface{} {
 	start := time.Now()
 	if !ticketGraphInitialized {
-		return routeTicketError(errors.New("ticket graph not initialized"))
+		return routeTicketError(errors.New("乗車券グラフが初期化されていません"))
 	}
 	if len(args) < 1 {
-		return routeTicketError(errors.New("invalid arguments"))
+		return routeTicketError(errors.New("引数が不正です"))
 	}
 	var req struct {
 		RouteRequest
@@ -1537,10 +1537,10 @@ func calculateOptimalSplitPass(this js.Value, args []js.Value) interface{} {
 		return js.ValueOf(string(b))
 	}
 	if !passGraphInitialized {
-		return fail("pass graph not initialized")
+		return fail("定期券グラフが初期化されていません")
 	}
 	if len(args) != 1 {
-		return fail("invalid request")
+		return fail("リクエストが不正です")
 	}
 	var req struct {
 		From            string   `json:"from"`

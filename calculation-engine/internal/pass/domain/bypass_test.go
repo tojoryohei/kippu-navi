@@ -17,6 +17,6 @@ func TestDefaultBypassRulesAreShared(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(rules) != 4 {
-		t.Fatalf("共通の特例区間数 = %d, want 4", len(rules))
+		t.Fatalf("共通の特例区間数 = %d, 期待値 4", len(rules))
 	}
 }

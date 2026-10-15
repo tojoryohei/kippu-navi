@@ -28,12 +28,12 @@ func TestProgressCountsSkippedAndCachedCandidates(t *testing.T) {
 			}
 			for key, count := range calls {
 				if count != 1 {
-					t.Fatalf("evaluation repeated: %v: %d", key, count)
+					t.Fatalf("区間%vが%d回評価されています", key, count)
 				}
 			}
 			want, err := OptimizeFixedRoute(4, evaluate, limit)
 			if err != nil || !reflect.DeepEqual(got, want) {
-				t.Fatalf("result changed: %v", err)
+				t.Fatalf("計算結果が変化しました: %v", err)
 			}
 			total := 6
 			if limit > 0 {
@@ -41,14 +41,14 @@ func TestProgressCountsSkippedAndCachedCandidates(t *testing.T) {
 			}
 			expected := []Progress{{"calculating", 0, total}, {"calculating", total, total}, {"organizing", total, total}}
 			if !reflect.DeepEqual(events, expected) {
-				t.Fatalf("events: %+v", events)
+				t.Fatalf("進捗通知: %+v", events)
 			}
 		})
 	}
 }
 
 func TestProgressDoesNotCompleteOnEvaluationError(t *testing.T) {
-	failure := errors.New("evaluation failed")
+	failure := errors.New("評価に失敗しました")
 	for _, limit := range []int{0, 1} {
 		var events []Progress
 		_, err := OptimizeFixedRouteWithProgress(4, func(i, j int) (RouteSplitSegment, error) {
@@ -59,7 +59,7 @@ func TestProgressDoesNotCompleteOnEvaluationError(t *testing.T) {
 			return RouteSplitSegment{}, failure
 		}, func(p Progress) { events = append(events, p) }, limit)
 		if !errors.Is(err, failure) || len(events) != 2 || events[0].Completed != 0 || events[1].Completed != 1 || events[1].Phase != "calculating" {
-			t.Fatalf("err=%v events=%+v", err, events)
+			t.Fatalf("エラー=%v 進捗通知=%+v", err, events)
 		}
 	}
 }
@@ -76,6 +76,6 @@ func TestProgressReportsCompletedWorkDuringCalculation(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(events) != 4 || events[1] != (Progress{"calculating", 1, 3}) {
-		t.Fatalf("events=%+v", events)
+		t.Fatalf("進捗通知=%+v", events)
 	}
 }

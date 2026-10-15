@@ -17,16 +17,16 @@ func TestObserveRequestsPropagatesRequestID(t *testing.T) {
 	handler.ServeHTTP(response, request)
 
 	if response.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want %d", response.Code, http.StatusNoContent)
+		t.Fatalf("ステータス = %d, 期待値 %d", response.Code, http.StatusNoContent)
 	}
 	if got := response.Header().Get("X-Request-ID"); got != "request-123" {
-		t.Fatalf("X-Request-ID = %q, want request-123", got)
+		t.Fatalf("X-Request-ID = %q, 期待値 request-123", got)
 	}
 }
 
 func TestObserveRequestsRecoversPanic(t *testing.T) {
 	handler := observeRequests(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-		panic("sensitive route data")
+		panic("機密の経路データ")
 	}))
 	request := httptest.NewRequest(http.MethodGet, "/api/test", nil)
 	response := httptest.NewRecorder()
@@ -34,6 +34,6 @@ func TestObserveRequestsRecoversPanic(t *testing.T) {
 	handler.ServeHTTP(response, request)
 
 	if response.Code != http.StatusInternalServerError {
-		t.Fatalf("status = %d, want %d", response.Code, http.StatusInternalServerError)
+		t.Fatalf("ステータス = %d, 期待値 %d", response.Code, http.StatusInternalServerError)
 	}
 }

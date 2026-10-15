@@ -49,11 +49,11 @@ func TestCalculateShikokuFare(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := CalculateShikokuFare(tt.params)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CalculateShikokuFare() err = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CalculateShikokuFare() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CalculateShikokuFare() = %v, want %v", got, tt.want)
+				t.Errorf("CalculateShikokuFare() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}

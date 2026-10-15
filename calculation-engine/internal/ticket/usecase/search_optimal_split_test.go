@@ -29,11 +29,11 @@ func TestSearchUnlimitedSplit(t *testing.T) {
 		cost, results := search.searchUnlimitedSplit(path)
 
 		if cost != 100 {
-			t.Fatalf("運賃 = %d, want 100", cost)
+			t.Fatalf("運賃 = %d, 期待値 100", cost)
 		}
 		want := [][]int{{0, 3}, {0, 1, 3}}
 		if !reflect.DeepEqual(results, want) {
-			t.Fatalf("結果 = %v, want %v", results, want)
+			t.Fatalf("結果 = %v, 期待値 %v", results, want)
 		}
 	})
 
@@ -50,11 +50,11 @@ func TestSearchUnlimitedSplit(t *testing.T) {
 		cost, results := search.searchUnlimitedSplit(path)
 
 		if cost != 90 {
-			t.Fatalf("運賃 = %d, want 90", cost)
+			t.Fatalf("運賃 = %d, 期待値 90", cost)
 		}
 		want := [][]int{{0, 1, 3}, {0, 2, 3}}
 		if !reflect.DeepEqual(results, want) {
-			t.Fatalf("結果 = %v, want %v", results, want)
+			t.Fatalf("結果 = %v, 期待値 %v", results, want)
 		}
 	})
 }
@@ -78,7 +78,7 @@ func TestSearchUnlimitedSplitLockedStation(t *testing.T) {
 	search.SetPrecomputedFares(fares)
 	cost, results := search.searchUnlimitedSplitWithLocks(path, makeLockedStationSet([]int{path[1]}))
 	if cost != 100 {
-		t.Fatalf("運賃 = %d, want 100", cost)
+		t.Fatalf("運賃 = %d, 期待値 100", cost)
 	}
 	for _, result := range results {
 		for _, station := range result[1 : len(result)-1] {
@@ -136,7 +136,7 @@ func TestSearchOptimalSplit_ShibuyaMito_KairakuenLocked(t *testing.T) {
 	}
 	want := [][]int{{shibuya, ryugasakishi, mito}}
 	if !reflect.DeepEqual(lockedGot, want) {
-		t.Fatalf("偕楽園を分割禁止にした結果 = %v, want %v", lockedGot, want)
+		t.Fatalf("偕楽園を分割禁止にした結果 = %v, 期待値 %v", lockedGot, want)
 	}
 }
 

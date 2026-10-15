@@ -23,11 +23,11 @@ func TestCalculateBarrierFreeFee(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := fare.CalculateBarrierFreeFee(tt.months)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CalculateBarrierFreeFee() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CalculateBarrierFreeFee() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CalculateBarrierFreeFee() = %v, want %v", got, tt.want)
+				t.Errorf("CalculateBarrierFreeFee() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -65,7 +65,7 @@ func TestIsAllBarrierFreeFeeApplicable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := fare.IsAllBarrierFreeFeeApplicable(tt.edges); got != tt.want {
-				t.Errorf("IsAllBarrierFreeFeeApplicable() = %v, want %v", got, tt.want)
+				t.Errorf("IsAllBarrierFreeFeeApplicable() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}

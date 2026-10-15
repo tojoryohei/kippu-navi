@@ -22,7 +22,7 @@ func TestInputViaKanasCollapsesOnlyAdjacentDuplicates(t *testing.T) {
 	}
 	want := []string{"トウホ", "チユト", "トウホ"}
 	if got := inputViaKanas(path); !reflect.DeepEqual(got, want) {
-		t.Fatalf("input via kanas = %v, want %v", got, want)
+		t.Fatalf("入力経路のカナ = %v, 期待値 %v", got, want)
 	}
 }
 
@@ -60,19 +60,19 @@ func TestSpecialViaInputAndAutomaticSelection(t *testing.T) {
 					var ok bool
 					ids[i], ok = g.GetID(name)
 					if !ok {
-						t.Fatalf("missing station %s", name)
+						t.Fatalf("駅%sがありません", name)
 					}
 				}
 				steps := physicalViaSteps(g, ids)
 				if got := GetFareVia(steps); !reflect.DeepEqual(got, wantInput) {
-					t.Fatalf("input (%v) = %v, want %v", names, got, wantInput)
+					t.Fatalf("入力 (%v) = %v, 期待値 %v", names, got, wantInput)
 				}
 				if got := GetSplitVia(g, ids); !reflect.DeepEqual(got, wantAuto) {
-					t.Fatalf("automatic (%v) = %v, want %v", names, got, wantAuto)
+					t.Fatalf("自動 (%v) = %v, 期待値 %v", names, got, wantAuto)
 				}
 				if len(wantCodes) > 0 {
 					if got := inputViaKanas(steps); !reflect.DeepEqual(got, wantCodes) {
-						t.Fatalf("logged kana = %v, want %v", got, wantCodes)
+						t.Fatalf("ログのカナ = %v, 期待値 %v", got, wantCodes)
 					}
 				}
 			}
@@ -91,7 +91,7 @@ func TestSpecialViaWithCorrectionAndOmission(t *testing.T) {
 			var ok bool
 			path[i], ok = g.GetID(name)
 			if !ok {
-				t.Fatalf("missing station %s", name)
+				t.Fatalf("駅%sがありません", name)
 			}
 		}
 		return path
@@ -107,7 +107,7 @@ func TestSpecialViaWithCorrectionAndOmission(t *testing.T) {
 			want = reverseStrings(want)
 		}
 		if got := GetSplitViaForResult(g, source, printed); !reflect.DeepEqual(got, want) {
-			t.Fatalf("corrected split via = %v, want %v", got, want)
+			t.Fatalf("補正後の分割経由 = %v, 期待値 %v", got, want)
 		}
 		// 最安は補正前の内方接続を引き継がず、補正後の外方接続で判定する。
 		want = []string{"外房", "内房"}
@@ -115,7 +115,7 @@ func TestSpecialViaWithCorrectionAndOmission(t *testing.T) {
 			want = reverseStrings(want)
 		}
 		if got := GetCheapestFareViaForResult(g, printed, printed); !reflect.DeepEqual(got, want) {
-			t.Fatalf("cheapest via = %v, want %v", got, want)
+			t.Fatalf("最安の経由 = %v, 期待値 %v", got, want)
 		}
 	}
 	// 69条で省略される呉線は、接続駅発の特殊コードも印字しない。
@@ -123,13 +123,13 @@ func TestSpecialViaWithCorrectionAndOmission(t *testing.T) {
 	path := ids(branch...)
 	steps := physicalViaSteps(g, path)
 	if got := GetFareVia(steps); !reflect.DeepEqual(got, []string{"須波", "矢野"}) {
-		t.Fatalf("unfiltered via = %v", got)
+		t.Fatalf("絞り込み前の経由 = %v", got)
 	}
 	if got := GetFareViaForResultWithSections(steps, path, g, nil); len(got) != 0 {
-		t.Fatalf("omitted fare via = %v", got)
+		t.Fatalf("省略後の運賃経由 = %v", got)
 	}
 	if got := GetSplitViaForResult(g, path, path); len(got) != 0 {
-		t.Fatalf("omitted split via = %v", got)
+		t.Fatalf("省略後の分割経由 = %v", got)
 	}
 }
 
@@ -165,7 +165,7 @@ func TestRule157ViaReplacement(t *testing.T) {
 				sourcePath, printedPath := ids(source), ids(printed)
 				corrected, err := NewRule157Corrector().Correct(sourcePath, g)
 				if err != nil || !reflect.DeepEqual(corrected, printedPath) {
-					t.Fatalf("corrected path (reverse=%v) = %v, err=%v, want %v", reverse, corrected, err, printedPath)
+					t.Fatalf("補正後の経路 (逆方向=%v) = %v, エラー=%v, 期待値 %v", reverse, corrected, err, printedPath)
 				}
 				steps := physicalViaSteps(g, sourcePath)
 				for i := 0; i < len(steps)-1; i++ {
@@ -175,21 +175,21 @@ func TestRule157ViaReplacement(t *testing.T) {
 					}
 				}
 				if got := GetFareViaForResultWithSections(steps, printedPath, g, nil); !reflect.DeepEqual(got, want) {
-					t.Fatalf("normal (reverse=%v) = %v, want %v", reverse, got, want)
+					t.Fatalf("通常 (逆方向=%v) = %v, 期待値 %v", reverse, got, want)
 				}
 				if got := GetFareViaForResult(steps, sourcePath, g, nil); !reflect.DeepEqual(got, uncorrect) {
-					t.Fatalf("uncorrect = %v, want %v", got, uncorrect)
+					t.Fatalf("補正禁止 = %v, 期待値 %v", got, uncorrect)
 				}
 				if got := inputViaKanas(steps); !reflect.DeepEqual(got, logged) {
-					t.Fatalf("logged = %v, want %v", got, logged)
+					t.Fatalf("ログ = %v, 期待値 %v", got, logged)
 				}
 				if tt.rule == 2 {
 					if got := GetSplitViaForResult(g, sourcePath, printedPath); !reflect.DeepEqual(got, want) {
-						t.Fatalf("split = %v, want %v", got, want)
+						t.Fatalf("split = %v, 期待値 %v", got, want)
 					}
 				}
 				if got := GetCheapestFareViaForResult(g, printedPath, printedPath); !reflect.DeepEqual(got, want) {
-					t.Fatalf("cheapest = %v, want %v", got, want)
+					t.Fatalf("最安 = %v, 期待値 %v", got, want)
 				}
 				if tt.rule == 1 {
 					// 大阪側が環状線ではなく塚本方面なら、この157条の条件に該当しない。
@@ -199,7 +199,7 @@ func TestRule157ViaReplacement(t *testing.T) {
 					}
 					steps[outside].StationName = "塚本"
 					if sections := findRule157ViaSections(viaStepNames(steps)); len(sections) != 0 {
-						t.Fatalf("unexpected replacement: %v", sections)
+						t.Fatalf("予期しない置き換え区間です: %v", sections)
 					}
 				}
 			}
@@ -221,7 +221,7 @@ func TestGetFareViaUsesInputLine(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := GetFareVia([]ViaStep{{"東京", tt.line}, {"神田", ""}})
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("GetFareVia() = %v, want %v", got, tt.want)
+				t.Fatalf("GetFareVia() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -302,7 +302,7 @@ func TestGetFareViaShinkansenAndPrivateBoundary(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := GetFareVia(tt.path); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("GetFareVia() = %v, want %v", got, tt.want)
+				t.Fatalf("GetFareVia() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -407,7 +407,7 @@ func TestGetFareViaForResultOmitsAppliedZones(t *testing.T) {
 				finalPath[i] = g.GetOrAddID(name)
 			}
 			if got := GetFareViaForResult(tt.path, finalPath, g, zones); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("GetFareViaForResult() = %v, want %v", got, tt.want)
+				t.Fatalf("GetFareViaForResult() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -439,7 +439,7 @@ func TestOsakaShinOsakaViaUsesTwoStationZone(t *testing.T) {
 					got = GetFareViaForResultWithSections(tt.steps, finalPath, g, nil)
 				}
 				if !reflect.DeepEqual(got, tt.want) {
-					t.Fatalf("withSections=%v: fare via = %v, want %v", withSections, got, tt.want)
+					t.Fatalf("区間指定あり=%v: 運賃の経由 = %v, 期待値 %v", withSections, got, tt.want)
 				}
 			}
 		})
@@ -471,14 +471,14 @@ func TestCheapestFareViaOmitsOsakaShinOsakaOnlyForFare(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := GetCheapestFareViaForResult(g, tt.print, tt.final); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("cheapest fare via = %v, want %v", got, tt.want)
+				t.Fatalf("最安運賃の経由 = %v, 期待値 %v", got, tt.want)
 			}
 			wantSplit := []string{"東海道", "大阪環状"}
 			if tt.name == "着側" {
 				wantSplit = []string{"大阪環状", "東海道"}
 			}
 			if got := GetSplitViaForResult(g, tt.path, tt.path); !reflect.DeepEqual(got, wantSplit) {
-				t.Fatalf("split via = %v, want %v", got, wantSplit)
+				t.Fatalf("分割の経由 = %v, 期待値 %v", got, wantSplit)
 			}
 		})
 	}
@@ -498,7 +498,7 @@ func TestOsakaShinOsakaViaBoundsSkipsVirtualEndpoint(t *testing.T) {
 	} {
 		start, end := osakaShinOsakaViaBounds(tt.names, tt.finalPath, g)
 		if start != tt.wantStart || end != tt.wantEnd {
-			t.Fatalf("bounds(%v) = (%d, %d), want (%d, %d)", tt.names, start, end, tt.wantStart, tt.wantEnd)
+			t.Fatalf("境界(%v) = (%d, %d), 期待値 (%d, %d)", tt.names, start, end, tt.wantStart, tt.wantEnd)
 		}
 	}
 }
@@ -528,7 +528,7 @@ func TestGetFareViaForResultShinkansenOverlap(t *testing.T) {
 				ids[i] = g.GetOrAddID(name)
 			}
 			if got := GetFareViaForResult(path, ids, g, zones); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("got %v, want %v", got, tt.want)
+				t.Fatalf("実際 %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -538,14 +538,14 @@ func TestRemoveOverlapViaReverseDirection(t *testing.T) {
 	path := []ViaStep{{"鶴舞", "チユサ"}, {"（中）金山", "トウカ"}, {"尾頭橋", "トウカ"}, {"名古屋", "シンカ"}, {"三河安城", ""}}
 	want := []string{"中央西", "新幹線", "三河安城"}
 	if got := GetFareVia(removeOverlapVia(path)); !reflect.DeepEqual(got, want) {
-		t.Fatalf("got %v, want %v", got, want)
+		t.Fatalf("実際 %v, 期待値 %v", got, want)
 	}
 }
 
 func TestRemoveOverlapViaKeepsUncorrectedTurnaround(t *testing.T) {
 	path := []ViaStep{{"岐阜羽島", "シンカ"}, {"名古屋", "トウカ"}, {"尾頭橋", "トウカ"}, {"（中）金山", "チユサ"}, {"鶴舞", ""}}
 	if got := removeOverlapVia(path); !reflect.DeepEqual(got, path) {
-		t.Fatalf("non-deducted path changed: %v", got)
+		t.Fatalf("控除対象外の経路が変化しました: %v", got)
 	}
 }
 
@@ -560,7 +560,7 @@ func TestRemoveOverlapViaUenoNippori(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := GetFareVia(removeOverlapVia(tt.path)); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("got %v, want %v", got, tt.want)
+				t.Fatalf("実際 %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -581,7 +581,7 @@ func TestFareViaKokuraShinkansenOverlap(t *testing.T) {
 	}
 	want := []string{"日豊", "新幹線", "博多"}
 	if got := GetFareViaForResult(path, finalPath, g, nil); !reflect.DeepEqual(got, want) {
-		t.Fatalf("GetFareViaForResult() = %v, want %v", got, want)
+		t.Fatalf("GetFareViaForResult() = %v, 期待値 %v", got, want)
 	}
 }
 
@@ -604,23 +604,23 @@ func TestOverlapViaBranchesMatchFareCorrectionRules(t *testing.T) {
 		physicalPairs[stationPair(edge.Station0, edge.Station1)] = true
 	}
 	if len(deductions) != 13 || len(overlapViaBranches) != len(deductions)+2 {
-		t.Fatalf("printing branches=%d, fare deductions=%d", len(overlapViaBranches), len(deductions))
+		t.Fatalf("経由表示の分岐数=%d、運賃控除数=%d", len(overlapViaBranches), len(deductions))
 	}
 	for i, rule := range overlapViaBranches {
 		if i < len(deductions) {
 			fareBranch := deductions[i][:len(rule.branch)]
 			if !reflect.DeepEqual(rule.branch, fareBranch) && !reflect.DeepEqual(reverseStrings(rule.branch), fareBranch) {
-				t.Fatalf("branch %d differs from fare deduction: %v, %v", i, rule.branch, deductions[i])
+				t.Fatalf("分岐%dが運賃控除と一致しません: %v, %v", i, rule.branch, deductions[i])
 			}
 		}
 		endpoint := rule.branch[len(rule.branch)-1]
 		if !shinkansenPairs[stationPair(endpoint, rule.shinkansenNeighbor)] {
-			t.Fatalf("branch %d has no shinkansen edge between %s and %s", i, endpoint, rule.shinkansenNeighbor)
+			t.Fatalf("分岐%dの%sと%sの間に新幹線の辺がありません", i, endpoint, rule.shinkansenNeighbor)
 		}
 		conventionalEndpoint := rule.branch[0]
 		for _, neighbor := range rule.conventionalNeighbors {
 			if !physicalPairs[stationPair(conventionalEndpoint, neighbor)] {
-				t.Fatalf("branch %d has no conventional edge between %s and %s", i, conventionalEndpoint, neighbor)
+				t.Fatalf("分岐%dの%sと%sの間に在来線の辺がありません", i, conventionalEndpoint, neighbor)
 			}
 		}
 	}
@@ -634,10 +634,10 @@ func TestGetSplitViaUsesPhysicalEdge(t *testing.T) {
 	tokyo, _ := g.GetID("東京")
 	kanda, _ := g.GetID("神田")
 	if got := GetSplitVia(g, []int{tokyo, kanda}); !reflect.DeepEqual(got, []string{"東北"}) {
-		t.Fatalf("GetSplitVia() = %v, want [東北]", got)
+		t.Fatalf("GetSplitVia() = %v, 期待値 [東北]", got)
 	}
 	if got := GetSplitVia(g, []int{kanda, tokyo}); !reflect.DeepEqual(got, []string{"東北"}) {
-		t.Fatalf("GetSplitVia(reverse) = %v, want [東北]", got)
+		t.Fatalf("GetSplitVia(逆方向) = %v, 期待値 [東北]", got)
 	}
 	for _, tc := range []struct {
 		stations []string
@@ -651,11 +651,11 @@ func TestGetSplitViaUsesPhysicalEdge(t *testing.T) {
 			var ok bool
 			path[i], ok = g.GetID(name)
 			if !ok {
-				t.Fatalf("station %s not found", name)
+				t.Fatalf("駅%sが見つかりません", name)
 			}
 		}
 		if got := GetSplitVia(g, path); !reflect.DeepEqual(got, tc.want) {
-			t.Fatalf("GetSplitVia(%v) = %v, want %v", tc.stations, got, tc.want)
+			t.Fatalf("GetSplitVia(%v) = %v, 期待値 %v", tc.stations, got, tc.want)
 		}
 	}
 }
@@ -693,7 +693,7 @@ func TestRule69ViaReplacements(t *testing.T) {
 			}
 			steps[len(steps)-1].LineName = ""
 			if got := GetFareViaForResultWithSections(steps, ids, g, nil); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("fare via = %v, want %v", got, tt.want)
+				t.Fatalf("運賃の経由 = %v, 期待値 %v", got, tt.want)
 			}
 			printNames := rules[tt.index].to
 			if tt.reverse {
@@ -704,7 +704,7 @@ func TestRule69ViaReplacements(t *testing.T) {
 				printPath[i] = g.GetOrAddID(name)
 			}
 			if got := GetSplitViaForResult(g, ids, printPath); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("split via = %v, want %v", got, tt.want)
+				t.Fatalf("分割の経由 = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -719,14 +719,14 @@ func TestArticle70ViaKeepsTripWithinBoldArea(t *testing.T) {
 	kanda, _ := g.GetID("神田")
 	path := []int{tokyo, kanda}
 	if got := GetSplitViaForResult(g, path, path); !reflect.DeepEqual(got, []string{"東北"}) {
-		t.Fatalf("split via = %v, want [東北]", got)
+		t.Fatalf("分割の経由 = %v, 期待値 [東北]", got)
 	}
 	steps := []ViaStep{{"東京", "トウホ"}, {"神田", ""}}
 	if got := GetFareViaForResultWithSections(steps, path, g, nil); !reflect.DeepEqual(got, []string{"東北"}) {
-		t.Fatalf("fare via = %v, want [東北]", got)
+		t.Fatalf("運賃の経由 = %v, 期待値 [東北]", got)
 	}
 	if got := GetFareViaForResult(steps, path, g, nil); !reflect.DeepEqual(got, []string{"東北"}) {
-		t.Fatalf("uncorrect via = %v, want [東北]", got)
+		t.Fatalf("補正禁止 経由 = %v, 期待値 [東北]", got)
 	}
 }
 
@@ -762,12 +762,12 @@ func TestArticle70ViaPrintsShinkansenConnectionAtEntry(t *testing.T) {
 			for i, step := range tt.steps {
 				id, ok := g.GetID(step.StationName)
 				if !ok {
-					t.Fatalf("station %q is missing", step.StationName)
+					t.Fatalf("駅%qがありません", step.StationName)
 				}
 				path[i] = id
 			}
 			if got := GetFareViaForResultWithSections(tt.steps, path, g, nil); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("fare via = %v, want %v", got, tt.want)
+				t.Fatalf("運賃の経由 = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -802,7 +802,7 @@ func TestArticle70ViaEndpointUsesRouteAndPrintingKana(t *testing.T) {
 		}
 		steps[len(steps)-1].LineName = ""
 		if got := GetSplitViaForResult(g, path, path); !reflect.DeepEqual(got, []string{"中央東"}) {
-			t.Fatalf("GetSplitViaForResult(%v) = %v, want [中央東]", stations, got)
+			t.Fatalf("GetSplitViaForResult(%v) = %v, 期待値 [中央東]", stations, got)
 		}
 		got := GetFareViaForResultWithSections(steps, path, g, nil)
 		count := 0
@@ -812,7 +812,7 @@ func TestArticle70ViaEndpointUsesRouteAndPrintingKana(t *testing.T) {
 			}
 		}
 		if count != 1 {
-			t.Fatalf("GetFareViaForResultWithSections(%v) = %v, want 中央東 once", stations, got)
+			t.Fatalf("GetFareViaForResultWithSections(%v) = %v, 期待値 中央東 once", stations, got)
 		}
 	}
 }
@@ -832,14 +832,14 @@ func TestArticle70KanaTokyoKandaOchanomizu(t *testing.T) {
 	inside := ids("東京", "神田", "御茶ノ水")
 	wantOrdinary := []string{"東北", "中央東"}
 	if got := GetSplitVia(g, inside); !reflect.DeepEqual(got, wantOrdinary) {
-		t.Fatalf("ordinary split via = %v, want %v", got, wantOrdinary)
+		t.Fatalf("通常分割の経由 = %v, 期待値 %v", got, wantOrdinary)
 	}
 	if got := GetSplitViaForResult(g, inside, inside); !reflect.DeepEqual(got, wantOrdinary) {
-		t.Fatalf("inside article70 via = %v, want %v", got, wantOrdinary)
+		t.Fatalf("第70条内の経由 = %v, 期待値 %v", got, wantOrdinary)
 	}
 	steps := []ViaStep{{"東京", "トウホ"}, {"神田", "チユト"}, {"御茶ノ水", ""}}
 	if got := GetFareVia(steps); !reflect.DeepEqual(got, wantOrdinary) {
-		t.Fatalf("ordinary fare via = %v, want %v", got, wantOrdinary)
+		t.Fatalf("通常運賃の経由 = %v, 期待値 %v", got, wantOrdinary)
 	}
 	for _, names := range [][]string{{"八丁堀", "東京", "神田"}, {"神田", "東京", "八丁堀"}} {
 		path := ids(names...)
@@ -850,16 +850,16 @@ func TestArticle70KanaTokyoKandaOchanomizu(t *testing.T) {
 			want = []string{"東北", "京葉"}
 		}
 		if got := GetFareViaForResultWithSections(steps, path, g, nil); !reflect.DeepEqual(got, want) {
-			t.Fatalf("fare via %v = %v, want %v", names, got, want)
+			t.Fatalf("運賃の経由 %v = %v, 期待値 %v", names, got, want)
 		}
 		if got := GetSplitViaForResult(g, path, path); !reflect.DeepEqual(got, want) {
-			t.Fatalf("split via %v = %v, want %v", names, got, want)
+			t.Fatalf("分割の経由 %v = %v, 期待値 %v", names, got, want)
 		}
 	}
 
 	outside := ids("名古屋", "東京", "神田")
 	if got := GetSplitViaForResult(g, outside, outside); !reflect.DeepEqual(got, []string{"東北"}) {
-		t.Fatalf("Tokyo boundary article70 kana via = %v, want [東北]", got)
+		t.Fatalf("東京を境界とする第70条のカナ経由 = %v, 期待値 [東北]", got)
 	}
 	for _, names := range [][]string{
 		{"名古屋", "東京", "神田", "御茶ノ水"},
@@ -871,7 +871,7 @@ func TestArticle70KanaTokyoKandaOchanomizu(t *testing.T) {
 			want = []string{"中央東", "東北"}
 		}
 		if got := GetSplitViaForResult(g, path, path); !reflect.DeepEqual(got, want) {
-			t.Fatalf("article70 kana via %v = %v, want %v", names, got, want)
+			t.Fatalf("第70条のカナ経由 %v = %v, 期待値 %v", names, got, want)
 		}
 	}
 }
@@ -897,7 +897,7 @@ func TestRule69ViaKeepsOutsideLinesAndChecksNeighbors(t *testing.T) {
 			}
 			steps[len(steps)-1].LineName = ""
 			if got := GetFareViaForResultWithSections(steps, ids, g, nil); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("fare via = %v, want %v", got, tt.want)
+				t.Fatalf("運賃の経由 = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -917,7 +917,7 @@ func TestRule69ViaDoesNotRepeatSameKanaAroundOmittedSection(t *testing.T) {
 	steps[len(steps)-1].LineName = ""
 	want := []string{"東海道"}
 	if got := GetFareViaForResultWithSections(steps, ids, g, nil); !reflect.DeepEqual(got, want) {
-		t.Fatalf("fare via = %v, want %v", got, want)
+		t.Fatalf("運賃の経由 = %v, 期待値 %v", got, want)
 	}
 }
 
@@ -931,7 +931,7 @@ func TestRule69SplitViaDoesNotRepeatSameKanaAroundOmittedSection(t *testing.T) {
 		for i, name := range names {
 			id, ok := g.GetID(name)
 			if !ok {
-				t.Fatalf("station %q is missing", name)
+				t.Fatalf("駅%qがありません", name)
 			}
 			path[i] = id
 		}
@@ -944,7 +944,7 @@ func TestRule69SplitViaDoesNotRepeatSameKanaAroundOmittedSection(t *testing.T) {
 	printed = append(printed, "石倉")
 	want := []string{"函館線"}
 	if got := GetSplitViaForResult(g, ids(source), ids(printed)); !reflect.DeepEqual(got, want) {
-		t.Fatalf("split via = %v, want %v", got, want)
+		t.Fatalf("分割の経由 = %v, 期待値 %v", got, want)
 	}
 }
 
@@ -964,7 +964,7 @@ func TestRule69ViaDoesNotRepeatAdjacentReplacementLine(t *testing.T) {
 	steps[len(steps)-1].LineName = ""
 	want := []string{"外房", "総武"}
 	if got := GetFareViaForResultWithSections(steps, ids, g, nil); !reflect.DeepEqual(got, want) {
-		t.Fatalf("fare via = %v, want %v", got, want)
+		t.Fatalf("運賃の経由 = %v, 期待値 %v", got, want)
 	}
 }
 
@@ -994,10 +994,10 @@ func TestPrivateConnectionCodesPreservePrinting(t *testing.T) {
 					codes, printed = reverseStrings(codes), reverseStrings(printed)
 				}
 				if got := inputViaKanas(path); !reflect.DeepEqual(got, codes) {
-					t.Fatalf("codes (reverse=%v) = %v, want %v", reverse, got, codes)
+					t.Fatalf("コード (逆方向=%v) = %v, 期待値 %v", reverse, got, codes)
 				}
 				if got := getFareVia(path, true, true, nil); !reflect.DeepEqual(got, printed) {
-					t.Fatalf("printing (reverse=%v) = %v, want %v", reverse, got, printed)
+					t.Fatalf("経由表示 (逆方向=%v) = %v, 期待値 %v", reverse, got, printed)
 				}
 			}
 		})
@@ -1009,12 +1009,12 @@ func TestPrivateConnectionCodesIgnoreSameCompanyLineChange(t *testing.T) {
 	path := []ViaStep{{"中野", "メトロ東西"}, {"西日暮里", "メトロ千代"}, {"北千住", ""}}
 	want := []string{"4608", "4617"}
 	if got := inputViaKanas(path); !reflect.DeepEqual(got, want) {
-		t.Fatalf("same-company connection codes = %v, want %v", got, want)
+		t.Fatalf("同一会社接続のコード = %v, 期待値 %v", got, want)
 	}
 	// コード生成の変更で既存の路線・駅名印字は変えない。
 	printed := []string{"西日暮里", "千代田線"}
 	if got := getFareVia(path, true, true, nil); !reflect.DeepEqual(got, printed) {
-		t.Fatalf("same-company printing = %v, want %v", got, printed)
+		t.Fatalf("同一会社接続の経由表示 = %v, 期待値 %v", got, printed)
 	}
 }
 
@@ -1032,7 +1032,7 @@ func TestAutomaticViaKanasUsesAutomaticRulesBeforeOmission(t *testing.T) {
 			path[i], _ = g.GetID(name)
 		}
 		if got := automaticViaKanas(g, path); !reflect.DeepEqual(got, tt.want) {
-			t.Fatalf("%v codes=%v want=%v", tt.names, got, tt.want)
+			t.Fatalf("%v コード=%v 期待値=%v", tt.names, got, tt.want)
 		}
 	}
 }
@@ -1048,7 +1048,7 @@ func TestShinOsakaShinkansenKana(t *testing.T) {
 		{[]ViaStep{{"大阪", "トウカ"}, {"新大阪", ""}}, []string{"トウカ"}},
 	} {
 		if got := viaKanas(tt.path, nil); !reflect.DeepEqual(got, tt.want) {
-			t.Fatalf("codes=%v want=%v", got, tt.want)
+			t.Fatalf("コード=%v 期待値=%v", got, tt.want)
 		}
 	}
 }
@@ -1081,10 +1081,10 @@ func TestNishiUrakamiKikitsuVia(t *testing.T) {
 			want = []string{"長崎線", "西浦上"}
 		}
 		if got := GetFareViaForResultWithSections(steps, path, g, nil); !reflect.DeepEqual(got, want) {
-			t.Fatalf("fare=%v want=%v", got, want)
+			t.Fatalf("運賃=%v 期待値=%v", got, want)
 		}
 		if got := GetAutomaticFareViaForResult(g, path, path); !reflect.DeepEqual(got, want) {
-			t.Fatalf("auto=%v want=%v", got, want)
+			t.Fatalf("自動=%v 期待値=%v", got, want)
 		}
 	}
 }

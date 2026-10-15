@@ -14,12 +14,12 @@ func TestSplitOriginsFollowCorrectedStations(t *testing.T) {
 	after := []int{1, 9, 4, 8, 7}
 	got := propagateSplitOrigins(before, after, origins)
 	if !reflect.DeepEqual(got[1], []int{0, 0}) || !reflect.DeepEqual(got[3], []int{1, 1}) {
-		t.Fatalf("independent provenance lost: %v", got)
+		t.Fatalf("独立した区間の由来が失われました: %v", got)
 	}
 	// 既存の駅が置換で再び現れた場合、その出現には置換元の区間情報を保持します。
 	got = propagateSplitOrigins([]int{9, 1, 2, 3, 4}, []int{9, 1, 9, 4}, [][]int{nil, nil, {2}, {2}, nil})
 	if len(got[0]) != 0 || !reflect.DeepEqual(got[2], []int{2, 2}) {
-		t.Fatalf("repeated occurrence confused: %v", got)
+		t.Fatalf("同じ駅の複数回の出現を区別できていません: %v", got)
 	}
 }
 
@@ -58,10 +58,10 @@ func TestSplitRollbackTracksNormalCorrection(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(result.Replacements) != 1 || result.Replacements[0].Status != "retained_duplicate" {
-		t.Fatalf("normal correction origin lost: %+v", result)
+		t.Fatalf("通常補正前の経路情報が失われました: %+v", result)
 	}
 	if !slices.Contains(result.Names, "岐阜羽島") {
-		t.Fatal("original Shinkansen not restored")
+		t.Fatal("元の新幹線区間が復元されていません")
 	}
 }
 
@@ -72,7 +72,7 @@ func TestSplitReplacementMissingDataIsError(t *testing.T) {
 	}
 	_, err := replacementAt([]ViaStep{{StationName: "三島", LineName: "シンカ"}, {StationName: "（東）新富士", LineName: "シンカ"}, {StationName: "静岡"}}, 0, g)
 	if err == nil {
-		t.Fatal("missing conventional data silently ignored")
+		t.Fatal("在来線データの欠落がエラーになっていません")
 	}
 }
 
@@ -93,7 +93,7 @@ func TestConventionalReplacementCollisionAndLoops(t *testing.T) {
 			original := slices.Clone(tc.original)
 			got, err := resolveConventionalReplacements(tc.original, tc.blocks, nil, nil)
 			if err != nil || !slices.Equal(got, tc.want) {
-				t.Fatalf("got %v, %v; want %v", got, err, tc.want)
+				t.Fatalf("実際 %v, %v; 期待値 %v", got, err, tc.want)
 			}
 			if !slices.Equal(original, tc.original) {
 				t.Fatal("入力経路が変更されました")

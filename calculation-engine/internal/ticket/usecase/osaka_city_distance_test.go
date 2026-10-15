@@ -43,7 +43,7 @@ func TestOsakaZoneDistanceDeductionDirection(t *testing.T) {
 			for range 2 {
 				e, gs, err := calc.osakaZoneDistanceDeduction(path)
 				if err != nil || e != 76*tt.count || gs != 84*tt.count {
-					t.Fatalf("got %d/%d %v", e, gs, err)
+					t.Fatalf("実際 %d/%d %v", e, gs, err)
 				}
 				slices.Reverse(path)
 			}
@@ -141,7 +141,7 @@ func TestOsakaCityDeductionWithKitashinchiReplacement(t *testing.T) {
 			t.Fatal(err)
 		}
 		if result.TotalAmount() != expected.TotalAmount() {
-			t.Fatalf("運賃: %d, want %d", result.TotalAmount(), expected.TotalAmount())
+			t.Fatalf("運賃: %d, 期待値 %d", result.TotalAmount(), expected.TotalAmount())
 		}
 		slices.Reverse(path)
 	}

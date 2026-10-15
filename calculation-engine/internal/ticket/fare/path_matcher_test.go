@@ -101,12 +101,12 @@ func TestPathMatcher_DuplicateRegistration(t *testing.T) {
 
 	// 2. 同じ経路を再登録（エラー）
 	if err := matcher.Insert(path, f); !errors.Is(err, fare.ErrDuplicateRoute) {
-		t.Errorf("同じ経路の再登録で ErrDuplicateRoute を期待しましたが、got %v", err)
+		t.Errorf("同じ経路の再登録で ErrDuplicateRoute を期待しましたが、実際 %v", err)
 	}
 
 	// 3. 逆方向の経路を登録（エラー: すでにInsert内で登録済みのため）
 	if err := matcher.Insert(rev, f); !errors.Is(err, fare.ErrDuplicateRoute) {
-		t.Errorf("逆方向経路の登録で ErrDuplicateRoute を期待しましたが、got %v", err)
+		t.Errorf("逆方向経路の登録で ErrDuplicateRoute を期待しましたが、実際 %v", err)
 	}
 
 	// 4. 回文のような経路 (1-2-1)
@@ -115,7 +115,7 @@ func TestPathMatcher_DuplicateRegistration(t *testing.T) {
 		t.Fatalf("回文経路の登録に失敗しました: %v", err)
 	}
 	if err := matcher.Insert(palindrome, f); !errors.Is(err, fare.ErrDuplicateRoute) {
-		t.Errorf("回文経路の再登録で ErrDuplicateRoute を期待しましたが、got %v", err)
+		t.Errorf("回文経路の再登録で ErrDuplicateRoute を期待しましたが、実際 %v", err)
 	}
 }
 
@@ -159,16 +159,16 @@ func TestPathMatcher_HashCollision(t *testing.T) {
 
 	// 検証
 	if f, hit := matcher.Search([]int{1, 2, 3}); !hit || f != 100 {
-		t.Errorf("route1は運賃100を返すはずです, got hit=%v, fare=%v", hit, f)
+		t.Errorf("route1は運賃100を返すはずです, 実際 hit=%v, 運賃=%v", hit, f)
 	}
 	if f, hit := matcher.Search([]int{3, 2, 1}); !hit || f != 100 {
-		t.Errorf("route3 (route1の逆順) は運賃100を返すはずです, got hit=%v, fare=%v", hit, f)
+		t.Errorf("route3 (route1の逆順) は運賃100を返すはずです, 実際 hit=%v, 運賃=%v", hit, f)
 	}
 	if f, hit := matcher.Search([]int{1, 3, 2}); !hit || f != 200 {
-		t.Errorf("route2は運賃200を返すはずです, got hit=%v, fare=%v", hit, f)
+		t.Errorf("route2は運賃200を返すはずです, 実際 hit=%v, 運賃=%v", hit, f)
 	}
 	if f, hit := matcher.Search([]int{2, 3, 1}); !hit || f != 200 {
-		t.Errorf("route2の逆順は運賃200を返すはずです, got hit=%v, fare=%v", hit, f)
+		t.Errorf("route2の逆順は運賃200を返すはずです, 実際 hit=%v, 運賃=%v", hit, f)
 	}
 	if _, hit := matcher.Search([]int{1, 2}); hit {
 		t.Errorf("部分的な経路は一致しないはずです")

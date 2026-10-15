@@ -183,7 +183,7 @@ func TestArticle114RegressionRoutes(t *testing.T) {
 			}
 			result, _, err := data.current.ExecuteWithMode(selected, 0, "normal")
 			if err != nil || result.TotalAmount() != 4840 {
-				t.Errorf("ほしみ経路の最安運賃が不正です: fare=%d err=%v", result.TotalAmount(), err)
+				t.Errorf("ほしみ経路の最安運賃が不正です: 運賃=%d エラー=%v", result.TotalAmount(), err)
 			}
 		}
 	})
@@ -256,7 +256,7 @@ func TestCheapestShapeRegressionRoutes(t *testing.T) {
 	}
 	wantForward := append(append([]int(nil), path...), data.full.GetOrAddID("北上"))
 	if !reflect.DeepEqual(selected, wantForward) || forwardResult.TotalAmount() != 3850 {
-		t.Fatalf("6の字経路の選択結果が不正です: fare=%d path=%v", forwardResult.TotalAmount(), selected)
+		t.Fatalf("6の字経路の選択結果が不正です: 運賃=%d 経路=%v", forwardResult.TotalAmount(), selected)
 	}
 
 	reverse := append([]int(nil), path...)
@@ -272,7 +272,7 @@ func TestCheapestShapeRegressionRoutes(t *testing.T) {
 		t.Fatalf("逆方向の選択経路評価に失敗しました: %v", err)
 	}
 	if !reflect.DeepEqual(selected, reverse) || reverseResult.TotalAmount() != 4180 {
-		t.Fatalf("9の字経路の除外結果が不正です: fare=%d path=%v", reverseResult.TotalAmount(), selected)
+		t.Fatalf("9の字経路の除外結果が不正です: 運賃=%d 経路=%v", reverseResult.TotalAmount(), selected)
 	}
 }
 

@@ -74,11 +74,11 @@ func TestCalculateStandardFare(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := CalculateStandardFare(tt.params)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CalculateStandardFare() err = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CalculateStandardFare() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CalculateStandardFare() = %v, want %v", got, tt.want)
+				t.Errorf("CalculateStandardFare() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}

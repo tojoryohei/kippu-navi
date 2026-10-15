@@ -59,11 +59,11 @@ func TestCalculateKyushuFare(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := CalculateKyushuFare(tt.params)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CalculateKyushuFare() err = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CalculateKyushuFare() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CalculateKyushuFare() = %v, want %v", got, tt.want)
+				t.Errorf("CalculateKyushuFare() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}

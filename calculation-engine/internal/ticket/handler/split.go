@@ -98,7 +98,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}
 	optResult, err := h.search.ExecuteWithOptions(startID, endID, maxSections, lockedStations)
 	if err != nil {
-		slog.Error("split ticket calculation failed", "request_id", requestID, "error_type", fmt.Sprintf("%T", err))
+		slog.Error("分割乗車券の計算に失敗しました", "request_id", requestID, "error_type", fmt.Sprintf("%T", err))
 
 		errMsg := err.Error()
 		if lastIdx := strings.LastIndex(errMsg, ":"); lastIdx != -1 {
@@ -120,7 +120,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		apiResults = append(apiResults, names)
 	}
 	if !validResponsePaths(normalResp, apiResults) {
-		slog.Error("split ticket calculation returned invalid paths", "request_id", requestID, "normal_length", len(normalResp), "result_count", len(apiResults))
+		slog.Error("分割乗車券の計算結果に不正な経路が含まれています", "request_id", requestID, "normal_length", len(normalResp), "result_count", len(apiResults))
 		writeErrorResponse(w, http.StatusInternalServerError, "経路データの生成に失敗しました")
 		return
 	}
@@ -132,7 +132,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 		Normal:  normalResp,
 		Results: apiResults,
 	}); err != nil {
-		slog.Error("failed to encode split ticket response", "request_id", requestID, "error_type", fmt.Sprintf("%T", err))
+		slog.Error("分割乗車券の応答のエンコードに失敗しました", "request_id", requestID, "error_type", fmt.Sprintf("%T", err))
 	}
 }
 
@@ -195,6 +195,6 @@ func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(CalculateResponse{Error: message}); err != nil {
-		slog.Error("failed to encode split ticket error response", "error_type", fmt.Sprintf("%T", err))
+		slog.Error("分割乗車券のエラー応答のエンコードに失敗しました", "error_type", fmt.Sprintf("%T", err))
 	}
 }

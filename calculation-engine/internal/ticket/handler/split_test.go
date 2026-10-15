@@ -24,7 +24,7 @@ func TestHandleCalculateRejectsDisconnectedLocalLineAreas(t *testing.T) {
 		t.Fatalf("グラフの検証に失敗しました: %v", err)
 	}
 	if got := g.GetGroupID(aID); got != 0 {
-		t.Fatalf("先頭の連結成分ID = %d, want 0", got)
+		t.Fatalf("先頭の連結成分ID = %d, 期待値 0", got)
 	}
 
 	h := NewSplit(g, nil)
@@ -33,7 +33,7 @@ func TestHandleCalculateRejectsDisconnectedLocalLineAreas(t *testing.T) {
 	h.HandleCalculate(response, request)
 
 	if response.Code != http.StatusUnprocessableEntity {
-		t.Fatalf("status = %d, want %d", response.Code, http.StatusUnprocessableEntity)
+		t.Fatalf("ステータス = %d, 期待値 %d", response.Code, http.StatusUnprocessableEntity)
 	}
 	var body CalculateResponse
 	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
@@ -41,7 +41,7 @@ func TestHandleCalculateRejectsDisconnectedLocalLineAreas(t *testing.T) {
 	}
 	want := domain.DisconnectedRouteErrorMessage
 	if body.Error != want {
-		t.Errorf("error = %q, want %q", body.Error, want)
+		t.Errorf("エラー = %q, 期待値 %q", body.Error, want)
 	}
 }
 
@@ -60,7 +60,7 @@ func TestValidResponsePaths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := validResponsePaths(tt.normal, tt.results); got != tt.want {
-				t.Fatalf("validResponsePaths() = %v, want %v", got, tt.want)
+				t.Fatalf("validResponsePaths() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -84,10 +84,10 @@ func TestParseMaxSplits(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := parseMaxSplits(tt.query)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("parseMaxSplits() error = %v, wantErr = %v", err, tt.wantErr)
+				t.Fatalf("parseMaxSplits() エラー = %v, エラー発生の期待値 = %v", err, tt.wantErr)
 			}
 			if got != tt.want {
-				t.Errorf("parseMaxSplits() = %d, want %d", got, tt.want)
+				t.Errorf("parseMaxSplits() = %d, 期待値 %d", got, tt.want)
 			}
 		})
 	}

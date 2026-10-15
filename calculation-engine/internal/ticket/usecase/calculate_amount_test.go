@@ -57,23 +57,23 @@ func TestCalculateAmount_Execute(t *testing.T) {
 	t.Run("特定区間運賃に合致", func(t *testing.T) {
 		res, err := calc.Execute([]int{id("X"), id("Y")})
 		if err != nil {
-			t.Fatalf("Execute() error = %v", err)
+			t.Fatalf("Execute() エラー = %v", err)
 		}
 		if res.Fare != 500 {
-			t.Errorf("expected 500, got %d", res.Fare)
+			t.Errorf("500を期待しましたが、実際は%dでした", res.Fare)
 		}
 	})
 
 	t.Run("通常運賃（会社跨ぎ）", func(t *testing.T) {
 		res, err := calc.Execute([]int{id("A"), id("B"), id("C")})
 		if err != nil {
-			t.Fatalf("Execute() error = %v", err)
+			t.Fatalf("Execute() エラー = %v", err)
 		}
 		// A-C: 合計30km (営業キロ300) -> 基準の30km運賃は510円
 		// 10km (A-B) 東日本 - 基準運賃 = 200 - 200 = 差額0円。よって合計は510円となる。
 		// 個別の運賃計算機の正確性はそれぞれのテストで担保されているため、ここでは運賃が0より大きいことのみを検証する。
 		if res.Fare <= 0 {
-			t.Errorf("expected > 0, got %d", res.Fare)
+			t.Errorf("正の値を期待しましたが、実際は%dでした", res.Fare)
 		}
 	})
 
@@ -97,30 +97,30 @@ func TestCalculateAmount_Execute(t *testing.T) {
 
 		res, err := calc.Execute([]int{id("北新地"), id("新福島"), id("海老江"), id("御幣島"), id("加島"), id("尼崎")})
 		if err != nil {
-			t.Fatalf("Execute() error = %v", err)
+			t.Fatalf("Execute() エラー = %v", err)
 		}
 		if res.TotalEigyoKilo != 89 {
-			t.Errorf("expected physical JR total eigyo kilo 89, got %d", res.TotalEigyoKilo)
+			t.Errorf("JR実経路の営業キロ合計は89を期待しましたが、実際は%dでした", res.TotalEigyoKilo)
 		}
 		if res.TotalPathEigyoKilo != 89 {
-			t.Errorf("expected physical total path eigyo kilo 89, got %d", res.TotalPathEigyoKilo)
+			t.Errorf("実経路全体の営業キロ合計は89を期待しましたが、実際は%dでした", res.TotalPathEigyoKilo)
 		}
 	})
 
 	t.Run("通過連絡運輸（私鉄区間を含む）", func(t *testing.T) {
 		res, err := calc.Execute([]int{id("A"), id("河原田"), id("津"), id("D")})
 		if err != nil {
-			t.Fatalf("Execute() error = %v", err)
+			t.Fatalf("Execute() エラー = %v", err)
 		}
 		// A-河原田: 10km, 津-D: 10km -> JR合計20km
 		// 20kmの本州幹線運賃は330円
 		// 私鉄区間（河原田-津）は520円（privateFares.jsonに定義）
 		// 合計: 330 + 520 = 850円
 		if res.Fare != 850 {
-			t.Errorf("expected 850 (JR 330 + 私鉄 520), got %d", res.Fare)
+			t.Errorf("期待値 850 (JR 330 + 私鉄 520), 実際 %d", res.Fare)
 		}
 		if res.TotalEigyoKilo != 200 {
-			t.Errorf("expected JR total eigyo kilo 200, got %d", res.TotalEigyoKilo)
+			t.Errorf("JR区間の営業キロ合計は200を期待しましたが、実際は%dでした", res.TotalEigyoKilo)
 		}
 	})
 
@@ -157,7 +157,7 @@ func TestCalculateAmount_Execute(t *testing.T) {
 			t.Fatal(err)
 		}
 		if raw.TotalEigyoKilo != 30 {
-			t.Fatalf("uncorrected distance = %d, want 30", raw.TotalEigyoKilo)
+			t.Fatalf("補正前の距離 = %d、期待値30", raw.TotalEigyoKilo)
 		}
 
 		corrected, err := corrector.Correct([]int{id("T1"), id("T2"), id("T3"), id("T4")}, g)
@@ -166,13 +166,13 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		}
 		res, err := calc.Execute(corrected)
 		if err != nil {
-			t.Fatalf("Execute() error = %v", err)
+			t.Fatalf("Execute() エラー = %v", err)
 		}
 
 		// 経路が [T1, T2, TX, T3, T4] に補正されて運賃計算に使われているはず
 		// 運賃のキロ程は補正後の (10 + 2 + 3 + 10 = 25km) で計算される
 		if res.TotalEigyoKilo != 25 {
-			t.Errorf("expected total eigyo kilo 25, got %d", res.TotalEigyoKilo)
+			t.Errorf("営業キロ合計は25を期待しましたが、実際は%dでした", res.TotalEigyoKilo)
 		}
 	})
 
@@ -191,17 +191,17 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		}
 		res, err := calc.Execute(corrected)
 		if err != nil {
-			t.Fatalf("Execute() error = %v", err)
+			t.Fatalf("Execute() エラー = %v", err)
 		}
 
 		// 経路は補正されず [T2, T3] のまま
 		expectedPath := []int{id("T2"), id("T3")}
 		if len(res.FinalPath) != len(expectedPath) {
-			t.Fatalf("expected path length %d, got %d", len(expectedPath), len(res.FinalPath))
+			t.Fatalf("経路長の期待値は%dですが、実際は%dでした", len(expectedPath), len(res.FinalPath))
 		}
 		for i, p := range expectedPath {
 			if res.FinalPath[i] != p {
-				t.Errorf("at index %d: expected %v, got %v", i, p, res.FinalPath[i])
+				t.Errorf("インデックス %d: 期待値 %v, 実際 %v", i, p, res.FinalPath[i])
 			}
 		}
 	})
@@ -234,13 +234,13 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		}
 		res, err := calc.Execute(corrected)
 		if err != nil {
-			t.Fatalf("Execute() error = %v", err)
+			t.Fatalf("Execute() エラー = %v", err)
 		}
 
 		// 迂回経路(錦糸町〜品川: 20km)が最短(錦糸町〜品川: 9km)に補正されるため、
 		// 運賃計算キロは 20(千葉〜錦糸町) + 9(最短) + 20(品川〜横浜) = 49km (490デシキロ)
 		if res.TotalEigyoKilo != 490 {
-			t.Errorf("expected total eigyo kilo 490, got %d", res.TotalEigyoKilo)
+			t.Errorf("営業キロ合計は490を期待しましたが、実際は%dでした", res.TotalEigyoKilo)
 		}
 	})
 }

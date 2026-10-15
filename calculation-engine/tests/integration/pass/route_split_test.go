@@ -34,7 +34,7 @@ func TestRoutePassSplitAgainstEnumeration(t *testing.T) {
 						t.Fatal(err)
 					}
 					if got.Normal.Fare != baseline.Fare+baseline.BarrierFreeFee+baseline.Charge {
-						t.Fatal("baseline does not include all fees")
+						t.Fatal("基準運賃にすべての料金が含まれていません")
 					}
 					if mode == "cheapest" {
 						path = calculator.CorrectPath(path)
@@ -75,7 +75,7 @@ func TestRoutePassSplitAgainstEnumeration(t *testing.T) {
 					var actual []string
 					for _, plan := range got.Results {
 						if plan.TotalFare != minimum {
-							t.Fatalf("total %d != %d", plan.TotalFare, minimum)
+							t.Fatalf("合計運賃%dが期待値%dと一致しません", plan.TotalFare, minimum)
 						}
 						cuts := []int{0}
 						previous := 0
@@ -83,27 +83,27 @@ func TestRoutePassSplitAgainstEnumeration(t *testing.T) {
 							start, ok1 := indexes[seg.DepartureStation]
 							end, ok2 := indexes[seg.ArrivalStation]
 							if !ok1 || !ok2 || start != previous || end <= start {
-								t.Fatalf("bad boundaries: %+v", seg)
+								t.Fatalf("分割区間の境界が不正です: %+v", seg)
 							}
 							fare, err := calculator.Calculate(path[start:end+1], months, mode)
 							if err != nil {
 								t.Fatal(err)
 							}
 							if seg.Fare.Fare != fare.Fare+fare.BarrierFreeFee+fare.Charge || !reflect.DeepEqual(seg.Fare.PrintedViaLines, fare.PrintedViaLines) {
-								t.Fatal("ticket calculation differs")
+								t.Fatal("乗車券の計算結果が一致しません")
 							}
 							cuts = append(cuts, end)
 							previous = end
 						}
 						if previous != len(path)-1 {
-							t.Fatal("incomplete route")
+							t.Fatal("経路の一部が欠落しています")
 						}
 						actual = append(actual, fmt.Sprint(cuts))
 					}
 					sort.Strings(expected)
 					sort.Strings(actual)
 					if !reflect.DeepEqual(expected, actual) {
-						t.Fatalf("patterns=%v want=%v", actual, expected)
+						t.Fatalf("パターン=%v 期待値=%v", actual, expected)
 					}
 				})
 			}

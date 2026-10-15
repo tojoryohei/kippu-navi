@@ -28,22 +28,22 @@ func TestNewIcPassGraph(t *testing.T) {
 
 		// 3. 検証
 		if icG.NumStations() != g.NumStations() {
-			t.Errorf("駅数が一致しません: got %d, want %d", icG.NumStations(), g.NumStations())
+			t.Errorf("駅数が一致しません: 実際 %d, 期待値 %d", icG.NumStations(), g.NumStations())
 		}
 
 		// Aの隣接エッジを確認 (Bへのエッジがあるはず)
 		edgesA := icG.GetEdges(idA)
 		if len(edgesA) != 1 {
-			t.Fatalf("Aの隣接エッジ数が不正です: got %d, want 1", len(edgesA))
+			t.Fatalf("Aの隣接エッジ数が不正です: 実際 %d, 期待値 1", len(edgesA))
 		}
 		if edgesA[0].ToID != idB {
-			t.Errorf("Aからの接続先が不正です: got %d, want %d", edgesA[0].ToID, idB)
+			t.Errorf("Aからの接続先が不正です: 実際 %d, 期待値 %d", edgesA[0].ToID, idB)
 		}
 
 		// Bの隣接エッジを確認 (Cへのエッジはないはず)
 		edgesB := icG.GetEdges(idB)
 		if len(edgesB) != 0 {
-			t.Errorf("Bの隣接エッジ数が不正です: got %d, want 0", len(edgesB))
+			t.Errorf("Bの隣接エッジ数が不正です: 実際 %d, 期待値 0", len(edgesB))
 		}
 
 		// IDマッパーの共有を確認
@@ -53,7 +53,7 @@ func TestNewIcPassGraph(t *testing.T) {
 
 		nameA, _ := icG.GetID("A")
 		if nameA != idA {
-			t.Errorf("共有されたマッパーでのID取得に失敗しました: got %d, want %d", nameA, idA)
+			t.Errorf("共有されたマッパーでのID取得に失敗しました: 実際 %d, 期待値 %d", nameA, idA)
 		}
 	})
 

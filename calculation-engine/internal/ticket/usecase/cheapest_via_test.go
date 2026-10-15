@@ -40,10 +40,10 @@ func TestCheapestViaRestoresLines(t *testing.T) {
 					gotCodes[i] = steps[i].LineName
 				}
 				if !reflect.DeepEqual(gotCodes, codes) {
-					t.Fatalf("codes=%v want=%v", gotCodes, codes)
+					t.Fatalf("コード=%v 期待値=%v", gotCodes, codes)
 				}
 				if got := GetCheapestFareViaForResult(g, ids, ids); !reflect.DeepEqual(got, printed) {
-					t.Fatalf("printing=%v want=%v", got, printed)
+					t.Fatalf("経由表示=%v 期待値=%v", got, printed)
 				}
 			}
 		})

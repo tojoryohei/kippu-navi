@@ -89,11 +89,11 @@ func TestGetViaStations_Integration(t *testing.T) {
 			t.Logf("[%s] 経由印字: %v", tt.name, vias)
 
 			if len(vias) != len(tt.want) {
-				t.Errorf("GetVia() returned %d elements, want %d. got: %v, want: %v", len(vias), len(tt.want), vias, tt.want)
+				t.Errorf("GetVia()の要素数 = %d、期待値%d。実際: %v、期待値: %v", len(vias), len(tt.want), vias, tt.want)
 			} else {
 				for i, v := range vias {
 					if v != tt.want[i] {
-						t.Errorf("GetVia()[%d] = %s, want %s", i, v, tt.want[i])
+						t.Errorf("GetVia()[%d] = %s, 期待値 %s", i, v, tt.want[i])
 					}
 				}
 			}

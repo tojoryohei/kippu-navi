@@ -51,7 +51,7 @@ func generateMockPrecomputedBin(t testing.TB, g *graph.RailwayGraph, destPath st
 
 	calcs, err := fareio.InitRegistryWithOptions(g, true)
 	if err != nil {
-		t.Fatalf("InitRegistry failed: %v", err)
+		t.Fatalf("InitRegistryに失敗しました: %v", err)
 	}
 
 	amountCalc := usecase.NewCalculateAmount(
@@ -85,25 +85,25 @@ func generateMockPrecomputedBin(t testing.TB, g *graph.RailwayGraph, destPath st
 
 	outFile, err := os.Create(destPath)
 	if err != nil {
-		t.Fatalf("failed to create mock bin: %v", err)
+		t.Fatalf("テスト用バイナリの作成に失敗しました: %v", err)
 	}
 
 	magic := [8]byte{'S', 'R', 'V', 'R', 'B', 'I', 'N', 0}
 	if _, err := outFile.Write(magic[:]); err != nil {
-		t.Fatalf("failed to write magic: %v", err)
+		t.Fatalf("マジックヘッダーの書き込みに失敗しました: %v", err)
 	}
 	if err := binary.Write(outFile, binary.LittleEndian, int32(numStations)); err != nil {
-		t.Fatalf("failed to write numStations: %v", err)
+		t.Fatalf("駅数の書き込みに失敗しました: %v", err)
 	}
 	padding := [4]byte{0, 0, 0, 0}
 	if _, err := outFile.Write(padding[:]); err != nil {
-		t.Fatalf("failed to write padding: %v", err)
+		t.Fatalf("パディングの書き込みに失敗しました: %v", err)
 	}
 	if err := binary.Write(outFile, binary.LittleEndian, baseFares); err != nil {
-		t.Fatalf("failed to write baseFares: %v", err)
+		t.Fatalf("基本運賃の書き込みに失敗しました: %v", err)
 	}
 	if err := binary.Write(outFile, binary.LittleEndian, baseFares); err != nil {
-		t.Fatalf("failed to write icFares: %v", err)
+		t.Fatalf("IC運賃の書き込みに失敗しました: %v", err)
 	}
 
 	flatSize := numStations * numStations
@@ -120,17 +120,17 @@ func generateMockPrecomputedBin(t testing.TB, g *graph.RailwayGraph, destPath st
 		}
 	}
 	if err := binary.Write(outFile, binary.LittleEndian, flatBaseDistGisei); err != nil {
-		t.Fatalf("failed to write flatBaseDistGisei: %v", err)
+		t.Fatalf("基本運賃用の擬制キロ表の書き込みに失敗しました: %v", err)
 	}
 	if err := binary.Write(outFile, binary.LittleEndian, flatBaseDistGisei); err != nil {
-		t.Fatalf("failed to write flatIcDistGisei: %v", err)
+		t.Fatalf("IC運賃用の擬制キロ表の書き込みに失敗しました: %v", err)
 	}
 
 	if err := outFile.Sync(); err != nil {
-		t.Fatalf("failed to sync file: %v", err)
+		t.Fatalf("ファイルの同期に失敗しました: %v", err)
 	}
 	if err := outFile.Close(); err != nil {
-		t.Fatalf("failed to close file: %v", err)
+		t.Fatalf("ファイルを閉じる処理に失敗しました: %v", err)
 	}
 }
 
@@ -328,7 +328,7 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 
 			results, err := search.Execute(fromID, toID, tt.months)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Execute() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 
@@ -344,13 +344,13 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 				for i := 0; i < len(path)-1; i++ {
 					segs, err := search.GetCheapestNoSplitSegments(path[i], path[i+1], tt.months)
 					if err != nil {
-						t.Fatalf("GetCheapestNoSplitSegments failed: %v", err)
+						t.Fatalf("GetCheapestNoSplitSegmentsに失敗しました: %v", err)
 					}
 					totalFare += segs[0].Result.TotalAmount()
 				}
 
 				if totalFare != tt.want {
-					t.Errorf("TotalAmount = %d, want %d", totalFare, tt.want)
+					t.Errorf("TotalAmount = %d, 期待値 %d", totalFare, tt.want)
 				}
 			}
 		})
@@ -459,7 +459,7 @@ func BenchmarkSearchOptimalSplit_PureDP(b *testing.B) {
 	}
 	candStations := candStationsBuf[:candLen]
 
-	b.Logf("Candidate stations count: %d", len(candStations))
+	b.Logf("候補駅数: %d", len(candStations))
 
 	b.ResetTimer()
 	for b.Loop() {

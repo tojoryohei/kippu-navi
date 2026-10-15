@@ -16,7 +16,7 @@ func TestDebugAizu(t *testing.T) {
 	for i, n := range names {
 		id, ok := d.full.GetID(n)
 		if !ok {
-			t.Fatalf("missing %s", n)
+			t.Fatalf("%sがありません", n)
 		}
 		path[i] = id
 	}
@@ -29,7 +29,7 @@ func TestDebugAizu(t *testing.T) {
 		t.Fatal(err)
 	}
 	fare, ok := m.Search(path)
-	t.Logf("input adjusted=%d ok=%v len=%d", fare, ok, len(path))
+	t.Logf("入力補正額=%d ok=%v 長さ=%d", fare, ok, len(path))
 	got, err := ticketusecase.SelectCheapestPathWithRouteExtensions(path, d.full, nil, nil, d.zones, func(p []int) (int, error) {
 		r, _, e := d.current.ExecuteWithMode(p, 0, "normal")
 		if e != nil {
@@ -39,7 +39,7 @@ func TestDebugAizu(t *testing.T) {
 		for i, id := range p {
 			ns[i] = d.full.GetName(id)
 		}
-		t.Logf("candidate len=%d end=%s fare=%d path=%v", len(p), ns[len(ns)-1], r.TotalAmount(), ns)
+		t.Logf("候補の長さ=%d 終点=%s 運賃=%d 経路=%v", len(p), ns[len(ns)-1], r.TotalAmount(), ns)
 		return r.TotalAmount(), nil
 	})
 	if err != nil {
@@ -53,5 +53,5 @@ func TestDebugAizu(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("selected fare=%d end=%s path=%v", r.TotalAmount(), ns[len(ns)-1], ns)
+	t.Logf("選択運賃=%d 終点=%s 経路=%v", r.TotalAmount(), ns[len(ns)-1], ns)
 }

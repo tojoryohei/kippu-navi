@@ -10,11 +10,11 @@ import (
 func CalculateKyushuFare(params ticketdomain.TicketFareParams) (int, error) {
 	totalEigyoKilo, err := params.EigyoKilo.ToCeiledKm()
 	if err != nil {
-		return 0, fmt.Errorf("CalculateKyushuFare(eigyo): %w", err)
+		return 0, fmt.Errorf("CalculateKyushuFare（営業キロ）: %w", err)
 	}
 	totalGiseiKilo, err := params.GiseiKilo.ToCeiledKm()
 	if err != nil {
-		return 0, fmt.Errorf("CalculateKyushuFare(gisei): %w", err)
+		return 0, fmt.Errorf("CalculateKyushuFare（擬制キロ）: %w", err)
 	}
 
 	if totalGiseiKilo == 0 {

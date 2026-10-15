@@ -75,7 +75,7 @@ func TestOsakaCityDistanceWithoutVirtualEdge(t *testing.T) {
 						deduction = 0
 					}
 					if result.TotalEigyoKilo != raw.TotalEigyoKilo-deduction || result.TotalPathEigyoKilo != raw.TotalPathEigyoKilo-deduction {
-						t.Fatalf("距離: result=%+v raw=%+v deduction=%d", result, raw, deduction)
+						t.Fatalf("距離: 結果=%+v raw=%+v deduction=%d", result, raw, deduction)
 					}
 				})
 			}

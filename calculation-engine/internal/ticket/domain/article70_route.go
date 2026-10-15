@@ -74,7 +74,7 @@ func (a *Article70Routes) GetRoute(mode string, startName, endName string) []str
 func LoadArticle70RoutesFromBytes(data []byte) (*Article70Routes, error) {
 	var routes map[string]map[string][]string
 	if err := json.Unmarshal(data, &routes); err != nil {
-		return nil, fmt.Errorf("LoadArticle70RoutesFromBytes: failed to unmarshal json: %w", err)
+		return nil, fmt.Errorf("LoadArticle70RoutesFromBytes: JSONの解析に失敗しました: %w", err)
 	}
 	return &Article70Routes{Routes: routes}, nil
 }

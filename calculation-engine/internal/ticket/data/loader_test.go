@@ -35,7 +35,7 @@ func TestLoadPrecomputedTicketFares(t *testing.T) {
 		t.Fatal(err)
 	}
 	if numStations != 2 {
-		t.Fatalf("駅数 = %d, want 2", numStations)
+		t.Fatalf("駅数 = %d, 期待値 2", numStations)
 	}
 	if !reflect.DeepEqual(fares, []int32{0, 120, 120, 0}) {
 		t.Fatalf("運賃 = %v", fares)

@@ -105,7 +105,7 @@ func TestOsakaShinkansenFareViaResult(t *testing.T) {
 				for i, station := range names {
 					id, ok := g.GetID(station)
 					if !ok {
-						t.Fatalf("unknown station: %s", station)
+						t.Fatalf("不明な駅です: %s", station)
 					}
 					pathIDs[i] = id
 					viaSteps[i].StationName = station
@@ -130,7 +130,7 @@ func TestOsakaShinkansenFareViaResult(t *testing.T) {
 					ValidDays:        usecase.CalculateTicketValidDays(result.TotalPathEigyoKilo, suburbanPath, g),
 				}
 				if !reflect.DeepEqual(got, want) {
-					t.Fatalf("result=%+v; want=%+v", got, want)
+					t.Fatalf("結果=%+v; 期待値=%+v", got, want)
 				}
 			})
 		}

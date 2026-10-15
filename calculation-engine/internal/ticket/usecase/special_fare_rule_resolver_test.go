@@ -52,10 +52,10 @@ func TestSpecialFareRuleResolverUncorrectAppliesArticle88(t *testing.T) {
 		t.Fatalf("第88条候補と入力経路の2候補を期待しました: %+v", candidates)
 	}
 	if want := []int{3, 1, 2}; !reflect.DeepEqual(candidates[0].Path, want) {
-		t.Fatalf("補正禁止モードで第88条が適用されていません: got %v, want %v", candidates[0].Path, want)
+		t.Fatalf("補正禁止モードで第88条が適用されていません: 実際 %v, 期待値 %v", candidates[0].Path, want)
 	}
 	if want := []int{1, 2}; !reflect.DeepEqual(candidates[1].Path, want) {
-		t.Fatalf("第88条候補の後に入力経路へ戻りません: got %v, want %v", candidates[1].Path, want)
+		t.Fatalf("第88条候補の後に入力経路へ戻りません: 実際 %v, 期待値 %v", candidates[1].Path, want)
 	}
 }
 
@@ -102,7 +102,7 @@ func TestSpecialFareRuleResolverUncorrectAppliesTokyoZones(t *testing.T) {
 				t.Fatalf("特例候補と入力経路の2候補を期待しました: %+v", candidates)
 			}
 			if want := []int{4, 2, 3}; !reflect.DeepEqual(candidates[0].Path, want) {
-				t.Fatalf("補正禁止モードで%sが適用されていません: got %v, want %v", tt.zoneName, candidates[0].Path, want)
+				t.Fatalf("補正禁止モードで%sが適用されていません: 実際 %v, 期待値 %v", tt.zoneName, candidates[0].Path, want)
 			}
 		})
 	}
@@ -128,7 +128,7 @@ func (g *suburbanResolverGraph) FindShortestPathGiseiSuburban(startID, endID int
 	if result, ok := g.shortest[[2]int{startID, endID}]; ok {
 		return result, nil
 	}
-	return nil, fmt.Errorf("path not found")
+	return nil, fmt.Errorf("経路が見つかりません")
 }
 
 func TestSpecialFareRuleResolverUsesOneSideZoneForPureJRSuburbanPath(t *testing.T) {
@@ -179,7 +179,7 @@ func TestNormalizeFareEvaluationMode(t *testing.T) {
 	}
 	for input, want := range tests {
 		if got := NormalizeFareEvaluationMode(input); got != want {
-			t.Fatalf("運賃評価モードの正規化が不正です: input=%q got=%q want=%q", input, got, want)
+			t.Fatalf("運賃評価モードの正規化が不正です: 入力=%q 実際=%q 期待値=%q", input, got, want)
 		}
 	}
 }
@@ -228,7 +228,7 @@ func TestSpecialZoneApplierSuburbanYamanoteThreshold(t *testing.T) {
 			registry := &graphio.SpecialZoneRegistry{Zones: []ticketdomain.SpecialZone{zone}}
 			info, got := NewSpecialZoneApplier(g, registry).applySuburban([]int{1, 2}, domain.SuburbanAreaTokyo)
 			if got != tc.want {
-				t.Fatalf("適用 = %v, want %v (info=%+v)", got, tc.want, info)
+				t.Fatalf("適用 = %v, 期待値 %v (info=%+v)", got, tc.want, info)
 			}
 		})
 	}

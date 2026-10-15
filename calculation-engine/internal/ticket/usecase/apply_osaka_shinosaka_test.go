@@ -105,15 +105,15 @@ func TestApplyOsakaShinOsakaException(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			info, applied := ApplyOsakaShinOsakaException(tt.path, g)
 			if applied != tt.wantApply {
-				t.Fatalf("got applied %v, want %v", applied, tt.wantApply)
+				t.Fatalf("実際 適用結果 %v, 期待値 %v", applied, tt.wantApply)
 			}
 			if applied {
 				if len(info.TransformedPath) != len(tt.wantPath) {
-					t.Fatalf("got path len %d, want %d\ngot: %v\nwant: %v", len(info.TransformedPath), len(tt.wantPath), info.TransformedPath, tt.wantPath)
+					t.Fatalf("実際 経路長 %d, 期待値 %d\n実際: %v\n期待値: %v", len(info.TransformedPath), len(tt.wantPath), info.TransformedPath, tt.wantPath)
 				}
 				for i, id := range info.TransformedPath {
 					if id != tt.wantPath[i] {
-						t.Errorf("path[%d] = %d, want %d\ngot: %v\nwant: %v", i, id, tt.wantPath[i], info.TransformedPath, tt.wantPath)
+						t.Errorf("経路[%d] = %d, 期待値 %d\n実際: %v\n期待値: %v", i, id, tt.wantPath[i], info.TransformedPath, tt.wantPath)
 					}
 				}
 			}

@@ -15,7 +15,7 @@ type ZoneRoutes map[string]map[string][]string
 func LoadZoneRoutes(path string) (ZoneRoutes, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("LoadZoneRoutes: failed to read file: %w", err)
+		return nil, fmt.Errorf("LoadZoneRoutes: ファイルの読み込みに失敗しました: %w", err)
 	}
 	return LoadZoneRoutesFromBytes(data)
 }
@@ -24,7 +24,7 @@ func LoadZoneRoutes(path string) (ZoneRoutes, error) {
 func LoadZoneRoutesFromBytes(data []byte) (ZoneRoutes, error) {
 	var zr ZoneRoutes
 	if err := json.Unmarshal(data, &zr); err != nil {
-		return nil, fmt.Errorf("LoadZoneRoutesFromBytes: failed to unmarshal json: %w", err)
+		return nil, fmt.Errorf("LoadZoneRoutesFromBytes: JSONの解析に失敗しました: %w", err)
 	}
 	return zr, nil
 }

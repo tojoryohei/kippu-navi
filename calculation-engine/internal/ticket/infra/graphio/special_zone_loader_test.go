@@ -64,7 +64,7 @@ func TestSpecialZoneRegistry(t *testing.T) {
 					gotNames = append(gotNames, z.Name)
 				}
 				if !reflect.DeepEqual(gotNames, tt.wantZones) {
-					t.Errorf("FindZonesByStation() = %v, want %v", gotNames, tt.wantZones)
+					t.Errorf("FindZonesByStation() = %v, 期待値 %v", gotNames, tt.wantZones)
 				}
 			})
 		}
@@ -84,11 +84,11 @@ func TestSpecialZoneRegistry(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				zone := reg.FindZoneByName(tt.name)
 				if (zone == nil) != tt.wantNil {
-					t.Errorf("FindZoneByName() returned nil = %v, want %v", zone == nil, tt.wantNil)
+					t.Errorf("FindZoneByName() nilを返したか = %v, 期待値 %v", zone == nil, tt.wantNil)
 					return
 				}
 				if zone != nil && zone.MinDistanceDeciKilo != tt.wantMinDist {
-					t.Errorf("FindZoneByName() MinDistance = %v, want %v", zone.MinDistanceDeciKilo, tt.wantMinDist)
+					t.Errorf("FindZoneByName() MinDistance = %v, 期待値 %v", zone.MinDistanceDeciKilo, tt.wantMinDist)
 				}
 			})
 		}
