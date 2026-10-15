@@ -57,7 +57,7 @@ func TestRouteSplitRealRoutesAndModes(t *testing.T) {
 					t.Fatal(err)
 				}
 				if !reflect.DeepEqual(got.Normal, baseline) {
-					t.Fatal("fare-page baseline differs")
+					t.Fatal("運賃ページの基準運賃と一致しません")
 				}
 				target := path
 				if mode == "cheapest" {
@@ -68,7 +68,10 @@ func TestRouteSplitRealRoutesAndModes(t *testing.T) {
 				}
 				t.Logf("最安パターン数: %d", len(got.Results))
 				if len(got.Results) == 0 {
-					t.Fatal("no plans")
+					t.Fatal("分割案がありません")
+				}
+				if tc.name == "隣接" && (len(got.Results) != 1 || len(got.Results[0].Segments) != 1 || got.Results[0].TotalFare != baseline.Fare) {
+					t.Fatal("隣接区間の結果は基準運賃と同額の未分割案1件である必要があります")
 				}
 				positions := map[string]int{}
 				for i, id := range target {
@@ -81,7 +84,7 @@ func TestRouteSplitRealRoutesAndModes(t *testing.T) {
 						i, ok1 := positions[segment.DepartureStation]
 						j, ok2 := positions[segment.ArrivalStation]
 						if !ok1 || !ok2 || i != last || j <= i {
-							t.Fatalf("invalid boundaries: %+v", segment)
+							t.Fatalf("分割区間の境界が不正です: %+v", segment)
 						}
 						var via []usecase.ViaStep
 						if mode != "cheapest" {
@@ -90,13 +93,13 @@ func TestRouteSplitRealRoutesAndModes(t *testing.T) {
 						}
 						want, _, err := calculator.Calculate(target[i:j+1], via, mode)
 						if err != nil || !reflect.DeepEqual(want, segment.Fare) {
-							t.Fatalf("segment mode differs: %+v %+v %v", want, segment.Fare, err)
+							t.Fatalf("分割区間のモード別計算結果が一致しません: %+v %+v %v", want, segment.Fare, err)
 						}
 						total += segment.Fare.Fare
 						last = j
 					}
 					if last != len(target)-1 || total != plan.TotalFare || total != got.Results[0].TotalFare {
-						t.Fatal("invalid total or incomplete route")
+						t.Fatal("合計運賃が不正、または経路の一部が欠落しています")
 					}
 				}
 			})
