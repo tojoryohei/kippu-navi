@@ -16,10 +16,13 @@
   "env": {
     "staging": {
       "name": "staging",
+      "workers_dev": false,
+      "preview_urls": false,
       "secrets": {
         "required": ["SENTRY_DSN", "GCP_SERVICE_ACCOUNT_EMAIL", "GCP_SERVICE_ACCOUNT_PRIVATE_KEY"]
       },
       "vars": {
+        "DEPLOY_ENVIRONMENT": "staging",
         "API_ORIGIN": "https://calculation-engine-staging-198310540092.asia-northeast1.run.app"
       },
       "routes": [
@@ -37,6 +40,7 @@
         "required": ["SENTRY_DSN", "GCP_SERVICE_ACCOUNT_EMAIL", "GCP_SERVICE_ACCOUNT_PRIVATE_KEY"]
       },
       "vars": {
+        "DEPLOY_ENVIRONMENT": "production",
         "API_ORIGIN": "https://calculation-engine-198310540092.asia-northeast1.run.app"
       }
     }

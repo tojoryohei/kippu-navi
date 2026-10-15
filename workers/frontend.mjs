@@ -281,18 +281,29 @@ function proxyPostHog(request) {
 }
 
 export default {
-  fetch(request, env) {
-    const url = new URL(request.url);
-    if (url.pathname === '/manifest.webmanifest') return manifestResponse(request);
-    if (url.pathname === '/monitoring') {
-      return proxySentry(request, env.SENTRY_DSN);
-    }
-    if (url.pathname.startsWith('/ingest/')) {
-      return proxyPostHog(request);
-    }
-    if (url.pathname.startsWith('/api/')) {
-      return proxyApi(request, env.API_ORIGIN, googleCredentials(env));
-    }
-    return fetchEngineAsset(request, env.ASSETS);
+  async fetch(request, env) {
+    const response = await dispatchRequest(request, env);
+    const staging = env.DEPLOY_ENVIRONMENT === 'staging'
+      || new URL(request.url).hostname === 'staging.kippu-navi.com';
+    if (!staging) return response;
+    // _headersが適用されないAPI・manifest・プロキシの応答にも検索除外を付ける。
+    const result = new Response(response.body, response);
+    result.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return result;
   },
 };
+
+function dispatchRequest(request, env) {
+  const url = new URL(request.url);
+  if (url.pathname === '/manifest.webmanifest') return manifestResponse(request);
+  if (url.pathname === '/monitoring') {
+    return proxySentry(request, env.SENTRY_DSN);
+  }
+  if (url.pathname.startsWith('/ingest/')) {
+    return proxyPostHog(request);
+  }
+  if (url.pathname.startsWith('/api/')) {
+    return proxyApi(request, env.API_ORIGIN, googleCredentials(env));
+  }
+  return fetchEngineAsset(request, env.ASSETS);
+}

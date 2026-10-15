@@ -1,0 +1,21 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { Content } from "@/docs/api-reference.md";
+---
+
+<Layout metadata={{ title: "公開APIの使い方", description: "認証不要の乗車券・定期券・IC定期券分割検索API。正式駅名一覧、OpenAPI仕様、チャットAI向けの利用手順を公開しています。" }}>
+  <article class="api-docs max-w-4xl mx-auto px-4 py-12 text-slate-800">
+    <Content />
+  </article>
+</Layout>
+
+<style>
+  .api-docs :global(h1) { font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem; }
+  .api-docs :global(h2) { font-size: 1.4rem; font-weight: 700; margin: 2.5rem 0 1rem; }
+  .api-docs :global(p), .api-docs :global(ul), .api-docs :global(ol) { margin: 1rem 0; line-height: 1.9; }
+  .api-docs :global(ul) { list-style: disc; padding-left: 1.5rem; }
+  .api-docs :global(ol) { list-style: decimal; padding-left: 1.5rem; }
+  .api-docs :global(a) { color: #155dfc; text-decoration: underline; overflow-wrap: anywhere; }
+  .api-docs :global(pre) { padding: 1rem; margin: 1rem 0; overflow-x: auto; border-radius: .5rem; }
+  .api-docs :global(code) { overflow-wrap: anywhere; }
+</style>

@@ -8,9 +8,6 @@
     "src/pwa/service-worker.js",
     "src/app/split/lib/getOptimalPassWithCache.ts"
   ],
-  "ignore": [
-    "public/engine/wasm_exec.js"
-  ],
   "ignoreBinaries": [
     "go"
   ]
