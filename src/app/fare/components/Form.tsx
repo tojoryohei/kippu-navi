@@ -205,7 +205,7 @@ export default function Form({
         if (nextSearchType !== "ticket") {
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
             const mVal = monthsMap[nextSearchType] || "6";
-            newParams.set("month", mVal);
+            newParams.set("months", mVal);
         }
 
         if (isRouteSplit) {
@@ -246,7 +246,7 @@ export default function Form({
         setCorrectedEndPass("");
         setServerTime(null);
 
-        // 検索実行時に URL にクエリパラメータ route / month を付与・更新
+        // 検索実行時に URL にクエリパラメータ route / months を付与・更新
         // data.noSplitStations を明示的に渡すことで、RouteSplitOptions の useEffect が
         // setValue した後でも getValues が古い値を返す競合状態を回避する。
         updateUrlAndState(pathname, data.searchType, data.noSplitStations ?? []);

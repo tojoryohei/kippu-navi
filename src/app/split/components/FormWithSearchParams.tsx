@@ -11,8 +11,8 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
     if (!url.pathname.startsWith("/split/auto/")) return null;
     const activePathname = url.pathname;
     const searchParams = url.searchParams;
-    const month = searchParams.get("month");
-    const initialSearchType: SearchType = activePathname.endsWith("/ticket") ? "ticket" : month === "1" ? "pass1" : month === "3" ? "pass3" : "pass6";
+    const months = searchParams.get("months") ?? searchParams.get("month");
+    const initialSearchType: SearchType = activePathname.endsWith("/ticket") ? "ticket" : months === "1" ? "pass1" : months === "3" ? "pass3" : "pass6";
     const parsedMaxSplits = searchParams.get("maxSplits");
     const parsedMaxSplitsValue = parsedMaxSplits !== null && /^(?:[0-9]|10)$/.test(parsedMaxSplits)
         ? Number(parsedMaxSplits)

@@ -250,10 +250,10 @@ export default function SplitForm({
         if (data.searchType && data.searchType !== "ticket") {
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
             const mVal = monthsMap[data.searchType] || "6";
-            newParams.set("month", mVal);
+            newParams.set("months", mVal);
         }
         new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").forEach((val, key) => {
-            if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType" && key !== "noSplitStation" && key !== "maxSplits") {
+            if (key !== "from" && key !== "to" && key !== "month" && key !== "months" && key !== "searchType" && key !== "noSplitStation" && key !== "maxSplits") {
                 newParams.set(key, val);
             }
         });
@@ -683,7 +683,7 @@ export default function SplitForm({
         const currentForbiddenStations = getValues("forbiddenStations") ?? [];
         const currentMaxSplits = getValues("maxSplits") ?? (nextPath === "/split/auto/ic-pass" ? 1 : 0);
 
-        // クエリパラメータをマージ (from, to, month の順に並び替え)
+        // クエリパラメータをマージ (from, to, months の順に並び替え)
         const newParams = new URLSearchParams();
         if (startStation?.name) {
             newParams.set("from", startStation.name);
@@ -694,7 +694,7 @@ export default function SplitForm({
         if (nextSearchType !== "ticket") {
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
             const mVal = monthsMap[nextSearchType] || "6";
-            newParams.set("month", mVal);
+            newParams.set("months", mVal);
         }
         if (nextPath !== "/split/auto/ic-pass" && currentMaxSplits > 0) {
             newParams.set("maxSplits", String(currentMaxSplits));
@@ -703,7 +703,7 @@ export default function SplitForm({
             newParams.append("noSplitStation", station.name);
         }
         new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").forEach((val, key) => {
-            if (key !== "from" && key !== "to" && key !== "month" && key !== "searchType" && key !== "noSplitStation" && key !== "maxSplits") {
+            if (key !== "from" && key !== "to" && key !== "month" && key !== "months" && key !== "searchType" && key !== "noSplitStation" && key !== "maxSplits") {
                 newParams.set(key, val);
             }
         });

@@ -8,14 +8,14 @@ import { fetchEngineAsset } from '../../workers/frontend.mjs';
 
 const origin = 'https://kippu-navi.com';
 test('マニフェストは任意のURLや追跡パラメーターを受け付けず計算条件を保持する', async () => {
-  const launch = '/split/route/pass?route=東京[東海道]熱海&month=3&noSplitStation=品川&noSplitStation=品川&utm_source=x';
+  const launch = '/split/route/pass?route=東京[東海道]熱海&months=3&noSplitStation=品川&noSplitStation=品川&utm_source=x';
   const request = new Request(`${origin}/manifest.webmanifest?${new URLSearchParams({ launch })}`);
   const response = manifestResponse(request);
   const manifest = await response.json();
   const target = new URL(manifest.start_url, origin);
   assert.equal(manifest.id, manifest.start_url);
   assert.equal(target.searchParams.get('route'), '東京[東海道]熱海');
-  assert.equal(target.searchParams.get('month'), '3');
+  assert.equal(target.searchParams.get('months'), '3');
   assert.deepEqual(target.searchParams.getAll('noSplitStation'), ['品川']);
   assert.equal(target.searchParams.has('utm_source'), false);
   assert.equal(manifest.display, 'standalone');
@@ -23,6 +23,10 @@ test('マニフェストは任意のURLや追跡パラメーターを受け付�
     assert.equal(normalizeLaunch(unsafe, origin), '/');
   }
   assert.equal(normalizeLaunch('/guide?from=東京', origin), '/guide');
+});
+test('旧month付き起動URLをmonthsへ統一し、両方ある場合はmonthsを優先する', () => {
+  assert.equal(normalizeLaunch('/split/auto/pass?month=1', origin), '/split/auto/pass?months=1');
+  assert.equal(normalizeLaunch('/fare/pass?month=6&months=3', origin), '/fare/pass?months=3');
 });
 test('版を厳密に指定したエンジンリクエストは現行の配信版で代用しない', async () => {
   let calls = 0;
@@ -109,9 +113,9 @@ test('開発・プレビュー用ミドルウェアは静的HTMLの処理前に�
     let body;
     const headers = new Map();
     const response = { statusCode: 0, setHeader(name, value) { headers.set(name, value); }, end(value) { body = value; } };
-    await middleware({ url: '/manifest.webmanifest?launch=%2Fsplit%2Fauto%2Fpass%3Fmonth%3D3', method: 'GET' }, response, () => assert.fail('must not reach static HTML'));
+    await middleware({ url: '/manifest.webmanifest?launch=%2Fsplit%2Fauto%2Fpass%3Fmonths%3D3', method: 'GET' }, response, () => assert.fail('must not reach static HTML'));
     assert.equal(response.statusCode, 200);
-    assert.equal(JSON.parse(body).start_url, '/split/auto/pass?month=3');
+    assert.equal(JSON.parse(body).start_url, '/split/auto/pass?months=3');
     assert.match(headers.get('content-type'), /manifest/);
   }
 });
