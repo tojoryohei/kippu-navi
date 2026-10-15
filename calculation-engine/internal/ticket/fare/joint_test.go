@@ -52,11 +52,11 @@ func TestCalculateJointFare(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := fare.CalculateJointFare(r, tt.totalEigyo, tt.totalGisei, tt.totalLineType, tt.components)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CalculateJointFare() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CalculateJointFare() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CalculateJointFare() = %v, want %v", got, tt.want)
+				t.Errorf("CalculateJointFare() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}

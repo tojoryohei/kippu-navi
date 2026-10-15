@@ -69,23 +69,23 @@ func TestSuburbanAreaCorrector_Integration(t *testing.T) {
 			// IsSuburbanAreaCompleteのテスト
 			gotComplete := usecase.IsSuburbanAreaComplete(inputPath, g)
 			if gotComplete != tc.expectComplete {
-				t.Errorf("IsSuburbanAreaComplete expected %v, got %v", tc.expectComplete, gotComplete)
+				t.Errorf("IsSuburbanAreaCompleteの期待値は%vですが、実際は%vでした", tc.expectComplete, gotComplete)
 			}
 
 			// 補正処理のテスト
 			gotPath, err := c.Correct(inputPath, g)
 			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
+				t.Fatalf("予期しないエラーが発生しました: %v", err)
 			}
 
 			// 完結している場合は最短経路に、そうでない場合は元の経路そのままになる
 			if tc.expectComplete {
 				if !reflect.DeepEqual(gotPath, expectedPath) {
-					t.Errorf("expected path %v, got %v", expectedPath, gotPath)
+					t.Errorf("経路の期待値は%vですが、実際は%vでした", expectedPath, gotPath)
 				}
 			} else {
 				if !reflect.DeepEqual(gotPath, inputPath) {
-					t.Errorf("expected path to remain unchanged %v, got %v", inputPath, gotPath)
+					t.Errorf("経路が変更されないことを期待しました: 期待値%v、実際%v", inputPath, gotPath)
 				}
 			}
 		})

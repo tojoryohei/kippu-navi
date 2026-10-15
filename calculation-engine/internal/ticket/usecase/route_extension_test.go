@@ -28,7 +28,7 @@ func TestRouteExtensionMatcherMatchesOnlyTheCompleteInputPath(t *testing.T) {
 
 	got, ok := matcher.Match([]int{g.GetOrAddID("A"), g.GetOrAddID("B")})
 	if !ok || !reflect.DeepEqual(got, []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C")}) {
-		t.Fatalf("延長経路が一致しません: got=%v ok=%v", got, ok)
+		t.Fatalf("延長経路が一致しません: 実際=%v ok=%v", got, ok)
 	}
 	if _, ok := matcher.Match([]int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C")}); ok {
 		t.Fatal("入力経路の接頭辞を延長経路として一致扱いしました")
@@ -51,7 +51,7 @@ func TestRouteExtensionMatcherMatchesReverseDirection(t *testing.T) {
 	got, ok := matcher.MatchEither([]int{g.GetOrAddID("B"), g.GetOrAddID("A")})
 	want := []int{g.GetOrAddID("C"), g.GetOrAddID("B"), g.GetOrAddID("A")}
 	if !ok || !reflect.DeepEqual(got, want) {
-		t.Fatalf("逆方向の延長経路が一致しません: got=%v want=%v ok=%v", got, want, ok)
+		t.Fatalf("逆方向の延長経路が一致しません: 実際=%v 期待値=%v ok=%v", got, want, ok)
 	}
 }
 
@@ -88,21 +88,21 @@ func TestCorrectPathForModeWithRouteExtensions(t *testing.T) {
 		t.Fatalf("最安モードの補正に失敗しました: %v", err)
 	}
 	if !reflect.DeepEqual(got, []int{99}) || evalMode != "normal" {
-		t.Fatalf("対応表経路または評価モードが不正です: path=%v mode=%s", got, evalMode)
+		t.Fatalf("対応表経路または評価モードが不正です: 経路=%v モード=%s", got, evalMode)
 	}
 	got, evalMode, before, err := CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(input, g, corrector, matcher, "cheapest")
 	if err != nil || evalMode != "normal" || !reflect.DeepEqual(before, input) {
-		t.Fatalf("対応表経路が有効日数判定経路として返されませんでした: path=%v before=%v mode=%s err=%v", got, before, evalMode, err)
+		t.Fatalf("対応表経路が有効日数判定経路として返されませんでした: 経路=%v 補正前=%v モード=%s エラー=%v", got, before, evalMode, err)
 	}
 
 	got, evalMode, err = CorrectPathForModeWithRouteExtensions(input, g, corrector, matcher, "normal")
 	if err != nil || !reflect.DeepEqual(got, []int{99}) || evalMode != "normal" {
-		t.Fatalf("通常モードの既存補正が変わりました: path=%v mode=%s err=%v", got, evalMode, err)
+		t.Fatalf("通常モードの既存補正が変わりました: 経路=%v モード=%s エラー=%v", got, evalMode, err)
 	}
 
 	got, evalMode, err = CorrectPathForModeWithRouteExtensions(input, g, corrector, matcher, "uncorrect")
 	if err != nil || !reflect.DeepEqual(got, input) || evalMode != "uncorrect" {
-		t.Fatalf("補正禁止モードが変わりました: path=%v mode=%s err=%v", got, evalMode, err)
+		t.Fatalf("補正禁止モードが変わりました: 経路=%v モード=%s エラー=%v", got, evalMode, err)
 	}
 }
 
@@ -134,7 +134,7 @@ func TestSelectCheapestPathWithRouteExtensionsSequentiallyExtendsUntilThreshold(
 	}
 	want := []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C"), g.GetOrAddID("D"), g.GetOrAddID("E"), g.GetOrAddID("F"), g.GetOrAddID("G")}
 	if !reflect.DeepEqual(corrected, want) {
-		t.Fatalf("5駅延長の候補が選択されませんでした: got=%v want=%v", corrected, want)
+		t.Fatalf("5駅延長の候補が選択されませんでした: 実際=%v 期待値=%v", corrected, want)
 	}
 }
 
@@ -172,7 +172,7 @@ func TestSelectCheapestPathWithRouteExtensionsAllowsSixShapeOnlyForward(t *testi
 		t.Fatalf("順方向の6の字経路選択に失敗しました: %v", err)
 	}
 	if !reflect.DeepEqual(selected, wantExtended) {
-		t.Fatalf("北上まで延長した6の字経路が選択されませんでした: got=%v want=%v", selected, wantExtended)
+		t.Fatalf("北上まで延長した6の字経路が選択されませんでした: 実際=%v 期待値=%v", selected, wantExtended)
 	}
 }
 
@@ -206,10 +206,10 @@ func TestSelectCheapestPathWithRouteExtensionsRejectsNineShapeReverse(t *testing
 		t.Fatalf("逆方向の経路選択に失敗しました: %v", err)
 	}
 	if !reflect.DeepEqual(selected, input) {
-		t.Fatalf("9の字経路を除外して元の経路を選択しませんでした: got=%v want=%v", selected, input)
+		t.Fatalf("9の字経路を除外して元の経路を選択しませんでした: 実際=%v 期待値=%v", selected, input)
 	}
 	if len(evaluated) != 1 || !reflect.DeepEqual(evaluated[0], input) {
-		t.Fatalf("9の字経路が運賃評価されました: evaluated=%v", evaluated)
+		t.Fatalf("9の字経路が運賃評価されました: 評価済み=%v", evaluated)
 	}
 }
 
@@ -242,10 +242,10 @@ func TestSelectCheapestPathWithRouteExtensionsSkipsSequentialExtensionsOnMatch(t
 		t.Fatalf("対応表一致時の経路選択に失敗しました: %v", err)
 	}
 	if !reflect.DeepEqual(selected, output) {
-		t.Fatalf("対応表の出力経路が選択されませんでした: got=%v want=%v", selected, output)
+		t.Fatalf("対応表の出力経路が選択されませんでした: 実際=%v 期待値=%v", selected, output)
 	}
 	if !reflect.DeepEqual(evaluated, [][]int{input, output}) {
-		t.Fatalf("補正後経路と対応表候補の比較が不正です: evaluated=%v", evaluated)
+		t.Fatalf("補正後経路と対応表候補の比較が不正です: 評価済み=%v", evaluated)
 	}
 }
 
@@ -278,10 +278,10 @@ func TestSelectCheapestPathWithRouteExtensionsSkipsSequentialExtensionsOnReverse
 		t.Fatalf("逆方向の対応表一致時の経路選択に失敗しました: %v", err)
 	}
 	if !reflect.DeepEqual(selected, output) {
-		t.Fatalf("逆方向の対応表出力経路が選択されませんでした: got=%v want=%v", selected, output)
+		t.Fatalf("逆方向の対応表出力経路が選択されませんでした: 実際=%v 期待値=%v", selected, output)
 	}
 	if !reflect.DeepEqual(evaluated, [][]int{input, output}) {
-		t.Fatalf("逆方向の補正後経路と対応表候補の比較が不正です: evaluated=%v", evaluated)
+		t.Fatalf("逆方向の補正後経路と対応表候補の比較が不正です: 評価済み=%v", evaluated)
 	}
 }
 
@@ -295,7 +295,7 @@ func TestSequentialRouteExtensionsAcceptsPrivateEdges(t *testing.T) {
 	candidates := sequentialRouteExtensions(input, g, zones)
 	want := []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C")}
 	if len(candidates) != 1 || !reflect.DeepEqual(candidates[0], want) {
-		t.Fatalf("私鉄を含む逐次延長が生成されませんでした: got=%v want=%v", candidates, want)
+		t.Fatalf("私鉄を含む逐次延長が生成されませんでした: 実際=%v 期待値=%v", candidates, want)
 	}
 }
 
@@ -333,7 +333,7 @@ func TestSequentialRouteExtensionsMeasuresVirtualInputEdges(t *testing.T) {
 	candidates := sequentialRouteExtensions(input, g, zones)
 	want := []int{g.GetOrAddID("A"), g.GetOrAddID("東京"), g.GetOrAddID("B"), virtualStation, virtualTo, g.GetOrAddID("Y")}
 	if len(candidates) != 1 || !reflect.DeepEqual(candidates[0], want) {
-		t.Fatalf("仮想入力エッジを含む逐次延長が生成されませんでした: got=%v want=%v", candidates, want)
+		t.Fatalf("仮想入力エッジを含む逐次延長が生成されませんでした: 実際=%v 期待値=%v", candidates, want)
 	}
 }
 
@@ -378,7 +378,7 @@ func TestSequentialRouteExtensionsTriesBothSidesWhenBothEndpointsAreInZones(t *t
 	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
 	candidates := sequentialRouteExtensions(input, g, zones)
 	if len(candidates) != 2 {
-		t.Fatalf("両端ゾーンの片側延長候補数が不正です: got=%v", candidates)
+		t.Fatalf("両端ゾーンの片側延長候補数が不正です: 実際=%v", candidates)
 	}
 }
 
@@ -428,7 +428,7 @@ func TestRouteExtensionRegistryIsEmptyAfterRemovingArticle114Routes(t *testing.T
 		t.Fatalf("対応表の読み込みに失敗しました: %v", err)
 	}
 	if got := len(registry.GetRouteExtensions()); got != 0 {
-		t.Fatalf("空の経路対応表にレコードが残っています: got=%d", got)
+		t.Fatalf("空の経路対応表にレコードが残っています: 実際=%d", got)
 	}
 }
 
@@ -511,7 +511,7 @@ func TestSuburbanCheapestSkipsRouteExtensions(t *testing.T) {
 	}
 	got, mode, err := CorrectPathForModeWithRouteExtensions(input, g, extensionTestCorrector{}, matcher, "cheapest")
 	if err != nil || mode != "normal" || !reflect.DeepEqual(got, []int{99}) {
-		t.Fatalf("path=%v mode=%s err=%v", got, mode, err)
+		t.Fatalf("経路=%v モード=%s エラー=%v", got, mode, err)
 	}
 }
 
@@ -553,7 +553,7 @@ func TestCheapestCorrectsBeforeExtendingAndKeepsCorrectedBase(t *testing.T) {
 			want = extended
 		}
 		if err != nil || calls != 1 || !reflect.DeepEqual(got, want) || !reflect.DeepEqual(evaluated, [][]int{base, extended}) {
-			t.Fatalf("fare=%d got=%v evaluated=%v calls=%d err=%v", extensionFare, got, evaluated, calls, err)
+			t.Fatalf("運賃=%d 実際=%v 評価済み=%v 呼び出し回数=%d エラー=%v", extensionFare, got, evaluated, calls, err)
 		}
 		if extensionFare >= 100 && !reflect.DeepEqual(before, input) {
 			t.Fatalf("展開前経路が失われました: %v", before)

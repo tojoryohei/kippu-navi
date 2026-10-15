@@ -52,7 +52,7 @@ func TestFareViaWithAppliedCityZone(t *testing.T) {
 				var ok bool
 				path[i], ok = g.GetID(name)
 				if !ok {
-					t.Fatalf("station %s not found", name)
+					t.Fatalf("駅%sが見つかりません", name)
 				}
 				viaSteps[i].StationName = name
 				if i < len(tt.stations)-1 {
@@ -71,14 +71,14 @@ func TestFareViaWithAppliedCityZone(t *testing.T) {
 				finalNames[i] = g.GetName(id)
 			}
 			if finalNames[0] != "東京都区内" {
-				t.Fatalf("city zone not applied: %v", finalNames)
+				t.Fatalf("特定都区市内の補正が適用されていません: %v", finalNames)
 			}
 			if tt.ordinaryEnds > 0 && !slices.Contains(usecase.GetFareVia(viaSteps), "東海道") {
-				t.Fatalf("input route must print 東海道 before zone filtering: %v", usecase.GetFareVia(viaSteps))
+				t.Fatalf("特定都区市内の絞り込み前は入力経路の経由を東海道と表示する必要があります: %v", usecase.GetFareVia(viaSteps))
 			}
 			got := usecase.GetFareViaForResult(viaSteps, result.FinalPath, g, zones)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("finalPath=%v, rawVia=%v, filteredVia=%v, want=%v",
+				t.Fatalf("最終経路=%v, 変換前の経由=%v, 絞り込み後の経由=%v, 期待値=%v",
 					finalNames, usecase.GetFareVia(viaSteps), got, tt.want)
 			}
 		})
@@ -101,7 +101,7 @@ func TestFareViaOsakaShinOsakaToOkayama(t *testing.T) {
 	for i, name := range names {
 		id, ok := g.GetID(name)
 		if !ok {
-			t.Fatalf("station %q is missing", name)
+			t.Fatalf("駅%qがありません", name)
 		}
 		path[i] = id
 		steps[i].StationName = name
@@ -116,11 +116,11 @@ func TestFareViaOsakaShinOsakaToOkayama(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got := g.GetName(result.FinalPath[0]); got != "大阪・新大阪" {
-		t.Fatalf("final departure = %q, want 大阪・新大阪", got)
+		t.Fatalf("最終的な発駅 = %q, 期待値 大阪・新大阪", got)
 	}
 	want := []string{"東海道", "山陽", "西明石", "新幹線", "岡山"}
 	if got := usecase.GetFareViaForResultWithSections(steps, result.FinalPath, g, zones); !reflect.DeepEqual(got, want) {
-		t.Fatalf("fare via = %v, want %v", got, want)
+		t.Fatalf("運賃の経由 = %v, 期待値 %v", got, want)
 	}
 }
 
@@ -162,7 +162,7 @@ func TestFareViaWithShinkansenOverlap(t *testing.T) {
 				var ok bool
 				path[i], ok = g.GetID(name)
 				if !ok {
-					t.Fatalf("station %s not found", name)
+					t.Fatalf("駅%sが見つかりません", name)
 				}
 				viaSteps[i].StationName = name
 				if i < len(shinkansen)-1 {
@@ -187,7 +187,7 @@ func TestFareViaWithShinkansenOverlap(t *testing.T) {
 				for i, id := range result.FinalPath {
 					finalNames[i] = g.GetName(id)
 				}
-				t.Fatalf("finalPath=%v, via=%v, want=%v", finalNames, got, tt.wantVia)
+				t.Fatalf("最終経路=%v, 経由=%v, 期待値=%v", finalNames, got, tt.wantVia)
 			}
 		})
 	}
@@ -240,14 +240,14 @@ func TestArticle88ShinkansenCorrectionRespectsMode(t *testing.T) {
 				slices.Reverse(wantVia)
 			}
 			if via := usecase.GetCalculatedFareVia(mode, steps, path, transformed, result.FinalPath, g, zones); !slices.Equal(via, wantVia) {
-				t.Fatalf("mode=%s reverse=%v via=%v want=%v", mode, reverse, via, wantVia)
+				t.Fatalf("モード=%s 逆方向=%v 経由=%v 期待値=%v", mode, reverse, via, wantVia)
 			}
 			got := make([]string, len(transformed))
 			for i, id := range transformed {
 				got[i] = g.GetName(id)
 			}
 			if !slices.Equal(got, want) || int(result.TotalEigyoKilo) != wantKilo {
-				t.Fatalf("mode=%s reverse=%v path=%v distance=%v; want %v %d", mode, reverse, got, result.TotalEigyoKilo, want, wantKilo)
+				t.Fatalf("モード=%s 逆方向=%v 経路=%v 距離=%v; 期待値 %v %d", mode, reverse, got, result.TotalEigyoKilo, want, wantKilo)
 			}
 		}
 	}
@@ -309,7 +309,7 @@ func TestOsakaViaShinOsakaToHimeji(t *testing.T) {
 				wantKilo, wantFare = 955, 1640
 			}
 			if int(result.TotalEigyoKilo) != wantKilo || result.TotalAmount() != wantFare {
-				t.Fatalf("%s reverse=%v: distance=%v fare=%d", mode, reverse, result.TotalEigyoKilo, result.TotalAmount())
+				t.Fatalf("%s 逆方向=%v: 距離=%v 運賃=%d", mode, reverse, result.TotalEigyoKilo, result.TotalAmount())
 			}
 			end := 0
 			if reverse {
@@ -319,7 +319,7 @@ func TestOsakaViaShinOsakaToHimeji(t *testing.T) {
 				t.Fatal("第88条未適用")
 			}
 			if days := usecase.CalculateTicketValidDays(result.TotalPathEigyoKilo, before, g); days != 1 {
-				t.Fatalf("days=%d", days)
+				t.Fatalf("有効日数=%d", days)
 			}
 			want := []string{"新大阪", "新幹線", "西明石", "山陽"}
 			if mode != "uncorrect" {
@@ -330,7 +330,7 @@ func TestOsakaViaShinOsakaToHimeji(t *testing.T) {
 			}
 			got := usecase.GetCalculatedFareVia(mode, steps, path, transformed, result.FinalPath, g, zones)
 			if !slices.Equal(got, want) {
-				t.Fatalf("%s reverse=%v via=%v want=%v", mode, reverse, got, want)
+				t.Fatalf("%s 逆方向=%v 経由=%v 期待値=%v", mode, reverse, got, want)
 			}
 		}
 	}
@@ -385,7 +385,7 @@ func TestConsecutiveKyushuOverlap(t *testing.T) {
 			}
 			via := usecase.GetCalculatedFareVia(mode, steps, path, p, r.FinalPath, g, zones)
 			if !slices.Equal(via, want) || r.TotalEigyoKilo != 698 || r.TotalAmount() != 1220 || usecase.CalculateTicketValidDays(r.TotalPathEigyoKilo, before, g) != 1 {
-				t.Fatalf("%s reverse=%v via=%v kilo=%v fare=%d", mode, reverse, via, r.TotalEigyoKilo, r.TotalAmount())
+				t.Fatalf("%s 逆方向=%v 経由=%v kilo=%v 運賃=%d", mode, reverse, via, r.TotalEigyoKilo, r.TotalAmount())
 			}
 		}
 	}

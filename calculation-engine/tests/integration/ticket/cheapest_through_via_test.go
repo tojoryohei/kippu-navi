@@ -65,10 +65,10 @@ func TestCheapestThroughDedicatedStations(t *testing.T) {
 					t.Fatal(marshalErr)
 				}
 				if logged != "カナコード："+string(encoded)+"\n" {
-					t.Fatalf("log = %q, want codes %v", logged, codes)
+					t.Fatalf("ログ = %q、期待するコード%v", logged, codes)
 				}
 				if !reflect.DeepEqual(fare.PrintedViaLines, want) {
-					t.Fatalf("got %v want %v", fare.PrintedViaLines, want)
+					t.Fatalf("実際 %v 期待値 %v", fare.PrintedViaLines, want)
 				}
 			})
 		}
@@ -147,7 +147,7 @@ func TestCheapestThroughReplacementDuplicate(t *testing.T) {
 					t.Fatal(err)
 				}
 				if !reflect.DeepEqual(fare.PrintedViaLines, want) {
-					t.Fatalf("via = %v, want %v", fare.PrintedViaLines, want)
+					t.Fatalf("経由 = %v, 期待値 %v", fare.PrintedViaLines, want)
 				}
 				if strings.Count(logged, `"`+tc.code+`"`) != 1 {
 					t.Fatalf("新幹線コードが保持されていません: %s", logged)
@@ -177,7 +177,7 @@ func TestCheapestThroughReplacementDuplicate(t *testing.T) {
 					t.Fatalf("分割禁止が適用されていません: %+v", result)
 				}
 				if got := result.Results[0].Segments[0].Fare.PrintedViaLines; !reflect.DeepEqual(got, want) {
-					t.Fatalf("分割券の経由 = %v, want %v", got, want)
+					t.Fatalf("分割券の経由 = %v, 期待値 %v", got, want)
 				}
 			})
 		}

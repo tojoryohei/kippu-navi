@@ -66,5 +66,5 @@ func (c *TrainSpecificSectionCalculator) Calculate(params ticketdomain.TicketFar
 		return round1000(round10000(1550*300+1230*(splitKilo-300))*11/10) / 100, nil
 	}
 
-	return 0, fmt.Errorf("CalculateTrainSpecificFare: targetKm %d: %w", targetKm, ErrOutOfRange)
+	return 0, fmt.Errorf("CalculateTrainSpecificFare: 対象キロ%d: %w", targetKm, ErrOutOfRange)
 }

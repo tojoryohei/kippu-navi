@@ -74,7 +74,7 @@ func (r *Registry) Register(id domain.CompanyID, calc Calculator) {
 func (r *Registry) Get(id domain.CompanyID) (Calculator, error) {
 	calc, ok := r.calcs[id]
 	if !ok {
-		return nil, fmt.Errorf("fare: companyID=%d: %w", id, ErrCalculatorNotFound)
+		return nil, fmt.Errorf("運賃: companyID=%d: %w", id, ErrCalculatorNotFound)
 	}
 	return calc, nil
 }

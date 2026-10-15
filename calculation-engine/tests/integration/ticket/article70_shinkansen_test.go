@@ -87,18 +87,18 @@ func TestArticle70Shinkansen(t *testing.T) {
 					fare, _, err := calculator.Calculate(path, steps, mode)
 					if tc.invalid && mode != "uncorrect" {
 						if err == nil || err.Error() != "再考：要求区間誤り" {
-							t.Fatalf("error = %v, want 再考：要求区間誤り", err)
+							t.Fatalf("エラー = %v, 期待値 再考：要求区間誤り", err)
 						}
 						// 通常のCorrectと、入れ子の補正でも展開前の要求を保持する。
 						if _, err := corrector.Correct(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
-							t.Fatalf("Correct error = %v", err)
+							t.Fatalf("補正時のエラー = %v", err)
 						}
 						nested := usecase.NewPipelineCorrector(usecase.NewShinkansenOverlapCorrector(), usecase.NewPipelineCorrector(usecase.NewArticle70Corrector(routes)))
 						if _, err := nested.Correct(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
-							t.Fatalf("nested Correct error = %v", err)
+							t.Fatalf("入れ子の補正時のエラー = %v", err)
 						}
 						if _, _, err := nested.CorrectWithPreShinkansenPath(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
-							t.Fatalf("nested traced correction error = %v", err)
+							t.Fatalf("入れ子の追跡付き補正時のエラー = %v", err)
 						}
 						return
 					}
@@ -107,14 +107,14 @@ func TestArticle70Shinkansen(t *testing.T) {
 					}
 					if mode != "uncorrect" && tc.kilo > 0 {
 						if fare.DepartureStation != steps[0].StationName || fare.ArrivalStation != steps[len(steps)-1].StationName {
-							t.Fatalf("unexpected endpoints: %+v", fare)
+							t.Fatalf("予期しない端点です: %+v", fare)
 						}
 						if fare.TotalEigyoKilo != tc.kilo || fare.Fare != tc.fare || fare.ValidDays != 1 {
-							t.Fatalf("fare = %+v, want %d / %d / 1 day", fare, tc.kilo, tc.fare)
+							t.Fatalf("運賃計算結果 = %+v、期待値は%d / %d / 有効期間1日", fare, tc.kilo, tc.fare)
 						}
 					}
 					if mode == "normal" && wantVia != nil && !reflect.DeepEqual(fare.PrintedViaLines, wantVia) {
-						t.Fatalf("via = %v, want %v", fare.PrintedViaLines, wantVia)
+						t.Fatalf("経由 = %v, 期待値 %v", fare.PrintedViaLines, wantVia)
 					}
 				})
 			}

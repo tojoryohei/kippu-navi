@@ -16,7 +16,7 @@ func TestDebugCheapestHoshimi(t *testing.T) {
 	for i, n := range names {
 		id, ok := d.full.GetID(n)
 		if !ok {
-			t.Fatalf("missing %s", n)
+			t.Fatalf("%sがありません", n)
 		}
 		path[i] = id
 	}
@@ -42,8 +42,8 @@ func TestDebugCheapestHoshimi(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("fare=%d end=%s pathlen=%d", r.TotalAmount(), ns[len(ns)-1], len(ns))
+	t.Logf("運賃=%d 終点=%s 経路長=%d", r.TotalAmount(), ns[len(ns)-1], len(ns))
 	if ns[len(ns)-1] != "東旭川" || r.TotalAmount() != 4840 {
-		t.Fatalf("unexpected fare/path: %d %v", r.TotalAmount(), ns)
+		t.Fatalf("予期しない運賃または経路です: %d %v", r.TotalAmount(), ns)
 	}
 }

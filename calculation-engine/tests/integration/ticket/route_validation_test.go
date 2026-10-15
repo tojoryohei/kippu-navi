@@ -46,7 +46,7 @@ func TestRouteTicketRejectsOverlapBeforeModeCorrection(t *testing.T) {
 					assertDuplicate := func(err error) {
 						t.Helper()
 						if !errors.Is(err, domain.ErrDuplicateRoute) {
-							t.Fatalf("expected duplicate route, got %v", err)
+							t.Fatalf("経路重複エラーを期待しましたが、実際は%vでした", err)
 						}
 					}
 					_, err := c.ResolvePath(steps)
@@ -200,19 +200,19 @@ func TestRouteTicketDeductibleOverlapAndInvalidSplitIntervals(t *testing.T) {
 				t.Fatal(err)
 			}
 			if _, _, err := c.Calculate(path[1:4], nil, mode); !errors.Is(err, domain.ErrDuplicateRoute) {
-				t.Fatalf("foldback interval should be invalid: %v", err)
+				t.Fatalf("折り返し区間が不正として扱われていません: %v", err)
 			}
 			result, err := c.Split(steps, mode)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if result.Normal.Fare != baseline.Fare || len(result.Results) == 0 {
-				t.Fatal("missing valid split result")
+				t.Fatal("有効な分割結果がありません")
 			}
 			for _, plan := range result.Results {
 				for _, segment := range plan.Segments {
 					if segment.DepartureStation == "神田" && segment.ArrivalStation == "神田" {
-						t.Fatal("invalid foldback interval included")
+						t.Fatal("不正な折り返し区間が含まれています")
 					}
 				}
 			}

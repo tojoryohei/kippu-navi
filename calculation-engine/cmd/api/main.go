@@ -96,11 +96,11 @@ func observeRequests(next http.Handler) http.Handler {
 		defer func() {
 			if recovered := recover(); recovered != nil {
 				if !recorder.wroteHeader {
-					http.Error(recorder, "Internal Server Error", http.StatusInternalServerError)
+					http.Error(recorder, "サーバー内部でエラーが発生しました", http.StatusInternalServerError)
 				}
-				slog.Error("api panic", "request_id", requestID, "path", r.URL.Path)
+				slog.Error("APIでパニックが発生しました", "request_id", requestID, "path", r.URL.Path)
 			}
-			slog.Info("api request", "request_id", requestID, "path", r.URL.Path, "method", r.Method, "status", recorder.status, "elapsed_ms", time.Since(startedAt).Milliseconds())
+			slog.Info("APIリクエスト", "request_id", requestID, "path", r.URL.Path, "method", r.Method, "status", recorder.status, "elapsed_ms", time.Since(startedAt).Milliseconds())
 		}()
 		next.ServeHTTP(recorder, r)
 	})
@@ -109,7 +109,7 @@ func observeRequests(next http.Handler) http.Handler {
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	if err := run(); err != nil {
-		slog.Error("fatal startup error", "error", err)
+		slog.Error("起動時に致命的なエラーが発生しました", "error", err)
 		os.Exit(1)
 	}
 }
@@ -359,10 +359,10 @@ func run() error {
 
 	ticketFares, ticketDistGisei, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares(filepath.Join(precomputedDataDir, "ticket.bin"))
 	if err != nil {
-		slog.Error("failed to load precomputed ticket fares", "error", err)
+		slog.Error("乗車券の事前計算運賃を読み込めませんでした", "error", err)
 		// 失敗しても起動できるようにする（データが存在しない初期時などのため）
 	} else if int32(ticketFullGraph.NumStations()) != numTicketStations {
-		slog.Error("ticket precomputed data station count mismatch", "graph_stations", ticketFullGraph.NumStations(), "precomputed_stations", numTicketStations)
+		slog.Error("乗車券の事前計算データの駅数が一致しません", "graph_stations", ticketFullGraph.NumStations(), "precomputed_stations", numTicketStations)
 	} else {
 		ticketSearchUseCase.SetPrecomputedFares(ticketFares)
 		ticketSearchGraph.DistGisei = ticketDistGisei
@@ -388,7 +388,7 @@ func run() error {
 	// サーバーをgoroutineで起動
 	errChan := make(chan error, 1)
 	go func() {
-		slog.Info("calculation-engine started", "address", server.Addr)
+		slog.Info("運賃計算エンジンを起動しました", "address", server.Addr)
 		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			errChan <- err
 		}
@@ -399,17 +399,17 @@ func run() error {
 	case err := <-errChan:
 		return fmt.Errorf("サーバーが異常終了しました: %w", err)
 	case <-ctx.Done():
-		slog.Info("shutdown signal received")
+		slog.Info("終了シグナルを受信しました")
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("graceful shutdown に失敗しました: %w", err)
+		return fmt.Errorf("正常終了処理に失敗しました: %w", err)
 	}
 
-	slog.Info("calculation-engine stopped")
+	slog.Info("運賃計算エンジンを停止しました")
 	return nil
 }
 
@@ -431,9 +431,9 @@ func newPassSearchFactories(
 ) (func() *passusecase.SearchOptimalSplit, func() *passusecase.SearchOptimalSplit) {
 	baseFares, icFares, baseDist, icDist, n, err := passdata.LoadPrecomputedFares(path)
 	if err != nil {
-		slog.Error("failed to load precomputed pass fares; using on-demand calculation", "error", err)
+		slog.Error("定期券の事前計算運賃を読み込めないため、都度計算を使用します", "error", err)
 	} else if int32(g.NumStations()) != n {
-		slog.Error("pass precomputed data station count mismatch; using on-demand calculation", "graph_stations", g.NumStations(), "precomputed_stations", n)
+		slog.Error("定期券の事前計算データの駅数が一致しないため、都度計算を使用します", "graph_stations", g.NumStations(), "precomputed_stations", n)
 		passdata.ClosePrecomputedFares()
 	} else {
 		g.DistGisei = baseDist

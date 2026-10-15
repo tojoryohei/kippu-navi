@@ -235,7 +235,7 @@ func (s *SuburbanAreaCorrector) findShortestPathGisei(startID, endID int, jrArea
 	}); ok {
 		return f.FindShortestPathGiseiSuburban(startID, endID, jrArea)
 	}
-	return nil, fmt.Errorf("graph does not support FindShortestPathGiseiSuburban")
+	return nil, fmt.Errorf("グラフがFindShortestPathGiseiSuburbanに対応していません")
 }
 
 func (s *SuburbanAreaCorrector) findShortestPathEigyo(startID, endID int, jrArea domain.SuburbanAreaID, g graph.Graph) (*graph.PathResult, error) {
@@ -244,7 +244,7 @@ func (s *SuburbanAreaCorrector) findShortestPathEigyo(startID, endID int, jrArea
 	}); ok {
 		return f.FindShortestPathEigyoSuburban(startID, endID, jrArea)
 	}
-	return nil, fmt.Errorf("graph does not support FindShortestPathEigyoSuburban")
+	return nil, fmt.Errorf("グラフがFindShortestPathEigyoSuburbanに対応していません")
 }
 
 func (s *SuburbanAreaCorrector) findShortestPathEigyoTrainSpecific(startID, endID int, g graph.Graph) (*graph.PathResult, error) {
@@ -253,7 +253,7 @@ func (s *SuburbanAreaCorrector) findShortestPathEigyoTrainSpecific(startID, endI
 	}); ok {
 		return f.FindShortestPathEigyoTrainSpecific(startID, endID)
 	}
-	return nil, fmt.Errorf("graph does not support FindShortestPathEigyoTrainSpecific")
+	return nil, fmt.Errorf("グラフがFindShortestPathEigyoTrainSpecificに対応していません")
 }
 
 // IsSuburbanAreaComplete は与えられた経路が、JRの同一の近郊区間内で完結しているかを判定します。

@@ -99,12 +99,12 @@ func TestPassPrecomputedFallback(t *testing.T) {
 			baseFactory, icFactory := newPassSearchFactories(path, g, ic, split, nil)
 			defer data.ClosePrecomputedFares()
 			if got := len(g.DistGisei) > 0 && len(ic.DistGisei) > 0; got != (tc.name == "valid") {
-				t.Fatalf("distance tables installed=%v", got)
+				t.Fatalf("距離テーブルの設定状態=%v", got)
 			}
 			for i, factory := range []func() *usecase.SearchOptimalSplit{baseFactory, icFactory} {
 				firstSearch, secondSearch := factory(), factory()
 				if got := firstSearch == secondSearch; got != (tc.name == "valid") {
-					t.Fatalf("shared search=%v", got)
+					t.Fatalf("共有検索の状態=%v", got)
 				}
 				target := g
 				if i == 1 {
@@ -124,7 +124,7 @@ func TestPassPrecomputedFallback(t *testing.T) {
 							r := httptest.NewRecorder()
 							h.HandleCalculate(r, httptest.NewRequest("GET", query, nil))
 							if r.Code != want {
-								t.Errorf("status=%d body=%s", r.Code, r.Body.String())
+								t.Errorf("ステータス=%d 本文=%s", r.Code, r.Body.String())
 							}
 							return fmt.Sprintf("%d:%s", r.Code, r.Body.String())
 						}
@@ -137,7 +137,7 @@ func TestPassPrecomputedFallback(t *testing.T) {
 								go func() {
 									defer wg.Done()
 									if got := check(); got != responses[key] {
-										t.Errorf("got=%s want=%s", got, responses[key])
+										t.Errorf("実際=%s 期待値=%s", got, responses[key])
 									}
 								}()
 							}

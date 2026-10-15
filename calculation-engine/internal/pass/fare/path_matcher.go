@@ -73,7 +73,7 @@ func (m *PathMatcher) LoadFromDomainWithOptions(pathAndFares []passdomain.PathAn
 			continue
 		}
 		if err := m.Insert(path, sf.Fare); err != nil {
-			return fmt.Errorf("LoadFromDomain: データの登録に失敗しました (path: %v): %w", sf.Path, err)
+			return fmt.Errorf("LoadFromDomain: データの登録に失敗しました (経路: %v): %w", sf.Path, err)
 		}
 	}
 	return nil
@@ -99,7 +99,7 @@ func (m *PathMatcher) Insert(path []int, fare passdomain.PassPrice) error {
 
 	hash := routeToPseudoFNV(routeCopy)
 	if _, ok := m.table[hash]; ok {
-		return fmt.Errorf("PathMatcher: %w (hash=%d, new path=%v)", ErrHashCollision, hash, routeCopy)
+		return fmt.Errorf("PathMatcher: %w (ハッシュ=%d, 新しい経路=%v)", ErrHashCollision, hash, routeCopy)
 	}
 	m.table[hash] = PathEntry{
 		Path: routeCopy,
@@ -124,7 +124,7 @@ func (m *PathMatcher) Insert(path []int, fare passdomain.PassPrice) error {
 	}
 
 	if _, ok := m.table[revHash]; ok {
-		return fmt.Errorf("PathMatcher: %w (reverse) (hash=%d, new path=%v)", ErrHashCollision, revHash, rev)
+		return fmt.Errorf("PathMatcher: %w (逆方向) (ハッシュ=%d, 新しい経路=%v)", ErrHashCollision, revHash, rev)
 	}
 	m.table[revHash] = PathEntry{
 		Path: rev,

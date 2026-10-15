@@ -66,11 +66,11 @@ func TestTrainSpecificSectionCalculator_Calculate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := calc.Calculate(tt.params)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Calculate() err = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Calculate() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("Calculate() = %v, want %v", got, tt.want)
+				t.Errorf("Calculate() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}

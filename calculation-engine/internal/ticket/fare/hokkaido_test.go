@@ -65,11 +65,11 @@ func TestCalculateHokkaidoFare(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := CalculateHokkaidoFare(tt.params)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CalculateHokkaidoFare() err = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CalculateHokkaidoFare() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("CalculateHokkaidoFare() = %v, want %v", got, tt.want)
+				t.Errorf("CalculateHokkaidoFare() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}

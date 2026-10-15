@@ -518,12 +518,12 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 		}
 
 		if len(segs) != len(expectedPaths) {
-			t.Fatalf("期待される経路数と異なります: got %d, want %d", len(segs), len(expectedPaths))
+			t.Fatalf("期待される経路数と異なります: 実際 %d, 期待値 %d", len(segs), len(expectedPaths))
 		}
 
 		for i, seg := range segs {
 			if !isMatch(seg.Path, expectedPaths[i]) {
-				t.Errorf("インデックス %d の経路が一致しません: got %v, want %v", i, seg.Path, expectedPaths[i])
+				t.Errorf("インデックス %d の経路が一致しません: 実際 %v, 期待値 %v", i, seg.Path, expectedPaths[i])
 			}
 		}
 	})
@@ -888,13 +888,13 @@ func (s *paritySearch) ExecuteWithOptions(a, b, months, limit int, locked []int)
 	got, err := s.SearchOptimalSplit.ExecuteWithOptions(a, b, months, limit, locked)
 	local, localErr := s.local.ExecuteWithOptions(a, b, months, limit, locked)
 	if (err == nil) != (localErr == nil) || !reflect.DeepEqual(got, local) {
-		s.t.Fatalf("table=%v (%v), on-demand=%v (%v)", got, err, local, localErr)
+		s.t.Fatalf("テーブル=%v (%v), 都度計算=%v (%v)", got, err, local, localErr)
 	}
 	for _, otherMonth := range []int{3, 6} {
 		tableOther, tableErr := s.SearchOptimalSplit.ExecuteWithOptions(a, b, otherMonth, limit, locked)
 		localOther, localErr := s.local.ExecuteWithOptions(a, b, otherMonth, limit, locked)
 		if (tableErr == nil) != (localErr == nil) || !reflect.DeepEqual(tableOther, localOther) {
-			s.t.Fatalf("month %d: table=%v (%v), on-demand=%v (%v)", otherMonth, tableOther, tableErr, localOther, localErr)
+			s.t.Fatalf("月数 %d: テーブル=%v (%v), 都度計算=%v (%v)", otherMonth, tableOther, tableErr, localOther, localErr)
 		}
 	}
 	return got, err

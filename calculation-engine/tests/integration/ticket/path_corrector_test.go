@@ -90,7 +90,7 @@ func TestPathCorrectorIntegration(t *testing.T) {
 				for _, id := range resIDs {
 					resNames = append(resNames, fullGraph.GetName(id))
 				}
-				t.Errorf("got %v\nwant %v", resNames, tt.expected)
+				t.Errorf("実際 %v\n期待値 %v", resNames, tt.expected)
 			}
 		})
 	}

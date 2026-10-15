@@ -63,11 +63,11 @@ func TestSuburbanSplitAndCheapestUseNormalPath(t *testing.T) {
 	for _, mode := range []string{"normal", "cheapest"} {
 		via := usecase.GetCalculatedFareVia(mode, input, path, gotPath, got.FinalPath, g, zones)
 		if !slices.Equal(via, []string{"東北", "中央東"}) {
-			t.Fatalf("%s via=%v, want 東北・中央東", mode, via)
+			t.Fatalf("%s 経由=%v, 期待値 東北・中央東", mode, via)
 		}
 	}
 	if via := usecase.GetAutomaticFareViaForResult(g, gotPath, got.FinalPath); !slices.Equal(via, []string{"東北", "中央東"}) {
-		t.Fatalf("split via=%v", via)
+		t.Fatalf("分割の経由=%v", via)
 	}
 
 	shortest, err := g.FindShortestPathGisei(path[0], path[len(path)-1])

@@ -28,16 +28,16 @@ func TestFindShortestPathGisei(t *testing.T) {
 	}
 
 	if res.GiseiKilo != 300 {
-		t.Errorf("最短距離が不正です: got %v, want 300", res.GiseiKilo)
+		t.Errorf("最短距離が不正です: 実際 %v, 期待値 300", res.GiseiKilo)
 	}
 
 	expectedPath := []int{startID, midID, endID}
 	if len(res.StationIDs) != len(expectedPath) {
-		t.Fatalf("経路の長さが不正です: got %d, want %d", len(res.StationIDs), len(expectedPath))
+		t.Fatalf("経路の長さが不正です: 実際 %d, 期待値 %d", len(res.StationIDs), len(expectedPath))
 	}
 	for i, id := range res.StationIDs {
 		if id != expectedPath[i] {
-			t.Errorf("経路が不正です [%d]: got %v, want %v", i, id, expectedPath[i])
+			t.Errorf("経路が不正です [%d]: 実際 %v, 期待値 %v", i, id, expectedPath[i])
 		}
 	}
 }
@@ -76,7 +76,7 @@ func TestFindKShortestPathsGisei(t *testing.T) {
 	}
 
 	if res[0].GiseiKilo != 250 || res[1].GiseiKilo != 300 {
-		t.Errorf("経路コストが不正です: got %d と %d, want 250 と 300", res[0].GiseiKilo, res[1].GiseiKilo)
+		t.Errorf("経路コストが不正です: 実際 %d と %d, 期待値 250 と 300", res[0].GiseiKilo, res[1].GiseiKilo)
 	}
 
 	// ケース 2: K を 1、maxGisei を 500 に設定 (最短経路 A-C-D のみ検出するはず)
@@ -88,7 +88,7 @@ func TestFindKShortestPathsGisei(t *testing.T) {
 		t.Fatalf("期待される経路数は 1 ですが、%d でした", len(res2))
 	}
 	if res2[0].GiseiKilo != 250 {
-		t.Errorf("経路コストが不正です: got %d, want 250", res2[0].GiseiKilo)
+		t.Errorf("経路コストが不正です: 実際 %d, 期待値 250", res2[0].GiseiKilo)
 	}
 
 	// ケース 3: maxGisei を 500、K を 10 に設定 (全 3 経路を検出するはず)
@@ -100,6 +100,6 @@ func TestFindKShortestPathsGisei(t *testing.T) {
 		t.Fatalf("期待される経路数は 3 ですが、%d でした", len(res3))
 	}
 	if res3[0].GiseiKilo != 250 || res3[1].GiseiKilo != 300 || res3[2].GiseiKilo != 450 {
-		t.Errorf("経路コストが不正です: got %d, %d, %d; want 250, 300, 450", res3[0].GiseiKilo, res3[1].GiseiKilo, res3[2].GiseiKilo)
+		t.Errorf("経路コストが不正です: 実際 %d, %d, %d; 期待値 250, 300, 450", res3[0].GiseiKilo, res3[1].GiseiKilo, res3[2].GiseiKilo)
 	}
 }

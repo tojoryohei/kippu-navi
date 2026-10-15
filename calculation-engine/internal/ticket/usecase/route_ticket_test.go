@@ -35,7 +35,7 @@ func TestRouteSplitExtendsTicketsButNeverSplitBoundaries(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			names, candidateErr := calculator.SplitCandidates(steps, mode)
 			if candidateErr != nil || len(names) != 0 {
-				t.Fatalf("unexpected candidates: %v %v", names, candidateErr)
+				t.Fatalf("予期しない候補駅です: %v %v", names, candidateErr)
 			}
 			var got *RouteSplitResult
 			var err error
@@ -43,28 +43,28 @@ func TestRouteSplitExtendsTicketsButNeverSplitBoundaries(t *testing.T) {
 				got, err = calculator.Split(steps, mode)
 			})
 			if logged != "" {
-				t.Fatalf("split calculation logged kana codes: %q", logged)
+				t.Fatalf("分割計算でカナコードがログ出力されました: %q", logged)
 			}
 			if err != nil {
 				t.Fatal(err)
 			}
 			if len(got.Results) != 1 || len(got.Results[0].Segments) != 1 {
-				t.Fatalf("extension station became a boundary: %+v", got)
+				t.Fatalf("延長区間の駅が分割境界になっています: %+v", got)
 			}
 			segment := got.Results[0].Segments[0]
 			if segment.DepartureStation != "A" || segment.ArrivalStation != "B" {
-				t.Fatalf("usage endpoints changed: %+v", segment)
+				t.Fatalf("利用区間の端点が変化しました: %+v", segment)
 			}
 			wantFare, wantEnd := 500, "B"
 			if mode == "cheapest" {
 				wantFare, wantEnd = 100, "C"
 			}
 			if segment.Fare.Fare != wantFare || segment.Fare.ArrivalStation != wantEnd {
-				t.Fatalf("mode %s: %+v", mode, segment)
+				t.Fatalf("モード %s: %+v", mode, segment)
 			}
 			baseline, _, err := calculator.Calculate([]int{a, b}, steps, mode)
 			if err != nil || !reflect.DeepEqual(baseline, got.Normal) {
-				t.Fatalf("baseline differs: %+v %+v %v", baseline, got.Normal, err)
+				t.Fatalf("基準運賃が一致しません: %+v %+v %v", baseline, got.Normal, err)
 			}
 		})
 	}
@@ -95,14 +95,14 @@ func TestRouteSplitStopsViaLinesAtTheCut(t *testing.T) {
 			t.Fatal(err)
 		}
 		if len(got.Results) != 1 || len(got.Results[0].Segments) != 2 {
-			t.Fatalf("unexpected plans: %+v", got)
+			t.Fatalf("予期しない分割案です: %+v", got)
 		}
 		first := got.Results[0].Segments[0].Fare.PrintedViaLines
 		if !reflect.DeepEqual(first, []string{"東海道"}) {
-			t.Fatalf("outgoing line leaked into first ticket: %v", first)
+			t.Fatalf("次の区間の路線が最初の乗車券に混入しています: %v", first)
 		}
 		if steps[1].LineName != "チユト" {
-			t.Fatal("input route mutated")
+			t.Fatal("入力経路が変更されています")
 		}
 	}
 }

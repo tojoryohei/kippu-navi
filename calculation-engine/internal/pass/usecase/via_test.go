@@ -59,7 +59,7 @@ func TestGetVia_Unit(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetVia() = %v, want %v", got, tt.want)
+				t.Errorf("GetVia() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -100,7 +100,7 @@ func TestGetVia_SpecialRules_Unit(t *testing.T) {
 
 			got := usecase.GetVia(g, pathIDs)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetVia() = %v, want %v", got, tt.want)
+				t.Errorf("GetVia() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -135,7 +135,7 @@ func TestGetVia_JunctionUsesDistinctLines(t *testing.T) {
 				add(1, 4, tt.branch)
 			}
 			if got := usecase.GetVia(g, ids[:4]); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("GetVia()=%v, want %v", got, tt.want)
+				t.Fatalf("GetVia()=%v, 期待値 %v", got, tt.want)
 			}
 		})
 	}

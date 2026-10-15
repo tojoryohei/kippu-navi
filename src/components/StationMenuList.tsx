@@ -72,6 +72,9 @@ function VirtualStationMenu({ rows, ...props }: Props & { rows: Row[] }) {
             style={{ transform: `translateY(${item.start}px)` }}
           >
             {cloneElement(rows[item.index], {
+              // react-selectの標準スクロールはoffsetTopを使うため、transformで
+              // 配置した行では先頭へ戻してしまう。候補への移動はvirtualizerに任せる。
+              innerRef: undefined,
               innerProps: {
                 ...rows[item.index].props.innerProps,
                 "aria-setsize": rows.length,

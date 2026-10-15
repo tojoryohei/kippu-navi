@@ -33,7 +33,7 @@ func TestCheapestViaLogUsesResultPath(t *testing.T) {
 					path[i] = g.GetOrAddID(name)
 				}
 				if got := automaticViaKanas(g, path); !reflect.DeepEqual(got, want) {
-					t.Fatalf("codes = %v, want %v", got, want)
+					t.Fatalf("コード = %v, 期待値 %v", got, want)
 				}
 				for _, input := range [][]ViaStep{nil, {{"東京", "シンカ"}, {"新大阪", ""}}} {
 					var printed []string
@@ -41,7 +41,7 @@ func TestCheapestViaLogUsesResultPath(t *testing.T) {
 						printed = GetCalculatedFareVia("cheapest", input, nil, path, path, g, nil)
 					})
 					if logged != "" {
-						t.Fatalf("printing generated a log: %q", logged)
+						t.Fatalf("経由表示の生成時にログが出力されました: %q", logged)
 					}
 					logged = captureViaLog(t, func() {
 						logCalculatedFareViaKanas("cheapest", input, nil, path, g)
@@ -51,10 +51,10 @@ func TestCheapestViaLogUsesResultPath(t *testing.T) {
 						t.Fatal(err)
 					}
 					if logged != "カナコード："+string(encoded)+"\n" {
-						t.Fatalf("log = %q, want codes %v", logged, want)
+						t.Fatalf("ログ = %q、期待するコード%v", logged, want)
 					}
 					if expected := GetAutomaticFareViaForResult(g, path, path); !reflect.DeepEqual(printed, expected) {
-						t.Fatalf("printing = %v, want %v", printed, expected)
+						t.Fatalf("経由表示 = %v, 期待値 %v", printed, expected)
 					}
 				}
 			})

@@ -158,6 +158,6 @@ func TestAddonRegistry_ResolveIDs_Recalculation(t *testing.T) {
 
 	// 新しいID (10, 20) でヒットするべき
 	if fare, ok := r.Lookup(10, 20); !ok || fare.OneMonth != 100 {
-		t.Errorf("新しいIDでのLookupに失敗しました: ok=%v, fare=%v", ok, fare.OneMonth)
+		t.Errorf("新しいIDでのLookupに失敗しました: ok=%v, 運賃=%v", ok, fare.OneMonth)
 	}
 }

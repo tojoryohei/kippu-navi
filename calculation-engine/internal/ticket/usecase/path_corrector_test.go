@@ -87,10 +87,10 @@ func TestShinkansenOverlapCorrector(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := c.Correct(tt.input, g)
 			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
+				t.Fatalf("予期しないエラーが発生しました: %v", err)
 			}
 			if !reflect.DeepEqual(res, tt.expected) {
-				t.Errorf("got %v, want %v", res, tt.expected)
+				t.Errorf("実際 %v, 期待値 %v", res, tt.expected)
 			}
 		})
 	}
@@ -123,13 +123,13 @@ func TestPipelineCorrectorCapturesPathBeforeShinkansenExpansion(t *testing.T) {
 
 	corrected, before, err := pipeline.CorrectWithPreShinkansenPath([]int{99}, g)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("予期しないエラーが発生しました: %v", err)
 	}
 	if want := []int{1, 2, 3, 4, 5, 6, 7}; !reflect.DeepEqual(corrected, want) {
-		t.Fatalf("corrected path = %v, want %v", corrected, want)
+		t.Fatalf("補正後の経路 = %v, 期待値 %v", corrected, want)
 	}
 	if want := []int{1, 7}; !reflect.DeepEqual(before, want) {
-		t.Fatalf("pre-Shinkansen path = %v, want %v", before, want)
+		t.Fatalf("新幹線補正前の経路 = %v, 期待値 %v", before, want)
 	}
 }
 
@@ -173,10 +173,10 @@ func TestRule157ShinOsakaDirections(t *testing.T) {
 				t.Fatal(err)
 			}
 			if changed := !reflect.DeepEqual(path, corrected); changed != tt.match {
-				t.Errorf("path=%v: corrected=%v, want match=%v", names, corrected, tt.match)
+				t.Errorf("経路=%v: 補正後=%v, 一致判定の期待値=%v", names, corrected, tt.match)
 			}
 			if sections := findRule157ViaSections(names); len(sections) != 0 {
-				t.Errorf("path=%v: article 27 must not produce printing sections: %v", names, sections)
+				t.Errorf("経路=%v: 第27条の適用で経由表示用の区間が生成されています: %v", names, sections)
 			}
 		}
 	}
@@ -275,10 +275,10 @@ func TestSpecificSectionCorrector(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := c.Correct(tt.input, g)
 			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
+				t.Fatalf("予期しないエラーが発生しました: %v", err)
 			}
 			if !reflect.DeepEqual(res, tt.expected) {
-				t.Errorf("got %v, want %v", res, tt.expected)
+				t.Errorf("実際 %v, 期待値 %v", res, tt.expected)
 			}
 		})
 	}
@@ -413,10 +413,10 @@ func TestPipelineCorrector(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := pipeline.Correct(tt.input, g)
 			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
+				t.Fatalf("予期しないエラーが発生しました: %v", err)
 			}
 			if !reflect.DeepEqual(res, tt.expected) {
-				t.Errorf("got %v\nwant %v", res, tt.expected)
+				t.Errorf("実際 %v\n期待値 %v", res, tt.expected)
 			}
 		})
 	}
@@ -438,10 +438,10 @@ func TestCorrectPathForMode(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !reflect.DeepEqual(got, want) {
-				t.Fatalf("got %v, want %v", got, want)
+				t.Fatalf("実際 %v, 期待値 %v", got, want)
 			}
 			if !reflect.DeepEqual(original, []int{1, 2, 3, 4}) {
-				t.Fatal("input path was mutated")
+				t.Fatal("入力経路が変更されています")
 			}
 		})
 	}
@@ -461,7 +461,7 @@ func TestUncorrectAppliesOnlyShinkansenOverlap(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("CorrectPathForMode = %v, want %v", got, want)
+		t.Fatalf("CorrectPathForMode = %v, 期待値 %v", got, want)
 	}
 
 	got, _, before, err := CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(path, g, pipeline, nil, "uncorrect")
@@ -469,7 +469,7 @@ func TestUncorrectAppliesOnlyShinkansenOverlap(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(before, path) {
-		t.Fatalf("corrected=%v, before=%v, want=%v, %v", got, before, want, path)
+		t.Fatalf("補正後=%v, 補正前=%v, 期待値=%v, %v", got, before, want, path)
 	}
 }
 
@@ -494,11 +494,11 @@ func TestUncorrectAppliesRule43_2(t *testing.T) {
 			pipeline := NewPipelineCorrector(NewShinkansenOverlapCorrector(), NewRule43_2Corrector(), otherCorrection)
 			got, err := CorrectPathForMode(tt.path, g, pipeline, "uncorrect")
 			if err != nil || !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("CorrectPathForMode = %v, %v; want %v", got, err, tt.want)
+				t.Fatalf("CorrectPathForMode = %v, %v; 期待値 %v", got, err, tt.want)
 			}
 			got, _, before, err := CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(tt.path, g, pipeline, nil, "uncorrect")
 			if err != nil || !reflect.DeepEqual(got, tt.want) || !reflect.DeepEqual(before, tt.path) {
-				t.Fatalf("corrected=%v, before=%v, err=%v; want %v, %v", got, before, err, tt.want, tt.path)
+				t.Fatalf("補正後=%v, 補正前=%v, エラー=%v; 期待値 %v, %v", got, before, err, tt.want, tt.path)
 			}
 		})
 	}
@@ -513,6 +513,6 @@ func TestNormalStillAppliesRule43_2(t *testing.T) {
 	corrector := NewPipelineCorrector(NewShinkansenOverlapCorrector(), NewRule43_2Corrector())
 	got, err := CorrectPathForMode(path, g, corrector, "normal")
 	if err != nil || !reflect.DeepEqual(got, want) {
-		t.Fatalf("CorrectPathForMode(normal) = %v, %v; want %v", got, err, want)
+		t.Fatalf("CorrectPathForMode(通常) = %v, %v; 期待値 %v", got, err, want)
 	}
 }

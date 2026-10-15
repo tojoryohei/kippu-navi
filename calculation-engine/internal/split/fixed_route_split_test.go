@@ -59,10 +59,10 @@ func TestFixedRouteSplitMatchesExhaustiveEnumeration(t *testing.T) {
 		var actual []string
 		for i, plan := range got {
 			if plan.TotalFare != minimum {
-				t.Fatalf("trial %d: %d != %d", trial, plan.TotalFare, minimum)
+				t.Fatalf("試行 %d: %d != %d", trial, plan.TotalFare, minimum)
 			}
 			if i > 0 && len(got[i-1].Segments) > len(plan.Segments) {
-				t.Fatal("not sorted by ticket count")
+				t.Fatal("乗車券の枚数順に並んでいません")
 			}
 			cuts := []string{"0"}
 			for _, seg := range plan.Segments {
@@ -73,21 +73,21 @@ func TestFixedRouteSplitMatchesExhaustiveEnumeration(t *testing.T) {
 		sort.Strings(want)
 		sort.Strings(actual)
 		if !reflect.DeepEqual(want, actual) {
-			t.Fatalf("trial %d: got %v want %v", trial, actual, want)
+			t.Fatalf("試行 %d: 実際 %v 期待値 %v", trial, actual, want)
 		}
 		for key, count := range calls {
 			if count != 1 {
-				t.Fatalf("interval %v evaluated %d times", key, count)
+				t.Fatalf("区間%vが%d回評価されています", key, count)
 			}
 		}
 		if len(calls) != n*(n-1)/2 {
-			t.Fatal("missing interval evaluation")
+			t.Fatal("区間の評価が不足しています")
 		}
 	}
 }
 
 func TestFixedRouteSplitErrors(t *testing.T) {
-	unexpected := errors.New("unexpected failure")
+	unexpected := errors.New("予期しない失敗")
 	for _, problem := range []error{domain.ErrInvalidPath, unexpected} {
 		got, err := OptimizeFixedRoute(3, func(i, j int) (RouteSplitSegment, error) {
 			if i == 0 && j == 2 {
@@ -97,10 +97,10 @@ func TestFixedRouteSplitErrors(t *testing.T) {
 		})
 		if problem == unexpected {
 			if !errors.Is(err, unexpected) {
-				t.Fatalf("unexpected error swallowed: %v", err)
+				t.Fatalf("予期しないエラーが呼び出し元に返されていません: %v", err)
 			}
 		} else if err != nil || len(got) != 1 || len(got[0].Segments) != 2 {
-			t.Fatalf("valid split lost: %v %v", got, err)
+			t.Fatalf("有効な分割案が失われました: %v %v", got, err)
 		}
 	}
 	_, err := OptimizeFixedRoute(2, func(i, j int) (RouteSplitSegment, error) { return RouteSplitSegment{}, domain.ErrInvalidPath })
@@ -168,10 +168,10 @@ func TestLimitedFixedRouteSplitMatchesExhaustiveEnumeration(t *testing.T) {
 			var actual []string
 			for i, plan := range got {
 				if plan.TotalFare != minimum {
-					t.Fatalf("trial %d: %d != %d", trial, plan.TotalFare, minimum)
+					t.Fatalf("試行 %d: %d != %d", trial, plan.TotalFare, minimum)
 				}
 				if i > 0 && len(got[i-1].Segments) > len(plan.Segments) {
-					t.Fatal("not sorted by ticket count")
+					t.Fatal("乗車券の枚数順に並んでいません")
 				}
 				cuts := []string{"0"}
 				for _, seg := range plan.Segments {
@@ -182,11 +182,11 @@ func TestLimitedFixedRouteSplitMatchesExhaustiveEnumeration(t *testing.T) {
 			sort.Strings(want)
 			sort.Strings(actual)
 			if !reflect.DeepEqual(want, actual) {
-				t.Fatalf("trial %d: got %v want %v", trial, actual, want)
+				t.Fatalf("試行 %d: 実際 %v 期待値 %v", trial, actual, want)
 			}
 			for key, count := range calls {
 				if count != 1 {
-					t.Fatalf("interval %v evaluated %d times", key, count)
+					t.Fatalf("区間%vが%d回評価されています", key, count)
 				}
 			}
 

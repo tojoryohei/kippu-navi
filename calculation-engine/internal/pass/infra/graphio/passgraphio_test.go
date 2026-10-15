@@ -49,7 +49,7 @@ func TestSaveAndLoadBinary(t *testing.T) {
 		t.Fatalf("読み込み後の経路探索に失敗しました: %v", err)
 	}
 	if res.GiseiKilo != 300 {
-		t.Errorf("読み込み後の最短距離が不正です: got %v, want 300", res.GiseiKilo)
+		t.Errorf("読み込み後の最短距離が不正です: 実際 %v, 期待値 300", res.GiseiKilo)
 	}
 }
 
@@ -79,7 +79,7 @@ func TestSaveBinary_InvalidGraph(t *testing.T) {
 		t.Error("不正なグラフに対してエラーが返されませんでした")
 	}
 	if !errors.Is(err, graph.ErrInvalidGraph) {
-		t.Errorf("期待するエラーと異なります: got %v, want %v", err, graph.ErrInvalidGraph)
+		t.Errorf("期待するエラーと異なります: 実際 %v, 期待値 %v", err, graph.ErrInvalidGraph)
 	}
 }
 

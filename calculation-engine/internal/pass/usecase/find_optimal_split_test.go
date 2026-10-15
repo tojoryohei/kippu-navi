@@ -175,26 +175,26 @@ func TestFindOptimalSplit_Execute(t *testing.T) {
 			locked := make([]bool, len(tt.path))
 			got, err := findOptimal.Execute(tt.path, tt.months, locked, 0)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Execute() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr {
 				if len(got) != len(tt.want) {
-					t.Fatalf("Execute() returned %v results, want %v", len(got), len(tt.want))
+					t.Fatalf("Execute()の結果件数 = %v、期待値%v", len(got), len(tt.want))
 				}
 				for i := range got {
 					if got[i].TotalAmount != tt.want[i].TotalAmount {
-						t.Errorf("Execute()[%d] TotalAmount = %v, want %v", i, got[i].TotalAmount, tt.want[i].TotalAmount)
+						t.Errorf("Execute()[%d] TotalAmount = %v, 期待値 %v", i, got[i].TotalAmount, tt.want[i].TotalAmount)
 					}
 					if len(got[i].Segments) != len(tt.want[i].Segments) {
-						t.Fatalf("Execute()[%d] Segments count = %v, want %v", i, len(got[i].Segments), len(tt.want[i].Segments))
+						t.Fatalf("Execute()[%d] 区間数 = %v, 期待値 %v", i, len(got[i].Segments), len(tt.want[i].Segments))
 					}
 					for j := range got[i].Segments {
 						if !reflect.DeepEqual(got[i].Segments[j].Path, tt.want[i].Segments[j].Path) {
-							t.Errorf("Segments[%d][%d].Path = %v, want %v", i, j, got[i].Segments[j].Path, tt.want[i].Segments[j].Path)
+							t.Errorf("Segments[%d][%d].Path = %v, 期待値 %v", i, j, got[i].Segments[j].Path, tt.want[i].Segments[j].Path)
 						}
 						if got[i].Segments[j].Result.Fare != tt.want[i].Segments[j].Result.Fare {
-							t.Errorf("Segments[%d][%d].Result.Fare = %v, want %v", i, j, got[i].Segments[j].Result.Fare, tt.want[i].Segments[j].Result.Fare)
+							t.Errorf("Segments[%d][%d].Result.Fare = %v, 期待値 %v", i, j, got[i].Segments[j].Result.Fare, tt.want[i].Segments[j].Result.Fare)
 						}
 					}
 				}
@@ -262,15 +262,15 @@ func TestFindOptimalSplit_Execute_MultipleOptimalPaths(t *testing.T) {
 	locked := make([]bool, len(path))
 	got, err := findOptimal.Execute(path, 1, locked, 0)
 	if err != nil {
-		t.Fatalf("Execute() unexpected error: %v", err)
+		t.Fatalf("Execute()で予期しないエラーが発生しました: %v", err)
 	}
 
 	if len(got) != 4 {
-		t.Errorf("Expected 4 optimal paths, got %d", len(got))
+		t.Errorf("最適経路の期待件数は4件ですが、実際は%d件でした", len(got))
 	}
 	for i, res := range got {
 		if res.TotalAmount != 3000 {
-			t.Errorf("Result %d total amount = %d, want 3000", i, res.TotalAmount)
+			t.Errorf("Result %d 合計額 = %d, 期待値 3000", i, res.TotalAmount)
 		}
 	}
 }

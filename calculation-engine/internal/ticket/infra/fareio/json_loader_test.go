@@ -20,7 +20,7 @@ func TestRouteExtensionJSONContainsPathsOnly(t *testing.T) {
 		t.Fatalf("routeMappings.jsonの読み込みに失敗しました: %v", err)
 	}
 	if len(records) != 0 {
-		t.Fatalf("空の経路対応表にレコードが残っています: got=%d", len(records))
+		t.Fatalf("空の経路対応表にレコードが残っています: 実際=%d", len(records))
 	}
 	for i, record := range records {
 		if len(record) != 2 {

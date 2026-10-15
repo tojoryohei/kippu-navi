@@ -33,17 +33,17 @@ func TestValidateTicketInputAfterOverlapDeduction(t *testing.T) {
 			before := slices.Clone(path)
 			err := c.validateInputPath(path)
 			if errors.Is(err, domain.ErrDuplicateRoute) != tc.duplicate || err != nil && !tc.duplicate {
-				t.Fatalf("validation = %v, duplicate = %v", err, tc.duplicate)
+				t.Fatalf("検証結果 = %v, 重複 = %v", err, tc.duplicate)
 			}
 			if !slices.Equal(path, before) {
-				t.Fatal("validation mutated input")
+				t.Fatal("検証処理が入力を変更しています")
 			}
 			resolved, err := c.ResolvePath(steps)
 			if errors.Is(err, domain.ErrDuplicateRoute) != tc.duplicate {
-				t.Fatalf("ResolvePath = %v", err)
+				t.Fatalf("ResolvePathのエラー = %v", err)
 			}
 			if !tc.duplicate && !slices.Equal(resolved, before) {
-				t.Fatal("ResolvePath changed calculation path")
+				t.Fatal("ResolvePathが計算用の経路を変更しています")
 			}
 		})
 	}

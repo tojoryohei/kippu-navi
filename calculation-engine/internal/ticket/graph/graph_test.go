@@ -10,13 +10,13 @@ func TestRailwayGraph_LoadAndFindPath(t *testing.T) {
 	loader := &graphio.JSONLoader{}
 	g, err := loader.Load(graphdata.GetEdgesReader())
 	if err != nil {
-		t.Fatalf("Failed to load graph: %v", err)
+		t.Fatalf("グラフの読み込みに失敗しました: %v", err)
 	}
 	if err := g.Validate(); err != nil {
-		t.Fatalf("Failed to validate graph: %v", err)
+		t.Fatalf("グラフの検証に失敗しました: %v", err)
 	}
 
-	t.Logf("Loaded %d stations", g.NumStations())
+	t.Logf("%d駅を読み込みました", g.NumStations())
 
 	// 東京から大阪までの経路探索をテスト
 	tokyoID, tokyoExists := g.GetID("東京")
@@ -28,13 +28,13 @@ func TestRailwayGraph_LoadAndFindPath(t *testing.T) {
 
 	res, err := g.FindShortestPathGisei(tokyoID, osakaID)
 	if err != nil {
-		t.Fatalf("Failed to find path: %v", err)
+		t.Fatalf("経路の検索に失敗しました: %v", err)
 	}
 
 	if len(res.StationIDs) == 0 {
-		t.Errorf("Path is empty")
+		t.Errorf("経路が空です")
 	}
 
-	t.Logf("Path from Tokyo to Osaka found: %d stations, GiseiKilo: %d, EigyoKilo: %d",
+	t.Logf("東京から大阪への経路が見つかりました: %d駅、擬制キロ: %d、営業キロ: %d",
 		len(res.StationIDs), res.GiseiKilo, res.EigyoKilo)
 }

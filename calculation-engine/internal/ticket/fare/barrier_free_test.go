@@ -38,7 +38,7 @@ func TestIsAllBarrierFreeFeeApplicable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := fare.IsAllBarrierFreeFeeApplicable(tt.edges); got != tt.want {
-				t.Errorf("IsAllBarrierFreeFeeApplicable() = %v, want %v", got, tt.want)
+				t.Errorf("IsAllBarrierFreeFeeApplicable() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -46,6 +46,6 @@ func TestIsAllBarrierFreeFeeApplicable(t *testing.T) {
 
 func TestCalculateBarrierFreeFee(t *testing.T) {
 	if got := fare.CalculateBarrierFreeFee(); got != 10 {
-		t.Errorf("CalculateBarrierFreeFee() = %v, want 10", got)
+		t.Errorf("CalculateBarrierFreeFee() = %v, 期待値 10", got)
 	}
 }

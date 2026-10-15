@@ -88,7 +88,7 @@ func TestDijkstraExcludesVirtualEdgesFromShortestPath(t *testing.T) {
 		t.Fatalf("物理経路の探索に失敗しました: %v", err)
 	}
 	if len(searchPath.StationIDs) != 2 || searchPath.GiseiKilo != 10 {
-		t.Fatalf("探索用グラフが仮想エッジを使用しました: path=%v, gisei=%d", searchPath.StationIDs, searchPath.GiseiKilo)
+		t.Fatalf("探索用グラフが仮想エッジを使用しました: 経路=%v, gisei=%d", searchPath.StationIDs, searchPath.GiseiKilo)
 	}
 
 	farePath, err := fareGraph.FindShortestPathGisei(aID, bID)
@@ -96,7 +96,7 @@ func TestDijkstraExcludesVirtualEdgesFromShortestPath(t *testing.T) {
 		t.Fatalf("運賃計算グラフの探索に失敗しました: %v", err)
 	}
 	if len(farePath.StationIDs) != 2 || farePath.GiseiKilo != 10 {
-		t.Fatalf("運賃計算グラフの探索が仮想エッジを使用しました: path=%v, gisei=%d", farePath.StationIDs, farePath.GiseiKilo)
+		t.Fatalf("運賃計算グラフの探索が仮想エッジを使用しました: 経路=%v, gisei=%d", farePath.StationIDs, farePath.GiseiKilo)
 	}
 }
 

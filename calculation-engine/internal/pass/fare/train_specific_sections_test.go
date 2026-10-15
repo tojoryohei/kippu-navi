@@ -52,11 +52,11 @@ func TestTrainSpecificSectionsCalculator_Calculate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := calc.Calculate(tt.params)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Calculate() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Calculate() エラー = %v, エラー発生の期待値 %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("Calculate() = %v, want %v", got, tt.want)
+				t.Errorf("Calculate() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -94,7 +94,7 @@ func TestIsAllTrainSpecificApplicable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := fare.IsAllTrainSpecificApplicable(tt.edges); got != tt.want {
-				t.Errorf("IsAllTrainSpecificApplicable() = %v, want %v", got, tt.want)
+				t.Errorf("IsAllTrainSpecificApplicable() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}

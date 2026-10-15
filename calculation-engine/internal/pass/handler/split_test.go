@@ -29,14 +29,14 @@ func TestHandleCalculateRejectsDisconnectedRoutes(t *testing.T) {
 	h.HandleCalculate(response, request)
 
 	if response.Code != http.StatusUnprocessableEntity {
-		t.Fatalf("status = %d, want %d", response.Code, http.StatusUnprocessableEntity)
+		t.Fatalf("ステータス = %d, 期待値 %d", response.Code, http.StatusUnprocessableEntity)
 	}
 	var body CalculateResponse
 	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
 		t.Fatalf("レスポンスの解析に失敗しました: %v", err)
 	}
 	if body.Error != domain.DisconnectedRouteErrorMessage {
-		t.Errorf("error = %q, want %q", body.Error, domain.DisconnectedRouteErrorMessage)
+		t.Errorf("エラー = %q, 期待値 %q", body.Error, domain.DisconnectedRouteErrorMessage)
 	}
 }
 
@@ -56,7 +56,7 @@ func TestValidResponsePaths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := validResponsePaths(tt.normal, tt.results); got != tt.want {
-				t.Fatalf("validResponsePaths() = %v, want %v", got, tt.want)
+				t.Fatalf("validResponsePaths() = %v, 期待値 %v", got, tt.want)
 			}
 		})
 	}
@@ -80,10 +80,10 @@ func TestParseMaxSplits(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := parseMaxSplits(tt.query)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("parseMaxSplits() error = %v, wantErr = %v", err, tt.wantErr)
+				t.Fatalf("parseMaxSplits() エラー = %v, エラー発生の期待値 = %v", err, tt.wantErr)
 			}
 			if got != tt.want {
-				t.Errorf("parseMaxSplits() = %d, want %d", got, tt.want)
+				t.Errorf("parseMaxSplits() = %d, 期待値 %d", got, tt.want)
 			}
 		})
 	}
@@ -92,10 +92,10 @@ func TestParseMaxSplits(t *testing.T) {
 func TestResolveMaxSections(t *testing.T) {
 	got, err := resolveMaxSections(url.Values{"maxSplits": {"10"}}, 2)
 	if err != nil {
-		t.Fatalf("resolveMaxSections() error = %v", err)
+		t.Fatalf("resolveMaxSections() エラー = %v", err)
 	}
 	if got != 2 {
-		t.Fatalf("resolveMaxSections() = %d, want 2", got)
+		t.Fatalf("resolveMaxSections() = %d, 期待値 2", got)
 	}
 }
 
@@ -107,10 +107,10 @@ func TestParseLockedStationIDs(t *testing.T) {
 
 	got, err := parseLockedStationIDs(url.Values{"noSplitStation": {"B", "B", "A"}}, g)
 	if err != nil {
-		t.Fatalf("parseLockedStationIDs() error = %v", err)
+		t.Fatalf("parseLockedStationIDs() エラー = %v", err)
 	}
 	if len(got) != 2 || got[0] != a+1 || got[1] != a {
-		t.Fatalf("parseLockedStationIDs() = %v", got)
+		t.Fatalf("parseLockedStationIDs()の結果 = %v", got)
 	}
 	if _, err := parseLockedStationIDs(url.Values{"noSplitStation": {"unknown"}}, g); err == nil {
 		t.Fatal("未知の駅名がエラーになりませんでした")

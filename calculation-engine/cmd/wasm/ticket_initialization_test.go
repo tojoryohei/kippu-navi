@@ -26,8 +26,8 @@ func assertTicketCalculationsUninitialized(t *testing.T) {
 			if err := json.Unmarshal([]byte(response.String()), &body); err != nil {
 				t.Fatal(err)
 			}
-			if body.Error != "ticket graph not initialized" {
-				t.Fatalf("error = %q", body.Error)
+			if body.Error != "乗車券グラフが初期化されていません" {
+				t.Fatalf("エラー = %q", body.Error)
 			}
 		})
 	}
@@ -46,11 +46,11 @@ func TestFailedTicketInitializationClearsReadyState(t *testing.T) {
 	ticketGraphInitialized = true
 	ticketTempBuffer = nil
 	response := initTicketGraphFromBuffer(js.Undefined(), nil).(js.Value)
-	if response.String() != "error: buffer is too small" {
-		t.Fatalf("response = %s", response.String())
+	if response.String() != "error: バッファーが小さすぎます" {
+		t.Fatalf("応答 = %s", response.String())
 	}
 	if ticketGraphInitialized {
-		t.Fatal("failed initialization left the graph ready")
+		t.Fatal("初期化に失敗したグラフが利用可能な状態になっています")
 	}
 	assertTicketCalculationsUninitialized(t)
 }
@@ -62,7 +62,7 @@ func TestPassAutoSearchRequiresSuccessfulInitialization(t *testing.T) {
 	passTempBuffer = nil
 	initPassGraphFromBuffer(js.Undefined(), nil)
 	response := calculateOptimalSplitPass(js.Undefined(), nil).(js.Value).String()
-	if response != `{"error":"pass graph not initialized"}` {
+	if response != `{"error":"定期券グラフが初期化されていません"}` {
 		t.Fatal(response)
 	}
 }

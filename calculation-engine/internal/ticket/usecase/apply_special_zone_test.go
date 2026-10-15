@@ -108,7 +108,7 @@ func TestSpecialZoneApplier_Apply(t *testing.T) {
 			gotInfo, gotOk := applier.Apply(tt.path, tt.originZone, tt.destZone)
 
 			if gotOk != tt.wantOk {
-				t.Errorf("Apply() gotOk = %v, want %v", gotOk, tt.wantOk)
+				t.Errorf("Apply() 適用結果 = %v, 期待値 %v", gotOk, tt.wantOk)
 				return
 			}
 
@@ -117,10 +117,10 @@ func TestSpecialZoneApplier_Apply(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotInfo.TransformedPath, tt.wantPath) {
-				t.Errorf("Apply() gotPath = %v, want %v", gotInfo.TransformedPath, tt.wantPath)
+				t.Errorf("Apply() 補正後の経路 = %v, 期待値 %v", gotInfo.TransformedPath, tt.wantPath)
 			}
 			if gotInfo.ThresholdKilo != tt.wantThresh {
-				t.Errorf("Apply() gotThresh = %v, want %v", gotInfo.ThresholdKilo, tt.wantThresh)
+				t.Errorf("Apply() しきい値 = %v, 期待値 %v", gotInfo.ThresholdKilo, tt.wantThresh)
 			}
 		})
 	}
@@ -217,10 +217,10 @@ func TestSpecialZoneApplierApplyPartialZone(t *testing.T) {
 				t.Fatal("ゾーン適用に失敗しました")
 			}
 			if !reflect.DeepEqual(got.TransformedPath, tt.wantPath) {
-				t.Fatalf("変換後経路 = %v, want %v", got.TransformedPath, tt.wantPath)
+				t.Fatalf("変換後経路 = %v, 期待値 %v", got.TransformedPath, tt.wantPath)
 			}
 			if got.ThresholdKilo != tt.wantThresh {
-				t.Fatalf("閾値 = %v, want %v", got.ThresholdKilo, tt.wantThresh)
+				t.Fatalf("閾値 = %v, 期待値 %v", got.ThresholdKilo, tt.wantThresh)
 			}
 		})
 	}
@@ -302,10 +302,10 @@ func TestSpecialZoneApplierModeBoundaries(t *testing.T) {
 					}
 					got, ok := apply(ids(tt.path), origin, dest)
 					if ok != (want != nil) {
-						t.Fatalf("uncorrect=%v: applied=%v, want=%v", uncorrect, ok, want != nil)
+						t.Fatalf("補正禁止=%v: 適用結果=%v, 期待値=%v", uncorrect, ok, want != nil)
 					}
 					if ok && !reflect.DeepEqual(got.TransformedPath, ids(want)) {
-						t.Fatalf("uncorrect=%v: got %v, want %v", uncorrect, got.TransformedPath, ids(want))
+						t.Fatalf("補正禁止=%v: 実際 %v, 期待値 %v", uncorrect, got.TransformedPath, ids(want))
 					}
 				}
 			})
