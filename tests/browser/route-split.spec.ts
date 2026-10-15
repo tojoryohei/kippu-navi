@@ -198,7 +198,7 @@ test("経路入力検索の券種と期間の切り替えで経路・モード�
     await page.getByRole("button", { name: `${month}箇月`, exact: true }).click();
     await expect(page.getByRole("heading", { name: `分割前の定期券${({ 1: "１", 3: "３", 6: "６" } as Record<number, string>)[month]}箇月`, exact: true })).toBeVisible();
     await expect(page.getByText(`${month}箇月定期券`, { exact: true })).toHaveCount(0);
-    expect(new URL(page.url()).searchParams.get("month")).toBe(String(month));
+    expect(new URL(page.url()).searchParams.get("months")).toBe(String(month));
   }
   await page.setViewportSize({ width: 320, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -243,7 +243,7 @@ for (const kind of ["ticket", "pass"]) {
         }
       };
     });
-    const params = new URLSearchParams({ route: "新茂原[外房]上総一ノ宮", mode: "normal", maxSplits: "1", noSplitStation: "茂原", month: "3" });
+    const params = new URLSearchParams({ route: "新茂原[外房]上総一ノ宮", mode: "normal", maxSplits: "1", noSplitStation: "茂原", months: "3" });
     await page.goto(`/split/route/${kind}?${params}`);
     await page.getByText("詳細オプション", { exact: true }).click();
     await expect(page.getByRole("checkbox", { name: "茂原", exact: true })).toBeChecked();
@@ -371,7 +371,7 @@ test("追加パターンの件数と再計算", async ({ page }) => {
       }
     };
   });
-  const query = new URLSearchParams({ from: "新茂原", to: "茂原", mode: "normal", month: "1" });
+  const query = new URLSearchParams({ from: "新茂原", to: "茂原", mode: "normal", months: "1" });
   await page.goto(`/split/auto/ticket?${query}`);
   const calculate = page.getByRole("button", { name: "乗車券を計算", exact: true });
   for (const count of [2, 3, 1, 0]) {

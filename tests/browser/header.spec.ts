@@ -121,7 +121,7 @@ for (const mobile of [false, true]) {
 }
 
 test("対象4画面だけでクエリ全体を保持し、クエリなしでは通常リンクにする", async ({ page }) => {
-  const query = new URLSearchParams({ route: "新茂原", mode: "uncorrect", month: "3", maxSplits: "2" });
+  const query = new URLSearchParams({ route: "新茂原", mode: "uncorrect", months: "3", maxSplits: "2" });
   query.append("noSplitStation", "茂原");
   query.append("noSplitStation", "八積");
   for (const path of ["/fare/ticket", "/fare/pass", "/split/route/ticket", "/split/route/pass", "/guide", "/split/auto/ticket"]) {

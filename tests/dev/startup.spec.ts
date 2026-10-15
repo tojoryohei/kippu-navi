@@ -20,7 +20,7 @@ for (const kind of ["ticket", "pass", "ic-pass"]) {
       const responsePromise = page.waitForResponse(response =>
         new URL(response.url()).pathname === `/api/split-${endpoint}`);
       await page.goto(`/split/auto/${kind}?${new URLSearchParams({
-        from: "新茂原", to: "茂原", month: String(months),
+        from: "新茂原", to: "茂原", months: String(months),
       })}`);
       const response = await responsePromise;
       expect(response.status()).toBe(200);

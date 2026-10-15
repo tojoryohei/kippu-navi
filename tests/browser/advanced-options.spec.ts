@@ -152,3 +152,24 @@ test("発着駅を一覧と検索候補から除外", async ({ page }) => {
   await expect(page.locator("#selected-no-split-stations li")).toHaveCount(2);
   await expect(page.getByRole("button", { name: "新茂原を分割しない駅から削除" })).toBeVisible();
 });
+
+for (const kind of ["pass", "ic-pass"]) {
+  for (const query of ["months=1", "months=3", "months=6", "month=1", "month=6&months=3"]) {
+    test(`期間パラメーターをmonthsへ統一する: ${kind} ${query}`, async ({ page }) => {
+      await page.route("**/*", route => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
+      const endpoint = kind === "ic-pass" ? "icpass" : "pass";
+      await page.route(`**/api/split-${endpoint}?**`, route => route.fulfill({
+        status: 400, json: { error: "期間パラメーターの検証用応答" },
+      }));
+      const request = page.waitForRequest(req => new URL(req.url()).pathname === `/api/split-${endpoint}`);
+      await page.goto(`/split/auto/${kind}?from=茂原&to=新茂原&${query}`);
+      const input = new URLSearchParams(query);
+      const expected = input.get("months") ?? input.get("month");
+      expect(new URL((await request).url()).searchParams.get("months")).toBe(expected);
+      expect(new URL(page.url()).searchParams.get("months")).toBe(expected);
+      expect(new URL(page.url()).searchParams.has("month")).toBe(false);
+      await page.getByRole("button", { name: "乗車券", exact: true }).click();
+      await expect.poll(() => new URL(page.url()).searchParams.has("months")).toBe(false);
+    });
+  }
+}

@@ -365,7 +365,7 @@ test(`${kind === "ticket" ? "乗車券" : "定期券"}で在来線でつなが�
     status: 422,
     json: { normal: null, results: [], error: message },
   }));
-  const month = kind === "pass" ? "&month=6" : "";
+  const month = kind === "pass" ? "&months=6" : "";
   await page.goto(`/split/auto/${kind}?from=函館&to=新青森${month}`);
   await expect(page.getByText(message, { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);

@@ -153,7 +153,7 @@ test('PostHogの分割検索データは分割条件と節約額を含む', () =
     outcome: 'success',
     search: {
       searchSurface: 'split',
-      searchUrl: 'https://kippu-navi.com/split/auto/pass?from=A&to=B&month=3&maxSplits=2',
+      searchUrl: 'https://kippu-navi.com/split/auto/pass?from=A&to=B&months=3&maxSplits=2',
       originStation: 'A',
       destinationStation: 'B',
       routeStations: ['A', 'B'],

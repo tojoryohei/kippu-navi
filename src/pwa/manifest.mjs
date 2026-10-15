@@ -3,11 +3,15 @@ const pages = new Set(['/', '/guide', '/logic', '/articles', '/about', '/contact
   '/fare/ticket', '/fare/pass', '/split/auto/ticket', '/split/auto/pass', '/split/auto/ic-pass',
   '/split/route/ticket', '/split/route/pass', '/articles/popular-routes', '/articles/how-to-buy-split-ticket',
   '/articles/how-to-buy-split-pass', '/articles/merit-demerit', '/articles/what-is-split-ticket', '/articles/jr-fare-system']);
-const parameters = ['from', 'to', 'route', 'month', 'mode', 'maxSplits', 'noSplitStation'];
+const parameters = ['from', 'to', 'route', 'months', 'mode', 'maxSplits', 'noSplitStation'];
 export function normalizeLaunch(raw, origin) {
   if (!raw || raw.length > 12000 || !raw.startsWith('/') || raw.startsWith('//')) return '/';
   const url = new URL(raw, origin);
   if (url.origin !== origin || !pages.has(url.pathname)) return '/';
+  // 旧URLの期間を読み込み、起動URLはmonthsへ統一する。
+  if (!url.searchParams.has('months') && url.searchParams.has('month')) {
+    url.searchParams.set('months', url.searchParams.get('month'));
+  }
   const params = new URLSearchParams();
   if (url.pathname.startsWith('/fare/') || url.pathname.startsWith('/split/')) {
     for (const name of parameters) {

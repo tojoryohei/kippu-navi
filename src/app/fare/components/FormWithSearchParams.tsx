@@ -12,12 +12,12 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
     if (url.pathname.split("/")[1] !== pathname.split("/")[1]) return null;
     const activePathname = url.pathname;
     const searchParams = url.searchParams;
-    const month = searchParams.get("month");
+    const months = searchParams.get("months") ?? searchParams.get("month");
     const modeParam = searchParams.get("mode");
     const initialCalculationMode: CalculationMode | undefined = modeParam === "normal" || modeParam === "cheapest" || modeParam === "uncorrect"
         ? modeParam
         : undefined;
-    const initialSearchType: SearchType = (activePathname === "/split/route/ticket" || activePathname.endsWith("/ticket")) ? "ticket" : month === "1" ? "pass1" : month === "3" ? "pass3" : "pass6";
+    const initialSearchType: SearchType = (activePathname === "/split/route/ticket" || activePathname.endsWith("/ticket")) ? "ticket" : months === "1" ? "pass1" : months === "3" ? "pass3" : "pass6";
     return (
         <CalculatorErrorBoundary key={location}>
             <CalculatorHydration hydrated={location !== null}>

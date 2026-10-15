@@ -19,7 +19,7 @@ for (const month of [1, 3, 6]) {
           }
         };
       });
-      await page.goto(`/fare/pass?${new URLSearchParams({ route, month: String(month) })}`);
+      await page.goto(`/fare/pass?${new URLSearchParams({ route, months: String(month) })}`);
       await expect(page.getByText("定期券の計算で会社線は選択できません").first()).toBeVisible();
       await expect(page.getByRole("button", { name: "運賃計算をする", exact: true })).toBeDisabled();
       const requests = await page.evaluate(() => (window as unknown as { validationTestRequests: { type: string }[] }).validationTestRequests);
