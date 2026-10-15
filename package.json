@@ -18,6 +18,7 @@
     "knip": "knip",
     "test:worker": "node --test tests/worker/*.test.mjs",
     "test:e2e": "playwright test",
+    "test:dev": "playwright test --config playwright.dev.config.ts",
     "predev": "node scripts/prepare-local-engine.mjs",
     "dev:engine": "node scripts/prepare-local-engine.mjs"
   },

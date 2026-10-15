@@ -81,6 +81,7 @@ jobs:
       - run: npm run typecheck
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - run: npm run test:dev
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

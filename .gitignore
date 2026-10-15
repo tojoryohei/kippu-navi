@@ -44,6 +44,7 @@ src/data/*
 # wasm and graph data
 public/engine/*.wasm
 public/engine/*.bin
+public/engine/wasm_exec.js
 public/wasm/
 
 # calculation-engine large precomputed data

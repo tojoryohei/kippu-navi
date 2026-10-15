@@ -16,6 +16,7 @@ export default [
             "dist/**",
             ".astro/**",
             ".cloudflare-engine/**",
+            "public/engine/wasm_exec.js",
             "test-results/**",
             "playwright-report/**",
             "next-env.d.ts"

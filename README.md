@@ -36,6 +36,8 @@ go env GOPROXY
 
 npmはリポジトリの`.npmrc`、GoのCI・デプロイは公式Action、APIのDockerビルドはビルドステージの`GOPROXY`で設定しています。詳細は[TakumiGuardのGo向け公式手順](https://shisho.dev/docs/t/guard/quickstart/golang/)を参照してください。
 
+クラウド認証情報、`.env`、サーバー用の`pass.bin`・`ticket.bin`は不要です。以下の手順だけで乗車券・定期券・IC定期券を利用できます。
+
 ```sh
 npm ci
 npm run dev:api
@@ -47,13 +49,17 @@ npm run dev:api
 npm run dev
 ```
 
-`npm run dev`は起動前にWASMと2種類のグラフBINを生成し、http://localhost:3000 を起動します。`/split/auto/ticket`で分割計算できます。`/api/*`はViteからlocalhost:8080へ転送するため、ブラウザ側のCORS設定は不要です。
+`npm run dev`は起動前にブラウザ用WASM・2種類のグラフBIN・同じGoに付属する`wasm_exec.js`を生成し、http://localhost:3000 を起動します。`/split/auto/ticket`で分割計算できます。これらのブラウザ用資材は、任意で生成するサーバー用の事前計算BINとは別物です。`/api/*`はViteからlocalhost:8080へ転送するため、ブラウザ側のCORS設定は不要です。転送先を変える場合は、開発サーバーの環境変数`DEV_API_ORIGIN`を指定します。
 
 Goの計算ロジックやグラフを修正した場合は、`npm run dev:engine`で再生成し、ブラウザを再読み込みします。
 
-分割APIの事前計算ファイルはサーバー専用です。GitHub ActionsではGCSから取得し、GCSオブジェクトのMD5と生成元ソースのフィンガープリントを検証します。不足・不一致時はrunner上で生成し、生成・再生成したデータを共有GCSへ保存するのはmainの本番デプロイだけです。
+APIは事前計算データがなければリクエスト時に都度計算します。データを読み込めないという起動時のログだけでは、起動失敗を意味しません。都度計算は経路によって処理時間が増えるため、高速化が必要になった場合に以下の事前計算を行ってください。
 
-ローカルにない場合、事前計算ファイルは次のコマンドで生成できます。定期券用は計算量が大きいため、必要な場合だけ実行してください。
+### 探索を高速化する任意の準備
+
+事前計算ファイルはサーバー専用です。GitHub Actionsでは生成元ソースのハッシュをキーにキャッシュし、キャッシュがない場合はrunner上で生成します。
+
+ローカルでは以下のコマンドで生成できます。特に定期券用は計算量が大きいため、初回起動には必要ありません。
 
 ```sh
 npm run generate:pass-fares
@@ -73,12 +79,15 @@ npm run lint
 npm run knip
 npx playwright install chromium
 npm run test:e2e
+npm run test:dev
 npm start
 ```
 
 `npm run test:e2e`（または`npx playwright test`）は、テストサーバー起動前に`npm run build`を実行し、ハッシュ付きエンジン資材とPWA保存一覧を生成します。ポート4321を使用中のプレビューサーバーは停止してから実行してください。
 
 ブラウザ回帰テストは公開グラフから生成した本物のWASMを使い、APIの探索結果を固定します。非公開データや稼働中のAPIは不要です。インストール済みChromeを使う場合は`PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`を実行できます。
+
+`npm run test:dev`は開発サーバー（3018番）と実API（18080番）を起動し、空の一時ディレクトリを事前計算データの参照先に指定します。乗車券、定期券・IC定期券の1・3・6箇月、経路指定のWASM計算を検証し、終了時にサーバーと一時ディレクトリを片付けます。既存BINやクラウド認証は使いません。インストール済みChromeを使う場合は`PLAYWRIGHT_CHANNEL=chrome npm run test:dev`を実行してください。WASM資材の生成が競合しないよう、`test:e2e`と`test:dev`は順番に実行します。
 
 `npm run build`はWASM生成、Astroビルド、Cloudflare用の梱包まで行い、`dist`を作ります。通常はステージング向け（noindex）です。本番向けは`DEPLOY_ENVIRONMENT=production npm run build`で生成します。
 
