@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.2...kippu-navi-v4.5.3) (2026-10-15)
+
+
+### Bug Fixes
+
+* 事前計算なしの開発環境と実API起動テストを整備 ([#841](https://github.com/tojoryohei/kippu-navi/issues/841)) ([0a05f21](https://github.com/tojoryohei/kippu-navi/commit/0a05f2164986905d79df05e81c3f6edb39bbbfe3))
+
 ## [4.5.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.1...kippu-navi-v4.5.2) (2026-10-14)
 
 
