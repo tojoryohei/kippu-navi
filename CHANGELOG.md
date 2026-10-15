@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.4...kippu-navi-v4.5.5) (2026-10-15)
+
+
+### Bug Fixes
+
+* 定期券の期間パラメーターをmonthsに統一 ([#846](https://github.com/tojoryohei/kippu-navi/issues/846)) ([1da2a02](https://github.com/tojoryohei/kippu-navi/commit/1da2a02666a4a4927aaad4a50a25b937a568e742))
+
 ## [4.5.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.3...kippu-navi-v4.5.4) (2026-10-15)
 
 
