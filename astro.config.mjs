@@ -57,7 +57,7 @@ export default defineConfig({
     },
     server: {
       proxy: {
-        "/api": { target: "http://localhost:8080", changeOrigin: true },
+        "/api": { target: process.env.DEV_API_ORIGIN || "http://localhost:8080", changeOrigin: true },
         "/ingest/static": {
           target: "https://us-assets.i.posthog.com",
           changeOrigin: true,
