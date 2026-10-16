@@ -36,6 +36,8 @@ function initialize() {
       person_profiles: "never",
       capture_pageview: false,
       disable_session_recording: true,
+      // 手動イベント計測を維持し、利用していないアンケートの取得を停止する。
+      disable_surveys: true,
       autocapture: false,
       capture_performance: false,
       // posthog-js has no public disable_toolbar option; omit only the Toolbar extension.

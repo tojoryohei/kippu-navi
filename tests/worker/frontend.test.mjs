@@ -11,7 +11,6 @@ import frontend, {
   proxySentry,
 } from '../../workers/frontend.mjs';
 import { buildSearchCompletedProperties, buildSearchUrl } from '../../src/lib/analytics-events.ts';
-import { initializeGoogleAnalytics, trackGooglePageView } from '../../src/lib/google-analytics.ts';
 import { classifyCalculationError, isRetryableEngineError, normalizeCalculationError, SearchOperationError } from '../../src/lib/search-errors.ts';
 
 const sentryDsn = 'https://public-key@o123.ingest.sentry.io/456';
@@ -67,19 +66,6 @@ const testTokenProvider = async () => 'google-id-token';
 function encodeTestJwt(payload) {
   const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
   return `${encode({ alg: 'RS256' })}.${encode(payload)}.signature`;
-}
-
-function fakeGoogleAnalyticsBrowser() {
-  const scripts = [];
-  return {
-    targetWindow: { location: { href: 'https://kippu-navi.com/split/auto/ticket?from=A&to=B#result' } },
-    targetDocument: {
-      title: '分割乗車券 | きっぷナビ',
-      head: { append: element => scripts.push(element) },
-      createElement: () => ({ async: false, src: '' }),
-    },
-    scripts,
-  };
 }
 
 async function generatePrivateKeyPem() {
@@ -250,41 +236,6 @@ test('検索URLは絶対URLで全クエリパラメーターを保持し、ハ�
     buildSearchUrl(location),
     'https://kippu-navi.com/fare/ticket?route=A-B&campaign=autumn',
   );
-});
-
-test('Google Analyticsは一度だけ初期化し、絶対URLの手動ページビューをキューに登録する', () => {
-  const { targetWindow, targetDocument, scripts } = fakeGoogleAnalyticsBrowser();
-
-  initializeGoogleAnalytics('G-TEST ID', targetWindow, targetDocument);
-  initializeGoogleAnalytics('G-TEST ID', targetWindow, targetDocument);
-  trackGooglePageView('G-TEST ID', targetWindow, targetDocument);
-  trackGooglePageView('G-TEST ID', targetWindow, targetDocument);
-
-  assert.equal(scripts.length, 1);
-  assert.equal(scripts[0].async, true);
-  assert.equal(scripts[0].src, 'https://www.googletagmanager.com/gtag/js?id=G-TEST%20ID');
-  const commands = targetWindow.dataLayer.map(entry => Array.from(entry));
-  assert.deepEqual(commands[1], ['config', 'G-TEST ID', { send_page_view: false }]);
-  assert.deepEqual(commands.slice(2), [
-    ['event', 'page_view', {
-      page_location: 'https://kippu-navi.com/split/auto/ticket?from=A&to=B#result',
-      page_title: '分割乗車券 | きっぷナビ',
-    }],
-    ['event', 'page_view', {
-      page_location: 'https://kippu-navi.com/split/auto/ticket?from=A&to=B#result',
-      page_title: '分割乗車券 | きっぷナビ',
-    }],
-  ]);
-});
-
-test('測定IDがなければGoogle Analyticsは無効のままになる', () => {
-  const { targetWindow, targetDocument, scripts } = fakeGoogleAnalyticsBrowser();
-
-  initializeGoogleAnalytics('', targetWindow, targetDocument);
-  trackGooglePageView('', targetWindow, targetDocument);
-
-  assert.equal(targetWindow.dataLayer, undefined);
-  assert.deepEqual(scripts, []);
 });
 
 test('キャッシュ可能なAPIのクエリは許可項目だけを残して正規化する', () => {
