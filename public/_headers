@@ -10,6 +10,9 @@
 /developers/api
   Link: </developers/api.md>; rel="alternate"; type="text/markdown", </openapi.json>; rel="service-desc", </llms.txt>; rel="describedby"
 
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+
 /developers/api.md
   Content-Type: text/markdown; charset=utf-8
 
