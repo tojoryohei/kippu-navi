@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.0.1...kippu-navi-v5.0.2) (2026-10-17)
+
+
+### Bug Fixes
+
+* 近郊区間の運賃評価で経路が壊れる不具合を修正する ([#852](https://github.com/tojoryohei/kippu-navi/issues/852)) ([faab577](https://github.com/tojoryohei/kippu-navi/commit/faab577d879f0bba523dafb5707b979525c6d14a))
+
 ## [5.0.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.0.0...kippu-navi-v5.0.1) (2026-10-17)
 
 
