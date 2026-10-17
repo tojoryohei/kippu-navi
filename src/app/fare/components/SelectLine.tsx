@@ -23,6 +23,7 @@ const SelectLine = ({
     <div className="my-2 w-full">
       <Select
         instanceId={instanceId}
+        aria-label="経由路線"
         className="line-select"
         classNamePrefix="line-select"
         value={value}

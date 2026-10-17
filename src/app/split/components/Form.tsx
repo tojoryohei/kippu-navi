@@ -809,7 +809,7 @@ export default function SplitForm({
 
                     <div className="flex flex-col w-full">
                         <div className="flex items-center gap-5 w-full">
-                            <p className="w-12 shrink-0 whitespace-nowrap">発駅</p>
+                            <label htmlFor="start-station-split" className="w-12 shrink-0 whitespace-nowrap">発駅</label>
                             <div className="flex-1 w-full min-w-0">
                                 <Controller
                                     name="startStation"
@@ -849,7 +849,7 @@ export default function SplitForm({
 
                     <div className="flex flex-col w-full">
                         <div className="flex items-center gap-5 w-full">
-                            <p className="w-12 shrink-0 whitespace-nowrap">着駅</p>
+                            <label htmlFor="end-station-split" className="w-12 shrink-0 whitespace-nowrap">着駅</label>
                             <div className="flex-1 w-full min-w-0">
                                 <Controller
                                     name="endStation"
@@ -918,7 +918,7 @@ export default function SplitForm({
                 )}
             </div>
             <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
-                <h3 className="font-bold text-gray-600 mb-2">💡 当システムについて</h3>
+                <h2 className="font-bold text-gray-600 mb-2">💡 当システムについて</h2>
                 <p className="mb-4 leading-relaxed">
                     {isIcPass ? (
                         "出発駅と到着駅を入力するだけで、分割IC定期券の最安解を自動計算するツールです。経路は自動探索します。IC定期券（Kitaca・Suica・ICOCAエリア）に対応しています。1枚のICカードに情報を書き込めるように最大分割数は1回に制限しています。"
@@ -929,7 +929,7 @@ export default function SplitForm({
                     )}
                 </p>
 
-                <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
+                <h2 className="font-bold text-gray-600 mb-2">ご利用手順</h2>
                 <ol className="list-decimal list-inside space-y-1 ml-1">
                     <li>
                         <strong>種類の選択：</strong>

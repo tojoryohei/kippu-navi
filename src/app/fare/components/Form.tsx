@@ -817,7 +817,7 @@ export default function Form({
                         render={({ field, fieldState }) => (
                             <div className="flex flex-col w-full">
                                 <div className="flex items-center gap-5 w-full whitespace-nowrap">
-                                    <p className="w-12 shrink-0">発駅</p>
+                                    <label htmlFor="react-select-start-station-input" className="w-12 shrink-0">発駅</label>
                                     <div className="flex-1 w-full min-w-0">
                                         <SelectStation
                                             instanceId="start-station"
@@ -934,7 +934,7 @@ export default function Form({
                                     render={({ field, fieldState }) => (
                                         <div className="flex flex-col w-full">
                                             <div className="flex items-center gap-5 w-full whitespace-nowrap">
-                                                <p className="w-12 shrink-0">{stationLabel}</p>
+                                                <label htmlFor={`react-select-dest-station-${index}-input`} className="w-12 shrink-0">{stationLabel}</label>
                                                 <div className="flex-1 w-full min-w-0">
                                                     <SelectStation
                                                         instanceId={`dest-station-${index}`}
@@ -1026,7 +1026,7 @@ export default function Form({
                                     })}
                                 />
                                 <span className="ms-3 text-base font-medium text-slate-700">
-                                    補正禁止 <span className="text-sm text-red-500 font-normal">※上級者向け</span><span className="text-sm text-slate-500 font-normal">（入力経路のまま計算）</span>
+                                    補正禁止 <span className="text-sm text-red-700 font-normal">※上級者向け</span><span className="text-sm text-slate-500 font-normal">（入力経路のまま計算）</span>
                                 </span>
                             </label>
                         </div>
@@ -1140,12 +1140,12 @@ export default function Form({
                 )}
             </div>
             <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
-                <h3 className="font-bold text-gray-600 mb-2">💡 当システムについて</h3>
+                <h2 className="font-bold text-gray-600 mb-2">💡 当システムについて</h2>
                 <p className="mb-4 leading-relaxed">
                     {"出発駅と到着駅、および経由する路線を入力するだけで、JRの運賃を計算するプログラムです。一筆書ききっぷの計算に最適です。"}
                 </p>
 
-                <h3 className="font-bold text-gray-600 mb-2">ご利用手順</h3>
+                <h2 className="font-bold text-gray-600 mb-2">ご利用手順</h2>
                 <ol className="list-decimal list-inside space-y-1 ml-1">
                     <li><strong>駅・路線の入力:</strong> 発駅から着駅までの経路を入力してください。</li>
                     <li><strong>経路の追加:</strong> 「経由路線を追加」ボタンで複数の路線を乗り継ぐことができます。</li>

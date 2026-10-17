@@ -82,6 +82,7 @@ const SelectStation = ({
     <div className="my-2 w-full">
       <Select
         instanceId={safeInstanceId}
+        inputId={`react-select-${safeInstanceId}-input`}
         className="station-select"
         classNamePrefix="station-select"
         value={value}
