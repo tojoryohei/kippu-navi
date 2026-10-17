@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.0.2...kippu-navi-v5.0.3) (2026-10-17)
+
+
+### Bug Fixes
+
+* 経路APIの429を業務エラー扱いにする ([#854](https://github.com/tojoryohei/kippu-navi/issues/854)) ([1ab92ba](https://github.com/tojoryohei/kippu-navi/commit/1ab92ba0ef75d6777aedabbed34bdc8db9e8ff84))
+
 ## [5.0.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.0.1...kippu-navi-v5.0.2) (2026-10-17)
 
 
