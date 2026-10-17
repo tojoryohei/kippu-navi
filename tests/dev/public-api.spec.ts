@@ -1,5 +1,12 @@
 import { test, expect } from "@playwright/test";
 
+test("llms.txtをUTF-8として配信する", async ({ request }) => {
+  const response = await request.get("/llms.txt");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toContain("text/plain; charset=utf-8");
+  expect(await response.text()).toContain("# きっぷナビ");
+});
+
 test("公開文書の呼び出し例を実APIで利用できる", async ({ request }) => {
   for (const kind of ["ticket", "pass", "icpass"]) {
     const query = new URLSearchParams({ from: "茂原", to: "新茂原" });

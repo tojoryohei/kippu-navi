@@ -28,7 +28,6 @@ export default function SplitResults({ result, searchedTypeLabel = "乗車券", 
                             <div className="flex justify-between items-center mt-2">
                                 <div className="flex-1">
                                     <div className="text-lg font-bold text-gray-800 flex items-center flex-wrap gap-2">
-                                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">きっぷ</span>
                                         <span>{segment.fare.departureStation}</span>
                                         <span className="text-gray-400">{searchedTypeLabel === "乗車券" ? "→" : "↔"}</span>
                                         <span>{segment.fare.arrivalStation}</span>
@@ -38,7 +37,7 @@ export default function SplitResults({ result, searchedTypeLabel = "乗車券", 
                                             </span>
                                         )}
                                     </div>
-                                    <div className="text-xs text-gray-500 mt-1 ml-10">
+                                    <div className="text-xs text-gray-500 mt-1">
                                         経由：{segment.fare.printedViaLines.length === 0 ? "---" : segment.fare.printedViaLines.join("・")}
                                     </div>
                                 </div>
@@ -50,7 +49,6 @@ export default function SplitResults({ result, searchedTypeLabel = "乗車券", 
                     ))}
                 </div>
             </div>
-
         </div>
     );
     return (
