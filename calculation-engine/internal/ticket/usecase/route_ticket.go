@@ -66,10 +66,12 @@ func (c *RouteTicketCalculator) calculate(path []int, steps []ViaStep, mode stri
 		return fare, nil, fmt.Errorf("乗車券運賃評価器が未設定です")
 	}
 	var corrected, suburban []int
+	// 入力経路は分割境界と経由印字に使い、補正は別の配列で行う。
+	farePath := append([]int(nil), path...)
 	evaluationMode := NormalizeFareEvaluationMode(mode)
 	var err error
 	if mode == "cheapest" {
-		corrected, suburban, err = SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(path, c.graph, c.corrector, c.extensions, c.zones, func(candidate []int) (int, error) {
+		corrected, suburban, err = SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(farePath, c.graph, c.corrector, c.extensions, c.zones, func(candidate []int) (int, error) {
 			res, _, err := c.evaluator.ExecuteWithMode(candidate, 0, "normal")
 			if err != nil {
 				return 0, err
@@ -80,7 +82,7 @@ func (c *RouteTicketCalculator) calculate(path []int, steps []ViaStep, mode stri
 			return res.TotalAmount(), nil
 		})
 	} else {
-		corrected, evaluationMode, suburban, err = CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(path, c.graph, c.corrector, c.extensions, mode)
+		corrected, evaluationMode, suburban, err = CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(farePath, c.graph, c.corrector, c.extensions, mode)
 	}
 	if err != nil {
 		return fare, nil, &RouteCorrectionError{Err: err}

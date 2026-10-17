@@ -25,10 +25,22 @@ func TestRouteSplitRealRoutesAndModes(t *testing.T) {
 		usecase.NewShinkansenOverlapCorrector(), usecase.NewRule43_2Corrector(), usecase.NewRule69Corrector(), usecase.NewRule157Corrector(),
 	)
 	calculator := usecase.NewRouteTicketCalculator(g, corrector, evaluator, nil, zones)
+	// 第88条の運賃比較が近郊区間の候補経路を上書きしていた区間。
+	from, _ := g.GetID("相生")
+	to, _ := g.GetID("新大阪")
+	osakaPath, err := g.FindShortestPathGisei(from, to)
+	if err != nil {
+		t.Fatal(err)
+	}
+	osakaStations := make([]string, len(osakaPath.StationIDs))
+	for i, id := range osakaPath.StationIDs {
+		osakaStations[i] = g.GetName(id)
+	}
 	cases := []struct {
 		name, line string
 		stations   []string
 	}{
+		{"大阪特例の近郊補正", "", osakaStations},
 		{"隣接", "ソトボ", []string{"新茂原", "茂原"}},
 		{"近郊迂回", "ヤマテ", []string{"東京", "神田", "秋葉原", "御徒町", "上野", "鶯谷", "日暮里", "西日暮里", "田端", "駒込", "巣鴨", "大塚", "池袋", "目白", "高田馬場", "新大久保", "新宿"}},
 		{"新幹線都市区内", "シンカ", []string{"東京", "品川", "新横浜", "小田原", "熱海", "三島", "（東）新富士", "静岡", "掛川", "浜松", "豊橋", "三河安城", "名古屋"}},

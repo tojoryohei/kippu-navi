@@ -71,30 +71,31 @@ func ApplyOsakaShinOsakaException(path []int, g graph.Graph) (*AppliedZoneInfo, 
 		return nil, false
 	}
 
-	var newPath []int
+	// 入力経路は変更せず、特例を適用した経路を別配列に構築する。
+	newPath := make([]int, 0, len(path)+1)
 	applied := false
 
 	if originMatch {
 		if g.GetName(path[0]) == "大阪" {
-			newPath = append([]int{zoneID}, path...)
+			newPath = append(append(newPath, zoneID), path...)
 		} else {
 			// 新大阪の場合
 			if len(path) > 1 && g.GetName(path[1]) == "大阪" {
-				newPath = append([]int{zoneID}, path[1:]...)
+				newPath = append(append(newPath, zoneID), path[1:]...)
 			} else {
-				newPath = append([]int{zoneID}, path...)
+				newPath = append(append(newPath, zoneID), path...)
 			}
 		}
 		applied = true
 	} else {
 		if g.GetName(path[len(path)-1]) == "大阪" {
-			newPath = append(path, zoneID)
+			newPath = append(append(newPath, path...), zoneID)
 		} else {
 			// 新大阪の場合
 			if len(path) > 1 && g.GetName(path[len(path)-2]) == "大阪" {
-				newPath = append(path[:len(path)-1], zoneID)
+				newPath = append(append(newPath, path[:len(path)-1]...), zoneID)
 			} else {
-				newPath = append(path, zoneID)
+				newPath = append(append(newPath, path...), zoneID)
 			}
 		}
 		applied = true
