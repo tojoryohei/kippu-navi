@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"calculation-engine/internal/ticket/graph"
+	"reflect"
 	"testing"
 )
 
@@ -103,7 +104,14 @@ func TestApplyOsakaShinOsakaException(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			info, applied := ApplyOsakaShinOsakaException(tt.path, g)
+			// 末尾の先にも別の分割区間がある状態を再現する。
+			backing := append(append([]int(nil), tt.path...), -1, -2)
+			before := append([]int(nil), backing...)
+			input := backing[:len(tt.path)]
+			info, applied := ApplyOsakaShinOsakaException(input, g)
+			if !reflect.DeepEqual(backing, before) {
+				t.Fatalf("特例が入力経路を上書きしました: %v -> %v", before, backing)
+			}
 			if applied != tt.wantApply {
 				t.Fatalf("実際 適用結果 %v, 期待値 %v", applied, tt.wantApply)
 			}
@@ -115,6 +123,10 @@ func TestApplyOsakaShinOsakaException(t *testing.T) {
 					if id != tt.wantPath[i] {
 						t.Errorf("経路[%d] = %d, 期待値 %d\n実際: %v\n期待値: %v", i, id, tt.wantPath[i], info.TransformedPath, tt.wantPath)
 					}
+				}
+				info.TransformedPath[0] = -3
+				if !reflect.DeepEqual(backing, before) {
+					t.Fatal("補正経路と入力経路が配列を共有しています")
 				}
 			}
 		})

@@ -43,6 +43,10 @@ func (s *SuburbanAreaCorrector) Correct(path []int, g graph.Graph) ([]int, error
 			selectedCandidates[i] = s.selectCheapestCandidate(candidates)
 		}
 	}
+	// 全体が一つのJR区間なら、元経路との結合は不要。
+	if len(segments) == 1 && segments[0].startIndex == 0 && segments[0].endIndex == len(path)-1 {
+		return selectedCandidates[0], nil
+	}
 	return combineSuburbanCandidates(path, segments, selectedCandidates), nil
 }
 

@@ -36,7 +36,10 @@ func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode 
 	// cheapest は物理経路補正側だけで使い、運賃評価は通常モードで行います。
 	// 既存の呼び出し元との互換性のため、ここでも防御的に正規化します。
 	mode = NormalizeFareEvaluationMode(mode)
-	candidates, err := u.resolver.Resolve(path, mode)
+	// 入力の物理経路と、特例を適用する運賃計算用経路を分離する。
+	// 近郊区間の候補比較でも呼ばれるため、評価対象を書き換えない。
+	farePath := append([]int(nil), path...)
+	candidates, err := u.resolver.Resolve(farePath, mode)
 	if err != nil {
 		return nil, nil, err
 	}
