@@ -69,6 +69,13 @@ export interface SearchErrorDetails {
   minimumPathLength?: number;
 }
 
+const BUSINESS_ERROR_CODES = new Set<SearchErrorCode>(["duplicate_route", "path_invalid", "fare_unregistered"]);
+
+export function isBusinessSearchError(details: SearchErrorDetails): boolean {
+  return BUSINESS_ERROR_CODES.has(details.code)
+    || (details.code === "api_http_failed" && details.httpStatus === 429);
+}
+
 export class SearchOperationError extends Error {
   readonly details: SearchErrorDetails;
 
