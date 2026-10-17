@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.0.0...kippu-navi-v5.0.1) (2026-10-17)
+
+
+### Performance Improvements
+
+* 広告・解析の初期負荷を抑え計算画面のアクセシビリティを改善する ([#850](https://github.com/tojoryohei/kippu-navi/issues/850)) ([1b2379e](https://github.com/tojoryohei/kippu-navi/commit/1b2379e98e0c16e2dc668c88b0b07cbb672b1206))
+
 ## [5.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v4.5.5...kippu-navi-v5.0.0) (2026-10-15)
 
 
