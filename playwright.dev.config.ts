@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/dev",
   timeout: 60_000,
-  workers: 1,
+  workers: 2,
   use: {
     baseURL: "http://127.0.0.1:3018",
     channel: process.env.PLAYWRIGHT_CHANNEL || undefined,

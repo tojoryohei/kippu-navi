@@ -11,7 +11,7 @@ import frontend, {
   proxySentry,
 } from '../../workers/frontend.mjs';
 import { buildSearchCompletedProperties, buildSearchUrl } from '../../src/lib/analytics-events.ts';
-import { classifyCalculationError, isRetryableEngineError, normalizeCalculationError, SearchOperationError } from '../../src/lib/search-errors.ts';
+import { classifyCalculationError, isBusinessSearchError, isRetryableEngineError, normalizeCalculationError, SearchOperationError } from '../../src/lib/search-errors.ts';
 
 const sentryDsn = 'https://public-key@o123.ingest.sentry.io/456';
 
@@ -91,6 +91,21 @@ test('計算エラーは業務上のエラーとシステム障害を区別す�
   assert.equal(classifyCalculationError('経路が見つかりませんでした'), 'path_invalid');
   assert.equal(normalizeCalculationError('経路が見つかりませんでした'), '指定された区間はJR在来線のみで繋がっていません。経路入力検索を利用してください。');
   assert.equal(classifyCalculationError('unexpected failure'), 'calculation_failed');
+});
+
+test('経路APIの429は業務エラーとし、他のHTTP障害は通知対象に残す', () => {
+  const details = {
+    message: '経路APIがエラーを返しました (429)',
+    code: 'api_http_failed', source: 'api', stage: 'api_fetch',
+    retryable: true, retryCount: 0, workerRestartCount: 0,
+  };
+  assert.equal(isBusinessSearchError({ ...details, httpStatus: 429 }), true);
+  for (const httpStatus of [400, 403, 408, 500, 502, 503]) {
+    assert.equal(isBusinessSearchError({ ...details, httpStatus }), false);
+  }
+  for (const code of ['duplicate_route', 'path_invalid', 'fare_unregistered']) {
+    assert.equal(isBusinessSearchError({ ...details, code }), true);
+  }
 });
 
 test('再試行可能なエンジン初期化失敗は画面操作で復旧できる', () => {

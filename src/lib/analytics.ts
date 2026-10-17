@@ -3,7 +3,7 @@ import posthog from "posthog-js";
 import type { EngineReadiness } from "@/lib/engine-client";
 import { buildSearchCompletedProperties, buildSearchUrl, type SearchAnalyticsInput, type SearchOutcome, type SearchResultAnalytics } from "@/lib/analytics-events";
 import { initializeGoogleAnalytics, trackGooglePageView } from "@/lib/google-analytics";
-import { classifyCalculationError, SearchOperationError, type EngineCapability } from "@/lib/search-errors";
+import { classifyCalculationError, isBusinessSearchError, SearchOperationError, type EngineCapability } from "@/lib/search-errors";
 import { sentryDataCollection } from "@/lib/sentry-data-collection";
 
 const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY;
@@ -115,8 +115,6 @@ export const analytics = {
   },
 };
 
-const BUSINESS_ERROR_CODES = new Set(["duplicate_route", "path_invalid", "fare_unregistered"]);
-
 export function getCalculationErrorType(error: string) {
   const code = classifyCalculationError(error);
   return code === "calculation_failed" ? "calculation_error" : code;
@@ -162,7 +160,7 @@ function completedSearchProperties(context: SearchEventContext, outcome: SearchO
 export function captureSearchError(error: unknown, context: SearchEventContext) {
   const normalized = normalizeSearchError(error, context.capability);
   const details = normalized.details;
-  const businessError = BUSINESS_ERROR_CODES.has(details.code);
+  const businessError = isBusinessSearchError(details);
   analytics.capture("search_completed", completedSearchProperties(context, businessError ? "business_error" : "system_error", details.code));
 
   if (!businessError) {
