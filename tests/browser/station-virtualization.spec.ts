@@ -120,17 +120,42 @@ test("読み上げ対象を画面外でも保持し、ホイール操作で戻�
   const input = page.getByRole("combobox").first();
   await input.fill("し");
   await input.press("Home");
-  const active = await input.getAttribute("aria-activedescendant");
-  expect(active).toBeTruthy();
   const menu = page.locator(".station-select__menu-list");
+  const firstActive = await input.getAttribute("aria-activedescendant");
+  expect(firstActive).toBeTruthy();
+  // マウス移動を伴わず、先頭の読み上げ対象が画面外でも残ることを確認する。
+  await menu.evaluate(node => { node.scrollTop = 800; });
+  await expect.poll(() => menu.evaluate(node => node.scrollTop)).toBeGreaterThan(300);
+  await expect.poll(() => page.evaluate(() => {
+    const input = document.querySelector<HTMLInputElement>("#react-select-start-station-input");
+    const id = input?.getAttribute("aria-activedescendant");
+    const option = id ? document.getElementById(id) : null;
+    const menu = document.querySelector(".station-select__menu-list");
+    if (!id || !option || !menu) return false;
+    const menuRect = menu.getBoundingClientRect();
+    const optionRect = option.getBoundingClientRect();
+    return optionRect.bottom <= menuRect.top || optionRect.top >= menuRect.bottom;
+  })).toBe(true);
+  expect(await input.getAttribute("aria-activedescendant")).toBe(firstActive);
   await menu.hover();
   await page.mouse.wheel(0, 800);
   await expect.poll(() => menu.evaluate(node => node.scrollTop)).toBeGreaterThan(300);
-  const scrolledActive = await input.getAttribute("aria-activedescendant");
-  await expect(page.locator(`[id="${scrolledActive}"]`)).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => {
+    const id = document.querySelector("#react-select-start-station-input")?.getAttribute("aria-activedescendant");
+    return Boolean(id && document.getElementById(id));
+  })).toBe(true);
   await input.press("End");
-  const lastActive = await input.getAttribute("aria-activedescendant");
-  await expect(page.locator(`[id="${lastActive}"]`)).toBeInViewport();
+  await expect.poll(() => page.evaluate(() => {
+    const id = document.querySelector("#react-select-start-station-input")?.getAttribute("aria-activedescendant");
+    const option = id ? document.getElementById(id) : null;
+    const menu = document.querySelector(".station-select__menu-list");
+    const total = Number(document.querySelector('[role="option"]')?.getAttribute("aria-setsize"));
+    if (!option || !menu || !total || Number(option.getAttribute("aria-posinset")) !== total) return false;
+    const rect = option.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    return rect.top < menuRect.bottom && rect.bottom > menuRect.top
+      && rect.left < menuRect.right && rect.right > menuRect.left;
+  })).toBe(true);
 });
 
 test.describe("タッチ環境の駅候補", () => {
