@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.0.3...kippu-navi-v5.0.4) (2026-10-18)
+
+
+### Bug Fixes
+
+* APIの408・429時に端末内計算へ切り替える ([#857](https://github.com/tojoryohei/kippu-navi/issues/857)) ([540c411](https://github.com/tojoryohei/kippu-navi/commit/540c4114b9b1cdd7bf9097ccc6c471bb1d90290f))
+
 ## [5.0.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.0.2...kippu-navi-v5.0.3) (2026-10-17)
 
 
