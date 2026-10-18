@@ -46,8 +46,8 @@ mainのworkflow定義を用い、固定した対象SHAからフロントエン�
    node scripts/staging/protection.mjs /private/tmp/kippu-main-ruleset-before.json > /private/tmp/kippu-main-ruleset-after.json
    ```
 
-   既存CI・CodeQLを維持し、`Required CI`をGitHub Actionsに固定します。
-   廃止する`deploy`・`request`・`Staging verification`とDependabot専用チェックを必須条件から除きます。
+   各CIジョブとCodeQLを個別に必須指定します。集約ジョブ`Required CI`は使用しません。
+   廃止する`Required CI`・`deploy`・`request`・`Staging verification`とDependabot専用チェックを必須条件から除きます。
    最新mainへの追従を必須にし、bypassは認めません。内容を確認してrulesetに反映します。
 6. Dependabotの通常更新・専用自動マージworkflowを停止します。alertsは維持し、修正PRの担当をRenovateへ切り替えて重複PRを整理します。
 7. `renovate.json`の通常・脆弱性修正の`automerge`を有効化し、1週間観察します。通常更新が時間外に自動マージされた場合は停止して調査します。

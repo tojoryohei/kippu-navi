@@ -160,15 +160,3 @@ jobs:
         run: |
           node "$RENOVATE_PACKAGE_ROOT/dist/config-validator.js" --strict --no-global renovate.json
           node scripts/test-renovate-schedule.mjs
-
-  required-ci:
-    name: Required CI
-    if: always()
-    needs: [lint, knip, frontend-regression, go-lint, go-test, automation]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require every CI job to succeed
-        env:
-          RESULTS: ${{ toJSON(needs) }}
-        run: |
-          node -e 'const jobs = JSON.parse(process.env.RESULTS); if (Object.values(jobs).some(job => job.result !== "success")) process.exit(1)'

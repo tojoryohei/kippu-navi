@@ -11,7 +11,6 @@ export function prepareProtection(existing) {
   const rule = payload.rules.find(rule => rule.type === 'required_status_checks');
   assert.ok(rule, 'Existing required checks must be preserved.');
   const checks = rule.parameters.required_status_checks.filter(check => !['dependabot-auto-merge', 'Required CI', 'Staging verification', 'deploy', 'request'].includes(check.context));
-  checks.push({ context: 'Required CI', integration_id: 15368 });
   rule.parameters.required_status_checks = checks;
   rule.parameters.strict_required_status_checks_policy = true;
   return payload;
