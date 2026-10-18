@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "導入検証中は通常・脆弱性修正とも自動マージ無効。docs/renovate-migration.md の完了条件を満たしてから有効化する。",
+  "description": "CI・本番デプロイの導入確認中は通常・脆弱性修正とも自動マージ無効。docs/renovate-migration.md の完了条件を満たしてから有効化する。",
   "enabledManagers": [
     "npm",
     "gomod",
