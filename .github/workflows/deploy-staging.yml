@@ -1,0 +1,169 @@
+name: Deploy and verify staging
+
+on:
+  workflow_run:
+    workflows: [Staging request]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: '再検証する同一リポジトリのブランチ名（最新SHAを使用）'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# One lock covers BOTH deployments, smoke tests, and the final SHA check.
+# GitHub can replace a pending run. Such a run never publishes success; rerun manually.
+concurrency:
+  group: shared-staging-deployment
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
+      branch: ${{ steps.target.outputs.branch }}
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/github-script@v8
+        id: target
+        with:
+          script: |
+            const { resolveTarget } = await import('${{ github.workspace }}/scripts/staging/checks.mjs');
+            const target = await resolveTarget(github, context);
+            core.setOutput('sha', target.sha);
+            core.setOutput('branch', target.branch);
+
+  pending:
+    needs: resolve
+    runs-on: ubuntu-latest
+    # Restrict this environment to main. Store the dedicated App key ONLY here.
+    environment: staging-checks
+    outputs:
+      check_id: ${{ steps.check.outputs.id }}
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.STAGING_CHECK_APP_ID }}
+          private-key: ${{ secrets.STAGING_CHECK_APP_PRIVATE_KEY }}
+          permission-checks: write
+          repositories: ${{ github.event.repository.name }}
+      - uses: actions/github-script@v8
+        id: check
+        env:
+          TARGET_SHA: ${{ needs.resolve.outputs.sha }}
+        with:
+          github-token: ${{ steps.app.outputs.token }}
+          script: |
+            const { data } = await github.rest.checks.create({
+              ...context.repo, name: 'Staging verification', head_sha: process.env.TARGET_SHA,
+              status: 'in_progress',
+              details_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              output: { title: 'staging検証中', summary: '両サービスのデプロイと最新SHAの疎通確認を待っています。' }
+            });
+            core.setOutput('id', data.id);
+
+  frontend:
+    needs: [resolve, pending]
+    uses: ./.github/workflows/deploy-frontend.yml
+    with:
+      staging: true
+      target_sha: ${{ needs.resolve.outputs.sha }}
+    secrets:
+      CLOUDFLARE_WORKERS_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+  api:
+    needs: [resolve, frontend]
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    uses: ./.github/workflows/deploy-api.yml
+    with:
+      staging: true
+      target_sha: ${{ needs.resolve.outputs.sha }}
+    secrets:
+      WIF_PROVIDER: ${{ secrets.WIF_PROVIDER }}
+      SA_EMAIL: ${{ secrets.SA_EMAIL }}
+
+  verify:
+    needs: [resolve, frontend, api]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Smoke-test code comes from the trusted workflow commit, never the PR.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Verify both deployed SHAs, page, assets and all search APIs
+        env:
+          TARGET_SHA: ${{ needs.resolve.outputs.sha }}
+        run: node scripts/staging/verify.mjs
+
+  publish:
+    if: always() && needs.pending.result == 'success'
+    needs: [resolve, pending, frontend, api, verify]
+    runs-on: ubuntu-latest
+    environment: staging-checks
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/github-script@v8
+        id: current
+        env:
+          TARGET_SHA: ${{ needs.resolve.outputs.sha }}
+          TARGET_BRANCH: ${{ needs.resolve.outputs.branch }}
+        with:
+          script: |
+            const { assertCurrentTarget } = await import('${{ github.workspace }}/scripts/staging/checks.mjs');
+            try {
+              await assertCurrentTarget(github, context.repo, { sha: process.env.TARGET_SHA, branch: process.env.TARGET_BRANCH });
+              core.setOutput('valid', 'true');
+            } catch (error) {
+              core.warning(error.message);
+              core.setOutput('valid', 'false');
+            }
+      - uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.STAGING_CHECK_APP_ID }}
+          private-key: ${{ secrets.STAGING_CHECK_APP_PRIVATE_KEY }}
+          permission-checks: write
+          repositories: ${{ github.event.repository.name }}
+      - uses: actions/github-script@v8
+        env:
+          CHECK_ID: ${{ needs.pending.outputs.check_id }}
+          TARGET_SHA: ${{ needs.resolve.outputs.sha }}
+          CURRENT: ${{ steps.current.outputs.valid }}
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        with:
+          github-token: ${{ steps.app.outputs.token }}
+          script: |
+            const { publishResult } = await import('${{ github.workspace }}/scripts/staging/checks.mjs');
+            await publishResult(github, context.repo, {
+              checkId: Number(process.env.CHECK_ID), sha: process.env.TARGET_SHA,
+              current: process.env.CURRENT === 'true', results: JSON.parse(process.env.JOB_RESULTS)
+            });
