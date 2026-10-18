@@ -525,3 +525,18 @@ test('エンジン資材のフォールバックは配信情報にある外部UR
   assert.equal(response.status, 404);
   assert.equal(fallbackRequested, false);
 });
+
+test('staging検索はCDNキャッシュを使わずAPIのビルドSHAを保持する', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let options;
+  globalThis.fetch = async (_request, init) => {
+    options = init;
+    return Response.json({ results: [] }, { headers: { 'X-Deployment-Commit': 'actual-build', 'Cache-Control': 'public, s-maxage=2592000' } });
+  };
+  const response = await proxyApi(new Request('https://staging.kippu-navi.com/api/split-ticket?from=東京&to=品川'),
+    googleCredentials.audience, googleCredentials, testTokenProvider, false);
+  assert.deepEqual(options.cf, { cacheTtl: 0, cacheEverything: false });
+  assert.equal(response.headers.get('X-Deployment-Commit'), 'actual-build');
+  assert.equal(response.headers.get('Cache-Control'), 'no-store');
+});
