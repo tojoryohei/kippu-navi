@@ -1,0 +1,282 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "導入検証中は通常・脆弱性修正とも自動マージ無効。docs/renovate-migration.md の完了条件を満たしてから有効化する。",
+  "enabledManagers": [
+    "npm",
+    "gomod",
+    "github-actions",
+    "dockerfile",
+    "nodenv",
+    "custom.regex"
+  ],
+  "dependencyDashboard": true,
+  "labels": [
+    "dependencies"
+  ],
+  "timezone": "Asia/Tokyo",
+  "schedule": [
+    "* 3-5 * * *"
+  ],
+  "updateNotScheduled": false,
+  "minimumReleaseAge": "3 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+  "automerge": false,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "platformAutomerge": false,
+  "automergeSchedule": [
+    "* 3-5 * * *"
+  ],
+  "rebaseWhen": "behind-base-branch",
+  "separateMajorMinor": true,
+  "ignoreUnstable": true,
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "commitMessageAction": "更新:",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "{{#if isPinDigest}}digest固定{{else}}{{newValue}}{{/if}}",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "* 3-5 * * 1"
+    ],
+    "commitMessageAction": "更新:",
+    "commitMessageTopic": "lockfile"
+  },
+  "npmrc": "registry=https://npm.flatt.tech/\n",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "automerge": false,
+    "automergeSchedule": [
+      "at any time"
+    ],
+    "updateNotScheduled": true,
+    "minimumReleaseAge": "0 days",
+    "groupName": null,
+    "vulnerabilityFixStrategy": "lowest",
+    "labels": [
+      "dependencies",
+      "security"
+    ]
+  },
+  "packageRules": [
+    {
+      "matchDatasources": [
+        "npm"
+      ],
+      "registryUrls": [
+        "https://npm.flatt.tech"
+      ]
+    },
+    {
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom"
+      ],
+      "groupName": "react"
+    },
+    {
+      "matchPackageNames": [
+        "astro",
+        "@astrojs/**"
+      ],
+      "groupName": "astro"
+    },
+    {
+      "matchPackageNames": [
+        "tailwindcss",
+        "@tailwindcss/**"
+      ],
+      "groupName": "tailwind"
+    },
+    {
+      "matchPackageNames": [
+        "eslint",
+        "eslint-*",
+        "@typescript-eslint/**",
+        "typescript"
+      ],
+      "groupName": "lint-types"
+    },
+    {
+      "matchPackageNames": [
+        "@sentry/**"
+      ],
+      "groupName": "sentry"
+    },
+    {
+      "matchPackageNames": [
+        "node",
+        "@types/node"
+      ],
+      "groupName": "node-runtime"
+    },
+    {
+      "matchPackageNames": [
+        "go",
+        "golang"
+      ],
+      "groupName": "go-runtime"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "action"
+      ],
+      "matchPackageNames": [
+        "actions/**"
+      ],
+      "groupName": "actions-actions"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "action"
+      ],
+      "matchPackageNames": [
+        "google-github-actions/**"
+      ],
+      "groupName": "actions-google-github-actions"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "action"
+      ],
+      "matchPackageNames": [
+        "cloudflare/**"
+      ],
+      "groupName": "actions-cloudflare"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "action"
+      ],
+      "matchPackageNames": [
+        "docker/**"
+      ],
+      "groupName": "actions-docker"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "action"
+      ],
+      "matchPackageNames": [
+        "flatt-security/**"
+      ],
+      "groupName": "actions-flatt-security"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "action"
+      ],
+      "matchPackageNames": [
+        "golangci/**"
+      ],
+      "groupName": "actions-golangci"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "action"
+      ],
+      "matchPackageNames": [
+        "github/**"
+      ],
+      "groupName": "actions-github"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "action"
+      ],
+      "matchPackageNames": [
+        "googleapis/**"
+      ],
+      "groupName": "actions-googleapis"
+    },
+    {
+      "matchPackageNames": [
+        "node",
+        "@types/node"
+      ],
+      "versioning": "node",
+      "rangeStrategy": "bump"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepNames": [
+        "go"
+      ],
+      "matchDepTypes": [
+        "golang"
+      ],
+      "rangeStrategy": "bump"
+    },
+    {
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "pinDigests": true
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "github-runner"
+      ],
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.wrangler-version$/"
+      ],
+      "matchStrings": [
+        "(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "wrangler",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/test\\.yml$/"
+      ],
+      "matchStrings": [
+        "RENOVATE_VALIDATOR_VERSION: (?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "renovate",
+      "datasourceTemplate": "npm"
+    }
+  ]
+}

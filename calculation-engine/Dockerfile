@@ -11,7 +11,8 @@ RUN go mod download
 COPY . .
 
 # Wasmではなく、Cloud Run向けのAPIサーバーとしてビルド
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o server cmd/api/main.go
+ARG DEPLOY_COMMIT=local
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-X main.deploymentCommit=${DEPLOY_COMMIT}" -o server ./cmd/api
 
 # 2. 実行環境 (本番用軽量イメージ)
 FROM alpine:latest

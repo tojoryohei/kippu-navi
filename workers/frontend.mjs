@@ -145,13 +145,13 @@ function googleCredentials(env) {
   };
 }
 
-export async function proxyApi(request, apiOrigin, credentials, tokenProvider = getGoogleIdToken) {
+export async function proxyApi(request, apiOrigin, credentials, tokenProvider = getGoogleIdToken, cacheEnabled = true) {
   if (!apiOrigin || !credentials) {
     return new Response('API origin authentication is not configured.', { status: 503 });
   }
 
   const incomingUrl = new URL(request.url);
-  const normalizedUrl = request.method === 'GET'
+  const normalizedUrl = cacheEnabled && request.method === 'GET'
     ? normalizeCacheableApiUrl(incomingUrl)
     : null;
   const requestUrl = normalizedUrl ?? incomingUrl;
@@ -179,7 +179,9 @@ export async function proxyApi(request, apiOrigin, credentials, tokenProvider = 
             },
           },
         })
-      : await fetch(originRequest);
+      : cacheEnabled
+        ? await fetch(originRequest)
+        : await fetch(originRequest, { cf: { cacheTtl: 0, cacheEverything: false } });
   } catch (error) {
     console.error(JSON.stringify({ event: 'api_proxy_failed', request_id: requestId, path: incomingUrl.pathname, elapsed_ms: Math.round(performance.now() - startedAt), error_name: error instanceof Error ? error.name : 'Error' }));
     return new Response('Upstream API request failed.', { status: 502, headers: { 'Cache-Control': 'no-store', 'X-Request-ID': requestId } });
@@ -187,7 +189,7 @@ export async function proxyApi(request, apiOrigin, credentials, tokenProvider = 
 
   const response = new Response(originResponse.body, originResponse);
   response.headers.set('X-Request-ID', requestId);
-  response.headers.set('Cache-Control', originResponse.ok
+  response.headers.set('Cache-Control', !cacheEnabled ? 'no-store' : originResponse.ok
     ? normalizedUrl ? `public, max-age=0, s-maxage=${API_CACHE_TTL_SECONDS}` : (originResponse.headers.get('Cache-Control') || 'no-store')
     : 'no-store');
   console.log(JSON.stringify({ event: 'api_proxy_completed', request_id: requestId, path: incomingUrl.pathname, status: originResponse.status, elapsed_ms: Math.round(performance.now() - startedAt), cache_status: originResponse.headers.get('CF-Cache-Status') || 'unknown' }));
@@ -303,7 +305,8 @@ function dispatchRequest(request, env) {
     return proxyPostHog(request);
   }
   if (url.pathname.startsWith('/api/')) {
-    return proxyApi(request, env.API_ORIGIN, googleCredentials(env));
+    return proxyApi(request, env.API_ORIGIN, googleCredentials(env), getGoogleIdToken,
+      env.DEPLOY_ENVIRONMENT !== 'staging' && url.hostname !== 'staging.kippu-navi.com');
   }
   return fetchEngineAsset(request, env.ASSETS);
 }

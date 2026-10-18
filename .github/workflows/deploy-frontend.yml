@@ -2,39 +2,41 @@ name: Deploy frontend to Cloudflare
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [main]
   workflow_dispatch:
+  workflow_call:
     inputs:
-      deploy_environment:
-        description: 'デプロイ先。productionのworkers.dev URLとプレビューURLは無効です。'
+      staging:
+        type: boolean
+        default: false
+      target_sha:
+        type: string
         required: true
-        type: choice
-        default: staging
-        options:
-          - staging
-          - production
+    secrets:
+      CLOUDFLARE_WORKERS_API_TOKEN:
+        required: true
+      CLOUDFLARE_ACCOUNT_ID:
+        required: true
+      SENTRY_AUTH_TOKEN:
+        required: false
 
 permissions:
   contents: read
 
-# All development branches share one staging deployment. A manual production run
-# is available when a production deployment needs to be run explicitly.
+# staging is serialized by deploy-staging.yml across both services and smoke tests.
 concurrency:
-  group: frontend-${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
+  group: frontend-${{ inputs.staging && github.run_id || 'production' }}
   cancel-in-progress: false
 
 jobs:
   deploy:
-    # Pushes deploy main to production and all other branches to staging.
-    # workflow_dispatch can explicitly deploy the current branch to production.
-    if: github.ref_type == 'branch'
+    if: inputs.staging || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
+    environment: ${{ inputs.staging && 'staging' || 'production' }}
     env:
-      DEPLOY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || (inputs.deploy_environment == 'production' && 'production' || 'staging') }}
-      DEPLOY_COMMIT: ${{ github.sha }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
+      DEPLOY_COMMIT: ${{ inputs.target_sha || github.sha }}
       ASTRO_TELEMETRY_DISABLED: 1
       PUBLIC_GOOGLE_ANALYTICS_ID: ${{ vars.PUBLIC_GOOGLE_ANALYTICS_ID }}
       PUBLIC_POSTHOG_KEY: ${{ vars.PUBLIC_POSTHOG_KEY }}
@@ -43,61 +45,62 @@ jobs:
       SENTRY_ORG: ${{ vars.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
     steps:
-      - name: Skip deployment for Dependabot
-        if: github.actor == 'dependabot[bot]'
-        run: echo 'Dependabot push detected; Cloudflare deployment is skipped.'
-
       - name: Checkout
-        if: github.actor != 'dependabot[bot]'
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.target_sha || github.sha }}
+          persist-credentials: false
 
       - name: Set up Node.js
-        if: github.actor != 'dependabot[bot]'
         uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version-file: .node-version
           cache: npm
 
       - name: Set up Go
-        if: github.actor != 'dependabot[bot]'
         uses: actions/setup-go@v7
         with:
           go-version-file: calculation-engine/go.mod
           cache: false
 
       - name: Setup Takumi Guard for Go
-        if: github.actor != 'dependabot[bot]'
         uses: flatt-security/setup-takumi-guard-golang@v1
 
+      - name: Setup Takumi Guard for npm
+        uses: flatt-security/setup-takumi-guard-npm@v1
+
       - name: Install dependencies
-        if: github.actor != 'dependabot[bot]'
         run: npm ci
 
       - name: Verify staging domain isolation
-        if: github.actor != 'dependabot[bot]' && env.DEPLOY_ENVIRONMENT == 'staging'
+        if: inputs.staging
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/check-staging-target.mjs
 
       - name: Build frontend
-        if: github.actor != 'dependabot[bot]'
         run: npm run build
 
+      - name: Read candidate Wrangler version
+        id: wrangler
+        run: |
+          version=$(cat .wrangler-version)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Deploy static assets
-        if: github.actor != 'dependabot[bot]'
         uses: cloudflare/wrangler-action@v4
         with:
-          wranglerVersion: '4.129.0'
+          wranglerVersion: ${{ steps.wrangler.outputs.version }}
           apiToken: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --env ${{ env.DEPLOY_ENVIRONMENT }}
 
       - name: Write deployment summary
-        if: github.actor != 'dependabot[bot]'
         env:
           DEPLOY_BRANCH: ${{ github.ref_name }}
-          DEPLOY_SHA: ${{ github.sha }}
+          DEPLOY_SHA: ${{ inputs.target_sha || github.sha }}
         run: |
           if [ "$DEPLOY_ENVIRONMENT" = production ]; then
             DEPLOY_URL="workers.dev URLとプレビューURLは無効"

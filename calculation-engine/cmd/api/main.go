@@ -376,7 +376,7 @@ func run() error {
 
 	server := &http.Server{
 		Addr:         listenAddr,
-		Handler:      observeRequests(allowLocalDevelopmentCORS(mux)),
+		Handler:      observeRequests(deploymentIdentity(allowLocalDevelopmentCORS(mux), os.Getenv("DEPLOY_ENVIRONMENT"), deploymentCommit)),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}

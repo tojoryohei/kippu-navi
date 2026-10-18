@@ -3,26 +3,42 @@ name: Deploy API to Cloud Run
 on:
   push:
     branches:
-      - '**'
+      - main
     paths:
       - 'calculation-engine/**'
       - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      staging:
+        type: boolean
+        default: false
+      target_sha:
+        type: string
+        required: true
+    secrets:
+      WIF_PROVIDER:
+        required: true
+      SA_EMAIL:
+        required: true
 
 env:
   PROJECT_ID: 'bubbly-trail-470023-e4'
   REGION: 'asia-northeast1'
-  SERVICE_NAME: ${{ github.ref == 'refs/heads/main' && 'calculation-engine' || 'calculation-engine-staging' }}
-  RUNTIME_SERVICE_ACCOUNT: ${{ github.ref == 'refs/heads/main' && 'calculation-engine-runtime@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'calculation-engine-stg-runtime@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
-  INVOKER_SERVICE_ACCOUNT: ${{ github.ref == 'refs/heads/main' && 'cloudflare-api-invoker@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'cloudflare-api-invoker-stg@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
+  SERVICE_NAME: ${{ !inputs.staging && 'calculation-engine' || 'calculation-engine-staging' }}
+  RUNTIME_SERVICE_ACCOUNT: ${{ !inputs.staging && 'calculation-engine-runtime@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'calculation-engine-stg-runtime@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
+  INVOKER_SERVICE_ACCOUNT: ${{ !inputs.staging && 'cloudflare-api-invoker@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'cloudflare-api-invoker-stg@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
   GAR_REPO: 'cloud-run-source-deploy' 
 
 concurrency:
-  group: api-${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+  group: api-${{ inputs.staging && github.run_id || 'production' }}
   cancel-in-progress: false
 
 jobs:
   deploy:
+    if: inputs.staging || github.ref == 'refs/heads/main'
+    timeout-minutes: 40
+    environment: ${{ inputs.staging && 'staging' || 'production' }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -32,6 +48,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.target_sha || github.sha }}
+          persist-credentials: false
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -122,14 +141,16 @@ jobs:
           fi
 
       - name: Build and Push Docker Image
+        env:
+          DEPLOY_COMMIT: ${{ inputs.target_sha || github.sha }}
         run: |
-          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.SERVICE_NAME }}:${{ inputs.target_sha || github.sha }}"
           
-          docker build -t $IMAGE_PATH ./calculation-engine
+          docker build --build-arg DEPLOY_COMMIT="$DEPLOY_COMMIT" -t "$IMAGE_PATH" ./calculation-engine
           docker push $IMAGE_PATH
 
       - name: Wait for matching Cloudflare deployment
-        if: github.event_name == 'push'
+        if: ${{ !inputs.staging && github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -158,7 +179,8 @@ jobs:
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.SERVICE_NAME }}:${{ inputs.target_sha || github.sha }}
+          env_vars: DEPLOY_ENVIRONMENT=${{ inputs.staging && 'staging' || 'production' }}
           flags: '--invoker-iam-check --service-account=${{ env.RUNTIME_SERVICE_ACCOUNT }} --memory=512Mi --concurrency=2 --timeout=30s'
 
       - name: Restrict Cloud Run invocation to Cloudflare
