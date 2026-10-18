@@ -341,7 +341,9 @@ export default function SplitForm({
                 throw new SearchOperationError({ message: fetchError instanceof Error ? fetchError.message : String(fetchError), code: "api_network_failed", source: "api", stage: "api_fetch", capability, exceptionName: fetchError instanceof Error ? fetchError.name : "Error", retryable: true, retryCount: 0, workerRestartCount: 0 });
             }
             if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
-            if (apiRes.status >= 500) throw createApiHttpError(apiRes.status, capability);
+            if (apiRes.status === 408 || apiRes.status === 429 || apiRes.status >= 500) {
+                throw createApiHttpError(apiRes.status, capability);
+            }
             searchContext.requestId = apiRes.headers.get("X-Request-ID") || undefined;
             let rawResponse: unknown;
             try {
@@ -394,7 +396,7 @@ export default function SplitForm({
             if (abort.signal.aborted) return;
             const details = err instanceof SearchOperationError ? err.details : null;
             if (details && (details.code === "api_network_failed" || details.code === "api_timeout" ||
-                (details.code === "api_http_failed" && (details.httpStatus || 0) >= 500))) {
+                (details.code === "api_http_failed" && (details.httpStatus === 408 || details.httpStatus === 429 || (details.httpStatus || 0) >= 500)))) {
                 try { await runLocally(); return; } catch (localError) { err = localError; }
             }
             if (abort.signal.aborted) return;

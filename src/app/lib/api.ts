@@ -72,7 +72,7 @@ export async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: Req
     for (let attempt = 0; attempt <= NETWORK_RETRY_DELAYS_MS.length; attempt++) {
         try {
             const response = await fetch(input, init);
-            const retryableStatus = response.status === 408 || response.status === 429 || response.status >= 500;
+            const retryableStatus = response.status === 408 || response.status >= 500;
             if (!retryableStatus || attempt === NETWORK_RETRY_DELAYS_MS.length) return response;
             await waitForRetry(NETWORK_RETRY_DELAYS_MS[attempt], init?.signal ?? undefined);
         } catch (error) {

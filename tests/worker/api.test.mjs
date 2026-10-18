@@ -77,17 +77,17 @@ test('一時的なHTTP 502は1回再試行して成功レスポンスを返す',
   }
 });
 
-test('HTTP 400は再試行せずに返す', async () => {
+for (const status of [400, 429]) test(`HTTP ${status}は再試行せずに返す`, async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;
   globalThis.fetch = async () => {
     calls += 1;
-    return new Response('{"error":"bad request"}', { status: 400 });
+    return new Response('{"error":"bad request"}', { status });
   };
 
   try {
     const response = await fetchWithNetworkRetry('https://example.invalid');
-    assert.equal(response.status, 400);
+    assert.equal(response.status, status);
     assert.equal(calls, 1);
   } finally {
     globalThis.fetch = originalFetch;
