@@ -74,13 +74,20 @@ test('PWAは全資材を保存し、未使用のページ・全券種の計算�
   })).toBe(true);
 });
 
-for (const kind of ['ticket', 'pass', 'ic-pass']) {
-  test(`API 503は${kind}の端末内計算へ切り替わる`, async ({ page }) => {
-    await blockExternal(page);
-    await page.route('**/api/**', route => route.fulfill({ status: 503, body: 'unavailable' }));
-    await page.goto(`/split/auto/${kind}?from=新茂原&to=茂原&months=1&maxSplits=1`);
-    await expect(page.getByRole('heading', { name: '計算結果', exact: true })).toBeVisible({ timeout: 60_000 });
-  });
+for (const status of [408, 429, 503]) {
+  for (const kind of ['ticket', 'pass', 'ic-pass']) {
+    test(`API ${status}は${kind}の端末内計算へ切り替わる`, async ({ page }) => {
+      await blockExternal(page);
+      let apiCalls = 0;
+      await page.route('**/api/**', route => {
+        apiCalls += 1;
+        return route.fulfill({ status, body: 'unavailable' });
+      });
+      await page.goto(`/split/auto/${kind}?from=新茂原&to=茂原&months=1&maxSplits=1`);
+      await expect(page.getByRole('heading', { name: '計算結果', exact: true })).toBeVisible({ timeout: 60_000 });
+      expect(apiCalls).toBe(status === 429 ? 1 : 2);
+    });
+  }
 }
 test('API 400は端末内検索へ切り替えず既存のエラーを表示する', async ({ page }) => {
   await blockExternal(page);
