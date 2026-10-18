@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "CI・本番デプロイの導入確認中は通常・脆弱性修正とも自動マージ無効。docs/renovate-migration.md の完了条件を満たしてから有効化する。",
+  "description": "依存更新とGitHub Dependabot alertsに基づく修正PRをRenovateへ一本化。必須CI・CodeQLと最新mainへの追従でマージを判定する。",
   "enabledManagers": [
     "npm",
     "gomod",
@@ -22,7 +22,7 @@
   "minimumReleaseAgeBehaviour": "timestamp-optional",
   "prConcurrentLimit": 3,
   "prHourlyLimit": 2,
-  "automerge": false,
+  "automerge": true,
   "automergeType": "pr",
   "automergeStrategy": "squash",
   "platformAutomerge": false,
@@ -49,7 +49,7 @@
   "npmrc": "registry=https://npm.flatt.tech/\n",
   "vulnerabilityAlerts": {
     "enabled": true,
-    "automerge": false,
+    "automerge": true,
     "automergeSchedule": [
       "at any time"
     ],
@@ -60,7 +60,11 @@
     "labels": [
       "dependencies",
       "security"
-    ]
+    ],
+    "schedule": [
+      "at any time"
+    ],
+    "prCreation": "immediate"
   },
   "packageRules": [
     {
@@ -98,10 +102,9 @@
       "matchPackageNames": [
         "eslint",
         "eslint-*",
-        "@typescript-eslint/**",
-        "typescript"
+        "@typescript-eslint/**"
       ],
-      "groupName": "lint-types"
+      "groupName": "eslint"
     },
     {
       "matchPackageNames": [
