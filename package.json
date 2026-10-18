@@ -58,8 +58,6 @@
   "allowScripts": {
     "@sentry/cli": true,
     "core-js@3.50.0": true,
-    "esbuild@0.28.2": true,
-    "fsevents@2.3.3": true,
-    "protobufjs@7.6.5": true
+    "fsevents@2.3.3": true
   }
 }

@@ -2,8 +2,8 @@
 
 ## 更新方針
 
-Renovateの通常更新と脆弱性修正の自動マージは導入確認が終わるまで無効です。
-Dependabotの更新・セキュリティ修正・自動マージは切り替えまで維持します。
+依存更新PRとセキュリティ修正PRの作成・自動マージはRenovateが担当します。
+Dependabotの更新設定と専用自動マージworkflowは廃止します。GitHub側のDependabot security updatesは停止し、Dependabot alertsは検出元として維持します。
 
 マージ条件は既存の必須CI・CodeQLと最新mainへの追従です。
 PRごとの共有stagingへの自動デプロイ、疎通確認、専用Appの`Staging verification`は廃止します。
@@ -19,6 +19,16 @@ CIとマージ後の本番デプロイは6時を過ぎても完了まで続け�
 脆弱性修正はGitHub Dependabot alertsで検出され、Renovateが修正PRを生成できるものに限定します。
 通常グループから分離して最小修正版を優先し、待機なし・随時処理します。必須CIは省略しません。
 
+## 関連依存のグループ
+
+React本体・DOM・型定義、Astroと連携パッケージ、Tailwind、Sentry、Node実行環境、Go実行環境をそれぞれまとめます。
+ESLint本体と各プラグイン・`@typescript-eslint/*`は`eslint`グループとし、TypeScript本体は個別更新にします。
+ESLintとTypeScriptの独立したmajor更新を同じPRへまとめません。
+TypeScriptのmajor移行時には別グループの`@astrojs/check`と`@typescript-eslint/*`のpeer対応も確認します。
+Reactのmajor移行時にも`@astrojs/react`やUIライブラリの対応が必要です。グループ化はpeer互換性を保証せず、依存解決と必須CIで判定します。
+`allowScripts`はインストールスクリプトの許可方針であり、依存グループとは別に管理します。
+未使用のバージョン指定は整理し、新しいバージョンのスクリプトを許可する際は内容を確認します。
+
 ## stagingと本番デプロイ
 
 通常ブランチとRenovateブランチのpush・PR作成からstagingへは自動公開しません。
@@ -33,24 +43,17 @@ mainのworkflow定義を用い、固定した対象SHAからフロントエン�
 専用チェックAppと`staging-checks` Environmentはworkflowから参照しなくなります。
 これらのGitHub側の削除はこのPRでは行いません。Appの登録や秘密鍵は今後の導入条件ではありません。
 
-## 導入と切り替え
+## 運用と移行の証跡
 
-1. Mend Renovate Appを対象リポジトリへインストールし、Dependabot alertsの読み取りを許可します。
-2. npmは`.npmrc`とRenovateの`npmrc`で`https://npm.flatt.tech/`を指定します。GoはMendのホスト側で`GOPROXY=https://golang.flatt.tech`を指定できることを確認します。取得失敗時に公開レジストリへ迂回しません。
-3. 自動マージ無効のまま実更新PRで取得・lockfile更新・必須CIの成功を確認します。
-4. 検証済みPRをユーザーがブラウザで手動マージし、既存の本番デプロイの成功を確認します。stagingの公開や疎通確認は切り替え条件ではありません。
-5. main ruleset（ID: 15000488）の既存条件を保存し、更新用JSONを生成します。
+移行確認の結果と残る制約は[renovate-cutover.md](renovate-cutover.md)に記録します。
+通常更新のPR作成・更新・マージは日本時間3〜6時、脆弱性修正は随時処理します。
+mainのrulesetには個別CI・CodeQLと最新mainへの追従を必須指定し、bypassは認めません。
+依存更新用の旧チェック`dependabot-auto-merge`は削除します。
 
-   ```sh
-   gh api repos/tojoryohei/kippu-navi/rulesets/15000488 > /private/tmp/kippu-main-ruleset-before.json
-   node scripts/staging/protection.mjs /private/tmp/kippu-main-ruleset-before.json > /private/tmp/kippu-main-ruleset-after.json
-   ```
-
-   各CIジョブとCodeQLを個別に必須指定します。集約ジョブ`Required CI`は使用しません。
-   廃止する`Required CI`・`deploy`・`request`・`Staging verification`とDependabot専用チェックを必須条件から除きます。
-   最新mainへの追従を必須にし、bypassは認めません。内容を確認してrulesetに反映します。
-6. Dependabotの通常更新・専用自動マージworkflowを停止します。alertsは維持し、修正PRの担当をRenovateへ切り替えて重複PRを整理します。
-7. `renovate.json`の通常・脆弱性修正の`automerge`を有効化し、1週間観察します。通常更新が時間外に自動マージされた場合は停止して調査します。
+npmは`.npmrc`とRenovate設定で`https://npm.flatt.tech/`を使用し、取得失敗時に公開レジストリへ迂回しません。
+Goは現在外部モジュール依存がなく、Goランタイム更新のみが実検証対象です。
+外部Goモジュールを追加する際はMendホスト側の`GOPROXY=https://golang.flatt.tech`を検証してから更新を管理します。
+ホスト側の設定を確認せず、リポジトリの`env`設定だけで強制できるとは扱いません。
 
 ## 検証と切り戻し
 
