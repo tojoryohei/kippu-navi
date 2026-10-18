@@ -23,7 +23,7 @@ on:
 permissions:
   contents: read
 
-# staging is serialized by deploy-staging.yml across both services and smoke tests.
+# 手動stagingデプロイはdeploy-staging.ymlで両サービスを排他制御する。
 concurrency:
   group: frontend-${{ inputs.staging && github.run_id || 'production' }}
   cancel-in-progress: false

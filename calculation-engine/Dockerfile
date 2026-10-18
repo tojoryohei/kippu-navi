@@ -1,5 +1,5 @@
 # 1. ビルド環境 (コンパイル用)
-FROM golang:1.24-alpine AS builder
+FROM golang:1.27-alpine@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS builder
 WORKDIR /app
 ENV GOPROXY=https://golang.flatt.tech
 
@@ -15,7 +15,7 @@ ARG DEPLOY_COMMIT=local
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-X main.deploymentCommit=${DEPLOY_COMMIT}" -o server ./cmd/api
 
 # 2. 実行環境 (本番用軽量イメージ)
-FROM alpine:latest
+FROM alpine:latest@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 # タイムゾーンデータとルート証明書（HTTPS通信用）のみインストール
 RUN apk --no-cache add ca-certificates tzdata
 
