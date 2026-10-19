@@ -1,0 +1,27 @@
+---
+import data from "@/data/split-ticket-examples.json";
+interface Props { from: string; to: string; }
+const { from, to } = Astro.props;
+const example = data.examples.find(e => e.from === from && e.to === to)!;
+const url = example.reproductionUrl;
+const displayedPatterns = [
+  ...example.patterns.map((pattern,index) => ({pattern, label: `検索結果${index+1}`})),
+  ...example.comparisonPatterns.map(pattern => ({pattern, label: "比較例（検索が選んだ結果ではありません）"})),
+];
+---
+<section>
+  <h2>{from}―{to}</h2>
+  <p>通し購入：<strong>{example.normal.total.toLocaleString()}円</strong> ／ 検索結果（分割なしを含む）：<strong>{example.patterns[0].total.toLocaleString()}円</strong> ／ 差額：<strong>{(example.normal.total-example.patterns[0].total).toLocaleString()}円</strong></p>
+  <p>通し経路：{example.normal.segments.map(s => `${s.from}―${s.to}（${s.via.join('・')}、${s.kilometers}km）`).join(' / ')}。同額の計算結果は{example.patterns.length}通りです。</p>
+  {displayedPatterns.map(({pattern,label},index) => <div class="my-5">
+    <h3>{label}：{pattern.segments.length}枚・合計{pattern.total.toLocaleString()}円</h3>
+    <p class="text-sm text-slate-500 sm:hidden">表は横にスクロールできます。</p>
+    <div class="overflow-x-auto" tabindex="0" role="region" aria-label={`${from}―${to}の運賃内訳${index+1}`}>
+      <table class="min-w-[36rem]"><thead><tr><th>乗車券の区間</th><th>経由・営業キロ</th><th>運賃</th><th>バリアフリー料金</th><th>支払額</th></tr></thead>
+      <tbody>{pattern.segments.map(s => <tr><td>{s.from}―{s.to}</td><td>{s.via.join('・')} / {s.kilometers}km</td><td>{s.fare}円</td><td>{s.barrierFreeFee}円</td><td>{s.fare+s.barrierFreeFee}円</td></tr>)}</tbody></table>
+    </div>
+    <details><summary>計算経路の全駅を見る</summary>{pattern.segments.map(s => <p>{s.path.join(' → ')}</p>)}</details>
+  </div>)}
+  <p class="text-sm">照合資料：{example.sources.map((source,index) => <span>{index > 0 ? " ／ " : ""}<a href={source.url}>{source.title}</a></span>)}。確認日：{example.verifiedAt}。</p>
+  <p><a href={url}>この発着駅を計算機に入力する</a>（分割上限なし・分割禁止駅なしで再計算）。掲載値は{data.verifiedAt}の計算エンジンで確認した記録です。改定やデータ更新により再計算値は変わります。</p>
+</section>

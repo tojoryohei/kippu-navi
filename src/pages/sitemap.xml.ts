@@ -3,6 +3,14 @@ export function GET() {
 
     const entries = [
         {
+            url: `${baseUrl}/articles/split-ticket-case-study`,
+            changeFrequency: 'monthly', priority: 0.7
+        },
+        {
+            url: `${baseUrl}/articles/calculation-scope`,
+            changeFrequency: 'monthly', priority: 0.7
+        },
+        {
             url: `${baseUrl}/developers/api`,
             changeFrequency: 'monthly',
             priority: 0.7,

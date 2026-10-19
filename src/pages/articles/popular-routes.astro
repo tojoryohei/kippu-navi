@@ -1,209 +1,28 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-const metadata = {
-  title: "人気の分割乗車券5選",
-  description:
-    "名古屋～大阪など、検索回数が多い分割乗車券を節約額とともにランキング形式でまとめました。あなたも節約ができるか確認してみましょう。",
-  alternates: {
-    canonical: "/articles/popular-routes",
-  },
-};
-
-interface RouteExample {
-  route: string;
-  normalFare: string;
-  splitFare: string;
-  savings: string;
-}
-
-const examples: RouteExample[] = [
-  {
-    route: "名古屋 → 京都",
-    normalFare: "2,310円",
-    splitFare: "2,190円",
-    savings: "120円",
-  },
-  {
-    route: "名古屋 → 大阪",
-    normalFare: "3,080円",
-    splitFare: "2,770円",
-    savings: "310円",
-  },
-  {
-    route: "新千歳空港 → 札幌",
-    normalFare: "1,230円",
-    splitFare: "1,170円",
-    savings: "60円",
-  },
-  {
-    route: "大阪 → 敦賀",
-    normalFare: "2,310円",
-    splitFare: "2,130円",
-    savings: "180円",
-  },
-  {
-    route: "大阪 → 岐阜",
-    normalFare: "3,080円",
-    splitFare: "2,550円",
-    savings: "530円",
-  },
-];
-
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "Article",
-  headline: "人気の分割乗車券5選",
-  description:
-    "名古屋～大阪など、検索回数が多い分割乗車券を節約額とともにランキング形式でまとめました。",
-  url: "https://kippu-navi.com/articles/popular-routes",
-  author: {
-    "@type": "Person",
-    name: "きっぷナビ運営者",
-    url: "https://kippu-navi.com/about",
-  },
-  publisher: {
-    "@type": "Organization",
-    name: "きっぷナビ",
-    url: "https://kippu-navi.com",
-  },
-  datePublished: "2025-09-01",
-  dateModified: "2026-07-18",
-};
+import ArticleLayout from "@/layouts/ArticleLayout.astro";
+import SplitTicketExample from "@/components/SplitTicketExample.astro";
+import data from "@/data/split-ticket-examples.json";
+const sources = [{"title": "JR東日本：旅客営業規則 第77条・普通旅客運賃の計算", "url": "https://www.jreast.co.jp/ryokaku/02_hen/03_syo/02_setsu/index.html"}, {"title": "JR東日本：第77条の2・第77条の3（北海道・東日本の幹線運賃）", "url": "https://www.jreast.co.jp/ryokaku/02_hen/03_syo/02_setsu/02.html"}, {"title": "JR西日本：きっぷのルール・ご利用方法", "url": "https://www.jr-odekake.net/ticket/guide/stipulation/"}, {"title": "JR北海道：運賃改定について", "url": "https://www.jrhokkaido.co.jp/fare/"}, {"title": "きっぷナビ：公開ソースコード（計算・データの実装）", "url": "https://github.com/tojoryohei/kippu-navi/tree/01e8fdf7aeaacf694588944629a2be810631e8aa/calculation-engine"}];
 ---
-
-<Layout metadata={metadata}>
-  <>
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(jsonLd)}
-    />
-    <div class="py-12 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto">
-      <nav class="mb-8 text-sm text-slate-500">
-        <a href="/articles" class="text-blue-600 hover:underline">記事一覧</a>
-        <span class="mx-2">›</span>
-        <span>人気の分割乗車券5選</span>
-      </nav>
-
-      <article
-        class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10"
-      >
-        <header class="mb-8">
-          <span
-            class="text-xs px-2.5 py-1 rounded-full font-bold bg-purple-100 text-purple-700"
-            >実例</span
-          >
-          <h1
-            class="text-2xl sm:text-3xl font-bold text-slate-900 mt-4 leading-tight"
-          >
-            {"人気の分割乗車券5選"}
-          </h1>
-          <p class="mt-4 text-slate-500 text-sm">最終更新: 2026年7月18日</p>
-        </header>
-
-        <div
-          class="prose prose-slate max-w-none space-y-8 text-slate-700 leading-relaxed"
-        >
-          <section>
-            <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">
-              はじめに
-            </h2>
-            <p>
-              {
-                "検索回数が多い分割乗車券を節約額とともにランキング形式でまとめました。発着駅の順序が逆のものは合算しており、実用的でない組み合わせは省いてあります。「分割きっぷって本当にお得なの？」と疑問をお持ちの方は、まずはご自身の利用区間に近い例を確認してみてください。"
-              }
-            </p>
-            <p class="mt-3 text-sm text-slate-500">
-              {"※運賃は2026年7月時点のものです。最新の運賃は"}
-              <a
-                href="/split/auto/ticket"
-                class="text-blue-600 hover:underline underline-offset-2 mx-1"
-                >分割乗車券計算（経路自動検索）</a
-              >
-              {"で確認してください。"}
-            </p>
-          </section>
-
-          <section>
-            <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">
-              分割乗車券の検索回数ランキング（トップ５）
-            </h2>
-            <div class="overflow-x-auto rounded-xl border border-slate-200">
-              <table class="w-full text-sm text-left border-collapse">
-                <thead>
-                  <tr
-                    class="border-b border-slate-200 bg-slate-50 text-slate-700 font-semibold"
-                  >
-                    <th class="py-3 px-4 font-bold">区間</th>
-                    <th class="py-3 px-4 font-bold">通し運賃</th>
-                    <th class="py-3 px-4 font-bold">分割運賃</th>
-                    <th class="py-3 px-4 font-bold text-blue-600">節約額</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                  {
-                    examples.map((ex) => (
-                      <tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="py-3 px-4 font-medium text-slate-800 whitespace-nowrap">
-                          {ex.route}
-                        </td>
-                        <td class="py-3 px-4 whitespace-nowrap">
-                          {ex.normalFare}
-                        </td>
-                        <td class="py-3 px-4 whitespace-nowrap">
-                          {ex.splitFare}
-                        </td>
-                        <td class="py-3 px-4 font-bold text-blue-600 whitespace-nowrap">
-                          {ex.savings}
-                        </td>
-                      </tr>
-                    ))
-                  }
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section>
-            <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">
-              あなたの区間をチェックしよう
-            </h2>
-            <p>
-              {
-                "上記はあくまで一例です。あなたの通勤・旅行ルートでも分割きっぷが使えるかもしれません。"
-              }
-              <a
-                href="/split/auto/ticket"
-                class="text-blue-600 hover:underline underline-offset-2 mx-1"
-                >分割乗車券計算（経路自動検索）</a
-              >
-              {
-                "に発駅と着駅を入力するだけで、最安の分割パターンを自動計算できます。"
-              }
-            </p>
-          </section>
-        </div>
-
-        <div class="mt-10 pt-8 border-t border-slate-200">
-          <h2 class="text-lg font-bold text-slate-800 mb-4">関連記事</h2>
-          <ul class="space-y-2 text-sm">
-            <li>
-              <a
-                href="/articles/what-is-split-ticket"
-                class="text-blue-600 hover:underline"
-                >→ 分割きっぷとは？仕組みをわかりやすく解説</a
-              >
-            </li>
-            <li>
-              <a
-                href="/articles/commuter-pass-savings"
-                class="text-blue-600 hover:underline"
-                >→ 通勤定期を分割購入して節約する方法</a
-              >
-            </li>
-          </ul>
-        </div>
-      </article>
-    </div>
-  </>
-</Layout>
+<ArticleLayout slug="popular-routes" sources={sources}>
+<h2>地域によって、分割で差がつく理由も変わる</h2>
+<p>同じ距離でも、JRの会社や適用区間によって運賃は異なります。ここでは中京・関西・北海道の5区間を例に、特定区間の運賃、都市部の運賃、空港への加算が分割後の金額にどう関わるかを見ていきます。</p>
+<p>{data.conditions} 確認日：{data.verifiedAt}。表の支払額は運賃とバリアフリー料金の合計です。経路と購入枚数から分割購入を選ぶか考えたい方は、<a href="/articles/split-ticket-case-study">安くなる場合・ならない場合の比較</a>も参考にしてください。</p>
+<SplitTicketExample from="名古屋" to="京都" />
+<p>関西本線・草津線経由です。名古屋―四日市には特定区間運賃480円が設定されており、バリアフリー料金10円を加えると490円になります。この区間を独立させたうえで、草津線方面の距離帯を組み合わせた7枚・2,190円の結果です。米原経由の東海道線とは経路が異なります。</p>
+<h2>名古屋―大阪：特定区間と電車特定区間を組み合わせる</h2>
+<p>関西本線・片町線・大阪環状線経由では、通し3,080円に対し、名古屋―四日市、四日市―忍ケ丘、忍ケ丘―大阪の3枚で2,790円となり、差額は290円です。</p>
+<p>名古屋―四日市には特定区間運賃、忍ケ丘―大阪には関西の電車特定区間の運賃を使います。また、この2枚にはそれぞれバリアフリー料金10円がかかるため、運賃だけを足した額とは異なります。<a href="/articles/split-ticket-case-study">各券の内訳と、この経路で購入を判断するときの注意点</a>は比較記事にまとめています。</p>
+<SplitTicketExample from="新千歳空港" to="札幌" />
+<p>千歳線・函館線経由です。新千歳空港にかかる加算分は運賃欄に含みます。北海道の幹線運賃と空港への20円加算を使うため、本州の運賃表では同じ金額になりません。通しは1,210円＋20円＝1,230円、島松で分けると470円＋20円＋680円＝1,170円です。空港加算がなくなるのではなく、区間を分けた距離帯の組み合わせで60円差になります。</p>
+<SplitTicketExample from="大阪" to="敦賀" />
+<p>湖西線経由です。大阪―京都には特定区間運賃570円、京都―おごと温泉には電車特定区間の運賃310円を使い、それぞれにバリアフリー料金10円を加えます。その先の2枚と合わせて2,130円です。全区間を1枚で買う場合と、都市部の運賃を別々の券に適用する場合の違いが見える例です。</p>
+<SplitTicketExample from="大阪" to="岐阜" />
+<p>東海道線経由で、通し3,080円に対し5枚2,550円です。大阪―京都の特定区間運賃に加え、京都から滋賀県内にかけて電車特定区間の運賃を使います。南草津で分ける場合と栗東で分ける場合では各券の額が違っても、近江八幡までの合計が同じになり、全体では同額2通りになります。</p>
+<h2>各券の金額をどう照合したか</h2>
+<p>本州の幹線の通常運賃は第77条、関西の電車特定区間は第78条、名古屋―四日市480円と大阪―京都570円は第79条・別表第2号イの7を参照しました。第77条の距離帯では11～15kmが240円、16～20kmが330円、21～25kmが420円、51～60kmが990円です。京都―南草津・おごと温泉などの電車特定区間は同じ距離帯でも別の賃率になります。料金10円の適用区間は第140条で確認しました。</p>
+<p>北海道は第77条の2で16～20km470円、26～30km680円、46～50km1,210円です。新千歳空港の発着には第85条の20円を加えるため、通し1,230円、空港―島松490円になります。各社の案内と条項は、各表の照合資料から確認できます。</p>
+<h2>結果を利用する前に</h2>
+<p>地域ごとの制度を比べるための5区間の例です。ここでの節約額が、その地域のすべての区間に当てはまるわけではありません。各社の案内と<a href="/articles/merit-demerit">利用上の注意</a>を確認し、実際に乗る経路に合わせて<a href="/split/route/ticket">経路入力検索</a>でも比較してください。</p>
+<p><a href="/articles/split-ticket-case-study">差額のない例を含む3区間の検証</a>も掲載しています。</p>
+</ArticleLayout>

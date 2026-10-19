@@ -1,12 +1,13 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { RiShuffleFill } from "react-icons/ri";
+import CalculatorScope from "@/components/CalculatorScope.astro";
 import CalculatorResources from "@/components/CalculatorResources.astro";
 
 const metadata = {
   title: "分割乗車券計算（経路自動検索）",
   description:
-    "JR在来線の分割乗車券を自動計算。発駅と着駅を入力するだけで、最も安くなる分割パターンと節約額を表示します。独自の経路探索アルゴリズムにより、あらゆる組み合わせから最安値を導出します。",
+    "JR在来線の分割乗車券を自動計算。発駅と着駅を入力するだけで、最も安くなる分割パターンと節約額を表示します。独自の経路探索アルゴリズムにより、収録データと探索条件の範囲で比較します。",
   alternates: {
     canonical: "/split/auto/ticket",
   },
@@ -61,7 +62,7 @@ import Calculator from "@/app/split/components/FormWithSearchParams";
               {"計算したい区間の発着駅を入力してください。"}
             </p>
             <p>
-              {"JR在来線において最安となる分割パターンを自動で導出します。"}
+              {"JR在来線の候補経路から、条件内で安い分割パターンを比較します。"}
             </p>
           </div>
         </div>
@@ -75,6 +76,8 @@ import Calculator from "@/app/split/components/FormWithSearchParams";
             transition:persist="split-calculator"
           />
         </div>
+
+        <CalculatorScope />
 
         <CalculatorResources
           links={[

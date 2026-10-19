@@ -1,0 +1,35 @@
+---
+const path = Astro.url.pathname;
+const isPass = path.includes("pass");
+const isSplit = path.startsWith("/split/");
+const isAuto = path.includes("/auto/");
+const isIC = path.includes("ic-pass");
+---
+
+<aside
+  class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700"
+  aria-label="計算の対象と条件"
+>
+  <p>
+    <strong>対象：</strong>{
+      isPass
+        ? "JR全線の通勤定期券（1・3・6か月）。通学・連絡定期券の発売可否は判定しません。"
+        : "JR全線の大人普通乗車券。特急料金・割引商品は含みません。"
+    }
+  </p>
+  <p class="mt-2">
+    {
+      isSplit
+        ? isAuto
+          ? "発着駅から候補経路を検索します。最速経路の検索ではありません。分割条件と経由路線を確認してください。"
+          : "入力した経路内で分割を比較します。別経路との比較は行いません。"
+        : "入力した経路の運賃を計算します。分割や別経路との価格比較は分割計算を使ってください。"
+    }{isIC ? " IC定期券の比較は2区間までです。" : ""}
+  </p>
+  <p class="mt-2">
+    乗車日・発売条件は購入先でも確認してください。<a
+      class="text-blue-700 underline"
+      href="/articles/calculation-scope">対象範囲と注意点</a
+    >
+  </p>
+</aside>

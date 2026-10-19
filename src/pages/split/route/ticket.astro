@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { RiMenu3Line } from "react-icons/ri";
+import CalculatorScope from "@/components/CalculatorScope.astro";
 import CalculatorResources from "@/components/CalculatorResources.astro";
 
 const metadata = {
@@ -103,6 +104,8 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
             分割なしも含め、同額の最安パターンをすべて表示します。計算はお使いの端末で行います。
           </p>
         </section>
+        <CalculatorScope />
+
         <CalculatorResources
           links={[
             {

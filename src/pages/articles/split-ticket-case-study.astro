@@ -1,0 +1,22 @@
+---
+import ArticleLayout from "@/layouts/ArticleLayout.astro";
+import SplitTicketExample from "@/components/SplitTicketExample.astro";
+import data from "@/data/split-ticket-examples.json";
+const sources = [{"title": "JR東日本：旅客営業規則 第77条・普通旅客運賃の計算", "url": "https://www.jreast.co.jp/ryokaku/02_hen/03_syo/02_setsu/index.html"}, {"title": "JR東日本：第77条の2・第77条の3（北海道・東日本の幹線運賃）", "url": "https://www.jreast.co.jp/ryokaku/02_hen/03_syo/02_setsu/02.html"}, {"title": "JR西日本：きっぷのルール・ご利用方法", "url": "https://www.jr-odekake.net/ticket/guide/stipulation/"}, {"title": "きっぷナビ：公開ソースコード（計算・データの実装）", "url": "https://github.com/tojoryohei/kippu-navi/tree/01e8fdf7aeaacf694588944629a2be810631e8aa/calculation-engine"}];
+---
+<ArticleLayout slug="split-ticket-case-study" sources={sources}>
+<h2>比較の条件</h2>
+<p>{data.conditions} 2026年10月19日のきっぷナビの計算結果を使い、安くなる2区間と、分割するとかえって高くなる1区間を比較します。</p>
+<p>金額だけでなく、経由路線と購入するきっぷの枚数も確認してください。同じ条件で試すには、各区間のリンクから計算ページを開き、分割上限なし・分割禁止駅なしで計算します。</p>
+<SplitTicketExample from="東京" to="横浜" />
+<p>この10円差は距離帯と端数処理から説明できます。JR東日本の幹線の規則で、通しは28km、各券は13kmの距離帯を使います。530円と260円×2を比較した結果です。IC運賃との比較や、購入の手間まで含む推奨ではありません。</p>
+<SplitTicketExample from="名古屋" to="大阪" />
+<p>関西本線・片町線・大阪環状線を経由する結果です。名古屋―四日市の特定区間の運賃と、都市部のバリアフリー料金を含めて比較しています。東海道線・新幹線を使う予定なら、この経路の金額を流用しないでください。</p>
+<SplitTicketExample from="東京" to="品川" />
+<p>東京―品川6.8kmには有楽町・新橋・浜松町などの途中駅があり、分割して購入すること自体は可能です。しかし、新橋で分けると東京―新橋160円＋新橋―品川200円＝360円となり、通し210円より150円高くなります。</p>
+<p>自動検索でも、分割しない1枚210円が最も安い結果でした。短距離の各券にはそれぞれ運賃が必要なため、分割できる区間でも安くなるとは限りません。上表では検索結果と、比較のために新橋で分けた2枚の内訳を区別して掲載しています。</p>
+<h2>分割購入を選ぶ前に</h2>
+<p>まず、表示された経由路線が実際に乗りたい経路と合っているかを確認します。特に名古屋―大阪のように複数の経路がある区間では、節約額だけで選ばず、所要時間や乗り換えも比較してください。</p>
+<p>経路が決まったら、節約額と購入枚数を見比べます。差額が小さい場合は、購入や受け取りの手間を考えて通しの乗車券を選ぶ方法もあります。購入先や受け取りの条件は<a href="/articles/how-to-buy-split-ticket">分割乗車券の購入ガイド</a>で説明しています。</p>
+<p>自動検索が調べる経路の範囲は<a href="/articles/calculation-scope">計算結果の読み方</a>、ほかの区間の内訳は<a href="/articles/popular-routes">地域別の運賃制度と5区間の計算例</a>をご覧ください。</p>
+</ArticleLayout>
