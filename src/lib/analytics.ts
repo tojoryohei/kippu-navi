@@ -54,9 +54,6 @@ function initialize() {
       dataCollection: sentryDataCollection,
       sendClientReports: false,
       tracesSampleRate: 0,
-      denyUrls: [
-        /^https?:\/\/pagead\.googlesyndication\.com\//,
-      ],
       // Astro can reject an older native View Transition when a newer
       // navigation starts. This is an expected navigation race, not an app
       // failure.
@@ -85,10 +82,6 @@ function initialize() {
           && exception?.type === "ReferenceError"
           && exception.value === "Can't find variable: SymBrowser_ModifyAnchorTagWithTarget";
         if (isInjectedSymBrowser) return null;
-        // Sentry's wrapper can be the top frame for an AdSense callback, so
-        // denyUrls alone does not exclude these third-party exceptions.
-        if (frames.some(frame => /(?:^|\/)pagead\/js\/.*\/rum_fy\d+\.js$/.test(frame.filename || ""))
-          && frames.every(frame => /(?:^|\/)pagead\/js\/|\/@sentry\/browser\//.test(frame.filename || ""))) return null;
         const fetchErrors = (event.breadcrumbs || []).filter(
           breadcrumb => breadcrumb.category === "fetch" && breadcrumb.level === "error",
         );
