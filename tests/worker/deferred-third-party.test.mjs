@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { deferThirdParty, scheduleAds } from '../../src/lib/deferred-third-party.ts';
+import { deferThirdParty } from '../../src/lib/deferred-third-party.ts';
 import { initializeGoogleAnalytics, trackGooglePageView } from '../../src/lib/google-analytics.ts';
 
 function browser({ paint = false, now = 0, buffered } = {}) {
@@ -105,16 +105,6 @@ test('load済み・アイドルAPI非対応でもタイマーで起動する', (
   deferThirdParty(() => calls++, b.win, b.doc);
   b.frame(); b.frame(); assert.equal(calls, 0);
   b.timer(0); b.timer(5000); assert.equal(calls, 1);
-});
-
-test('AdSenseを繰り返し予約してもスクリプトは一度だけ追加する', () => {
-  const b = browser();
-  scheduleAds(b.win, b.doc); scheduleAds(b.win, b.doc);
-  assert.equal(b.scripts.length, 0);
-  b.frame(); b.frame(); b.load(); b.idle();
-  scheduleAds(b.win, b.doc);
-  assert.equal(b.scripts.length, 1);
-  assert.match(b.scripts[0].src, /adsbygoogle\.js/);
 });
 
 test('GAは遅延取得し、遷移前後のURLとタイトルを発生順に一度ずつ送る', () => {

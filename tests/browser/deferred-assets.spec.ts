@@ -1,29 +1,23 @@
 import { test, expect } from '@playwright/test';
 
-test('広告は実際のFCPから1秒以上待ち、画面遷移と戻るでも重複取得しない', async ({ page }) => {
-  let adsRequests = 0;
-  await page.route('**/*', route => {
-    const url = new URL(route.request().url());
-    if (url.pathname.endsWith('/adsbygoogle.js')) {
-      adsRequests++;
-      return route.fulfill({ contentType: 'text/javascript', body: '' });
-    }
-    return ['localhost', '127.0.0.1'].includes(url.hostname) ? route.continue() : route.abort();
+for (const [width, pwa] of [[390, false], [1600, false], [1600, true]] as const) {
+  test(`広告は表示・取得せず、計算画面の遷移を維持する (${width}px, PWA=${pwa})`, async ({ page }) => {
+    if (pwa) await page.addInitScript(() => Object.defineProperty(navigator, 'standalone', { value: true }));
+    await page.setViewportSize({ width, height: 900 });
+    const adRequests: string[] = [];
+    page.on('request', request => {
+      if (/admax|shinobi\.jp|googlesyndication|googleadservices|doubleclick|adtrafficquality|fundingchoices/i.test(request.url())) adRequests.push(request.url());
+    });
+    await page.route('**/*', route => ['localhost', '127.0.0.1'].includes(new URL(route.request().url()).hostname) ? route.continue() : route.abort());
+    await page.goto('/');
+    // 旧広告の遅延起動期限を超えても取得されないことを確認する。
+    await page.waitForTimeout(5500);
+    await page.getByRole('link', { name: '経路自動検索', exact: false }).first().click();
+    await expect(page).toHaveURL(/\/split\/auto\/ticket/);
+    await expect(page.locator('[data-calculator-ready]')).toHaveAttribute('data-calculator-ready', 'true');
+    await page.goBack();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('きっぷナビへようこそ');
+    expect(adRequests).toEqual([]);
+    await expect(page.locator('[data-sidebar-ad], .admax-ads, ins.adsbygoogle, meta[name="deferred-adsense"]')).toHaveCount(0);
   });
-  await page.goto('/');
-  await expect.poll(() => adsRequests).toBe(1);
-  await expect.poll(() => page.evaluate(() => {
-    const paint = performance.getEntriesByName('first-contentful-paint')[0];
-    const request = performance.getEntriesByType('resource').find(entry => entry.name.includes('/adsbygoogle.js'));
-    return paint && request ? request.startTime - paint.startTime : 0;
-  })).toBeGreaterThanOrEqual(1000);
-  await page.getByRole('link', { name: '経路自動検索', exact: false }).first().click();
-  await expect(page).toHaveURL(/\/split\/auto\/ticket/);
-  await expect(page.locator('[data-calculator-ready]')).toHaveAttribute('data-calculator-ready', 'true');
-  await page.goBack();
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('きっぷナビへようこそ');
-  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  await expect(page.locator('script[data-astro-transition-persist="adsense"]')).toHaveCount(1);
-  expect(adsRequests).toBe(1);
-});
+}

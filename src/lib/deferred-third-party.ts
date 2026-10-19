@@ -74,22 +74,3 @@ export function deferThirdParty(start: () => void, targetWindow: DeferredWindow,
     });
   });
 }
-
-const scheduledAds = new WeakSet<Window>();
-
-export function scheduleAds(targetWindow: Window, targetDocument: Document) {
-  if (scheduledAds.has(targetWindow)) return;
-  scheduledAds.add(targetWindow);
-  deferThirdParty(() => {
-    const script = targetDocument.createElement("script");
-    script.async = true;
-    script.crossOrigin = "anonymous";
-    script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1214458177768834";
-    // ClientRouterによる削除・再挿入で広告を二重起動しない。
-    script.dataset.astroTransitionPersist = "adsense";
-    script.dataset.astroExec = "";
-    const placeholder = targetDocument.querySelector('[data-astro-transition-persist="adsense"]');
-    if (placeholder) placeholder.replaceWith(script);
-    else targetDocument.head.append(script);
-  }, targetWindow, targetDocument);
-}

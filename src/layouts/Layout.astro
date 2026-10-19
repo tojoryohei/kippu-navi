@@ -71,7 +71,6 @@ const jsonLd = {
       type="application/ld+json"
       set:html={JSON.stringify(jsonLd)}
     />
-    <meta name="deferred-adsense" content="" data-astro-transition-persist="adsense" />
     <meta name="deferred-google-analytics" content="" data-astro-transition-persist="google-analytics" />
     <ClientRouter />
   </head>
@@ -85,8 +84,6 @@ const jsonLd = {
     <script>
       import "@/pwa/client";
       import { trackPageView } from "@/lib/analytics";
-      import { scheduleAds } from "@/lib/deferred-third-party";
-      scheduleAds(window, document);
       document.addEventListener("astro:page-load", trackPageView);
     </script>
   </body>
