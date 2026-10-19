@@ -106,3 +106,7 @@ console.log(result.results);
 > https://kippu-navi.com/developers/api.md を読み、正式駅名を確認して、東京から横浜の乗車券の分割候補をAPIで調べてください。実際の応答に基づいて答え、金額は推測しないでください。
 
 文書の公開は、すべてのAIが自動的にAPIを認知・実行することを保証しません。利用するAIの検索・HTTP取得機能によって使い方が異なります。
+
+## APIカタログ
+
+自動検出向けに[RFC 9727に準拠したAPIカタログ](https://kippu-navi.com/.well-known/api-catalog)を`application/linkset+json`で公開しています。公開APIのURLと、OpenAPI仕様・利用説明へのリンクを取得できます。

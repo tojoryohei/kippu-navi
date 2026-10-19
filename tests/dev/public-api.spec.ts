@@ -5,6 +5,11 @@ test("llms.txtをUTF-8として配信する", async ({ request }) => {
   expect(response.status()).toBe(200);
   expect(response.headers()["content-type"]).toContain("text/plain; charset=utf-8");
   expect(await response.text()).toContain("# きっぷナビ");
+  const catalog = await request.get("/.well-known/api-catalog");
+  expect(catalog.status()).toBe(200);
+  expect(catalog.headers()["content-type"]).toContain("application/linkset+json");
+  expect(catalog.headers()["link"]).toContain('rel="api-catalog"');
+  expect((await catalog.json()).linkset.length).toBe(5);
 });
 
 test("公開文書の呼び出し例を実APIで利用できる", async ({ request }) => {

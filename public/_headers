@@ -5,7 +5,7 @@
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
   Cache-Control: no-cache
-  Link: </guide>; rel="service-doc", </sitemap.xml>; rel="sitemap", </openapi.json>; rel="service-desc"; type="application/json", </llms.txt>; rel="describedby"; type="text/plain"
+  Link: </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </guide>; rel="service-doc", </sitemap.xml>; rel="sitemap", </openapi.json>; rel="service-desc"; type="application/json", </llms.txt>; rel="describedby"; type="text/plain"
 
 /developers/api
   Link: </developers/api.md>; rel="alternate"; type="text/markdown", </openapi.json>; rel="service-desc", </llms.txt>; rel="describedby"
@@ -15,6 +15,10 @@
 
 /developers/api.md
   Content-Type: text/markdown; charset=utf-8
+
+/.well-known/api-catalog
+  Content-Type: application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"
+  Link: <https://kippu-navi.com/.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"
 
 /.well-known/traffic-advice
   Content-Type: application/trafficadvice+json

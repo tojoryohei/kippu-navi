@@ -34,6 +34,24 @@ test("API文書・仕様・駅名一覧を取得できる", async ({ request, pa
   expect(spec.security).toEqual([]);
   expect(spec.servers).toEqual([{ url: "https://kippu-navi.com" }]);
   expect(Object.keys(spec.paths).sort()).toEqual(["/api/split/auto/ic-pass", "/api/split/auto/pass", "/api/split/auto/ticket", "/developers/stations.json"]);
+  const apiCatalogResponse = await request.get("/.well-known/api-catalog");
+  expect(apiCatalogResponse.status()).toBe(200);
+  const apiCatalog = await apiCatalogResponse.json();
+  const catalogUrl = "https://kippu-navi.com/.well-known/api-catalog";
+  const endpoints = Object.keys(spec.paths).map(path => `https://kippu-navi.com${path}`);
+  expect(apiCatalog.linkset).toEqual([
+    { anchor: catalogUrl, item: endpoints.map(href => ({ href })) },
+    ...endpoints.map(anchor => ({
+      anchor,
+      "service-desc": [{ href: "https://kippu-navi.com/openapi.json", type: "application/json" }],
+      "service-doc": [{ href: "https://kippu-navi.com/developers/api", type: "text/html" }],
+    })),
+  ]);
+  expect((await request.head("/.well-known/api-catalog")).status()).toBe(200);
+  // 拡張子のない静的資材のContent-TypeとHEADのLinkはCloudflareが付与する。
+  expect(readFileSync("dist/_headers", "utf8")).toContain(
+    '/.well-known/api-catalog\n  Content-Type: application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"',
+  );
   const ids = new Set<string>();
   for (const [path, value] of Object.entries(spec.paths)) {
     const operation = (value as { get: { operationId: string; parameters: { name: string; required?: boolean; schema: unknown }[]; responses: Record<string, unknown> } }).get;
@@ -70,6 +88,7 @@ test("AIが文書と公開APIを発見できる", async ({ request }) => {
     expect(headers).toContain('X-Robots-Tag: noindex, nofollow');
     expect(headers).not.toContain('  Link:');
   } else {
+    expect(headers).toContain('</.well-known/api-catalog>; rel="api-catalog"');
     expect(headers).toContain('</openapi.json>; rel="service-desc"');
     expect(headers).toContain('</llms.txt>; rel="describedby"');
     expect(headers).toContain('</developers/api.md>; rel="alternate"; type="text/markdown"');
