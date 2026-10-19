@@ -89,8 +89,7 @@ test("AIが文書と公開APIを発見できる", async ({ request }) => {
   if (staging) {
     expect(robots).toBe('User-agent: *\nDisallow: /\n\nUser-agent: Googlebot\nAllow: /\n');
   } else {
-    expect(robots).toContain("Disallow: /api/");
-    for (const path of ["split-ticket", "split-pass", "split-icpass"]) expect(robots).toContain(`Allow: /api/${path}\n`);
+    expect(robots).toBe("User-agent: *\nContent-Signal: ai-train=no, search=yes, ai-input=yes\nDisallow:\n\nSitemap: https://kippu-navi.com/sitemap.xml\n");
   }
   const sitemap = await (await request.get("/sitemap.xml")).text();
   expect(sitemap).toContain("<loc>https://kippu-navi.com/developers/api</loc>");

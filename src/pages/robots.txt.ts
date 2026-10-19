@@ -5,7 +5,7 @@ export function GET() {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     });
   }
-  return new Response('User-agent: *\nAllow: /\nDisallow: /api/\nAllow: /api/split-ticket\nAllow: /api/split-pass\nAllow: /api/split-icpass\n\nSitemap: https://kippu-navi.com/sitemap.xml\n', {
+  return new Response('User-agent: *\nContent-Signal: ai-train=no, search=yes, ai-input=yes\nDisallow:\n\nSitemap: https://kippu-navi.com/sitemap.xml\n', {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   });
 }
