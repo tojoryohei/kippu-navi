@@ -12,7 +12,7 @@ func TestDeploymentIdentity(t *testing.T) {
 			handler := deploymentIdentity(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(status)
 			}), env, "built-sha")
-			request := httptest.NewRequest(http.MethodGet, "/api/split-ticket", nil)
+			request := httptest.NewRequest(http.MethodGet, "/api/split/auto/ticket", nil)
 			request.Header.Set("X-Deployment-Commit", "forged-sha")
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)

@@ -16,9 +16,9 @@ test.beforeEach(async ({ page }) => {
 for (const kind of ["ticket", "pass", "ic-pass"]) {
   for (const months of kind === "ticket" ? [1] : [1, 3, 6]) {
     test(`事前計算なしの実API: ${kind} ${months}箇月`, async ({ page }) => {
-      const endpoint = kind === "ic-pass" ? "icpass" : kind;
+      const endpoint = kind;
       const responsePromise = page.waitForResponse(response =>
-        new URL(response.url()).pathname === `/api/split-${endpoint}`);
+        new URL(response.url()).pathname === `/api/split/auto/${endpoint}`);
       await page.goto(`/split/auto/${kind}?${new URLSearchParams({
         from: "新茂原", to: "茂原", months: String(months),
       })}`);

@@ -63,7 +63,7 @@ test("券種切り替え・URL復元・計算要求の設定を維持", async ({
   await expect(page.locator(".split-options-search .station-select__option").first()).toBeVisible();
   await page.getByLabel("分割禁止駅", { exact: true }).fill("");
   await page.locator("form summary").click();
-  const icPassRequest = page.waitForRequest(req => req.url().includes("/api/split-icpass"));
+  const icPassRequest = page.waitForRequest(req => req.url().includes("/api/split/auto/ic-pass"));
   await page.getByRole("button", { name: "IC定期券", exact: true }).click();
   expect(new URL((await icPassRequest).url()).searchParams.has("maxSplits")).toBe(false);
   await expect.poll(() => new URL(page.url()).searchParams.has("maxSplits")).toBe(false);
@@ -82,7 +82,7 @@ test("未指定の分割しない駅をURLへ追加しない", async ({ page }) 
 });
 
 test("無制限のmaxSplitsをURLとAPIリクエストから省略する", async ({ page }) => {
-  const request = page.waitForRequest(req => req.url().includes("/api/split-ticket"));
+  const request = page.waitForRequest(req => req.url().includes("/api/split/auto/ticket"));
   await page.goto("/split/auto/ticket?from=新茂原&to=茂原&maxSplits=0");
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
 
@@ -92,7 +92,7 @@ test("無制限のmaxSplitsをURLとAPIリクエストから省略する", async
   expect(new URL(page.url()).searchParams.has("maxSplits")).toBe(false);
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("制限なし");
 
-  const passRequest = page.waitForRequest(req => req.url().includes("/api/split-pass"));
+  const passRequest = page.waitForRequest(req => req.url().includes("/api/split/auto/pass"));
   await page.getByRole("button", { name: "定期券", exact: true }).click();
   const passQuery = new URL((await passRequest).url()).searchParams;
   expect(passQuery.has("maxSplits")).toBe(false);
@@ -157,11 +157,11 @@ for (const kind of ["pass", "ic-pass"]) {
   for (const query of ["months=1", "months=3", "months=6", "month=1", "month=6&months=3"]) {
     test(`期間パラメーターをmonthsへ統一する: ${kind} ${query}`, async ({ page }) => {
       await page.route("**/*", route => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
-      const endpoint = kind === "ic-pass" ? "icpass" : "pass";
-      await page.route(`**/api/split-${endpoint}?**`, route => route.fulfill({
+      const endpoint = kind;
+      await page.route(`**/api/split/auto/${endpoint}?**`, route => route.fulfill({
         status: 400, json: { error: "期間パラメーターの検証用応答" },
       }));
-      const request = page.waitForRequest(req => new URL(req.url()).pathname === `/api/split-${endpoint}`);
+      const request = page.waitForRequest(req => new URL(req.url()).pathname === `/api/split/auto/${endpoint}`);
       await page.goto(`/split/auto/${kind}?from=茂原&to=新茂原&${query}`);
       const input = new URLSearchParams(query);
       const expected = input.get("months") ?? input.get("month");

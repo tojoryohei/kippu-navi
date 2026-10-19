@@ -353,7 +353,7 @@ for (const [route, via] of [
 
 test("追加パターンの件数と再計算", async ({ page }) => {
   await localCalculationOnly(page, {
-    "/api/split-ticket": { normal: ["新茂原", "茂原"], results: [["新茂原", "茂原"]] },
+    "/api/split/auto/ticket": { normal: ["新茂原", "茂原"], results: [["新茂原", "茂原"]] },
   });
   // 表示件数の境界条件を実際のWASM結果から作り、計算の内容には依存させない。
   await page.addInitScript(() => {

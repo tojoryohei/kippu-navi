@@ -9,9 +9,9 @@ const ENGINE_ASSET_PATTERN = /^\/engine\/([a-f0-9]{64})\/(main\.wasm|pass_graph_
 const googleIdTokenCache = new Map();
 
 const cacheableApiParameters = {
-  '/api/split-pass': ['from', 'to', 'months', 'maxSplits', 'noSplitStation'],
-  '/api/split-icpass': ['from', 'to', 'months', 'noSplitStation'],
-  '/api/split-ticket': ['from', 'to', 'maxSplits', 'noSplitStation'],
+  '/api/split/auto/pass': ['from', 'to', 'months', 'maxSplits', 'noSplitStation'],
+  '/api/split/auto/ic-pass': ['from', 'to', 'months', 'noSplitStation'],
+  '/api/split/auto/ticket': ['from', 'to', 'maxSplits', 'noSplitStation'],
 };
 
 export function normalizeCacheableApiUrl(url) {

@@ -62,9 +62,9 @@ export const openapi = {
   servers: [{ url: "https://kippu-navi.com" }], security: [],
   externalDocs: { url: "https://kippu-navi.com/developers/api", description: "利用方法・駅名・AI向け手順" },
   paths: {
-    "/api/split-ticket": { get: operation("searchSplitTicket", "乗車券の分割検索", false, false) },
-    "/api/split-pass": { get: operation("searchSplitPass", "定期券の分割検索", true, false) },
-    "/api/split-icpass": { get: operation("searchSplitIcPass", "IC定期券の分割検索", true, true) },
+    "/api/split/auto/ticket": { get: operation("searchSplitTicket", "乗車券の分割検索", false, false) },
+    "/api/split/auto/pass": { get: operation("searchSplitPass", "定期券の分割検索", true, false) },
+    "/api/split/auto/ic-pass": { get: operation("searchSplitIcPass", "IC定期券の分割検索", true, true) },
     "/developers/stations.json": { get: {
       operationId: "listStations", summary: "正式駅名と読みの一覧を取得",
       description: "一覧のnameをそのまま分割検索へ渡してください。kanaには読みや地域の補足があります。同名駅が曖昧なら利用者に確認してください。駅名を正規化して書き換えないでください。",

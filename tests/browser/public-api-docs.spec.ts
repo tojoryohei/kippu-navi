@@ -33,14 +33,14 @@ test("API文書・仕様・駅名一覧を取得できる", async ({ request, pa
   expect(spec.openapi).toBe("3.1.0");
   expect(spec.security).toEqual([]);
   expect(spec.servers).toEqual([{ url: "https://kippu-navi.com" }]);
-  expect(Object.keys(spec.paths).sort()).toEqual(["/api/split-icpass", "/api/split-pass", "/api/split-ticket", "/developers/stations.json"]);
+  expect(Object.keys(spec.paths).sort()).toEqual(["/api/split/auto/ic-pass", "/api/split/auto/pass", "/api/split/auto/ticket", "/developers/stations.json"]);
   const ids = new Set<string>();
   for (const [path, value] of Object.entries(spec.paths)) {
     const operation = (value as { get: { operationId: string; parameters: { name: string; required?: boolean; schema: unknown }[]; responses: Record<string, unknown> } }).get;
     ids.add(operation.operationId);
     if (path === "/developers/stations.json") continue;
-    expect(operation.parameters.filter(p => p.required).map(p => p.name)).toEqual(path === "/api/split-ticket" ? ["from", "to"] : ["from", "to", "months"]);
-    expect(operation.parameters.some(p => p.name === "maxSplits")).toBe(path !== "/api/split-icpass");
+    expect(operation.parameters.filter(p => p.required).map(p => p.name)).toEqual(path === "/api/split/auto/ticket" ? ["from", "to"] : ["from", "to", "months"]);
+    expect(operation.parameters.some(p => p.name === "maxSplits")).toBe(path !== "/api/split/auto/ic-pass");
     expect(operation.responses).toHaveProperty("429");
   }
   expect(ids.size).toBe(4);

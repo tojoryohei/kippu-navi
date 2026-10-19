@@ -34,9 +34,9 @@
 
 ベースURLは`https://kippu-navi.com`、メソッドはすべて`GET`です。
 
-- `/api/split-ticket`：乗車券。`from`・`to`が必須です。
-- `/api/split-pass`：定期券。`from`・`to`・`months`が必須です。
-- `/api/split-icpass`：IC定期券。`from`・`to`・`months`が必須です。
+- `/api/split/auto/ticket`：乗車券。`from`・`to`が必須です。
+- `/api/split/auto/pass`：定期券。`from`・`to`・`months`が必須です。
+- `/api/split/auto/ic-pass`：IC定期券。`from`・`to`・`months`が必須です。
 
 `months`は定期券の有効期間（月）で、`1`・`3`・`6`のいずれかを指定します。
 
@@ -49,14 +49,14 @@
 日本語や括弧はURLエンコードしてください。curlの`--data-urlencode`、JavaScriptの`URLSearchParams`が利用できます。
 
 ```sh
-curl --get 'https://kippu-navi.com/api/split-ticket' \
+curl --get 'https://kippu-navi.com/api/split/auto/ticket' \
   --data-urlencode 'from=東京' --data-urlencode 'to=横浜'
 
-curl --get 'https://kippu-navi.com/api/split-pass' \
+curl --get 'https://kippu-navi.com/api/split/auto/pass' \
   --data-urlencode 'from=東京' --data-urlencode 'to=横浜' \
   --data-urlencode 'months=3'
 
-curl --get 'https://kippu-navi.com/api/split-icpass' \
+curl --get 'https://kippu-navi.com/api/split/auto/ic-pass' \
   --data-urlencode 'from=東京' --data-urlencode 'to=横浜' \
   --data-urlencode 'months=6'
 ```
@@ -65,7 +65,7 @@ curl --get 'https://kippu-navi.com/api/split-icpass' \
 
 ```js
 const query = new URLSearchParams({ from: '東京', to: '横浜' });
-const url = `https://kippu-navi.com/api/split-ticket?${query}`;
+const url = `https://kippu-navi.com/api/split/auto/ticket?${query}`;
 const response = await fetch(url);
 if (!response.ok) throw new Error(`APIエラー: ${response.status}`);
 const result = await response.json();

@@ -21,7 +21,7 @@ test('stagingの静的資材とWorker生成応答はすべて検索対象外に�
     ['preview.example.workers.dev', 'staging', true],
     ['kippu-navi.com', 'production', false],
   ]) {
-    for (const [path, status] of [['/', 200], ['/api/split-ticket', 503], ['/monitoring', 405], ['/manifest.webmanifest', 200]]) {
+    for (const [path, status] of [['/', 200], ['/api/split/auto/ticket', 503], ['/monitoring', 405], ['/manifest.webmanifest', 200]]) {
       const response = await frontend.fetch(new Request(`https://${host}${path}`), {
         DEPLOY_ENVIRONMENT: environment,
         ASSETS: { fetch: async () => new Response('静的資材') },
@@ -43,7 +43,7 @@ test('staging APIの成功・入力エラー応答にもnoindexを付け、本�
       globalThis.fetch = async input => typeof input === 'string'
         ? Response.json({ id_token: encodeTestJwt({ exp: Math.floor(Date.now() / 1000) + 3600 }) })
         : Response.json({ status }, { status });
-      const response = await frontend.fetch(new Request('https://example.com/api/split-ticket'), {
+      const response = await frontend.fetch(new Request('https://example.com/api/split/auto/ticket'), {
         DEPLOY_ENVIRONMENT: environment,
         API_ORIGIN: googleCredentials.audience,
         GCP_SERVICE_ACCOUNT_EMAIL: googleCredentials.email,
@@ -255,11 +255,11 @@ test('検索URLは絶対URLで全クエリパラメーターを保持し、ハ�
 
 test('キャッシュ可能なAPIのクエリは許可項目だけを残して正規化する', () => {
   const normalized = normalizeCacheableApiUrl(new URL(
-    'https://kippu-navi.com/api/split-pass?to=B&ignored=x&noSplitStation=Z&from=A&noSplitStation=%20Y%20&noSplitStation=Z&noSplitStation=&noSplitStation=%20&months=3',
+    'https://kippu-navi.com/api/split/auto/pass?to=B&ignored=x&noSplitStation=Z&from=A&noSplitStation=%20Y%20&noSplitStation=Z&noSplitStation=&noSplitStation=%20&months=3',
   ));
   assert.equal(
     normalized?.toString(),
-    'https://kippu-navi.com/api/split-pass?from=A&to=B&months=3&noSplitStation=Y&noSplitStation=Z',
+    'https://kippu-navi.com/api/split/auto/pass?from=A&to=B&months=3&noSplitStation=Y&noSplitStation=Z',
   );
 });
 
@@ -281,7 +281,7 @@ test('キャッシュ可能なGETは機密情報とキャッシュ回避ヘッ�
   t.after(() => { globalThis.fetch = originalFetch; });
 
   const response = await proxyApi(new Request(
-    'https://kippu-navi.com/api/split-ticket?to=B&from=A',
+    'https://kippu-navi.com/api/split/auto/ticket?to=B&from=A',
     {
       headers: {
         Authorization: 'Bearer secret',
@@ -292,7 +292,7 @@ test('キャッシュ可能なGETは機密情報とキャッシュ回避ヘッ�
     },
   ), 'https://calculation-engine.example.com', googleCredentials, testTokenProvider);
 
-  assert.equal(capturedRequest.url, 'https://calculation-engine.example.com/api/split-ticket?from=A&to=B');
+  assert.equal(capturedRequest.url, 'https://calculation-engine.example.com/api/split/auto/ticket?from=A&to=B');
   assert.equal(capturedRequest.headers.get('authorization'), 'Bearer google-id-token');
   assert.equal(capturedRequest.headers.has('cookie'), false);
   assert.equal(capturedRequest.headers.has('cache-control'), false);
@@ -332,7 +332,7 @@ test('失敗したGETレスポンスはキャッシュ可能として返さな�
   t.after(() => { globalThis.fetch = originalFetch; });
 
   const response = await proxyApi(new Request(
-    'https://kippu-navi.com/api/split-ticket?from=A&to=A',
+    'https://kippu-navi.com/api/split/auto/ticket?from=A&to=A',
   ), 'https://calculation-engine.example.com', googleCredentials, testTokenProvider);
 
   assert.equal(response.status, 400);
@@ -534,7 +534,7 @@ test('staging検索はCDNキャッシュを使わずAPIのビルドSHAを保持�
     options = init;
     return Response.json({ results: [] }, { headers: { 'X-Deployment-Commit': 'actual-build', 'Cache-Control': 'public, s-maxage=2592000' } });
   };
-  const response = await proxyApi(new Request('https://staging.kippu-navi.com/api/split-ticket?from=東京&to=品川'),
+  const response = await proxyApi(new Request('https://staging.kippu-navi.com/api/split/auto/ticket?from=東京&to=品川'),
     googleCredentials.audience, googleCredentials, testTokenProvider, false);
   assert.deepEqual(options.cf, { cacheTtl: 0, cacheEverything: false });
   assert.equal(response.headers.get('X-Deployment-Commit'), 'actual-build');

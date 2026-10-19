@@ -28,7 +28,7 @@ func TestHandleCalculateRejectsDisconnectedLocalLineAreas(t *testing.T) {
 	}
 
 	h := NewSplit(g, nil)
-	request := httptest.NewRequest(http.MethodGet, "/api/split-ticket?from=A&to=C", nil)
+	request := httptest.NewRequest(http.MethodGet, "/api/split/auto/ticket?from=A&to=C", nil)
 	response := httptest.NewRecorder()
 	h.HandleCalculate(response, request)
 
