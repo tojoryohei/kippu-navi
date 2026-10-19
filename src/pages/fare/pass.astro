@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { RiGuideLine } from "react-icons/ri";
+import CalculatorScope from "@/components/CalculatorScope.astro";
 import CalculatorResources from "@/components/CalculatorResources.astro";
 
 const metadata = {
@@ -77,6 +78,8 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
             transition:persist="fare-calculator"
           />
         </div>
+
+        <CalculatorScope />
 
         <CalculatorResources
           links={[

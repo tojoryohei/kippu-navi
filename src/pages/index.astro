@@ -12,7 +12,7 @@ const metadata = {
   title: "きっぷナビ - 分割きっぷと運賃計算",
   absoluteTitle: true,
   description:
-    "JR線の分割きっぷ（乗車券・定期券・IC定期券）の最安組み合わせを自動計算。発着駅を入力するだけで交通費の節約額がわかる無料のWebツールです。旅客営業規則の特例や新幹線の経由印字にも完全対応した高精度な運賃計算も備えています。",
+    "JR線の分割きっぷ（乗車券・定期券・IC定期券）の候補となる組み合わせを自動計算。発着駅を入力するだけで交通費の節約額がわかる無料のWebツールです。対応する券種・探索条件と、購入前の注意点も確認できます。",
 };
 
 const recentChangelogs = await getChangelogs(3);
@@ -199,47 +199,26 @@ const recentChangelogs = await getChangelogs(3);
               "しかし、数ある駅の中から最も安くなる分割経路を見つけ出すのは非常に困難です。"
             }
             {
-              "当サイトでは、情報工学に基づいた独自の経路探索アルゴリズムを活用し、出発駅から到着駅までの多くの組み合わせから「最安となる分割きっぷの組み合わせ」を自動算出します。"
+              "当サイトでは、情報工学に基づいた独自の経路探索アルゴリズムを活用し、出発駅から到着駅までの多くの組み合わせから探索条件の範囲で安い分割きっぷの組み合わせを比較します。"
             }
           </p>
         </div>
       </div>
 
-      {/* 2. 実績データ */}
-      <div
-        class="mt-8 bg-white p-8 rounded-2xl shadow-sm border border-slate-100"
-      >
-        <h2 class="text-2xl font-bold text-slate-800 mb-4 border-b pb-2">
-          {"独自のアルゴリズムによる節約実績"}
-        </h2>
-        <div class="space-y-4 text-slate-600 leading-relaxed">
-          <p>
-            {
-              "当サイトの計算アルゴリズムでは、2026年6月18日～2026年7月17日にユーザーが実行した約一万通りの計算データにより、分割きっぷには高い節約効果があることが実証されています。"
-            }
-          </p>
-          <ul
-            class="list-disc list-inside bg-slate-50 p-4 rounded-lg space-y-2 mt-4 text-slate-700"
-          >
-            <li>
-              <strong>分割乗車券の平均節約額：</strong> 本システムを利用することで<strong
-                >平均して125円（中央値：80円）の運賃削減</strong
-              >を確認しました。
-            </li>
-            <li>
-              <strong>分割乗車券の最大節約額：</strong> 長距離や特例を跨ぐ経路において、大幅な節約ができた事例が存在します。現在判明している最大節約額は井原市～伯耆大山の1,210円です。
-            </li>
-          </ul>
-          <p class="text-sm mt-4">
-            {
-              "※実際の割引額や分割枚数は、利用する区間やJRの運賃改定によって変動します。"
-            }
-            {
-              "また、分割きっぷが最安の移動方法とは限らないため、他の交通手段と比較検討することもおすすめします。"
-            }
-          </p>
+      <section class="mt-8 rounded-2xl border border-slate-100 bg-white p-8 shadow-sm">
+        <h2 class="mb-4 text-2xl font-bold text-slate-800">経路と内訳から、分割の効果を確かめる</h2>
+        <p class="leading-relaxed text-slate-600">区間によって、分割で変わる金額や必要なきっぷの枚数は異なります。2026年10月19日の大人普通乗車券の計算例を、経路・枚数とあわせて紹介します。</p>
+        <ul class="mt-4 space-y-3 text-slate-700">
+          <li><strong>大阪―岐阜：530円差</strong>。東海道線経由で、通し3,080円に対し5枚の合計2,550円。<a class="text-blue-700 underline" href="/articles/popular-routes">経路と各券の内訳</a></li>
+          <li><strong>東京―横浜：10円差</strong>。東海道線経由で、通し530円に対し蒲田で分けた2枚の合計520円。</li>
+          <li><strong>東京―品川：分割なしが最安</strong>。通し210円に対し、新橋で分けた2枚は360円。分割すると高くなる例もあります。</li>
+        </ul>
+        <div class="mt-5 grid gap-4 sm:grid-cols-2">
+          <a class="rounded-xl border border-blue-100 p-4 text-blue-700 underline" href="/articles/split-ticket-case-study">安くなる場合・ならない場合の計算例</a>
+          <a class="rounded-xl border border-blue-100 p-4 text-blue-700 underline" href="/articles/calculation-scope">計算結果で分かること・確認が必要なこと</a>
         </div>
-      </div>
+        <p class="mt-4 text-sm text-slate-600">特急料金・割引商品は含まない比較です。条件や確認資料は各記事で説明しています。</p>
+      </section>
 
       {/* 3. お知らせ・更新情報（最新3件のみ） */}
       <div

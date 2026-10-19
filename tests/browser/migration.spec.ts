@@ -96,13 +96,11 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
     `/fare/ticket?${new URLSearchParams({ route: "新茂原[外房]茂原" })}`,
   );
   await expect(page.getByText("¥160", { exact: true }).first()).toBeVisible();
-  await page.evaluate(() => {
-    const y = Math.min(
-      500,
-      document.documentElement.scrollHeight - innerHeight,
-    );
-    window.scrollTo(0, y);
+  // 説明欄の高さに依存せず、種別ボタンが固定ヘッダーに隠れない位置に置く。
+  await page.getByRole("button", { name: "定期券", exact: true }).evaluate(button => {
+    window.scrollTo({ top: button.getBoundingClientRect().top + window.scrollY - 200, behavior: "instant" });
   });
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   await page.getByRole("button", { name: "定期券", exact: true }).click();
   await expect(page).toHaveURL(/\/fare\/pass\?/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("定期券");
@@ -114,7 +112,7 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
     "外房",
   );
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
-  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   await page.locator("header [data-split-trigger]").click();
   await page.locator("header").getByRole("link", { name: "経路自動検索", exact: true }).click();
   await expect(
@@ -516,6 +514,8 @@ test("駅候補のアクセシビリティ通知を画面に露出させない",
 });
 
 const routes = [
+  "/articles/split-ticket-case-study",
+  "/articles/calculation-scope",
   "/",
   "/about",
   "/articles",
@@ -579,7 +579,7 @@ test("関連情報がモバイルで横にはみ出さない", async ({
   await page.goto("/split/auto/ticket");
 
   await expect(page.getByRole("heading", { name: "関連情報" })).toBeVisible();
-  await expect(page.locator('section[aria-labelledby="calculator-resources-title"] a')).toHaveCount(3);
+  await expect(page.locator('section[aria-labelledby="calculator-resources-title"] a')).toHaveCount(6);
   expect(
     await page.evaluate(
       () =>

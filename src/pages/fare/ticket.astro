@@ -1,12 +1,13 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { RiGuideLine } from "react-icons/ri";
+import CalculatorScope from "@/components/CalculatorScope.astro";
 import CalculatorResources from "@/components/CalculatorResources.astro";
 
 const metadata = {
   title: "JR乗車券運賃計算機",
   description:
-    "JR全線の乗車券の運賃と営業キロを正確に計算。発着駅と経由路線を入力して、特定区間運賃や大都市近郊区間の最安経路補正に対応して計算します。",
+    "JR全線の大人普通乗車券の運賃と営業キロを計算。発着駅と経由路線を入力して、特定区間運賃や大都市近郊区間の最安経路補正に対応して計算します。",
   alternates: {
     canonical: "/fare/ticket",
   },
@@ -77,6 +78,8 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
             transition:persist="fare-calculator"
           />
         </div>
+
+        <CalculatorScope />
 
         <CalculatorResources
           links={[

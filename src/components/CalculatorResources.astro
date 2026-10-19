@@ -10,7 +10,10 @@ interface Props {
 }
 
 const { links } = Astro.props;
-const visibleLinks = links.slice(0, 3);
+const visibleLinks = [...links,
+  { href: "/articles/calculation-scope", title: "計算の対象と注意点", description: "対応券種・経路の探索範囲・購入前の確認事項。" },
+  { href: "/articles/split-ticket-case-study", title: "実際の計算例", description: "経路・各券の金額と、安くならない例を確認。" },
+].filter((link, index, all) => all.findIndex(item => item.href === link.href) === index);
 ---
 
 <section
@@ -20,7 +23,7 @@ const visibleLinks = links.slice(0, 3);
   <h2 id="calculator-resources-title" class="text-lg font-bold text-slate-800">
     関連情報
   </h2>
-  <div class="mt-4 grid gap-3 sm:grid-cols-3">
+  <div class="mt-4 grid gap-3 sm:grid-cols-2">
     {
       visibleLinks.map((link) => (
         <a

@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { RiShuffleFill } from "react-icons/ri";
+import CalculatorScope from "@/components/CalculatorScope.astro";
 import CalculatorResources from "@/components/CalculatorResources.astro";
 
 const metadata = {
@@ -59,7 +60,7 @@ import Calculator from "@/app/split/components/FormWithSearchParams";
           <div class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
             <p>
               {
-                "計算したい区間の発着駅と期間を入力・選択してください。JR在来線において最安となる分割パターンを自動で導出します。"
+                "計算したい区間の発着駅と期間を入力・選択してください。JR在来線の候補経路から、条件内で安い分割パターンを比較します。"
               }
             </p>
           </div>
@@ -74,6 +75,8 @@ import Calculator from "@/app/split/components/FormWithSearchParams";
             transition:persist="split-calculator"
           />
         </div>
+
+        <CalculatorScope />
 
         <CalculatorResources
           links={[
