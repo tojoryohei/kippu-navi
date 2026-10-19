@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.0.4...kippu-navi-v5.1.0) (2026-10-19)
+
+
+### Features
+
+* 解説記事と購入ガイドを計算例と出典付きで再構成する ([#874](https://github.com/tojoryohei/kippu-navi/issues/874)) ([e5ad2c9](https://github.com/tojoryohei/kippu-navi/commit/e5ad2c9b8d26f802abaead1779ba456243fb5469))
+
 ## [5.0.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.0.3...kippu-navi-v5.0.4) (2026-10-18)
 
 
