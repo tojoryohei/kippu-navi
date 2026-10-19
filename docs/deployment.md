@@ -84,3 +84,11 @@ jq -r '.private_key' "$KEY_FILE" | npx wrangler secret put GCP_SERVICE_ACCOUNT_P
 ## APIキャッシュのパージ
 
 運賃・路線データまたは分割経路探索ロジックを更新した場合は、Cloudflare DashboardからAPIキャッシュを手動でパージします。WorkerのサブリクエストキャッシュはCloud Run側URLをキーにするため、Custom Purgeでは対象環境の`calculation-engine...run.app/api/` prefixを指定します。キャッシュと無関係なAPI変更ではパージ不要です。
+
+## エージェント向けMarkdown配信
+
+ビルド時にHTMLの本文をTurndownでMarkdownへ変換し、`dist/agent-markdown/` に保存します。サイト共通のナビゲーション・スクリプト・入力フォームを除去し、記事の見出し・表・リンクを残します。`/developers/api` は既存のMarkdown文書を利用します。
+
+Workerは `Accept: text/markdown` がHTML以上の優先度で指定されたGET・HEADにMarkdownを返し、通常のブラウザにはHTMLを返します。両方に `Vary: Accept` を付与します。クエリに応じた計算結果は含まず、公開ページの説明文を返します。トークン数は算出していないため `x-markdown-tokens` は付与しません。
+
+対象のHTMLルートだけ `wrangler.jsonc` の `assets.run_worker_first` に追加しています。ページを追加する際はこの設定も更新してください。設定漏れはビルド時に検出します。JS・CSS・WASM等の配信経路は維持します。Cloudflare有料プランのMarkdown for Agents設定は不要です。

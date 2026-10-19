@@ -113,3 +113,41 @@ test("AIが文書と公開APIを発見できる", async ({ request }) => {
   const sitemap = await (await request.get("/sitemap.xml")).text();
   expect(sitemap).toContain("<loc>https://kippu-navi.com/developers/api</loc>");
 });
+
+test('ビルドした各ページのMarkdownをWorkerが内容交渉で配信する', async ({ request }) => {
+  const { default: frontend } = await import('../../workers/frontend.mjs');
+  const assets = { fetch: async (incoming: Request) => {
+    const url = new URL(incoming.url);
+    const result = await request.fetch(`${url.pathname}${url.search}`, {
+      method: incoming.method, headers: Object.fromEntries(incoming.headers),
+    });
+    return new Response(incoming.method === 'HEAD' ? null : new Uint8Array(await result.body()).buffer, {
+      status: result.status(), headers: result.headers(),
+    });
+  } };
+  for (const [path, phrase] of [
+    ['/', '# きっぷナビへようこそ'],
+    ['/articles/split-ticket-case-study', '# 分割乗車券で安くなる場合・ならない場合を実際に計算する'],
+    ['/split/auto/ticket', '分割'],
+    ['/developers/api', '# きっぷナビ 公開APIの使い方'],
+  ]) {
+    const url = `https://kippu-navi.com${path}`;
+    const markdown = await frontend.fetch(new Request(url, { headers: { Accept: 'text/markdown' } }), {
+      ASSETS: assets, DEPLOY_ENVIRONMENT: 'production',
+    });
+    expect(markdown.status).toBe(200);
+    expect(markdown.headers.get('Content-Type')).toContain('text/markdown');
+    expect(markdown.headers.get('Vary')).toContain('Accept');
+    const text = await markdown.text();
+    expect(text).toContain(phrase);
+    expect(text).not.toMatch(/<(script|style|nav|form)\b/i);
+    expect(text).not.toContain('astro-island');
+    if (path.includes('case-study')) {
+      expect(text).toContain('| 乗車券の区間 |');
+      expect(text).toContain('https://kippu-navi.com/');
+    }
+    const html = await frontend.fetch(new Request(url), { ASSETS: assets, DEPLOY_ENVIRONMENT: 'production' });
+    expect(html.headers.get('Content-Type')).toContain('text/html');
+    expect(await html.text()).toContain('<!DOCTYPE html>');
+  }
+});

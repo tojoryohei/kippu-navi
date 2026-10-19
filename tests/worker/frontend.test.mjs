@@ -540,3 +540,40 @@ test('staging検索はCDNキャッシュを使わずAPIのビルドSHAを保持�
   assert.equal(response.headers.get('X-Deployment-Commit'), 'actual-build');
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
 });
+
+test('HTMLとMarkdownはAcceptの優先度で切り替え、キャッシュを分離する', async () => {
+  const { fetchNegotiatedPage } = await import('../../workers/frontend.mjs');
+  const assets = { fetch: async request => {
+    const path = new URL(request.url).pathname;
+    if (path === '/agent-markdown/index.txt') return new Response('# きっぷナビ\n');
+    if (path === '/openapi.json') return Response.json({ openapi: '3.1.0' });
+    assert.equal(request.headers.get('If-None-Match'), null);
+    return new Response('<h1>きっぷナビ</h1>', { headers: {
+      'Content-Type': 'text/html', Vary: 'Accept-Encoding', ETag: '"html"',
+      'X-Robots-Tag': 'noindex, nofollow',
+    } });
+  } };
+  for (const [accept, markdown] of [
+    ['', false], ['text/html,*/*;q=0.8', false], ['text/markdown', true],
+    ['text/markdown;q=0', false], ['text/markdown;q=0.5,text/html', false],
+    ['text/markdown,text/html;q=0.5', true], ['text/markdown;q=0.5,*/*;q=0.9', false],
+  ]) {
+    const response = await fetchNegotiatedPage(new Request('https://kippu-navi.com/', {
+      headers: { Accept: accept, ...(markdown ? { 'If-None-Match': '"html"' } : {}) },
+    }), assets);
+    assert.match(response.headers.get('Content-Type'), markdown ? /text\/markdown/ : /text\/html/);
+    assert.equal(await response.text(), markdown ? '# きっぷナビ\n' : '<h1>きっぷナビ</h1>');
+    assert.equal(response.headers.get('Vary'), 'Accept-Encoding, Accept');
+    assert.equal(response.headers.get('X-Robots-Tag'), 'noindex, nofollow');
+    if (markdown) assert.equal(response.headers.get('ETag'), null);
+  }
+  const head = await fetchNegotiatedPage(new Request('https://kippu-navi.com/', {
+    method: 'HEAD', headers: { Accept: 'text/markdown' },
+  }), assets);
+  assert.equal(await head.text(), '');
+  assert.match(head.headers.get('Content-Type'), /text\/markdown/);
+  const json = await fetchNegotiatedPage(new Request('https://kippu-navi.com/openapi.json', {
+    headers: { Accept: 'text/markdown' },
+  }), assets);
+  assert.match(json.headers.get('Content-Type'), /application\/json/);
+});
