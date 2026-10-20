@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.1.0...kippu-navi-v5.2.0) (2026-10-20)
+
+
+### Features
+
+* エージェント向けAPI公開情報とMarkdown配信を整備 ([#876](https://github.com/tojoryohei/kippu-navi/issues/876)) ([3b39eca](https://github.com/tojoryohei/kippu-navi/commit/3b39eca30daaff7f0cb67320cd3a6d2bac78493c))
+
 ## [5.1.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.0.4...kippu-navi-v5.1.0) (2026-10-19)
 
 
