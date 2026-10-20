@@ -327,11 +327,11 @@ export default function SplitForm({
             }
             let endpoint = "";
             if (data.searchType === "ticket") {
-                endpoint = "/api/split-ticket";
+                endpoint = "/api/split/auto/ticket";
             } else if (isIcPass) {
-                endpoint = "/api/split-icpass";
+                endpoint = "/api/split/auto/ic-pass";
             } else {
-                endpoint = "/api/split-pass";
+                endpoint = "/api/split/auto/pass";
             }
             let apiRes: Response;
             try {

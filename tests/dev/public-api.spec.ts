@@ -5,38 +5,43 @@ test("llms.txtをUTF-8として配信する", async ({ request }) => {
   expect(response.status()).toBe(200);
   expect(response.headers()["content-type"]).toContain("text/plain; charset=utf-8");
   expect(await response.text()).toContain("# きっぷナビ");
+  const catalog = await request.get("/.well-known/api-catalog");
+  expect(catalog.status()).toBe(200);
+  expect(catalog.headers()["content-type"]).toContain("application/linkset+json");
+  expect(catalog.headers()["link"]).toContain('rel="api-catalog"');
+  expect((await catalog.json()).linkset.length).toBe(5);
 });
 
 test("公開文書の呼び出し例を実APIで利用できる", async ({ request }) => {
-  for (const kind of ["ticket", "pass", "icpass"]) {
+  for (const kind of ["ticket", "pass", "ic-pass"]) {
     const query = new URLSearchParams({ from: "茂原", to: "新茂原" });
     if (kind !== "ticket") query.set("months", kind === "pass" ? "3" : "6");
-    const response = await request.get(`/api/split-${kind}?${query}`);
+    const response = await request.get(`/api/split/auto/${kind}?${query}`);
     expect(response.status()).toBe(200);
     expect(await response.json()).toEqual({ normal: ["茂原", "新茂原"], results: [["茂原", "新茂原"]] });
   }
   for (const from of ["大久保", "(中)大久保", "JR総持寺", "姉ヶ崎"]) {
-    const response = await request.get(`/api/split-ticket?${new URLSearchParams({ from, to: "新宿" })}`);
+    const response = await request.get(`/api/split/auto/ticket?${new URLSearchParams({ from, to: "新宿" })}`);
     expect(response.status()).toBe(400);
   }
   for (const [from, to] of [["（中）大久保", "新宿"], ["ＪＲ総持寺", "茨木"], ["姉ケ崎", "五井"]]) {
-    const response = await request.get(`/api/split-ticket?${new URLSearchParams({ from, to })}`);
+    const response = await request.get(`/api/split/auto/ticket?${new URLSearchParams({ from, to })}`);
     expect(response.status()).toBe(200);
     expect((await response.json()).normal).toEqual([from, to]);
   }
-  const restricted = await request.get(`/api/split-ticket?${new URLSearchParams({ from: "茂原", to: "新茂原", maxSplits: "1", noSplitStation: "茂原" })}`);
+  const restricted = await request.get(`/api/split/auto/ticket?${new URLSearchParams({ from: "茂原", to: "新茂原", maxSplits: "1", noSplitStation: "茂原" })}`);
   expect(restricted.status()).toBe(200);
-  const invalid = await request.get("/api/split-pass?from=茂原&to=新茂原&months=2");
+  const invalid = await request.get("/api/split/auto/pass?from=茂原&to=新茂原&months=2");
   expect(invalid.status()).toBe(400);
-  const wrongPeriodKey = await request.get("/api/split-pass?from=茂原&to=新茂原&month=3");
+  const wrongPeriodKey = await request.get("/api/split/auto/pass?from=茂原&to=新茂原&month=3");
   expect(wrongPeriodKey.status()).toBe(400);
 });
 
 test("文書の計算画面リンクからAPIへ正しい定期期間を渡す", async ({ page }) => {
   await page.route("**/*", route => ["localhost", "127.0.0.1"].includes(new URL(route.request().url()).hostname) ? route.continue() : route.abort());
   for (const [label, endpoint, months] of [
-    ["定期券3箇月の計算画面", "split-pass", "3"],
-    ["IC定期券6箇月の計算画面", "split-icpass", "6"],
+    ["定期券3箇月の計算画面", "split/auto/pass", "3"],
+    ["IC定期券6箇月の計算画面", "split/auto/ic-pass", "6"],
   ]) {
     await page.goto("/developers/api");
     const href = await page.getByRole("link", { name: label, exact: true }).getAttribute("href");

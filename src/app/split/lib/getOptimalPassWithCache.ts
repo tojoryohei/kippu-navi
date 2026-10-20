@@ -24,8 +24,8 @@ export async function getOptimalPassWithCache(
     }
 
     const endpoint = isIc
-        ? "/api/split-icpass"
-        : "/api/split-pass";
+        ? "/api/split/auto/ic-pass"
+        : "/api/split/auto/pass";
 
     const response = await fetch(`${getApiUrl(endpoint)}?${params.toString()}`, {
         method: "GET",

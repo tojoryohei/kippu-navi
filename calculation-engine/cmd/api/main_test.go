@@ -22,9 +22,9 @@ func TestAPIRoutes(t *testing.T) {
 		{http.MethodPost, "/api/fare/ticket", "", http.StatusNotFound},
 		{http.MethodGet, "/api/fare", "", http.StatusNotFound},
 		{http.MethodGet, "/api/fare/ticket", "", http.StatusNotFound},
-		{http.MethodGet, "/api/split-pass", "pass", http.StatusNoContent},
-		{http.MethodGet, "/api/split-icpass", "icpass", http.StatusNoContent},
-		{http.MethodGet, "/api/split-ticket", "ticket", http.StatusNoContent},
+		{http.MethodGet, "/api/split/auto/pass", "pass", http.StatusNoContent},
+		{http.MethodGet, "/api/split/auto/ic-pass", "icpass", http.StatusNoContent},
+		{http.MethodGet, "/api/split/auto/ticket", "ticket", http.StatusNoContent},
 	} {
 		t.Run(tc.method+" "+tc.path, func(t *testing.T) {
 			response := httptest.NewRecorder()
@@ -43,7 +43,7 @@ func TestLocalDevelopmentCORSMethods(t *testing.T) {
 	handler := allowLocalDevelopmentCORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("プリフライトリクエストがAPIハンドラーに到達しました")
 	}))
-	request := httptest.NewRequest(http.MethodOptions, "/api/split-ticket", nil)
+	request := httptest.NewRequest(http.MethodOptions, "/api/split/auto/ticket", nil)
 	request.Header.Set("Origin", "http://localhost:3000")
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)

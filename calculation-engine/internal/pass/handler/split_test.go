@@ -24,7 +24,7 @@ func TestHandleCalculateRejectsDisconnectedRoutes(t *testing.T) {
 
 	search := usecase.NewSearchOptimalSplit(g, nil, nil, 0, nil, int32(g.NumStations()))
 	h := NewSplit(g, search)
-	request := httptest.NewRequest(http.MethodGet, "/api/split-pass?from=A&to=C&months=6", nil)
+	request := httptest.NewRequest(http.MethodGet, "/api/split/auto/pass?from=A&to=C&months=6", nil)
 	response := httptest.NewRecorder()
 	h.HandleCalculate(response, request)
 

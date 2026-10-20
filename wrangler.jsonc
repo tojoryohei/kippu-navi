@@ -10,7 +10,19 @@
       "/api/*",
       "/ingest/*",
       "/monitoring",
-      "/manifest.webmanifest"
+      "/manifest.webmanifest",
+      "/",
+      "/about",
+      "/articles",
+      "/articles/*",
+      "/changelog",
+      "/contact",
+      "/developers/api",
+      "/fare/*",
+      "/guide",
+      "/logic",
+      "/privacy",
+      "/split/*"
     ]
   },
   "env": {

@@ -19,7 +19,7 @@ test('マニフェストは任意のURLや追跡パラメーターを受け付�
   assert.deepEqual(target.searchParams.getAll('noSplitStation'), ['品川']);
   assert.equal(target.searchParams.has('utm_source'), false);
   assert.equal(manifest.display, 'standalone');
-  for (const unsafe of ['//evil.test/', '/\\evil.test/', '/api/split-pass', 'https://evil.test/', '/missing', '/%2e%2e/api']) {
+  for (const unsafe of ['//evil.test/', '/\\evil.test/', '/api/split/auto/pass', 'https://evil.test/', '/missing', '/%2e%2e/api']) {
     assert.equal(normalizeLaunch(unsafe, origin), '/');
   }
   assert.equal(normalizeLaunch('/guide?from=東京', origin), '/guide');
@@ -91,7 +91,7 @@ test('保存済みの一式はフォントとクエリに依存しないペー�
   sw.setOffline();
   assert.equal(await (await sw.fetch('/?from=東京')).text(), 'html-v1');
   assert.equal(await (await sw.fetch('/_astro/font.woff2')).text(), 'font-v1');
-  for (const path of ['/api/split-ticket', '/ingest/a', '/monitoring', '/manifest.webmanifest', '/sw.js', 'https://external.test/font']) assert.equal(sw.fetch(path), undefined);
+  for (const path of ['/api/split/auto/ticket', '/ingest/a', '/monitoring', '/manifest.webmanifest', '/sw.js', 'https://external.test/font']) assert.equal(sw.fetch(path), undefined);
   assert.equal((await sw.fetch('/engine/v2/main.wasm')).status, 404);
   sw.stores.get('kippu-pwa-v1').delete('/_astro/font.woff2');
   assert.equal((await sw.fetch('/_astro/font.woff2')).status, 503);

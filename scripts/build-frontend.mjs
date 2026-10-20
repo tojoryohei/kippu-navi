@@ -23,4 +23,5 @@ const env = {
 run(process.execPath, ["node_modules/astro/bin/astro.mjs", "build"], env);
 run(process.execPath, ["scripts/package-cloudflare-assets.mjs"], env);
 
+run(process.execPath, ["scripts/build-agent-markdown.mjs"], env);
 run(process.execPath, ["scripts/build-pwa.mjs"], env);

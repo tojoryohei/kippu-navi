@@ -9,9 +9,9 @@ const ENGINE_ASSET_PATTERN = /^\/engine\/([a-f0-9]{64})\/(main\.wasm|pass_graph_
 const googleIdTokenCache = new Map();
 
 const cacheableApiParameters = {
-  '/api/split-pass': ['from', 'to', 'months', 'maxSplits', 'noSplitStation'],
-  '/api/split-icpass': ['from', 'to', 'months', 'noSplitStation'],
-  '/api/split-ticket': ['from', 'to', 'maxSplits', 'noSplitStation'],
+  '/api/split/auto/pass': ['from', 'to', 'months', 'maxSplits', 'noSplitStation'],
+  '/api/split/auto/ic-pass': ['from', 'to', 'months', 'noSplitStation'],
+  '/api/split/auto/ticket': ['from', 'to', 'maxSplits', 'noSplitStation'],
 };
 
 export function normalizeCacheableApiUrl(url) {
@@ -308,5 +308,47 @@ function dispatchRequest(request, env) {
     return proxyApi(request, env.API_ORIGIN, googleCredentials(env), getGoogleIdToken,
       env.DEPLOY_ENVIRONMENT !== 'staging' && url.hostname !== 'staging.kippu-navi.com');
   }
-  return fetchEngineAsset(request, env.ASSETS);
+  return fetchNegotiatedPage(request, env.ASSETS);
+}
+
+// 明示的にMarkdownを希望する場合だけ、ビルド済みの本文を配信する。
+export async function fetchNegotiatedPage(request, assets) {
+  const accept = request.headers.get('Accept') || '';
+  if (/text\/markdown/i.test(accept)) {
+    const headers = new Headers(request.headers);
+    headers.delete('If-None-Match');
+    headers.delete('If-Modified-Since');
+    headers.delete('Range');
+    headers.set('Accept', 'text/html');
+    request = new Request(request, { headers });
+  }
+  const response = await fetchEngineAsset(request, assets);
+  if (!['GET', 'HEAD'].includes(request.method) || response.status !== 200
+      || !response.headers.get('Content-Type')?.includes('text/html')) return response;
+  const headers = new Headers(response.headers);
+  const vary = headers.get('Vary');
+  if (vary !== '*' && !vary?.split(',').some(value => value.trim().toLowerCase() === 'accept')) {
+    headers.set('Vary', vary ? `${vary}, Accept` : 'Accept');
+  }
+  const accepted = new Map(accept.split(',').map(part => {
+    const [type, ...parameters] = part.trim().toLowerCase().split(';');
+    const quality = parameters.find(value => value.trim().startsWith('q='));
+    const q = quality ? Number(quality.trim().slice(2)) : 1;
+    return [type.trim(), Number.isFinite(q) && q >= 0 && q <= 1 ? q : 0];
+  }));
+  const markdownQuality = accepted.get('text/markdown') || 0;
+  const htmlQuality = accepted.get('text/html') ?? accepted.get('text/*') ?? accepted.get('*/*') ?? 0;
+  if (markdownQuality > 0 && markdownQuality >= htmlQuality) {
+    const url = new URL(request.url);
+    const name = url.pathname.replace(/\/$/, '') || '/index';
+    const markdownUrl = new URL(`/agent-markdown${name}.txt`, url);
+    const markdown = await assets.fetch(new Request(markdownUrl, { method: request.method }));
+    if (markdown.ok) {
+      for (const header of ['Content-Length', 'Content-Encoding', 'Content-Range', 'ETag', 'Last-Modified']) headers.delete(header);
+      headers.set('Content-Type', 'text/markdown; charset=utf-8');
+      headers.set('Content-Signal', 'ai-train=no, search=yes, ai-input=yes');
+      return new Response(request.method === 'HEAD' ? null : markdown.body, { status: 200, headers });
+    }
+  }
+  return new Response(response.body, { status: response.status, headers });
 }

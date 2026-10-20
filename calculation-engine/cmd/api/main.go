@@ -416,9 +416,9 @@ func run() error {
 // newAPIMux はサーバーで提供する分割検索APIを登録します。
 func newAPIMux(splitPass, splitICPass, splitTicket http.HandlerFunc) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/split-pass", splitPass)
-	mux.HandleFunc("/api/split-icpass", splitICPass)
-	mux.HandleFunc("/api/split-ticket", splitTicket)
+	mux.HandleFunc("/api/split/auto/pass", splitPass)
+	mux.HandleFunc("/api/split/auto/ic-pass", splitICPass)
+	mux.HandleFunc("/api/split/auto/ticket", splitTicket)
 	return mux
 }
 

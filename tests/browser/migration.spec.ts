@@ -301,7 +301,7 @@ for (const staleStatus of [403, 404]) test(`古いエンジンURLの${staleStatu
 test("経路APIの一時的なネットワーク失敗を再試行して検索を継続する", async ({ page }) => {
   await isolateServices(page);
   let attempts = 0;
-  await page.route("**/api/split-ticket**", async route => {
+  await page.route("**/api/split/auto/ticket**", async route => {
     attempts++;
     if (attempts === 1) return route.abort("failed");
     return route.fulfill({
@@ -319,7 +319,7 @@ test("経路APIの一時的なネットワーク失敗を再試行して検索�
 
 test("APIが15秒でタイムアウトしたら端末内計算で結果を表示する", async ({ page }) => {
   await isolateServices(page);
-  await page.route("**/api/split-ticket**", async () => new Promise(() => { }));
+  await page.route("**/api/split/auto/ticket**", async () => new Promise(() => { }));
 
   await page.goto(`/split/auto/ticket?${query}`);
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible({ timeout: 25_000 });
@@ -349,7 +349,7 @@ test("定期券グラフの障害中も乗車券検索を継続する", async ({
 
 test("2駅未満のAPI経路をWorkerへ渡さず拒否する", async ({ page }) => {
   await isolateServices(page);
-  await page.route("**/api/split-ticket**", route => route.fulfill({ json: { normal: ["新茂原"], results: [] } }));
+  await page.route("**/api/split/auto/ticket**", route => route.fulfill({ json: { normal: ["新茂原"], results: [] } }));
   await page.goto(`/split/auto/ticket?${query}`);
   await expect(page.getByText("経路データの取得に失敗しました。", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);
@@ -359,7 +359,7 @@ for (const kind of ["ticket", "pass"] as const) {
 test(`${kind === "ticket" ? "乗車券" : "定期券"}で在来線でつながっていない区間の業務エラーを表示する`, async ({ page }) => {
   await isolateServices(page);
   const message = "指定された区間はJR在来線のみで繋がっていません。経路入力検索を利用してください。";
-  await page.route(`**/api/split-${kind}**`, route => route.fulfill({
+  await page.route(`**/api/split/auto/${kind}**`, route => route.fulfill({
     status: 422,
     json: { normal: null, results: [], error: message },
   }));
