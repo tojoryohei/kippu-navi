@@ -25,6 +25,9 @@ func TestAPIRoutes(t *testing.T) {
 		{http.MethodGet, "/api/split/auto/pass", "pass", http.StatusNoContent},
 		{http.MethodGet, "/api/split/auto/ic-pass", "icpass", http.StatusNoContent},
 		{http.MethodGet, "/api/split/auto/ticket", "ticket", http.StatusNoContent},
+		{http.MethodGet, "/api/split-pass?from=A&to=B&months=6", "pass", http.StatusNoContent},
+		{http.MethodGet, "/api/split-icpass?from=A&to=B&months=3", "icpass", http.StatusNoContent},
+		{http.MethodGet, "/api/split-ticket?from=A&to=B&maxSplits=2", "ticket", http.StatusNoContent},
 	} {
 		t.Run(tc.method+" "+tc.path, func(t *testing.T) {
 			response := httptest.NewRecorder()

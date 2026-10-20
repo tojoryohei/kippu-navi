@@ -419,6 +419,10 @@ func newAPIMux(splitPass, splitICPass, splitTicket http.HandlerFunc) *http.Serve
 	mux.HandleFunc("/api/split/auto/pass", splitPass)
 	mux.HandleFunc("/api/split/auto/ic-pass", splitICPass)
 	mux.HandleFunc("/api/split/auto/ticket", splitTicket)
+	// 保存済みの画面や旧クライアントからも同じ計算処理を利用できるようにする。
+	mux.HandleFunc("/api/split-pass", splitPass)
+	mux.HandleFunc("/api/split-icpass", splitICPass)
+	mux.HandleFunc("/api/split-ticket", splitTicket)
 	return mux
 }
 
