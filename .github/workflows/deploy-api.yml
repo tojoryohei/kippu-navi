@@ -7,6 +7,7 @@ on:
     paths:
       - 'calculation-engine/**'
       - '.github/workflows/deploy-api.yml'
+      - 'scripts/deploy/**'
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -22,74 +23,95 @@ on:
       SA_EMAIL:
         required: true
 
+permissions: {}
+
 env:
-  PROJECT_ID: 'bubbly-trail-470023-e4'
-  REGION: 'asia-northeast1'
-  SERVICE_NAME: ${{ !inputs.staging && 'calculation-engine' || 'calculation-engine-staging' }}
-  RUNTIME_SERVICE_ACCOUNT: ${{ !inputs.staging && 'calculation-engine-runtime@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'calculation-engine-stg-runtime@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
-  INVOKER_SERVICE_ACCOUNT: ${{ !inputs.staging && 'cloudflare-api-invoker@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'cloudflare-api-invoker-stg@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
-  GAR_REPO: 'cloud-run-source-deploy' 
+  PROJECT_ID: bubbly-trail-470023-e4
+  REGION: asia-northeast1
+  SERVICE_NAME: ${{ inputs.staging && 'calculation-engine-staging' || 'calculation-engine' }}
+  RUNTIME_SERVICE_ACCOUNT: ${{ inputs.staging && 'calculation-engine-stg-runtime@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'calculation-engine-runtime@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
+  INVOKER_SERVICE_ACCOUNT: ${{ inputs.staging && 'cloudflare-api-invoker-stg@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'cloudflare-api-invoker@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
+  GAR_REPO: cloud-run-source-deploy
 
 concurrency:
   group: api-${{ inputs.staging && github.run_id || 'production' }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    if: inputs.staging || github.ref == 'refs/heads/main'
-    timeout-minutes: 40
-    environment: ${{ inputs.staging && 'staging' || 'production' }}
+  resolve:
+    if: github.ref == 'refs/heads/main' || (github.ref == 'refs/heads/ci/deploy-permission-separation' && github.event_name == 'workflow_dispatch' && inputs.staging)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
-      actions: read
       contents: read
-      id-token: write
-
+    outputs:
+      target_sha: ${{ steps.resolve.outputs.target_sha }}
+      control_sha: ${{ steps.resolve.outputs.control_sha }}
+      environment: ${{ steps.resolve.outputs.environment }}
+      public_config: ${{ steps.resolve.outputs.public_config }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        id: resolve
+        env:
+          TARGET_SHA: ${{ inputs.target_sha || github.sha }}
+          CONTROL_SHA: ${{ github.workflow_sha }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
+          REPOSITORY_VARIABLES: ${{ toJSON(vars) }}
         with:
-          ref: ${{ inputs.target_sha || github.sha }}
+          script: |
+            const { TARGET_SHA, CONTROL_SHA, DEPLOY_ENVIRONMENT } = process.env;
+            if (![TARGET_SHA, CONTROL_SHA].every(sha => /^[a-f0-9]{40}$/.test(sha))) throw new Error('完全SHAが必要です');
+            core.setOutput('target_sha', TARGET_SHA);
+            core.setOutput('control_sha', CONTROL_SHA);
+            core.setOutput('environment', DEPLOY_ENVIRONMENT);
+            const variables = JSON.parse(process.env.REPOSITORY_VARIABLES);
+            const config = {};
+            for (const key of ['PUBLIC_GOOGLE_ANALYTICS_ID', 'PUBLIC_POSTHOG_KEY', 'PUBLIC_SENTRY_DSN', 'SENTRY_ORG', 'SENTRY_PROJECT']) {
+              config[key] = variables[`${DEPLOY_ENVIRONMENT.toUpperCase()}_${key}`] ?? variables[key] ?? '';
+            }
+            core.setOutput('public_config', JSON.stringify(config));
+  build:
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    outputs:
+      api_id: ${{ steps.api.outputs.artifact-id }}
+      api_sha256: ${{ steps.pack.outputs.api_sha256 }}
+      attempt: ${{ steps.pack.outputs.attempt }}
+    env:
+      TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
+      CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.resolve.outputs.control_sha }}
+          path: control
           persist-credentials: false
-
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          workload_identity_provider: '${{ secrets.WIF_PROVIDER }}'
-          service_account: '${{ secrets.SA_EMAIL }}'
-          token_format: 'access_token'
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
-
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+          ref: ${{ needs.resolve.outputs.target_sha }}
+          path: target
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
-          go-version-file: './calculation-engine/go.mod'
-
-      - name: Setup Takumi Guard for Go
-        uses: flatt-security/setup-takumi-guard-golang@02545d3425218766aac4dca114dcc3f6eaa0df4a # v1
-
-      - name: Login to Artifact Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
-        with:
-          registry: ${{ env.REGION }}-docker.pkg.dev
-          username: 'oauth2accesstoken'
-          password: '${{ steps.auth.outputs.access_token }}'
-
+          go-version-file: target/calculation-engine/go.mod
+          cache: false
+      - uses: flatt-security/setup-takumi-guard-golang@02545d3425218766aac4dca114dcc3f6eaa0df4a
       - name: Cache precomputed pass fares
         id: cache-pass
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: ./calculation-engine/data/precomputed/pass.bin
-          key: precomputed-pass-v2-${{ hashFiles('calculation-engine/cmd/precompute-pass-fares/**', 'calculation-engine/internal/domain/**', 'calculation-engine/internal/pass/**', 'calculation-engine/internal/graphdata/edges.json', 'calculation-engine/go.mod', 'calculation-engine/go.sum') }}
+          path: ./target/calculation-engine/data/precomputed/pass.bin
+          key: precomputed-pass-v2-${{ hashFiles('target/calculation-engine/cmd/precompute-pass-fares/**', 'target/calculation-engine/internal/domain/**', 'target/calculation-engine/internal/pass/**', 'target/calculation-engine/internal/graphdata/edges.json', 'target/calculation-engine/go.mod', 'target/calculation-engine/go.sum') }}
 
       - name: Generate precomputed pass fares
         if: steps.cache-pass.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          cd calculation-engine
+          cd target/calculation-engine
           mkdir -p data/precomputed
           go run ./cmd/precompute-pass-fares ./internal/graphdata/edges.json ./data/precomputed/pass.bin
 
@@ -97,14 +119,14 @@ jobs:
         id: cache-ticket
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: ./calculation-engine/data/precomputed/ticket.bin
-          key: precomputed-ticket-v2-${{ hashFiles('calculation-engine/cmd/precompute-ticket-fares/**', 'calculation-engine/internal/domain/**', 'calculation-engine/internal/graphdata/**', 'calculation-engine/internal/ticket/**', 'calculation-engine/go.mod', 'calculation-engine/go.sum') }}
+          path: ./target/calculation-engine/data/precomputed/ticket.bin
+          key: precomputed-ticket-v2-${{ hashFiles('target/calculation-engine/cmd/precompute-ticket-fares/**', 'target/calculation-engine/internal/domain/**', 'target/calculation-engine/internal/graphdata/**', 'target/calculation-engine/internal/ticket/**', 'target/calculation-engine/go.mod', 'target/calculation-engine/go.sum') }}
 
       - name: Generate precomputed ticket fares
         if: steps.cache-ticket.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          cd calculation-engine
+          cd target/calculation-engine
           mkdir -p data/precomputed
           go run ./cmd/precompute-ticket-fares ./data/precomputed/ticket.bin
 
@@ -123,12 +145,12 @@ jobs:
             fi
           }
 
-          pass_path=./calculation-engine/data/precomputed/pass.bin
-          ticket_path=./calculation-engine/data/precomputed/ticket.bin
+          pass_path=./target/calculation-engine/data/precomputed/pass.bin
+          ticket_path=./target/calculation-engine/data/precomputed/ticket.bin
           verify_magic "$pass_path" "5352565242494e00"
           verify_magic "$ticket_path" "544b535256320000"
 
-          expected_stations=$(jq -r '.[].station0, .[].station1' ./calculation-engine/internal/graphdata/edges.json | sort -u | wc -l | tr -d '[:space:]')
+          expected_stations=$(jq -r '.[].station0, .[].station1' ./target/calculation-engine/internal/graphdata/edges.json | sort -u | wc -l | tr -d '[:space:]')
           actual_stations=$(od -An -t u4 -j8 -N4 "$pass_path" | tr -d '[:space:]')
           if [ "$expected_stations" != "$actual_stations" ]; then
             echo "定期券事前計算データの駅数が一致しません: graph=$expected_stations, data=$actual_stations" >&2
@@ -140,26 +162,103 @@ jobs:
             exit 1
           fi
 
-      - name: Build and Push Docker Image
-        env:
-          DEPLOY_COMMIT: ${{ inputs.target_sha || github.sha }}
+      - name: イメージを一度だけ作成して梱包
+        id: pack
         run: |
-          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.SERVICE_NAME }}:${{ inputs.target_sha || github.sha }}"
-          
-          docker build --build-arg DEPLOY_COMMIT="$DEPLOY_COMMIT" -t "$IMAGE_PATH" ./calculation-engine
-          docker push $IMAGE_PATH
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/api-bundle"
+          docker build --build-arg DEPLOY_COMMIT="$TARGET_SHA" -t "kippu-api:$TARGET_SHA" target/calculation-engine
+          docker save -o "$RUNNER_TEMP/api-bundle/image.tar" "kippu-api:$TARGET_SHA"
+          python3 control/scripts/deploy/artifact.py pack api "$RUNNER_TEMP/api-bundle" "$RUNNER_TEMP/api.tgz"
+          echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        id: api
+        with:
+          name: api-${{ needs.resolve.outputs.environment }}-${{ needs.resolve.outputs.target_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/api.tgz
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+  publish:
+    needs: [resolve, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ needs.resolve.outputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      image: ${{ steps.publish.outputs.image }}
+      target_sha: ${{ needs.resolve.outputs.target_sha }}
+      artifact_id: ${{ needs.build.outputs.api_id }}
+    env:
+      TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
+      CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.resolve.outputs.control_sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          artifact-ids: ${{ needs.build.outputs.api_id }}
+          path: incoming
+      - name: 成果物を明示的に検証して展開
+        env:
+          EXPECTED_SHA256: ${{ needs.build.outputs.api_sha256 }}
+          EXPECTED_ATTEMPT: ${{ needs.build.outputs.attempt }}
+        run: python3 control/scripts/deploy/artifact.py verify api incoming/api.tgz "$RUNNER_TEMP/verified-api"
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          version: '565.0.0'
+      - name: 資格情報を渡す前にイメージを読み込む
+        run: |
+          docker load -i "$RUNNER_TEMP/verified-api/image.tar"
+          docker image inspect "kippu-api:$TARGET_SHA" >/dev/null
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.SA_EMAIL }}
+      - name: 登録してdigestを記録
+        id: publish
+        run: |
+          set -euo pipefail
+          image_path="$REGION-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$SERVICE_NAME"
+          image_tag="$TARGET_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          gcloud auth print-access-token | docker login "$REGION-docker.pkg.dev" --username oauth2accesstoken --password-stdin
+          docker tag "kippu-api:$TARGET_SHA" "$image_path:$image_tag"
+          docker push "$image_path:$image_tag"
+          image_digest=$(gcloud artifacts docker images describe "$image_path:$image_tag" --format='value(image_summary.digest)')
+          [[ "$image_digest" =~ ^sha256:[a-f0-9]{64}$ ]] || exit 1
+          echo "image=$image_path@$image_digest" >> "$GITHUB_OUTPUT"
+      - name: Docker認証を削除
+        if: always()
+        run: docker logout "$REGION-docker.pkg.dev"
 
+  wait-frontend:
+    needs: [resolve, publish]
+    if: ${{ !inputs.staging && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    env:
+      TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
+    steps:
       - name: Wait for matching Cloudflare deployment
-        if: ${{ !inputs.staging && github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           FRONTEND_RUN_ID=''
           for _ in $(seq 1 30); do
             FRONTEND_RUN_ID=$(gh run list \
               --workflow=deploy-frontend.yml \
-              --commit="$GITHUB_SHA" \
+              --commit="$TARGET_SHA" \
               --event=push \
               --limit=1 \
               --json=databaseId \
@@ -168,21 +267,56 @@ jobs:
             sleep 10
           done
           [ -n "$FRONTEND_RUN_ID" ] || {
-            echo "Matching Cloudflare deployment was not found for $GITHUB_SHA." >&2
+            echo "Matching Cloudflare deployment was not found for $TARGET_SHA." >&2
             exit 1
           }
           gh run watch "$FRONTEND_RUN_ID" --exit-status
 
-      - name: Deploy to Cloud Run
-        id: deploy
-        uses: google-github-actions/deploy-cloudrun@2028e2d7d30a78c6910e0632e48dd561b064884d # v3
+  deploy:
+    needs: [resolve, build, publish, wait-frontend]
+    if: ${{ !cancelled() && needs.resolve.result == 'success' && needs.build.result == 'success' && needs.publish.result == 'success' && (needs.wait-frontend.result == 'success' || needs.wait-frontend.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ needs.resolve.outputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
+      CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+      PUBLISHED_IMAGE: ${{ needs.publish.outputs.image }}
+      PUBLISHED_TARGET: ${{ needs.publish.outputs.target_sha }}
+      PUBLISHED_ARTIFACT: ${{ needs.publish.outputs.artifact_id }}
+      EXPECTED_ARTIFACT: ${{ needs.build.outputs.api_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          service: ${{ env.SERVICE_NAME }}
-          region: ${{ env.REGION }}
-          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.SERVICE_NAME }}:${{ inputs.target_sha || github.sha }}
-          env_vars: DEPLOY_ENVIRONMENT=${{ inputs.staging && 'staging' || 'production' }}
-          flags: '--invoker-iam-check --service-account=${{ env.RUNTIME_SERVICE_ACCOUNT }} --memory=512Mi --concurrency=2 --timeout=30s'
-
+          ref: ${{ needs.resolve.outputs.control_sha }}
+          path: control
+          persist-credentials: false
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          version: '565.0.0'
+      - name: 登録結果と公開先を検証
+        run: |
+          set -euo pipefail
+          [ "$PUBLISHED_TARGET" = "$TARGET_SHA" ]
+          [ "$PUBLISHED_ARTIFACT" = "$EXPECTED_ARTIFACT" ]
+          prefix="$REGION-docker.pkg.dev/$PROJECT_ID/$GAR_REPO/$SERVICE_NAME@sha256:"
+          [[ "$PUBLISHED_IMAGE" == "$prefix"* ]]
+          image_digest="${PUBLISHED_IMAGE#"$prefix"}"
+          [[ "$image_digest" =~ ^[a-f0-9]{64}$ ]]
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.SA_EMAIL }}
+      - name: digestでCloud Runに公開
+        run: |
+          gcloud run deploy "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" \
+            --image "$PUBLISHED_IMAGE" --update-env-vars "DEPLOY_ENVIRONMENT=$DEPLOY_ENVIRONMENT" \
+            --invoker-iam-check --service-account "$RUNTIME_SERVICE_ACCOUNT" \
+            --memory 512Mi --concurrency 2 --timeout 30s --quiet
       - name: Restrict Cloud Run invocation to Cloudflare
         run: |
           set -euo pipefail
@@ -234,6 +368,3 @@ jobs:
             echo 'Cloud Run still grants roles/run.invoker to allUsers.' >&2
             exit 1
           }
-
-      - name: Show Output URL
-        run: echo "Deployed URL - ${{ steps.deploy.outputs.url }}"

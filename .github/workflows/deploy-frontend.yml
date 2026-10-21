@@ -18,100 +18,205 @@ on:
       CLOUDFLARE_ACCOUNT_ID:
         required: true
       SENTRY_AUTH_TOKEN:
-        required: false
+        required: true
 
-permissions:
-  contents: read
+permissions: {}
 
-# 手動stagingデプロイはdeploy-staging.ymlで両サービスを排他制御する。
 concurrency:
   group: frontend-${{ inputs.staging && github.run_id || 'production' }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    if: inputs.staging || github.ref == 'refs/heads/main'
+  resolve:
+    if: github.ref == 'refs/heads/main' || (github.ref == 'refs/heads/ci/deploy-permission-separation' && github.event_name == 'workflow_dispatch' && inputs.staging)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      target_sha: ${{ steps.resolve.outputs.target_sha }}
+      control_sha: ${{ steps.resolve.outputs.control_sha }}
+      environment: ${{ steps.resolve.outputs.environment }}
+      public_config: ${{ steps.resolve.outputs.public_config }}
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        id: resolve
+        env:
+          TARGET_SHA: ${{ inputs.target_sha || github.sha }}
+          CONTROL_SHA: ${{ github.workflow_sha }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
+          REPOSITORY_VARIABLES: ${{ toJSON(vars) }}
+        with:
+          script: |
+            const { TARGET_SHA, CONTROL_SHA, DEPLOY_ENVIRONMENT } = process.env;
+            if (![TARGET_SHA, CONTROL_SHA].every(sha => /^[a-f0-9]{40}$/.test(sha))) throw new Error('完全SHAが必要です');
+            core.setOutput('target_sha', TARGET_SHA);
+            core.setOutput('control_sha', CONTROL_SHA);
+            core.setOutput('environment', DEPLOY_ENVIRONMENT);
+            const variables = JSON.parse(process.env.REPOSITORY_VARIABLES);
+            const config = {};
+            for (const key of ['PUBLIC_GOOGLE_ANALYTICS_ID', 'PUBLIC_POSTHOG_KEY', 'PUBLIC_SENTRY_DSN', 'SENTRY_ORG', 'SENTRY_PROJECT']) {
+              config[key] = variables[`${DEPLOY_ENVIRONMENT.toUpperCase()}_${key}`] ?? variables[key] ?? '';
+            }
+            core.setOutput('public_config', JSON.stringify(config));
+  build:
+    needs: resolve
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: ${{ inputs.staging && 'staging' || 'production' }}
+    permissions:
+      contents: read
+    outputs:
+      frontend_id: ${{ steps.frontend.outputs.artifact-id }}
+      sentry_id: ${{ steps.sentry.outputs.artifact-id }}
+      frontend_sha256: ${{ steps.pack.outputs.frontend_sha256 }}
+      sentry_sha256: ${{ steps.pack.outputs.sentry_sha256 }}
+      release: ${{ steps.pack.outputs.release }}
+      attempt: ${{ steps.pack.outputs.attempt }}
     env:
-      DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
-      DEPLOY_COMMIT: ${{ inputs.target_sha || github.sha }}
-      ASTRO_TELEMETRY_DISABLED: 1
-      PUBLIC_GOOGLE_ANALYTICS_ID: ${{ vars.PUBLIC_GOOGLE_ANALYTICS_ID }}
-      PUBLIC_POSTHOG_KEY: ${{ vars.PUBLIC_POSTHOG_KEY }}
-      PUBLIC_SENTRY_DSN: ${{ vars.PUBLIC_SENTRY_DSN }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+      TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
+      CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+      DEPLOY_COMMIT: ${{ needs.resolve.outputs.target_sha }}
+      CI_SOURCEMAPS: '1'
+      ASTRO_TELEMETRY_DISABLED: '1'
+      PUBLIC_GOOGLE_ANALYTICS_ID: ${{ fromJSON(needs.resolve.outputs.public_config).PUBLIC_GOOGLE_ANALYTICS_ID }}
+      PUBLIC_POSTHOG_KEY: ${{ fromJSON(needs.resolve.outputs.public_config).PUBLIC_POSTHOG_KEY }}
+      PUBLIC_SENTRY_DSN: ${{ fromJSON(needs.resolve.outputs.public_config).PUBLIC_SENTRY_DSN }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ inputs.target_sha || github.sha }}
+          ref: ${{ needs.resolve.outputs.control_sha }}
+          path: control
           persist-credentials: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version-file: .node-version
-          cache: npm
-
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+          node-version-file: control/.node-version
+      - name: 資格情報を渡す前に固定版ツールを準備
+        run: node control/scripts/deploy/prepare-tools.mjs
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          go-version-file: calculation-engine/go.mod
+          ref: ${{ needs.resolve.outputs.target_sha }}
+          path: target
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: target/calculation-engine/go.mod
           cache: false
+      - uses: flatt-security/setup-takumi-guard-golang@02545d3425218766aac4dca114dcc3f6eaa0df4a
+      - uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd
+      - name: 依存関係を導入してビルド
+        working-directory: target
+        env:
+          SENTRY_CLI_BIN: ${{ runner.temp }}/publish-tools/node_modules/.bin/sentry-cli
+          SENTRY_BUNDLE_DIR: ${{ runner.temp }}/sentry-bundle/sourcemaps
+        run: |
+          npm ci
+          npm run build
+      - name: 完成済みWorkerと静的ファイルを梱包
+        id: pack
+        run: node control/scripts/deploy/package-frontend.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        id: frontend
+        with:
+          name: frontend-${{ needs.resolve.outputs.environment }}-${{ needs.resolve.outputs.target_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/frontend.tgz
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        id: sentry
+        with:
+          name: sentry-${{ needs.resolve.outputs.environment }}-${{ needs.resolve.outputs.target_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sentry.tgz
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+  sentry-upload:
+    needs: [resolve, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ needs.resolve.outputs.environment }}
+    permissions:
+      contents: read
+    env:
+      TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
+      CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+      RELEASE: ${{ needs.build.outputs.release }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.resolve.outputs.control_sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: control/.node-version
+      - name: 資格情報を渡す前に固定版ツールを準備
+        run: node control/scripts/deploy/prepare-tools.mjs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          artifact-ids: ${{ needs.build.outputs.sentry_id }}
+          path: incoming
+      - name: 成果物を明示的に検証して展開
+        env:
+          EXPECTED_SHA256: ${{ needs.build.outputs.sentry_sha256 }}
+          EXPECTED_ATTEMPT: ${{ needs.build.outputs.attempt }}
+        run: python3 control/scripts/deploy/artifact.py verify sentry incoming/sentry.tgz "$RUNNER_TEMP/verified-sentry"
+      - name: Sentryへの送信とリリース確定
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ fromJSON(needs.resolve.outputs.public_config).SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ fromJSON(needs.resolve.outputs.public_config).SENTRY_PROJECT }}
+        run: node control/scripts/deploy/upload-sentry.mjs
 
-      - name: Setup Takumi Guard for Go
-        uses: flatt-security/setup-takumi-guard-golang@02545d3425218766aac4dca114dcc3f6eaa0df4a # v1
-
-      - name: Setup Takumi Guard for npm
-        uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd # v1
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Verify staging domain isolation
-        if: inputs.staging
+  deploy:
+    needs: [resolve, build, sentry-upload]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ needs.resolve.outputs.environment }}
+    permissions:
+      contents: read
+    env:
+      TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
+      CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+      RELEASE: ${{ needs.build.outputs.release }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.resolve.outputs.control_sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: control/.node-version
+      - name: 資格情報を渡す前に固定版ツールを準備
+        run: node control/scripts/deploy/prepare-tools.mjs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          artifact-ids: ${{ needs.build.outputs.frontend_id }}
+          path: incoming
+      - name: 成果物を明示的に検証して展開
+        env:
+          EXPECTED_SHA256: ${{ needs.build.outputs.frontend_sha256 }}
+          EXPECTED_ATTEMPT: ${{ needs.build.outputs.attempt }}
+        run: python3 control/scripts/deploy/artifact.py verify frontend incoming/frontend.tgz "$RUNNER_TEMP/verified-frontend"
+      - name: 信頼済み公開設定を生成
+        run: node control/scripts/deploy/config.mjs
+      - name: ステージングの公開先を確認
+        if: needs.resolve.outputs.environment == 'staging'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: node scripts/check-staging-target.mjs
-
-      - name: Build frontend
-        run: npm run build
-
-      - name: Read candidate Wrangler version
-        id: wrangler
-        run: |
-          version=$(cat .wrangler-version)
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Deploy static assets
-        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4
-        with:
-          wranglerVersion: ${{ steps.wrangler.outputs.version }}
-          apiToken: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env ${{ env.DEPLOY_ENVIRONMENT }}
-
-      - name: Write deployment summary
+        run: node control/scripts/check-staging-target.mjs
+      - name: 完成済み成果物を公開
+        working-directory: ${{ runner.temp }}
         env:
-          DEPLOY_BRANCH: ${{ github.ref_name }}
-          DEPLOY_SHA: ${{ inputs.target_sha || github.sha }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: '"$RUNNER_TEMP/publish-tools/node_modules/.bin/wrangler" deploy --config "$RUNNER_TEMP/publish-wrangler.json" --no-bundle'
+      - name: 公開結果を記録
         run: |
-          if [ "$DEPLOY_ENVIRONMENT" = production ]; then
-            DEPLOY_URL="workers.dev URLとプレビューURLは無効"
-          else
-            DEPLOY_URL="https://staging.kippu-navi.com/deployment.json"
-          fi
-          # Markdownのバッククォートを文字として出力するため、展開しない。
           # shellcheck disable=SC2016
-          {
-            printf 'Environment: `%s`\n\n' "$DEPLOY_ENVIRONMENT"
-            printf 'Branch: `%s`\n\n' "$DEPLOY_BRANCH"
-            printf 'Commit: `%s`\n\n' "$DEPLOY_SHA"
-            printf 'Deployment: %s\n' "$DEPLOY_URL"
-          } >> "$GITHUB_STEP_SUMMARY"
+          printf 'Environment: `%s`\nCommit: `%s`\nControl: `%s`\n' "$DEPLOY_ENVIRONMENT" "$TARGET_SHA" "$CONTROL_SHA" >> "$GITHUB_STEP_SUMMARY"

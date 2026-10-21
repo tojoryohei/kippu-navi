@@ -8,8 +8,7 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
+permissions: {}
 
 # 手動stagingデプロイは両サービスを同じ排他区間で公開する。
 concurrency:
@@ -18,7 +17,7 @@ concurrency:
 
 jobs:
   resolve:
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ci/deploy-permission-separation')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -43,6 +42,8 @@ jobs:
 
   frontend:
     needs: resolve
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy-frontend.yml
     with:
       staging: true

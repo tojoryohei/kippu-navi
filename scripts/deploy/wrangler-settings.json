@@ -1,0 +1,64 @@
+{
+  "compatibility_date": "2026-09-19",
+  "assets": {
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*",
+      "/ingest/*",
+      "/monitoring",
+      "/manifest.webmanifest",
+      "/",
+      "/about",
+      "/articles",
+      "/articles/*",
+      "/changelog",
+      "/contact",
+      "/developers/api",
+      "/fare/*",
+      "/guide",
+      "/logic",
+      "/privacy",
+      "/split/*"
+    ]
+  },
+  "secrets": {
+    "required": [
+      "SENTRY_DSN",
+      "GCP_SERVICE_ACCOUNT_EMAIL",
+      "GCP_SERVICE_ACCOUNT_PRIVATE_KEY"
+    ]
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true
+    }
+  },
+  "environments": {
+    "staging": {
+      "name": "staging",
+      "vars": {
+        "DEPLOY_ENVIRONMENT": "staging",
+        "API_ORIGIN": "https://calculation-engine-staging-198310540092.asia-northeast1.run.app"
+      },
+      "routes": [
+        {
+          "pattern": "staging.kippu-navi.com",
+          "custom_domain": true
+        }
+      ]
+    },
+    "production": {
+      "name": "production",
+      "vars": {
+        "DEPLOY_ENVIRONMENT": "production",
+        "API_ORIGIN": "https://calculation-engine-198310540092.asia-northeast1.run.app"
+      }
+    }
+  }
+}
