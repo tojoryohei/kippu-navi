@@ -2,9 +2,9 @@
 
 ## デプロイ構成
 
-GitHub Actionsの`deploy-frontend.yml`がフロントエンドを配信します。通常はmain以外がステージング、mainが本番に対応します。`workflow_dispatch`でproductionを選択すると、`kippu-navi.com`へ接続せず`workers.dev`で本番Workerを検証できます。
+本番は`deploy-production.yml`、ステージングはmainから手動実行する`deploy-staging.yml`が入口です。両方とも`deploy-release.yml`の環境別排他制御を通り、既存のフロントエンド・APIワークフローを再利用します。子ワークフローの直接起動はできません。
 
-Go APIのCloud Runデプロイは`deploy-api.yml`が行います。pushによるデプロイでは同一コミットのCloudflareデプロイ成功を待ってからCloud Runを更新するため、認証切替時も旧Workerとの競合は発生しません。`workflow_dispatch`でAPIだけを手動デプロイする場合は、対応するWorkerが反映済みであることを先に確認します。
+[デプロイ後検証・初期設定・受入・復旧手順](deployment-verification.md)を参照してください。通常公開は開始時のmain先頭を固定し、両サービス更新時はフロントエンド→API→直接検証→公開検証の順に実行します。本番はステージング受入後に有効化します。
 
 ## セキュリティヘッダー
 
@@ -25,7 +25,7 @@ Astroは`output: "static"`のため、HTML・JS・WASMなどの静的レスポ�
 
 ## Cloud Run認証の初期設定
 
-Cloud RunはIAM認証を必須とし、Cloudflare Workerだけに`roles/run.invoker`を付与します。API実行用サービスアカウントにはプロジェクトロールを付与しません。以下は初回のみ、Google Cloud管理権限を持つ端末で実行します。`GITHUB_DEPLOY_SA`には`WIF_PROVIDER`から利用しているGitHub Actions用サービスアカウントを指定してください。
+Cloud RunはIAM認証を必須とし、環境別のCloudflare Worker用SAと検証専用SAだけに、対象サービスの`roles/run.invoker`を付与します。API実行用サービスアカウントにはプロジェクトロールを付与しません。以下は初回のみ、Google Cloud管理権限を持つ端末で実行します。`GITHUB_DEPLOY_SA`には`WIF_PROVIDER`から利用しているGitHub Actions用サービスアカウントを指定してください。
 
 ```sh
 PROJECT_ID=bubbly-trail-470023-e4
@@ -79,7 +79,7 @@ jq -r '.private_key' "$KEY_FILE" | npx wrangler secret put GCP_SERVICE_ACCOUNT_P
 - `run.app` URLへ認証なしでアクセスして403になることを確認します。IAMで拒否されたリクエストはコンテナログに到達しません。
 - Cloudflareの対象環境から各`/api/*`を呼び、正常応答と`X-Request-ID`を確認します。トークン交換失敗時はWorkerが502を返します。
 - `gcloud run services describe`の`spec.template.spec.serviceAccountName`が環境別ランタイムサービスアカウントになっていることを確認します。
-- `gcloud run services get-iam-policy`に`allUsers`の`roles/run.invoker`がなく、対応するCloudflare Invokerだけが登録されていることを確認します。
+- `gcloud run services get-iam-policy`に`allUsers`の`roles/run.invoker`がなく、対応するCloudflare Invokerと検証専用SAだけが登録されていることを確認します。
 
 ## APIキャッシュのパージ
 

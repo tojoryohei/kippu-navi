@@ -1,0 +1,39 @@
+name: 本番の公開とデプロイ後検証
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      components:
+        description: 更新対象（初回はall）
+        type: choice
+        options: [auto, all, frontend, api]
+        default: auto
+      mode:
+        description: 通常公開／過去の検証済みSHAへの明示的復旧
+        type: choice
+        options: [normal, restore]
+        default: normal
+      target_sha:
+        description: 復旧対象の完全SHA（通常公開では空欄）
+        type: string
+      reason:
+        description: 復旧理由（restore時に必須）
+        type: string
+permissions: {}
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      deployments: write
+      id-token: write
+    uses: ./.github/workflows/deploy-release.yml
+    with:
+      target_sha: ${{ inputs.target_sha || (inputs.mode == 'restore' && 'missing-restore-sha') || github.sha }}
+      components: ${{ inputs.mode == 'restore' && 'all' || inputs.components || 'auto' }}
+      mode: ${{ inputs.mode || 'normal' }}
+      reason: ${{ inputs.reason || '' }}
+    secrets: inherit

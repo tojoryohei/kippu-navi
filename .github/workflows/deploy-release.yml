@@ -1,0 +1,282 @@
+name: 公開と検証の統括
+on:
+  workflow_call:
+    inputs:
+      staging:
+        type: boolean
+        default: false
+      target_sha:
+        type: string
+        required: true
+      target_branch:
+        type: string
+        default: ''
+      components:
+        type: string
+        default: all
+      mode:
+        type: string
+        default: normal
+      reason:
+        type: string
+        default: ''
+permissions: {}
+# 復旧を含むすべての公開入口で、同じ環境別の排他制御を使う。
+concurrency:
+  group: deployment-${{ inputs.staging && 'staging' || 'production' }}
+  cancel-in-progress: false
+jobs:
+  preflight:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ inputs.staging && 'staging' || 'production' }}
+    permissions:
+      contents: read
+      actions: read
+      deployments: read
+      pull-requests: read
+      id-token: write
+    outputs:
+      lease: ${{ steps.start.outputs.lease }}
+      api: ${{ steps.plan.outputs.api }}
+      frontend: ${{ steps.plan.outputs.frontend }}
+      frontend_sha: ${{ steps.plan.outputs.frontend_sha }}
+      api_sha: ${{ steps.plan.outputs.api_sha }}
+    env:
+      TARGET_SHA: ${{ inputs.target_sha }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
+      COMPONENTS: ${{ inputs.components }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.workflow_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        id: start
+        env:
+          MODE: ${{ inputs.mode }}
+          REASON: ${{ inputs.reason }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
+        with:
+          script: |
+            const { admit } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/deploy/admission.mjs`);
+            const { TARGET_SHA: target, DEPLOY_ENVIRONMENT: environment, MODE: mode, REASON: reason, COMPONENTS: components } = process.env;
+            if (environment === 'staging') {
+              const { assertCurrentTarget } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/staging/checks.mjs`);
+              await assertCurrentTarget(github, context.repo, { sha: target, branch: process.env.TARGET_BRANCH });
+            }
+            const lease = await admit({ github, context, target, environment, mode, reason, components });
+            core.setOutput('lease', JSON.stringify(lease));
+      - name: ステージング受入完了まで本番公開を禁止
+        if: ${{ !inputs.staging }}
+        env:
+          ENABLED: ${{ vars.DEPLOYMENT_VERIFICATION_PRODUCTION_ENABLED }}
+        run: test "$ENABLED" = 'true'
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          version: '565.0.0'
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.SA_EMAIL }}
+      - name: 配信中Revisionを基準に更新対象を判定
+        id: plan
+        env:
+          DEPLOY_LEASE: ${{ steps.start.outputs.lease }}
+        run: node scripts/deploy/preflight.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: preflight-${{ inputs.staging && 'staging' || 'production' }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: verification-results/
+          retention-days: 14
+  frontend:
+    needs: preflight
+    if: needs.preflight.outputs.frontend == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy-frontend.yml
+    with:
+      staging: ${{ inputs.staging }}
+      target_sha: ${{ inputs.target_sha }}
+      lease: ${{ needs.preflight.outputs.lease }}
+    secrets: inherit
+  api:
+    needs: [preflight, frontend]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.preflight.outputs.api == 'true' && (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy-api.yml
+    with:
+      staging: ${{ inputs.staging }}
+      target_sha: ${{ inputs.target_sha }}
+      lease: ${{ needs.preflight.outputs.lease }}
+    secrets: inherit
+  direct:
+    needs: [preflight, api]
+    if: ${{ !cancelled() && needs.preflight.outputs.api == 'true' && needs.api.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ inputs.staging && 'staging' || 'production' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TARGET_SHA: ${{ inputs.target_sha }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
+      DEPLOY_LEASE: ${{ needs.preflight.outputs.lease }}
+      EXPECTED_API_SHA: ${{ needs.preflight.outputs.api_sha }}
+      VERIFY_MODE: direct
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+      - run: node scripts/deploy/check-lease.mjs
+      - name: 信頼済み設定からaudienceを選択
+        id: config
+        run: node scripts/verification/select-audience.mjs
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        id: auth
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ vars.SMOKE_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ steps.config.outputs.audience }}
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Cloud Run直接検証
+        env:
+          ID_TOKEN: ${{ steps.auth.outputs.id_token }}
+        run: node scripts/verification/run-http.mjs
+      - name: 不正audienceの検証用トークンを取得
+        if: ${{ inputs.staging }}
+        id: wrong-audience
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ vars.SMOKE_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ steps.config.outputs.audience }}/invalid-verifier-audience
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: 無認証・不正audienceの拒否を確認
+        if: ${{ inputs.staging }}
+        env:
+          WRONG_AUDIENCE_TOKEN: ${{ steps.wrong-audience.outputs.id_token }}
+        run: node scripts/verification/negative-auth.mjs
+      - name: staging主体によるproduction検証SAの偽装が拒否されることを確認
+        if: ${{ inputs.staging }}
+        id: cross-environment
+        continue-on-error: true
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: github-smoke-production@bubbly-trail-470023-e4.iam.gserviceaccount.com
+          token_format: id_token
+          id_token_audience: ${{ steps.config.outputs.audience }}
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: 環境越境の拒否を記録
+        if: ${{ inputs.staging }}
+        env:
+          CROSS_OUTCOME: ${{ steps.cross-environment.outcome }}
+        run: |
+          node --input-type=module -e 'import { writeFileSync } from "node:fs"; const outcome = process.env.CROSS_OUTCOME; writeFileSync("verification-results/cross-environment.json", JSON.stringify({ expected: "failure", actual: outcome })); if (outcome !== "failure") process.exitCode = 1;'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: direct-${{ inputs.staging && 'staging' || 'production' }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: verification-results/
+          retention-days: 14
+  public:
+    needs: [preflight, frontend, api, direct]
+    # 直接検証に失敗しても公開経路の証拠を残し、最終集計は失敗にする。
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') && (needs.api.result == 'success' || needs.api.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      TARGET_SHA: ${{ inputs.target_sha }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
+      DEPLOY_LEASE: ${{ needs.preflight.outputs.lease }}
+      EXPECTED_FRONTEND_SHA: ${{ needs.preflight.outputs.frontend_sha }}
+      EXPECTED_API_SHA: ${{ needs.preflight.outputs.api_sha }}
+      VERIFY_MODE: public
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+      - run: node scripts/deploy/check-lease.mjs
+      - name: 固定版ブラウザー検証ツールを準備
+        run: node scripts/verification/prepare-browser.mjs
+      - name: 公開HTTP検証
+        id: http
+        run: node scripts/verification/run-http.mjs
+      - name: 公開ブラウザー検証
+        if: ${{ !cancelled() && steps.http.outcome != 'skipped' }}
+        run: node scripts/verification/run-browser.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: public-${{ inputs.staging && 'staging' || 'production' }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            verification-results/
+            test-results/
+          retention-days: 14
+  result:
+    needs: [preflight, frontend, api, direct, public]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      deployments: write
+    env:
+      TARGET_SHA: ${{ inputs.target_sha }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
+      DEPLOY_LEASE: ${{ needs.preflight.outputs.lease }}
+      JOB_RESULTS: ${{ toJSON(needs) }}
+      RESTORE_REASON: ${{ inputs.reason }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+      - name: 必須結果を集計
+        id: aggregate
+        run: node scripts/verification/aggregate.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: result-${{ inputs.staging && 'staging' || 'production' }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: verification-results/
+          retention-days: 14
+      - name: 検証済み本番SHAを復旧用に記録
+        if: ${{ success() && !inputs.staging }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          script: |
+            const target = process.env.TARGET_SHA;
+            const lease = JSON.parse(process.env.DEPLOY_LEASE);
+            const deployment = await github.rest.repos.createDeployment({ ...context.repo, ref: target, environment: 'production', auto_merge: false, required_contexts: [],
+              description: '直接検証と公開経路検証に成功', payload: { verificationVersion: 1, target, runId: context.runId, attempt: process.env.GITHUB_RUN_ATTEMPT, controlSha: process.env.GITHUB_WORKFLOW_SHA, mode: lease.mode } });
+            await github.rest.repos.createDeploymentStatus({ ...context.repo, deployment_id: deployment.data.id, state: 'success', auto_inactive: false,
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`, environment_url: 'https://kippu-navi.com' });

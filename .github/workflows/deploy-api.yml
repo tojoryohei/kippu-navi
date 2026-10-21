@@ -1,16 +1,11 @@
 name: Deploy API to Cloud Run
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'calculation-engine/**'
-      - '.github/workflows/deploy-api.yml'
-      - 'scripts/deploy/**'
-  workflow_dispatch:
   workflow_call:
     inputs:
+      lease:
+        type: string
+        required: true
       staging:
         type: boolean
         default: false
@@ -33,10 +28,6 @@ env:
   INVOKER_SERVICE_ACCOUNT: ${{ inputs.staging && 'cloudflare-api-invoker-stg@bubbly-trail-470023-e4.iam.gserviceaccount.com' || 'cloudflare-api-invoker@bubbly-trail-470023-e4.iam.gserviceaccount.com' }}
   GAR_REPO: cloud-run-source-deploy
 
-concurrency:
-  group: api-${{ inputs.staging && github.run_id || 'production' }}
-  cancel-in-progress: false
-
 jobs:
   resolve:
     if: github.ref == 'refs/heads/main'
@@ -53,14 +44,17 @@ jobs:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         id: resolve
         env:
-          TARGET_SHA: ${{ inputs.target_sha || github.sha }}
+          TARGET_SHA: ${{ inputs.target_sha }}
           CONTROL_SHA: ${{ github.workflow_sha }}
           DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
+          DEPLOY_LEASE: ${{ inputs.lease }}
           REPOSITORY_VARIABLES: ${{ toJSON(vars) }}
         with:
           script: |
             const { TARGET_SHA, CONTROL_SHA, DEPLOY_ENVIRONMENT } = process.env;
             if (![TARGET_SHA, CONTROL_SHA].every(sha => /^[a-f0-9]{40}$/.test(sha))) throw new Error('完全SHAが必要です');
+            const lease = JSON.parse(process.env.DEPLOY_LEASE);
+            if (lease.target !== TARGET_SHA || lease.environment !== DEPLOY_ENVIRONMENT || lease.runId !== process.env.GITHUB_RUN_ID || lease.attempt !== process.env.GITHUB_RUN_ATTEMPT) throw new Error('統括から全ジョブを再実行してください');
             core.setOutput('target_sha', TARGET_SHA);
             core.setOutput('control_sha', CONTROL_SHA);
             core.setOutput('environment', DEPLOY_ENVIRONMENT);
@@ -83,6 +77,7 @@ jobs:
     env:
       TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
       CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_LEASE: ${{ inputs.lease }}
       DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -194,6 +189,7 @@ jobs:
     env:
       TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
       CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_LEASE: ${{ inputs.lease }}
       DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -201,6 +197,11 @@ jobs:
           ref: ${{ needs.resolve.outputs.control_sha }}
           path: control
           persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: control/.node-version
+      - name: 現在の公開開始確認を照合
+        run: node control/scripts/deploy/check-lease.mjs
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           artifact-ids: ${{ needs.build.outputs.api_id }}
@@ -237,44 +238,8 @@ jobs:
         if: always()
         run: docker logout "$REGION-docker.pkg.dev"
 
-  wait-frontend:
-    needs: [resolve, publish]
-    if: ${{ !inputs.staging && github.event_name == 'push' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      actions: read
-    env:
-      TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
-    steps:
-      - name: Wait for matching Cloudflare deployment
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          FRONTEND_RUN_ID=''
-          for _ in $(seq 1 30); do
-            FRONTEND_RUN_ID=$(gh run list \
-              --workflow=deploy-frontend.yml \
-              --commit="$TARGET_SHA" \
-              --event=push \
-              --limit=1 \
-              --json=databaseId \
-              --jq='.[0].databaseId // empty')
-            [ -n "$FRONTEND_RUN_ID" ] && break
-            sleep 10
-          done
-          [ -n "$FRONTEND_RUN_ID" ] || {
-            echo "Matching Cloudflare deployment was not found for $TARGET_SHA." >&2
-            exit 1
-          }
-          gh run watch "$FRONTEND_RUN_ID" --exit-status
-
   deploy:
-    needs: [resolve, build, publish, wait-frontend]
-    if: ${{ !cancelled() && needs.resolve.result == 'success' && needs.build.result == 'success' && needs.publish.result == 'success' && (needs.wait-frontend.result == 'success' || needs.wait-frontend.result == 'skipped') }}
+    needs: [resolve, build, publish]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: ${{ needs.resolve.outputs.environment }}
@@ -284,6 +249,7 @@ jobs:
     env:
       TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
       CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_LEASE: ${{ inputs.lease }}
       DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
       PUBLISHED_IMAGE: ${{ needs.publish.outputs.image }}
       PUBLISHED_TARGET: ${{ needs.publish.outputs.target_sha }}
@@ -295,6 +261,11 @@ jobs:
           ref: ${{ needs.resolve.outputs.control_sha }}
           path: control
           persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: control/.node-version
+      - name: 現在の公開開始確認を照合
+        run: node control/scripts/deploy/check-lease.mjs
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
         with:
           version: '565.0.0'
@@ -314,10 +285,11 @@ jobs:
       - name: digestでCloud Runに公開
         run: |
           gcloud run deploy "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" \
-            --image "$PUBLISHED_IMAGE" --update-env-vars "DEPLOY_ENVIRONMENT=$DEPLOY_ENVIRONMENT" \
+            --image "$PUBLISHED_IMAGE" --update-env-vars "DEPLOY_ENVIRONMENT=$DEPLOY_ENVIRONMENT,DEPLOY_COMMIT=$TARGET_SHA" \
             --invoker-iam-check --service-account "$RUNTIME_SERVICE_ACCOUNT" \
             --memory 512Mi --concurrency 2 --timeout 30s --quiet
-      - name: Restrict Cloud Run invocation to Cloudflare
+          gcloud run services update-traffic "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" --to-latest --quiet
+      - name: Cloud Runの呼び出し認証を維持
         run: |
           set -euo pipefail
           gcloud run services add-iam-policy-binding "$SERVICE_NAME" \
@@ -368,3 +340,12 @@ jobs:
             echo 'Cloud Run still grants roles/run.invoker to allUsers.' >&2
             exit 1
           }
+
+      - name: 配信Revision・メタデータSHA・digestを照合
+        run: node control/scripts/deploy/verify-revision.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: revision-${{ needs.resolve.outputs.environment }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: verification-results/
+          retention-days: 14
