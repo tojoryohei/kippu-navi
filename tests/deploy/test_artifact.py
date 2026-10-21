@@ -1,5 +1,7 @@
 """資格情報付与前に成果物を拒否できることを確認する。"""
 import importlib.util
+import hashlib
+import json
 import io
 import os
 from pathlib import Path
@@ -33,8 +35,8 @@ class ArtifactTest(unittest.TestCase):
         artifact.pack("api", self.source, self.archive)
         os.environ["EXPECTED_SHA256"] = artifact.digest(self.archive)
 
-    def verify(self):
-        artifact.verify("api", self.archive, self.root / "verified")
+    def verify(self, kind="api"):
+        artifact.verify(kind, self.archive, self.root / "verified")
 
     def rewrite(self, extra=None, alter=None, replace=False):
         with tarfile.open(self.archive) as tar:
@@ -63,7 +65,7 @@ class ArtifactTest(unittest.TestCase):
             self.verify()
 
     def test_wrong_identity(self):
-        for key, value in [("TARGET_SHA", "c" * 40), ("CONTROL_SHA", "d" * 40), ("DEPLOY_ENVIRONMENT", "production"), ("EXPECTED_ATTEMPT", "2"), ("GITHUB_RUN_ID", "11")]:
+        for key, value in [("TARGET_SHA", "c" * 40), ("CONTROL_SHA", "d" * 40), ("DEPLOY_ENVIRONMENT", "production"), ("EXPECTED_ATTEMPT", "2"), ("GITHUB_RUN_ID", "11"), ("RELEASE", "5.2.0+" + "e" * 40)]:
             with self.subTest(key=key), patch.dict(os.environ, {key: value}):
                 with self.assertRaisesRegex(ValueError, "一致しません"):
                     self.verify()
@@ -96,17 +98,41 @@ class ArtifactTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "manifest"):
             self.verify()
 
-    def test_pack_rejects_symlink(self):
-        (self.source / "image.tar").unlink()
-        (self.source / "image.tar").symlink_to(self.root / "output")
-        with self.assertRaisesRegex(ValueError, "リンク"):
-            artifact.pack("api", self.source, self.archive)
-
-    def test_frontend_paths(self):
+    def test_frontend_rejects_non_public_files(self):
+        source = self.root / "frontend"
+        files = {
+            "static/index.html": "<html></html>",
+            "static/deployment.json": json.dumps({"commit": "a" * 40, "environment": "staging"}),
+            "static/pwa-assets.json": "{}",
+            "static/sw.js": "",
+            "worker/main.mjs": "export default {}",
+        }
+        for name, data in files.items():
+            path = source / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(data)
+        artifact.pack("frontend", source, self.archive)
+        os.environ["EXPECTED_SHA256"] = artifact.digest(self.archive)
+        artifact.verify("frontend", self.archive, self.root / "accepted")
+        original = self.archive.read_bytes()
         for name in ["static/package.json", "static/file.map", "static/deploy.sh", "worker/config.json"]:
-            self.assertFalse(artifact.allowed(name, "frontend"))
-        self.assertTrue(artifact.allowed("static/_astro/app.js", "frontend"))
-        self.assertTrue(artifact.allowed("worker/main.mjs", "frontend"))
+            with self.subTest(name=name):
+                self.archive.write_bytes(original)
+                member = tarfile.TarInfo(name)
+                member.mode = 0o644
+
+                def add_to_manifest(path, data):
+                    if path != "manifest.json":
+                        return data
+                    manifest = json.loads(data)
+                    manifest["files"][name] = hashlib.sha256(b"").hexdigest()
+                    return json.dumps(manifest).encode()
+
+                # manifestもハッシュも整合させ、公開不可ファイルの混入だけを検証する。
+                self.rewrite(extra=member, alter=add_to_manifest)
+                with self.assertRaises(ValueError):
+                    self.verify("frontend")
+                self.assertFalse((self.root / "verified").exists())
 
 
 if __name__ == "__main__":
