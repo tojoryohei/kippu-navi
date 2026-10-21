@@ -46,28 +46,28 @@ jobs:
       SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.target_sha || github.sha }}
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .node-version
           cache: npm
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: calculation-engine/go.mod
           cache: false
 
       - name: Setup Takumi Guard for Go
-        uses: flatt-security/setup-takumi-guard-golang@v1
+        uses: flatt-security/setup-takumi-guard-golang@02545d3425218766aac4dca114dcc3f6eaa0df4a # v1
 
       - name: Setup Takumi Guard for npm
-        uses: flatt-security/setup-takumi-guard-npm@v1
+        uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd # v1
 
       - name: Install dependencies
         run: npm ci
@@ -90,7 +90,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Deploy static assets
-        uses: cloudflare/wrangler-action@v4
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4
         with:
           wranglerVersion: ${{ steps.wrangler.outputs.version }}
           apiToken: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
@@ -107,6 +107,8 @@ jobs:
           else
             DEPLOY_URL="https://staging.kippu-navi.com/deployment.json"
           fi
+          # Markdownのバッククォートを文字として出力するため、展開しない。
+          # shellcheck disable=SC2016
           {
             printf 'Environment: `%s`\n\n' "$DEPLOY_ENVIRONMENT"
             printf 'Branch: `%s`\n\n' "$DEPLOY_BRANCH"
