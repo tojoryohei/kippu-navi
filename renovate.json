@@ -35,7 +35,7 @@
   "semanticCommits": "enabled",
   "semanticCommitType": "chore",
   "semanticCommitScope": "deps",
-  "commitMessageAction": "更新:",
+  "commitMessageAction": "Update",
   "commitMessageTopic": "{{depName}}",
   "commitMessageExtra": "{{#if isPinDigest}}digest固定{{else}}{{newValue}}{{/if}}",
   "lockFileMaintenance": {
@@ -43,7 +43,7 @@
     "schedule": [
       "* 3-5 * * 1"
     ],
-    "commitMessageAction": "更新:",
+    "commitMessageAction": "Update",
     "commitMessageTopic": "lockfile"
   },
   "npmrc": "registry=https://npm.flatt.tech/\n",
