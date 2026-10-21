@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, cpSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -24,4 +24,18 @@ run(process.execPath, ["node_modules/astro/bin/astro.mjs", "build"], env);
 run(process.execPath, ["scripts/package-cloudflare-assets.mjs"], env);
 
 run(process.execPath, ["scripts/build-agent-markdown.mjs"], env);
+if (process.env.CI_SOURCEMAPS === "1") {
+  // Debug ID注入後のJSを送信・公開し、最後にPWAのハッシュを計算する。
+  if (!process.env.SENTRY_CLI_BIN) throw new Error("SENTRY_CLI_BINが必要です");
+  run(process.env.SENTRY_CLI_BIN, ["sourcemaps", "inject", "dist/_astro"], env);
+  const output = process.env.SENTRY_BUNDLE_DIR;
+  if (!output) throw new Error("SENTRY_BUNDLE_DIRが必要です");
+  rmSync(output, { recursive: true, force: true });
+  mkdirSync(output, { recursive: true });
+  for (const name of readdirSync(join(root, "dist/_astro"))) {
+    if (!/\.(js|map)$/.test(name)) continue;
+    cpSync(join(root, "dist/_astro", name), join(output, name));
+    if (name.endsWith(".map")) rmSync(join(root, "dist/_astro", name));
+  }
+}
 run(process.execPath, ["scripts/build-pwa.mjs"], env);

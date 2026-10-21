@@ -37,7 +37,6 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
-    "@sentry/vite-plugin": "^5.4.1",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.19.2",

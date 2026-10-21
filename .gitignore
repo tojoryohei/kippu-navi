@@ -62,3 +62,6 @@ calculation-engine/precompute-*
 dist/
 playwright-report/
 test-results/
+
+# Python deployment validation caches
+__pycache__/

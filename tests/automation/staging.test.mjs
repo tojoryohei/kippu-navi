@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { assertCurrentTarget, resolveTarget } from '../../scripts/staging/checks.mjs';
 
@@ -29,4 +30,17 @@ test('stagingは明示的な手動実行だけを受け付ける', async () => {
     await assert.rejects(resolveTarget(fakeGitHub(), { ...context, eventName }), /Unsupported deployment event/);
   }
   await assert.rejects(resolveTarget(fakeGitHub(), { ...context, payload: { inputs: { branch: 'main' } } }), /Select a non-main branch/);
+});
+
+test('ビルドと公開でWranglerの配信先・bindingsを一致させる', () => {
+  const original = JSON.parse(readFileSync(new URL('../../wrangler.jsonc', import.meta.url), 'utf8').replace(/,\s*([}\]])/g, '$1'));
+  const settings = JSON.parse(readFileSync(new URL('../../scripts/deploy/wrangler-settings.json', import.meta.url), 'utf8'));
+  assert.equal(settings.compatibility_date, original.compatibility_date);
+  const { directory: _directory, ...assets } = original.assets;
+  assert.deepEqual(settings.assets, assets);
+  assert.deepEqual(settings.observability, original.observability);
+  for (const environment of ['staging', 'production']) {
+    for (const key of ['name', 'vars', 'routes']) assert.deepEqual(settings.environments[environment][key], original.env[environment][key]);
+    assert.deepEqual(settings.secrets, original.env[environment].secrets);
+  }
 });
