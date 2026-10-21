@@ -180,7 +180,7 @@ jobs:
         run: '"$RUNNER_TEMP/ci-tools/actionlint" -shellcheck "$RUNNER_TEMP/ci-tools/shellcheck"'
       - run: npm ci
       - run: node scripts/check-runtime-versions.mjs
-      - run: node --test tests/automation/*.test.mjs
+      - run: node --test tests/automation/*.test.mjs tests/verification/*.test.mjs
       - run: python3 -m unittest discover -s tests/deploy -v
       - name: Install pinned Renovate validator outside the repository
         # renovate: datasource=npm depName=renovate

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { cases, queryFor, expectedJson } from "../../scripts/verification/config.mjs";
 
 test("llms.txtをUTF-8として配信する", async ({ request }) => {
   const response = await request.get("/llms.txt");
@@ -13,12 +14,10 @@ test("llms.txtをUTF-8として配信する", async ({ request }) => {
 });
 
 test("公開文書の呼び出し例を実APIで利用できる", async ({ request }) => {
-  for (const kind of ["ticket", "pass", "ic-pass"]) {
-    const query = new URLSearchParams({ from: "茂原", to: "新茂原" });
-    if (kind !== "ticket") query.set("months", kind === "pass" ? "3" : "6");
-    const response = await request.get(`/api/split/auto/${kind}?${query}`);
+  for (const fixture of cases) {
+    const response = await request.get(`/api/split/auto/${fixture.kind}?${queryFor(fixture)}`);
     expect(response.status()).toBe(200);
-    expect(await response.json()).toEqual({ normal: ["茂原", "新茂原"], results: [["茂原", "新茂原"]] });
+    expect(await response.json()).toEqual(expectedJson(fixture));
   }
   for (const from of ["大久保", "(中)大久保", "JR総持寺", "姉ヶ崎"]) {
     const response = await request.get(`/api/split/auto/ticket?${new URLSearchParams({ from, to: "新宿" })}`);

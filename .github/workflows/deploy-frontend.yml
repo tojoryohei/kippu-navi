@@ -1,11 +1,11 @@
 name: Deploy frontend to Cloudflare
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
   workflow_call:
     inputs:
+      lease:
+        type: string
+        required: true
       staging:
         type: boolean
         default: false
@@ -21,10 +21,6 @@ on:
         required: true
 
 permissions: {}
-
-concurrency:
-  group: frontend-${{ inputs.staging && github.run_id || 'production' }}
-  cancel-in-progress: false
 
 jobs:
   resolve:
@@ -42,14 +38,17 @@ jobs:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         id: resolve
         env:
-          TARGET_SHA: ${{ inputs.target_sha || github.sha }}
+          TARGET_SHA: ${{ inputs.target_sha }}
           CONTROL_SHA: ${{ github.workflow_sha }}
           DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
+          DEPLOY_LEASE: ${{ inputs.lease }}
           REPOSITORY_VARIABLES: ${{ toJSON(vars) }}
         with:
           script: |
             const { TARGET_SHA, CONTROL_SHA, DEPLOY_ENVIRONMENT } = process.env;
             if (![TARGET_SHA, CONTROL_SHA].every(sha => /^[a-f0-9]{40}$/.test(sha))) throw new Error('完全SHAが必要です');
+            const lease = JSON.parse(process.env.DEPLOY_LEASE);
+            if (lease.target !== TARGET_SHA || lease.environment !== DEPLOY_ENVIRONMENT || lease.runId !== process.env.GITHUB_RUN_ID || lease.attempt !== process.env.GITHUB_RUN_ATTEMPT) throw new Error('統括から全ジョブを再実行してください');
             core.setOutput('target_sha', TARGET_SHA);
             core.setOutput('control_sha', CONTROL_SHA);
             core.setOutput('environment', DEPLOY_ENVIRONMENT);
@@ -75,6 +74,7 @@ jobs:
     env:
       TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
       CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_LEASE: ${{ inputs.lease }}
       DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
       DEPLOY_COMMIT: ${{ needs.resolve.outputs.target_sha }}
       CI_SOURCEMAPS: '1'
@@ -141,6 +141,7 @@ jobs:
     env:
       TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
       CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_LEASE: ${{ inputs.lease }}
       DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
       RELEASE: ${{ needs.build.outputs.release }}
     steps:
@@ -152,6 +153,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: control/.node-version
+      - name: 現在の公開開始確認を照合
+        run: node control/scripts/deploy/check-lease.mjs
       - name: 資格情報を渡す前に固定版ツールを準備
         run: node control/scripts/deploy/prepare-tools.mjs
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
@@ -180,6 +183,7 @@ jobs:
     env:
       TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
       CONTROL_SHA: ${{ needs.resolve.outputs.control_sha }}
+      DEPLOY_LEASE: ${{ inputs.lease }}
       DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
       RELEASE: ${{ needs.build.outputs.release }}
     steps:
@@ -191,6 +195,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: control/.node-version
+      - name: 現在の公開開始確認を照合
+        run: node control/scripts/deploy/check-lease.mjs
       - name: 資格情報を渡す前に固定版ツールを準備
         run: node control/scripts/deploy/prepare-tools.mjs
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333

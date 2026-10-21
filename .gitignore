@@ -65,3 +65,6 @@ test-results/
 
 # Python deployment validation caches
 __pycache__/
+
+# デプロイ検証のレポート（トレース・通信情報を含む場合がある）
+/verification-results/

@@ -7,13 +7,13 @@ on:
         description: '手動デプロイする同一リポジトリのブランチ名（最新SHAを使用）'
         required: true
         type: string
+      components:
+        description: 更新対象（通常はall）
+        type: choice
+        options: [all, frontend, api, auto]
+        default: all
 
 permissions: {}
-
-# 手動stagingデプロイは両サービスを同じ排他区間で公開する。
-concurrency:
-  group: shared-staging-deployment
-  cancel-in-progress: false
 
 jobs:
   resolve:
@@ -40,29 +40,18 @@ jobs:
             core.setOutput('sha', target.sha);
             core.setOutput('branch', target.branch);
 
-  frontend:
+  release:
     needs: resolve
     permissions:
       contents: read
-    uses: ./.github/workflows/deploy-frontend.yml
-    with:
-      staging: true
-      target_sha: ${{ needs.resolve.outputs.sha }}
-    secrets:
-      CLOUDFLARE_WORKERS_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-
-  api:
-    needs: [resolve, frontend]
-    permissions:
-      contents: read
       actions: read
+      deployments: write
+      pull-requests: read
       id-token: write
-    uses: ./.github/workflows/deploy-api.yml
+    uses: ./.github/workflows/deploy-release.yml
     with:
       staging: true
       target_sha: ${{ needs.resolve.outputs.sha }}
-    secrets:
-      WIF_PROVIDER: ${{ secrets.WIF_PROVIDER }}
-      SA_EMAIL: ${{ secrets.SA_EMAIL }}
+      target_branch: ${{ needs.resolve.outputs.branch }}
+      components: ${{ inputs.components }}
+    secrets: inherit

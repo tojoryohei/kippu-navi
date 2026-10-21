@@ -16,10 +16,7 @@ func TestDeploymentIdentity(t *testing.T) {
 			request.Header.Set("X-Deployment-Commit", "forged-sha")
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
-			want := ""
-			if env == "staging" {
-				want = "built-sha"
-			}
+			want := "built-sha"
 			if response.Header().Get("X-Deployment-Commit") != want || response.Code != status {
 				t.Fatalf("env=%q status=%d: incorrect deployment identity", env, status)
 			}
@@ -31,19 +28,25 @@ func TestDeploymentIdentity(t *testing.T) {
 }
 
 func TestDeploymentIdentityOverridesHandlerCachePolicy(t *testing.T) {
-	for _, explicitStatus := range []bool{true, false} {
-		handler := deploymentIdentity(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Cache-Control", "public, s-maxage=2592000")
-			w.Header().Set("X-Deployment-Commit", "wrong")
-			if explicitStatus {
-				w.WriteHeader(http.StatusOK)
+	for _, environment := range []string{"staging", "production"} {
+		for _, explicitStatus := range []bool{true, false} {
+			handler := deploymentIdentity(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Cache-Control", "public, s-maxage=2592000")
+				w.Header().Set("X-Deployment-Commit", "wrong")
+				if explicitStatus {
+					w.WriteHeader(http.StatusOK)
+				}
+				_, _ = w.Write([]byte("body"))
+			}), environment, "build")
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
+			wantCache := "public, s-maxage=2592000"
+			if environment == "staging" {
+				wantCache = "no-store"
 			}
-			_, _ = w.Write([]byte("body"))
-		}), "staging", "build")
-		response := httptest.NewRecorder()
-		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
-		if response.Result().Header.Get("Cache-Control") != "no-store" || response.Result().Header.Get("X-Deployment-Commit") != "build" {
-			t.Fatal("handler overrode the staging deployment identity/cache policy")
+			if response.Result().Header.Get("Cache-Control") != wantCache || response.Result().Header.Get("X-Deployment-Commit") != "build" {
+				t.Fatalf("環境%sの識別ヘッダーまたはキャッシュ方針が一致しません", environment)
+			}
 		}
 	}
 }

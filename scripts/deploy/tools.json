@@ -1,4 +1,5 @@
 {
   "wrangler": "4.151.0",
-  "sentryCli": "2.58.6"
+  "sentryCli": "2.58.6",
+  "playwright": "1.64.0"
 }
