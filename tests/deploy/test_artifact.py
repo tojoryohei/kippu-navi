@@ -36,11 +36,13 @@ class ArtifactTest(unittest.TestCase):
     def verify(self):
         artifact.verify("api", self.archive, self.root / "verified")
 
-    def rewrite(self, extra=None, alter=None):
+    def rewrite(self, extra=None, alter=None, replace=False):
         with tarfile.open(self.archive) as tar:
             files = [(member, tar.extractfile(member).read()) for member in tar.getmembers()]
         with tarfile.open(self.archive, "w:gz") as tar:
             for member, data in files:
+                if replace and extra and member.name == extra.name:
+                    continue
                 if alter:
                     data = alter(member.name, data)
                     member.size = len(data)
@@ -73,14 +75,14 @@ class ArtifactTest(unittest.TestCase):
 
     def test_unsafe_members(self):
         original = self.archive.read_bytes()
-        for name, kind, mode in [("../image.tar", tarfile.REGTYPE, 0o644), ("/image.tar", tarfile.REGTYPE, 0o644), ("image.tar", tarfile.REGTYPE, 0o644), ("script.sh", tarfile.REGTYPE, 0o644), ("manifest.json", tarfile.SYMTYPE, 0o644), ("manifest.json", tarfile.FIFOTYPE, 0o644), ("manifest.json", tarfile.REGTYPE, 0o755)]:
+        for name, kind, mode in [("../image.tar", tarfile.REGTYPE, 0o644), ("/image.tar", tarfile.REGTYPE, 0o644), ("image.tar", tarfile.REGTYPE, 0o644), ("script.sh", tarfile.REGTYPE, 0o644), ("manifest.json", tarfile.SYMTYPE, 0o644), ("manifest.json", tarfile.LNKTYPE, 0o644), ("manifest.json", tarfile.FIFOTYPE, 0o644), ("manifest.json", tarfile.REGTYPE, 0o755)]:
             with self.subTest(name=name, kind=kind, mode=mode):
                 self.archive.write_bytes(original)
                 member = tarfile.TarInfo(name)
                 member.type = kind
                 member.mode = mode
                 member.linkname = "../../outside" if kind == tarfile.SYMTYPE else ""
-                self.rewrite(extra=member)
+                self.rewrite(extra=member, replace=kind != tarfile.REGTYPE or mode == 0o755)
                 with self.assertRaises(ValueError):
                     self.verify()
                 self.assertFalse((self.root / "verified").exists())

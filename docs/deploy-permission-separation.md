@@ -60,3 +60,21 @@ Cloudflareの配信先・bindingsはcontrol_shaの`wrangler-settings.json`から
 - 保持1日を過ぎてartifactが失効した場合: 新しいrunで再ビルドします。古いIDを別のartifactに置き換えません。
 
 本番APIは同じ対象SHAのフロントエンド成功を、外部資格情報を持たない待機ジョブで確認してからCloud Runへ公開します。
+
+## 今回の検証記録
+
+- 候補control_sha／target_sha: `aa7cb7dd82f6dac0869bca0fa08f8e2bf3c1e688`。
+- [ステージング実行](https://github.com/tojoryohei/kippu-navi/actions/runs/39545361188)。フロントエンドのビルド、Sentry送信、Cloudflare公開が成功。ビルドの実ログのGitHub権限はContents／Metadataのreadのみで、OIDC発行権限なし。
+- 公開用artifact ID: `12321541696`、Sentry用artifact ID: `12321516783`。公開ジョブではそれぞれのIDと独立した期待ハッシュで検証・展開。
+- ステージングのdeployment.jsonのSHA一致、ハッシュ付きWASMのHTTP 200・magicを確認。
+- [Sentry検証イベント](https://kippu-navi.sentry.io/issues/7803782724/events/4a617057446e4294ae1189f228339b87/): `component=deployment-verification`、`environment=staging`、`release=5.2.0+aa7cb7dd82f6dac0869bca0fa08f8e2bf3c1e688`。Sentry管理画面で`src/lib/analytics.ts:189:5`の元コードへ復元されたことを確認。
+- ローカル: actionlint＋ShellCheck、型検査、Knip、既存Worker／automation 64件、新規automation 6件、成果物検証8件、PWA／更新／計算画面のブラウザ33件が成功。
+- APIのビルド・登録・digest指定公開・IAM検証が成功。APIビルドの実ログもContents／Metadataのreadのみ。API用artifact IDは`12322805203`。
+- 初回公開のCloud Run Ready Revisionは`calculation-engine-staging-00087-hq5`。イメージdigestは`sha256:acf3a1b69e7ca395ef98fe3b2e9165e8c91b215061bbe5b2f48c95dd3ac74b7d`。
+- ステージングの画面で新茂原→茂原の計算結果を確認。実APIはHTTP 200、`X-Deployment-Commit=aa7cb7dd82f6dac0869bca0fa08f8e2bf3c1e688`、`X-Request-ID=f40066a7-c0d5-444c-a297-af621b58a7c4`。
+- Cloud Runの実行SAは`calculation-engine-stg-runtime`。Invoker IAMの無効化なし、`roles/run.invoker`の許可先は`cloudflare-api-invoker-stg`のみで`allUsers`なし。
+- 同じrunのattempt 2でSentry送信から再実行。生成attempt 1のSentry artifact ID `12321516783`をそのまま指定し、`EXPECTED_ATTEMPT=1`で検証・既存releaseの再確定に成功。
+- attempt 2の後続も全ジョブ成功。フロントエンド公開は元のartifact ID `12321541696`／生成attempt 1、API登録は再ビルドのartifact ID `12322253286`／生成attempt 2を使用したことを実ログで確認。
+- 再実行後のReady Revisionは`calculation-engine-staging-00088-grc`、digestは`sha256:d1399df31bfa618a648cf5390d0d9d7f69faabb41d007ab9ee2479b167d72a24`。画面の計算結果、実APIのHTTP 200と対象SHA一致を再確認（request ID: `f64c51e1-833f-4547-b3b1-c5155b5c027b`）。
+- 最終差分から候補ブランチ専用の一時許可を除去。main限定のresolveを確認する回帰テストを追加し、ローカルで成功。
+- main反映と、反映後のmain制御コードからの再検証は未実施。この作業ではmain／本番へ反映しない。

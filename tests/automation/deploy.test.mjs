@@ -43,3 +43,10 @@ test('公開用設定の基礎値は既存Wrangler設定と一致し、実行設
   }
   assert.doesNotMatch(JSON.stringify(settings), /"build"|"command"|"find_additional_modules"/);
 });
+
+test('main反映用の差分に候補ブランチ専用の公開許可を残さない', () => {
+  for (const name of ['deploy-frontend', 'deploy-api', 'deploy-staging']) {
+    assert.match(jobs(name).resolve, /if: github.ref == 'refs\/heads\/main'\n/);
+    assert.doesNotMatch(jobs(name).resolve, /ci\/deploy-permission-separation/);
+  }
+});
