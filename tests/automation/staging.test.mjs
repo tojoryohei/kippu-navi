@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { config } from '../../scripts/verification/config.mjs';
 import { assertCurrentTarget, resolveTarget } from '../../scripts/staging/checks.mjs';
 
 const sha = 'a'.repeat(40);
@@ -40,6 +41,8 @@ test('ビルドと公開でWranglerの配信先・bindingsを一致させる', (
   assert.deepEqual(settings.assets, assets);
   assert.deepEqual(settings.observability, original.observability);
   for (const environment of ['staging', 'production']) {
+    const selected = environment === 'production' ? settings.environments.production : settings.environments.staging;
+    assert.equal(config(environment).serviceUrl, selected.vars.API_ORIGIN);
     for (const key of ['name', 'vars', 'routes']) assert.deepEqual(settings.environments[environment][key], original.env[environment][key]);
     assert.deepEqual(settings.secrets, original.env[environment].secrets);
   }

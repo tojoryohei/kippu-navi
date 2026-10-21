@@ -6,9 +6,13 @@
     "src/lib/analytics.ts",
     "src/pwa/client.ts",
     "src/pwa/service-worker.js",
-    "src/app/split/lib/getOptimalPassWithCache.ts"
+    "src/app/split/lib/getOptimalPassWithCache.ts",
+    "tests/deployment/**/*.mjs",
+    "tests/dev/**/*.spec.mjs",
+    "playwright.deployment.config.mjs"
   ],
   "ignoreBinaries": [
-    "go"
+    "go",
+    "gcloud"
   ]
 }

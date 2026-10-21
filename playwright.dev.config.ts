@@ -18,12 +18,13 @@ export default defineConfig({
       gracefulShutdown: { signal: "SIGTERM", timeout: 15_000 },
     },
     {
-      command: "npm run dev -- --host 127.0.0.1 --port 3018 --strictPort",
+      command: "npm run dev -- --host 127.0.0.1 --port 3018 --strictPort --ignore-lock",
       url: "http://127.0.0.1:3018",
       reuseExistingServer: false,
       timeout: 180_000,
       gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
       env: {
+        ASTRO_DEV_BACKGROUND: "1",
         ASTRO_TELEMETRY_DISABLED: "1",
         DEV_API_ORIGIN: "http://127.0.0.1:18080",
         PUBLIC_WASM_VERSION: "",
