@@ -60,11 +60,11 @@ preflight・Revision・direct・resultのartifactは14日保持する。APIの�
 
 復旧はmainから手動でmode=restore、main履歴上の完全SHA、理由、components=allを指定する。両サービスを再公開・直接検証する。自動ロールバックは行わない。部分公開の失敗時も旧版へ戻ったとは扱わない。ビルドartifactは1日保持のため、失効時は再ビルドする。
 
-## 新方針の受入と本番有効化
+## 受入と通常運用
 
-本番ゲート`DEPLOYMENT_VERIFICATION_PRODUCTION_ENABLED`は、新方針の受入完了までfalseを維持する。mainへ反映後、同じ対象SHAの専用ブランチでstagingのall→frontend→apiを順に実行する。各最終結果と所要時間、直接検証・認証拒否結果、frontendのみの対象外記録を確認する。公開サイトへの通信は行わない。
+初回導入のステージングall→frontend→api受入と、本番allによる公開・直接検証・v2成功記録の確認は完了した。導入時だけ使用した本番ゲートのチェックは撤去する。今後はmain更新またはmainからの手動起動で通常の統括公開へ進む。環境別排他、開始時のmain先頭照合、IAM、API更新時の直接検証は継続する。
 
-3パターン成功後に本番ゲートをtrueへ変更し、最新mainで初回本番をallとして新規実行する。本番の両公開・Revision照合・直接検証・v2成功記録を確認して完了とする。受入前のゲート停止は意図した失敗であり、その間main更新は本番へ公開されない。
+ゲート撤去PRのマージ後、production Environmentの`DEPLOYMENT_VERIFICATION_PRODUCTION_ENABLED`を削除する。チェックが残るmainで先に変数を削除すると公開が失敗するため、この順序を守る。受入用ブランチとローカル一時ファイルは整理し、Actionsの成功記録・検証artifact・本番復旧用Deployment記録は保持期間に従って維持する。
 
 ローカルでは既存automation・verificationテスト、通常のローカルE2E、actionlint・ShellCheck・ESLint・Knipを実行する。検証器の失敗テストは期待値やローカル通信を変更し、共有アプリ・IAMを壊さない。削除した公開検証専用テストは実行しない。
 
@@ -95,7 +95,7 @@ allとapiの直接3券種は、HTTP 200・期待JSON・バイナリ内SHA一致�
 - 配信Revision: `calculation-engine-00045-qs7`。digest: `sha256:20e292f33002285bbf619baefc6b161d6edc9b450f5b179ef5cb913f1eae4d22`。
 - 直接検索は乗車券・定期券3箇月・IC定期券6箇月のすべてでHTTP 200・期待JSON・バイナリ内SHAが一致。計1,131ms、再試行0回。メタデータSHAも対象SHAと一致。
 - GitHub Deployment ID `7244673811`のverificationVersion=2、frontendUpdated=true、apiUpdated=true、directVerified=true、publicPathVerified=falseと、そのsuccess status・実行URLの一致を読み取り確認した。復旧根拠の記録条件を満たしているが、実際の復旧操作は行っていない。
-- 本番ゲートはtrueを維持。今後のmain更新は通常の統括公開へ進み、API更新時には直接検証が必須となる。過去のゲート停止runは失敗の履歴として残し、再実行しない。
+- 完了確認時点では本番ゲートをtrueに設定済み。導入後のゲート撤去とは区別する。今後のmain更新は通常の統括公開へ進み、API更新時には直接検証が必須となる。過去のゲート停止runは失敗の履歴として残し、再実行しない。
 
 **Cloud Run直接検証を必須とする新方針の受入と初回本番確認は完了した。** フロントエンドSHAはartifactの確認のみであり、公開サイト・Cloudflare接続・公開WASM・画面上の計算結果は検証していない。固定3ケースの成功を全経路の計算正確性の保証とはしない。artifactは各runで14日保持する。以下の旧方針の失敗履歴は、この受入結果とは区別する。
 
