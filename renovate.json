@@ -25,10 +25,7 @@
   "automerge": true,
   "automergeType": "pr",
   "automergeStrategy": "squash",
-  "platformAutomerge": false,
-  "automergeSchedule": [
-    "* 3-5 * * *"
-  ],
+  "platformAutomerge": true,
   "rebaseWhen": "behind-base-branch",
   "separateMajorMinor": true,
   "ignoreUnstable": true,
@@ -50,9 +47,6 @@
   "vulnerabilityAlerts": {
     "enabled": true,
     "automerge": true,
-    "automergeSchedule": [
-      "at any time"
-    ],
     "updateNotScheduled": true,
     "minimumReleaseAge": "0 days",
     "groupName": null,
