@@ -1,20 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { verifyApi, verifyManifest } from '../../scripts/verification/http.mjs';
+import { verifyApi } from '../../scripts/verification/http.mjs';
 import { cases, config, expectedJson } from '../../scripts/verification/config.mjs';
 const sha = 'a'.repeat(40);
 const fixture = cases[0];
 const response = (status = 200, commit = sha, json = expectedJson(fixture)) => new Response(JSON.stringify(json), { status, headers: { 'X-Deployment-Commit': commit, 'X-Request-ID': 'test-id' } });
 const options = { base: config('staging').serviceUrl, token: 'not-a-real-token', expectedCommit: sha, fixtures: [fixture], sleep: async () => {} };
-test('3券種の実リクエストとJSONを検証し、公開APIはキャッシュ条件を変えない', async () => {
+test('3券種の直接検索で認証・入力・SHA・JSONを検証する', async () => {
   let n = 0;
-  const report = await verifyApi({ base: options.base, fetcher: async (url, init) => {
+  const report = await verifyApi({ base: options.base, token: options.token, expectedCommit: sha, fetcher: async (url, init) => {
     const c = cases[n++]; const parsed = new URL(url);
     assert.equal(parsed.pathname, `/api/split/auto/${c.kind}`);
     assert.equal(parsed.searchParams.get('months'), c.months ? String(c.months) : null);
-    assert.deepEqual(Object.keys(init.headers), []);
+    assert.equal(init.headers.Authorization, `Bearer ${options.token}`);
+    assert.equal(init.signal instanceof AbortSignal, true);
     assert.equal(init.cache, undefined);
-    return response(200, 'cached-older-sha', expectedJson(c));
+    return response(200, sha, expectedJson(c));
   } });
   assert.equal(n, 3);
   assert.deepEqual(report[0].actual, expectedJson(fixture));
@@ -49,26 +50,8 @@ test('認証・アプリ障害と、一度正常応答を得た後の障害は�
   await assert.rejects(verifyApi({ ...options, fixtures: [fixture, fixture], fetcher: async () => ++n === 1 ? response() : new Response('', { status: 503 }) }));
   assert.equal(n, 2);
 });
-test('公開APIの障害を再試行せず、JSONでない応答も拒否する', async () => {
-  let n = 0;
-  await assert.rejects(verifyApi({ ...options, token: undefined, fetcher: async () => { n++; throw new Error('network'); } }));
-  assert.equal(n, 1);
-  await assert.rejects(verifyApi({ ...options, fetcher: async () => new Response('not JSON') }));
-});
-test('manifestの期待SHA・環境・WASMパス不一致を拒否する', async () => {
-  const manifest = { environment: 'staging', commit: sha, enginePath: `/engine/${'f'.repeat(64)}` };
-  const fetcher = async () => Response.json(manifest);
-  assert.deepEqual(await verifyManifest(config('staging').publicUrl, 'staging', sha, fetcher), manifest);
-  await assert.rejects(verifyManifest(config('staging').publicUrl, 'production', sha, fetcher));
-  await assert.rejects(verifyManifest(config('staging').publicUrl, 'staging', 'b'.repeat(40), fetcher));
-  await assert.rejects(verifyManifest(config('staging').publicUrl, 'staging', sha, async () => Response.json({ ...manifest, enginePath: 'https://other.invalid/engine' })));
-  await assert.rejects(verifyManifest(config('staging').publicUrl, 'staging', sha, async () => new Response('保存しない応答本文', {
-    status: 403, headers: { 'content-type': 'text/html; charset=utf-8', 'cf-mitigated': 'challenge' },
-  })), error => {
-    assert.deepEqual(error.details, { status: 403, contentType: 'text/html', challenge: true, cacheStatus: null });
-    assert.equal(JSON.stringify(error).includes('保存しない応答本文'), false);
-    return error.code === 'manifest_json';
-  });
+test('JSONでない直接応答を拒否する', async () => {
+  await assert.rejects(verifyApi({ ...options, fetcher: async () => new Response('not JSON', { headers: { 'X-Deployment-Commit': sha } }) }), /JSON/);
 });
 
 test('APIがトークンをechoしてもartifactとSummaryのシリアライズでは伏せる', async () => {
@@ -82,7 +65,7 @@ test('APIがトークンをechoしてもartifactとSummaryのシリアライズ�
 test('許可外の送信先・検索入力ではトークンを送る前に拒否する', async () => {
   let sent = 0;
   const fetcher = async () => { sent++; return response(); };
-  for (const base of ['https://attacker.invalid', `${options.base}/unexpected`, config('staging').publicUrl]) {
+  for (const base of ['https://attacker.invalid', `${options.base}/unexpected`, 'https://staging.kippu-navi.com']) {
     await assert.rejects(verifyApi({ ...options, base, fetcher }), /接続先/);
   }
   await assert.rejects(verifyApi({ ...options, fixtures: [{ ...fixture, from: '送信してはいけない値' }], fetcher }), /固定ケース/);
@@ -104,13 +87,6 @@ test('通信由来の任意本文・ヘッダー・例外を保存せず、識�
   assert.equal(rows[0].status, 200);
   assert.deepEqual(rows[0].actual.normal.stations, [fixture.from, { type: 'string', unexpected: true }]);
   assert.equal(rows[0].actual.unexpectedKeyCount, 1);
-  await assert.rejects(verifyApi({ ...options, token: undefined, fetcher: async () => { throw new Error(secret); }, record: row => records.push(row) }));
+  await assert.rejects(verifyApi({ ...options, fetcher: async () => { throw new Error(secret); }, record: row => records.push(row) }));
   assert.equal(JSON.stringify(records).includes(secret), false);
-  try {
-    await verifyManifest(config('staging').publicUrl, 'staging', sha, async () => Response.json({ environment: secret, commit: secret, enginePath: secret, extra: secret }));
-    assert.fail('manifest不一致が検出されませんでした');
-  } catch (error) {
-    assert.equal(JSON.stringify(error.details).includes(secret), false);
-    assert.deepEqual(error.details.actual, { environment: '[invalid]', commit: '[invalid]', enginePath: '[invalid]' });
-  }
 });

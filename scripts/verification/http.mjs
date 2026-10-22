@@ -1,11 +1,8 @@
 import { isDeepStrictEqual } from 'node:util';
-import { SHA } from '../deploy/policy.mjs';
-import { cases, config, trustedApiBase, selectCase, queryFor, expectedJson } from './config.mjs';
-import { commitDiagnostic, enginePathDiagnostic, requestIdDiagnostic, statusDiagnostic, cacheDiagnostic, ageDiagnostic, jsonDiagnostic, manifestDiagnostic } from './diagnostics.mjs';
+import { cases, trustedApiBase, selectCase, queryFor, expectedJson } from './config.mjs';
+import { commitDiagnostic, requestIdDiagnostic, statusDiagnostic, cacheDiagnostic, ageDiagnostic, jsonDiagnostic } from './diagnostics.mjs';
 
 const failures = Object.freeze([
-  ['manifest', 'deployment.jsonの環境・SHA・enginePathが期待値と一致しません'],
-  ['manifest_json', 'deployment.jsonの応答がJSONではありません'],
   ['transport', 'APIへの接続失敗またはタイムアウト'],
   ['http_status', 'APIのHTTPステータスが期待値と一致しません'],
   ['commit', 'APIのバイナリ内SHA不一致'],
@@ -23,28 +20,8 @@ export function failureMessage(error) {
   return failures.find(failure => failure[0] === error?.code)?.[1] ?? '検証中に通信または想定外のエラーが発生しました';
 }
 
-export async function verifyManifest(base, environment, sha, fetcher = fetch) {
-  const selected = config(environment);
-  if (base !== selected.publicUrl) throw new Error('manifestの接続先が対象環境と一致しません');
-  const response = await fetcher(`${selected.publicUrl}/deployment.json`, { signal: AbortSignal.timeout(35000), redirect: 'error' });
-  let manifest;
-  try { manifest = await response.json(); } catch {
-    throw new VerificationError('manifest_json', {
-      status: statusDiagnostic(response.status),
-      contentType: ['application/json', 'text/html', 'text/plain'].find(type => response.headers.get('content-type')?.split(';')[0].trim() === type) ?? '[other]',
-      challenge: response.headers.get('cf-mitigated') === 'challenge',
-      cacheStatus: cacheDiagnostic(response.headers.get('cf-cache-status')),
-    });
-  }
-  if (response.status !== 200 || manifest?.environment !== environment || !SHA.test(sha) || manifest?.commit !== sha
-      || !/^\/engine\/[a-f0-9]{64}$/.test(manifest?.enginePath)) {
-    throw new VerificationError('manifest', { status: statusDiagnostic(response.status), expected: { environment, commit: sha }, actual: manifestDiagnostic(manifest) });
-  }
-  return { environment: selected.environment, commit: sha, enginePath: enginePathDiagnostic(manifest.enginePath) };
-}
-
 export async function verifyApi({ base, token, expectedCommit, fetcher = fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), fixtures = cases, record = () => {} }) {
-  const selectedBase = trustedApiBase(base, Boolean(token));
+  const selectedBase = trustedApiBase(base);
   const rows = [];
   let startup = Boolean(token);
   for (const input of fixtures) {

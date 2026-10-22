@@ -14,7 +14,9 @@ export async function admit({ github, context, target, environment, mode, reason
       let verified = false;
       for (const deployment of deployments) {
         const payload = deployment.payload && typeof deployment.payload === 'object' ? deployment.payload : {};
-        if (payload.verificationVersion !== 1 || payload.target !== target || !Number.isSafeInteger(Number(payload.runId)) || Number(payload.runId) < 1 || !Number.isSafeInteger(Number(payload.attempt)) || Number(payload.attempt) < 1) continue;
+        const eligible = payload.verificationVersion === 1 || payload.verificationVersion === 2
+          && payload.frontendUpdated === true && payload.apiUpdated === true && payload.directVerified === true && payload.publicPathVerified === false;
+        if (!eligible || payload.target !== target || !Number.isSafeInteger(Number(payload.runId)) || Number(payload.runId) < 1 || !Number.isSafeInteger(Number(payload.attempt)) || Number(payload.attempt) < 1) continue;
         const run = (await github.rest.actions.getWorkflowRunAttempt({ ...context.repo, run_id: payload.runId, attempt_number: Number(payload.attempt) })).data;
         const statuses = await github.paginate(github.rest.repos.listDeploymentStatuses, { ...context.repo, deployment_id: deployment.id, per_page: 100 });
         if (run.path === '.github/workflows/deploy-production.yml' && run.head_branch === 'main' && run.conclusion === 'success'

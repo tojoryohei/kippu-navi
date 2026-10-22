@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, appendFileSync } from 'node:fs';
 import { checkLeaseEnv } from './admission.mjs';
 import { servingRevision, verifyRevision } from './policy.mjs';
 import { config } from '../verification/config.mjs';
@@ -21,5 +21,7 @@ try {
 } catch (error) { report.error = error.message; process.exitCode = 1; }
 finally {
   report.elapsedMs = Date.now() - started;
-  writeFileSync('verification-results/revision.json', JSON.stringify(report, null, 2));
+  const serialized = JSON.stringify(report, null, 2);
+  writeFileSync('verification-results/revision.json', serialized);
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Cloud Run配信Revision照合\n\n\`\`\`json\n${serialized}\n\`\`\`\n`);
 }
