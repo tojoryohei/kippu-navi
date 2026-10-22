@@ -70,7 +70,34 @@ preflight・Revision・direct・resultのartifactは14日保持する。APIの�
 
 ポートフォリオには「新APIの直接検証」「固定3ケース」「公開経路は対象外」を示す。frontendのみは公開後動作未検証であることも示す。過去の公開経路の失敗・ローカル試験と、新方針の実環境成功を区別する。過去traceはURL・本文・個人情報・内部情報まで確認してから外部公開する。
 
-新方針のコード反映後のall/frontend/api受入と初回本番公開は未実施。以下は変更前の記録であり、新方針の完了を示さない。
+## 2026-10-22: 新方針のステージング受入
+
+対象SHAはPR #888反映後の`def1f5d56f5e17277a80110a924f9cebb791ad31`。同じSHAを指す`ci/staging-acceptance-20261022`に対し、all→frontend→apiの順に実行し、3パターンすべて最終成功した。
+
+| 更新対象 | 実行 | 実行日時（JST） | 所要時間 | 結果 |
+| --- | --- | --- | --- | --- |
+| all | [39726821946](https://github.com/tojoryohei/kippu-navi/actions/runs/39726821946) | 14:13:49〜14:20:55 | 7分6秒 | 両公開・Revision照合・直接検証・集計成功 |
+| frontend | [39727566586](https://github.com/tojoryohei/kippu-navi/actions/runs/39727566586) | 14:21:34〜14:24:09 | 2分35秒 | 公開・集計成功。APIと直接検証は対象外 |
+| api | [39727876203](https://github.com/tojoryohei/kippu-navi/actions/runs/39727876203) | 14:24:47〜14:29:18 | 4分31秒 | API公開・Revision照合・直接検証・集計成功 |
+
+allとapiの直接3券種は、HTTP 200・期待JSON・バイナリ内SHA一致で、それぞれ計641ms／615ms、再試行0回。両実行とも無認証403・不正audience401を確認。allの実ログで、staging主体によるproduction検証SAの偽装がiam.serviceAccounts.getOpenIdTokenのPERMISSION_DENIED（403）で拒否されたことを確認した。
+
+- allの配信Revision: `calculation-engine-staging-00091-6z8`。digest: `sha256:f1ba8785f910b1acbfc527b3e03f3c0717adb82b39727796271d02f2eb39a9d5`。
+- apiの配信Revision: `calculation-engine-staging-00092-54b`。digest: `sha256:6a7ba492f0addd90304ff498107a6a584c39617bbab12bd253379b27a4c614e5`。
+- 両実行のメタデータSHA・実応答SHAは対象と一致。frontendのみのexpectedApiShaはnull、directReasonはnot_applicable_api_unchanged。apiのみのfrontendArtifactShaはnull、frontendVerificationはnot_applicable_frontend_unchanged。
+- すべてpublicPathVerified=false。公開サイトへの通信・WASM取得・ブラウザー計算は実行していない。
+
+### 初回本番公開と完了確認
+
+3パターンの成功後にproduction EnvironmentのDEPLOYMENT_VERIFICATION_PRODUCTION_ENABLEDをtrueへ変更し、読み返して確認した。[初回本番all実行39728381483](https://github.com/tojoryohei/kippu-navi/actions/runs/39728381483)は14:30:09〜14:36:57 JST（6分48秒）で最終成功。対象は受入済みの同じSHA `def1f5d56f5e17277a80110a924f9cebb791ad31`。
+
+- フロントエンド・API公開、IAM確認、配信Revision・メタデータSHA・image digest照合、直接検証、最終集計がすべて成功。
+- 配信Revision: `calculation-engine-00045-qs7`。digest: `sha256:20e292f33002285bbf619baefc6b161d6edc9b450f5b179ef5cb913f1eae4d22`。
+- 直接検索は乗車券・定期券3箇月・IC定期券6箇月のすべてでHTTP 200・期待JSON・バイナリ内SHAが一致。計1,131ms、再試行0回。メタデータSHAも対象SHAと一致。
+- GitHub Deployment ID `7244673811`のverificationVersion=2、frontendUpdated=true、apiUpdated=true、directVerified=true、publicPathVerified=falseと、そのsuccess status・実行URLの一致を読み取り確認した。復旧根拠の記録条件を満たしているが、実際の復旧操作は行っていない。
+- 本番ゲートはtrueを維持。今後のmain更新は通常の統括公開へ進み、API更新時には直接検証が必須となる。過去のゲート停止runは失敗の履歴として残し、再実行しない。
+
+**Cloud Run直接検証を必須とする新方針の受入と初回本番確認は完了した。** フロントエンドSHAはartifactの確認のみであり、公開サイト・Cloudflare接続・公開WASM・画面上の計算結果は検証していない。固定3ケースの成功を全経路の計算正確性の保証とはしない。artifactは各runで14日保持する。以下の旧方針の失敗履歴は、この受入結果とは区別する。
 
 ## 旧方針の実測記録（履歴）
 
