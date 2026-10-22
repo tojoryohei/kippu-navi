@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.0...kippu-navi-v5.2.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **ci:** ステージング受入の認証拒否条件と失敗記録を修正 ([#886](https://github.com/tojoryohei/kippu-navi/issues/886)) ([fa0ab56](https://github.com/tojoryohei/kippu-navi/commit/fa0ab56a6e4eddbd5ce3003ce4c40d31045841e9))
+
 ## [5.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.1.0...kippu-navi-v5.2.0) (2026-10-20)
 
 
