@@ -34,7 +34,9 @@ test('stagingは明示的な手動実行だけを受け付ける', async () => {
 });
 
 test('ビルドと公開でWranglerの配信先・bindingsを一致させる', () => {
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- リポジトリ内の固定URLのみを読む。
   const original = JSON.parse(readFileSync(new URL('../../wrangler.jsonc', import.meta.url), 'utf8').replace(/,\s*([}\]])/g, '$1'));
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- リポジトリ内の固定URLのみを読む。
   const settings = JSON.parse(readFileSync(new URL('../../scripts/deploy/wrangler-settings.json', import.meta.url), 'utf8'));
   assert.equal(settings.compatibility_date, original.compatibility_date);
   const { directory: _directory, ...assets } = original.assets;
@@ -43,7 +45,11 @@ test('ビルドと公開でWranglerの配信先・bindingsを一致させる', (
   for (const environment of ['staging', 'production']) {
     const selected = environment === 'production' ? settings.environments.production : settings.environments.staging;
     assert.equal(config(environment).serviceUrl, selected.vars.API_ORIGIN);
-    for (const key of ['name', 'vars', 'routes']) assert.deepEqual(settings.environments[environment][key], original.env[environment][key]);
-    assert.deepEqual(settings.secrets, original.env[environment].secrets);
+    const expected = environment === 'production' ? original.env.production : original.env.staging;
+    assert.deepEqual(
+      { name: selected.name, vars: selected.vars, routes: selected.routes },
+      { name: expected.name, vars: expected.vars, routes: expected.routes },
+    );
+    assert.deepEqual(settings.secrets, expected.secrets);
   }
 });

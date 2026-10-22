@@ -8,7 +8,7 @@ const target = resolve('target');
 const bundle = join(temp, 'frontend-bundle');
 mkdirSync(join(bundle, 'worker'), { recursive: true });
 const version = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8')).version;
-if (!/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/.test(version)) throw new Error('アプリのバージョンが不正です');
+if (!/^\d+\.\d+\.\d+(?:|-[a-zA-Z0-9.-]+)$/.test(version)) throw new Error('アプリのバージョンが不正です');
 const release = `${version}+${process.env.TARGET_SHA}`;
 const environment = process.env.DEPLOY_ENVIRONMENT;
 // ビルド側ではtargetの設定を実行できるが、資格情報は持たない。
