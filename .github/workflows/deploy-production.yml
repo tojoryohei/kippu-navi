@@ -5,20 +5,20 @@ on:
   workflow_dispatch:
     inputs:
       components:
-        description: Components to deploy
+        description: 更新対象
         type: choice
         options: [auto, all, frontend, api]
         default: auto
       mode:
-        description: Normal deployment or explicit restore to a previously verified commit
+        description: 通常公開／過去の検証済みSHAへの明示的復旧
         type: choice
         options: [normal, restore]
         default: normal
       target_sha:
-        description: Full commit SHA to restore (leave empty for normal deployment)
+        description: 復旧対象の完全SHA（通常公開では空欄）
         type: string
       reason:
-        description: Reason for restoring (required in restore mode)
+        description: 復旧理由（restore時に必須）
         type: string
 permissions: {}
 jobs:
