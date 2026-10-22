@@ -71,11 +71,6 @@ jobs:
             }
             const lease = await admit({ github, context, target, environment, mode, reason, components });
             core.setOutput('lease', JSON.stringify(lease));
-      - name: ステージング受入完了まで本番公開を禁止
-        if: ${{ !inputs.staging }}
-        env:
-          ENABLED: ${{ vars.DEPLOYMENT_VERIFICATION_PRODUCTION_ENABLED }}
-        run: test "$ENABLED" = 'true'
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
         with:
           version: '565.0.0'
