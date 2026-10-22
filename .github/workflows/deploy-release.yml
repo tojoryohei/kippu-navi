@@ -1,4 +1,4 @@
-name: 公開と検証の統括
+name: deploy-release
 on:
   workflow_call:
     inputs:
@@ -234,6 +234,6 @@ jobs:
             const target = process.env.TARGET_SHA;
             const lease = JSON.parse(process.env.DEPLOY_LEASE);
             const deployment = await github.rest.repos.createDeployment({ ...context.repo, ref: target, environment: 'production', auto_merge: false, required_contexts: [],
-              description: '公開処理と必要なCloud Run直接検証に成功', payload: { verificationVersion: 2, target, runId: context.runId, attempt: process.env.GITHUB_RUN_ATTEMPT, controlSha: process.env.GITHUB_WORKFLOW_SHA, mode: lease.mode, frontendUpdated: process.env.FRONTEND_UPDATED === 'true', apiUpdated: process.env.API_UPDATED === 'true', directVerified: process.env.API_UPDATED === 'true', publicPathVerified: false } });
+              description: 'Deployment and required direct Cloud Run verification succeeded', payload: { verificationVersion: 2, target, runId: context.runId, attempt: process.env.GITHUB_RUN_ATTEMPT, controlSha: process.env.GITHUB_WORKFLOW_SHA, mode: lease.mode, frontendUpdated: process.env.FRONTEND_UPDATED === 'true', apiUpdated: process.env.API_UPDATED === 'true', directVerified: process.env.API_UPDATED === 'true', publicPathVerified: false } });
             await github.rest.repos.createDeploymentStatus({ ...context.repo, deployment_id: deployment.data.id, state: 'success', auto_inactive: false,
               log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`, environment_url: 'https://kippu-navi.com' });
