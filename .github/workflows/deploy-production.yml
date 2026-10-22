@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       components:
-        description: Components to deploy (use all for the first deployment)
+        description: Components to deploy
         type: choice
         options: [auto, all, frontend, api]
         default: auto
