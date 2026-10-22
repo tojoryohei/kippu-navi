@@ -136,3 +136,18 @@ npx playwright test --config playwright.dev.config.ts deployment-verifier.spec.m
 ### 検証器の通信と診断情報の境界
 
 通信先と検索入力は固定のコード定義から選び、設定ファイルの内容をそのまま外向き通信へ渡さない。APIの実応答は全体で期待JSONと比較するが、保存時は正常なSHA・UUID・HTTPステータス・キャッシュ状態・JSONの型と区間差異だけを記録する。未知の文字列・余分な本文・任意の例外メッセージは保存せず、異常な値は型や件数で示す。異常な応答でも保存量を制限し、トークンのマスクも維持する。
+
+### 2026-10-22: 新統括ワークフローによる初回受入（未完了）
+
+対象はmainと同じ完全SHA `01ba6553af63f0da32dfda9616ebd6d292f520e4`を指す専用ブランチ`ci/staging-acceptance-20261022`。本番ゲートは変更していない。
+
+[両サービス実行 39718678167](https://github.com/tojoryohei/kippu-navi/actions/runs/39718678167)は12:46:22〜12:54:00 JST、7分38秒で失敗。フロントエンド・API公開、IAM検証、実配信Revision・メタデータSHA・image digest照合は成功した。Revisionは`calculation-engine-staging-00089-w4b`、digestは`sha256:b794712f3c9ed557cb5d313dada2f97ada7f29ee77e3633e6eca7aab4b8ef174`。
+
+- 正常な直接検索3券種はHTTP 200・期待JSON・バイナリ内SHA一致。計745ms、再試行0回。
+- 無認証要求は403。不正audienceとしてサービスURLへパスを追加した要求は200となり、拒否検証が失敗した。別ホストの`https://deployment-verifier.invalid`へ変更する。これはトークンのaudience値であり、このホストへHTTP要求は送らない。変更後の実環境での拒否確認は未実施。
+- 公開HTTPとブラウザー3ケースは、manifest応答をJSONとして読めず失敗した。既存の失敗記録ではHTTPステータスが欠落しており、Cloudflareの制限・配信遅延など原因は未確定。非JSON時もステータス・限定したContent-Type・チャレンジ有無・キャッシュ状態を記録するよう補強し、応答本文は保存しない。
+- 直接正常応答の成功だけで受入成功とはしない。環境越境の拒否確認は先行失敗によりスキップされたため、証明できていない。traceは外部公開していない。
+
+制御コードはmain固定のため、修正PRのマージ後にallを再実行し、成功後にfrontend/apiを確認する。APIのみは既知の認証拒否検証失敗が解消するまで起動しない。本番の有効化条件は満たしていない。
+
+[フロントエンドのみ実行 39719409661](https://github.com/tojoryohei/kippu-navi/actions/runs/39719409661)は12:54:28〜12:58:27 JST、3分59秒で失敗。事前判定・フロントエンド公開は成功、API公開と直接検証は意図どおり対象外としてスキップされた。公開HTTPは128msで同じmanifest非JSONエラー、ブラウザー3ケースも同じ理由で失敗した。両サービス実行と同じ問題が再現しており、公開経路の受入も未完了。
