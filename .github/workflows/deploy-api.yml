@@ -39,7 +39,6 @@ jobs:
       target_sha: ${{ steps.resolve.outputs.target_sha }}
       control_sha: ${{ steps.resolve.outputs.control_sha }}
       environment: ${{ steps.resolve.outputs.environment }}
-      public_config: ${{ steps.resolve.outputs.public_config }}
     steps:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         id: resolve
@@ -48,7 +47,6 @@ jobs:
           CONTROL_SHA: ${{ github.workflow_sha }}
           DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
           DEPLOY_LEASE: ${{ inputs.lease }}
-          REPOSITORY_VARIABLES: ${{ toJSON(vars) }}
         with:
           script: |
             const { TARGET_SHA, CONTROL_SHA, DEPLOY_ENVIRONMENT } = process.env;
@@ -58,12 +56,6 @@ jobs:
             core.setOutput('target_sha', TARGET_SHA);
             core.setOutput('control_sha', CONTROL_SHA);
             core.setOutput('environment', DEPLOY_ENVIRONMENT);
-            const variables = JSON.parse(process.env.REPOSITORY_VARIABLES);
-            const config = {};
-            for (const key of ['PUBLIC_GOOGLE_ANALYTICS_ID', 'PUBLIC_POSTHOG_KEY', 'PUBLIC_SENTRY_DSN', 'SENTRY_ORG', 'SENTRY_PROJECT']) {
-              config[key] = variables[`${DEPLOY_ENVIRONMENT.toUpperCase()}_${key}`] ?? variables[key] ?? '';
-            }
-            core.setOutput('public_config', JSON.stringify(config));
   build:
     needs: resolve
     runs-on: ubuntu-latest
