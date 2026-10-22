@@ -47,6 +47,17 @@ export function decideApi({ baseline, target, diff = (base, head) => {
   }
 }
 
+export function planRelease({ components, target, decision }) {
+  if (!['auto', 'all', 'frontend', 'api'].includes(components)) throw new Error('不正な更新対象');
+  // フロントエンドのみの指定でも、APIの変更や基準不明を無視しない。
+  if (components === 'frontend' && decision.update) throw new Error(`API更新を省略できません: ${decision.reason}`);
+  const api = components !== 'frontend' && (components !== 'auto' || decision.update);
+  const frontend = components !== 'api';
+  return { api, frontend, decision, expectedFrontendArtifactSha: frontend ? target : null,
+    frontendVerification: frontend ? 'artifact_only' : 'not_applicable_frontend_unchanged', publicPathVerified: false,
+    expectedApiSha: api ? target : null };
+}
+
 export function verifyRevision(service, revision, { target, image }) {
   const name = servingRevision(service);
   if (!name || revision.metadata?.name !== name || revisionCommit(revision) !== target) throw new Error('配信Revisionまたは比較用SHAが公開対象と一致しません');
@@ -56,7 +67,7 @@ export function verifyRevision(service, revision, { target, image }) {
 }
 
 export function aggregate({ frontendUpdated, apiUpdated, jobs }) {
-  const expected = { frontend: frontendUpdated ? 'success' : 'skipped', api: apiUpdated ? 'success' : 'skipped', direct: apiUpdated ? 'success' : 'skipped', public: 'success' };
-  return { success: jobs.frontend === expected.frontend && jobs.api === expected.api && jobs.direct === expected.direct && jobs.public === expected.public, expected, actual: jobs,
+  const expected = { frontend: frontendUpdated ? 'success' : 'skipped', api: apiUpdated ? 'success' : 'skipped', direct: apiUpdated ? 'success' : 'skipped' };
+  return { success: jobs.frontend === expected.frontend && jobs.api === expected.api && jobs.direct === expected.direct, expected, actual: jobs,
     directReason: apiUpdated ? 'required_after_api_update' : 'not_applicable_api_unchanged' };
 }

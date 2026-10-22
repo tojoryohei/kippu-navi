@@ -1,113 +1,78 @@
-# デプロイ後の検証と復旧
+# Cloud Run直接検証と復旧
 
-## 検証範囲
+## 現在の検証範囲
 
-| 更新対象 | Cloud Run直接 | 公開HTTP・ブラウザー |
+| 更新対象 | 必須条件 | 公開後の確認範囲 |
 | --- | --- | --- |
-| 両方 | API公開・IAM・Revision照合後に実行 | 両方公開後に実行 |
-| フロントエンドのみ | 対象外と記録 | 必須 |
-| APIのみ | 必須 | 必須。既存フロントエンドSHAの維持も確認 |
+| 両サービス | 両公開・IAM・Revision照合・直接検証の成功 | 新APIの固定3ケース |
+| フロントエンドのみ | フロントエンド公開の成功 | 動作確認なし。直接検証は対象外 |
+| APIのみ | API公開・IAM・Revision照合・直接検証の成功 | 新APIの固定3ケース。既存フロントエンドSHAは対象外 |
 
-直接検証はCloudflareを経由せず、新しく公開されたAPIバイナリのSHAと3券種の検索JSONを確認する。公開検証は通常のキャッシュ条件で利用者の経路を確認し、キャッシュ中のAPIヘッダーが新APIのSHAと異なることは許容する。直接検証が失敗しても公開結果を記録し、最終結果は失敗にする。
+専用SAでCloud Runのrun.appへ直接アクセスし、配信Revision・image digest・比較用メタデータSHA・バイナリ内SHAと検索JSONを確認する。フロントエンドのSHAは公開に使用したartifactの検証結果であり、公開先から読み返した値ではない。更新しないフロントエンドSHAはnullと対象外理由を記録する。事前判定では期待artifact SHA、最終集計では公開成功時だけartifact SHAを記録する。
 
-固定3ケースでは全経路の計算正確性、公開APIのキャッシュ更新、すべてのブラウザーや既存PWAタブは保証しない。実際のキャッシュHITが記録されていないテストを「キャッシュされた実環境での証明」と表現しない。
+公開サイトへのHTTP・ブラウザー検証はデプロイ処理から完全に外す。公開API、CloudflareからAPIへの接続、公開WASM、画面上の計算結果、全経路の計算正確性・キャッシュ更新は保証対象外。`/deployment.json`の生成・配信は維持するが、APIのみの更新を含め、デプロイ処理から取得しない。固定IPランナーやCloudflare保護設定の変更は行わない。既存のビルド・通常のローカルE2Eは維持する。
 
-## 起動経路と排他制御
+## 公開制御とAPI更新判定
 
-- 本番: `deploy-production.yml`。main pushは`components=auto`。手動はauto/all/frontend/apiを選択する。
-- ステージング: mainから`deploy-staging.yml`を起動し、同一リポジトリの非mainブランチを指定する。既定はall。待機後にもブランチ・PRのSHAを再確認する。
-- 両入口は`deploy-release.yml`を呼び、`deployment-production`または`deployment-staging`の同じ排他区間を取得する。
-- 既存のfrontend/APIワークフローは再利用専用。外部の資格情報がないbuildと、control_shaを使う公開処理の分離は維持する。
+本番は`deploy-production.yml`、ステージングはmainから`deploy-staging.yml`を手動起動し、同一リポジトリの非mainブランチを指定する。両入口は`deploy-release.yml`へ統合し、通常公開・復旧とも環境別の`deployment-production`／`deployment-staging`で排他制御する。子ワークフローは再利用専用。資格情報なしのビルド、control_sha固定の制御コード、artifact ID・ハッシュ照合を維持する。
 
-通常の本番公開では、排他取得後、公開開始時のmain先頭と対象SHAを照合して固定する。途中でmainが進んでも同じ実行内では継続する。古い実行の対象を新しいmainへ読み替えない。
+通常本番は排他取得後の公開開始時に対象SHAとmain先頭の一致を確認し、その実行中は固定する。途中でmainが進んでも継続し、古い対象をmainへ読み替えない。開始確認はrun ID・attempt・SHA・環境に結び付ける。失敗ジョブだけの再実行は古いattemptの確認を拒否するため、統括から全ジョブを再実行する。対象が古い通常公開は最新mainの新規実行を使う。
 
-開始確認はrun ID・attempt・SHA・環境に結び付ける。古い確認を使う「失敗ジョブだけ再実行」は公開を拒否する。統括から**全ジョブを再実行**する。それでも対象が古ければ通常公開は拒否されるため、最新mainの新しい実行を利用する。
+Cloud Runの実配信状態がReady・観測済みで、正の割合のRevisionが1つ、合計100%の場合だけ実行時DEPLOY_COMMITを比較元にする。latestCreated/latestReadyや0%タグは基準にしない。分割配信・未確定・SHA不明・履歴不足・差分失敗ではAPI更新を省略しない。frontendを明示してもAPI変更・基準不明ならallでの再実行を求める。
 
-## API更新判定と識別情報
+比較は基準SHAと対象SHAのツリー間。`calculation-engine/**`、`.github/workflows/**`、`scripts/**`と`.dockerignore`、`.node-version`、`.npmrc`、`package.json`、`package-lock.json`、`wrangler.jsonc`、`astro.config.mjs`、`tsconfig.json`をAPI更新対象とする。
 
-Cloud Runの実配信状態がReady・観測済みで、正のトラフィック割合を持つRevisionが1つ、合計100%の場合だけ、そのRevisionの実行時`DEPLOY_COMMIT`を比較元にする。latestCreated/latestReadyの順序は使わない。0%のタグ付きRevisionは基準にしない。
+DEPLOY_COMMITは次回判定用、バイナリ内SHAのX-Deployment-Commitは直接検証用の証拠。API公開後、新Revisionへの100%配信・Ready・メタデータSHA・digestを照合し、直接応答のSHAも照合する。本番キャッシュとstagingのno-storeを維持する。
 
-分割配信、未確定状態、基準SHA不明、浅い履歴、commit不足、差分取得失敗ではAPI更新を省略しない。`frontend`を明示していても、この条件では公開を拒否しallでの再実行を求める。
+## 認証と直接検証
 
-比較は基準SHAと対象SHAのツリー間。`calculation-engine/**`、`.github/workflows/**`、`scripts/**`、`.dockerignore`、`.node-version`、`.npmrc`、`package.json`、`package-lock.json`、`wrangler.jsonc`、`astro.config.mjs`、`tsconfig.json`の変更をAPI更新対象にする。
+既存WIF・Environment保護を維持し、環境別の専用SAを使用する。
 
-- Revisionの実行時`DEPLOY_COMMIT`: 次回の差分判定用。
-- バイナリ内SHA→`X-Deployment-Commit`: 直接応答の証拠。実行時変数で上書きしない。
-- `/deployment.json`: フロントエンドの環境・SHA・enginePath。
+- staging: `github-smoke-staging@bubbly-trail-470023-e4.iam.gserviceaccount.com`
+- production: `github-smoke-production@bubbly-trail-470023-e4.iam.gserviceaccount.com`
 
-API公開では対象SHAを実行時メタデータにも指定し、新Revisionへ100%配信する。Ready・実配信先・メタデータSHA・image digestを照合してから、専用SAで直接検索する。本番ヘッダー追加でキャッシュ方針を変えず、stagingのno-storeを維持する。
-
-## 初期設定
-
-既存のEnvironment保護・承認ルールを維持する。検証SAはデプロイSA・Cloudflare Invokerとは別で、キーを作成しない。
-
-以下は管理用の既存gcloudログインで実行する。`--apply`なしはWIFを読み取って具体的な設定内容を表示するだけ。
+各SAは対応Cloud Runだけのroles/run.invokerを持ち、WIF委譲は対象リポジトリ・対応Environmentのsubjectだけに限定する。SAキーやプロジェクト単位のInvokerは追加しない。初期設定は`setup-verification-iam.mjs`を既存管理用gcloudログインから実行する。`--apply`なしは読み取り専用。
 
 ```sh
 node scripts/deploy/setup-verification-iam.mjs --environment staging --provider projects/198310540092/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider-cli --apply
 node scripts/deploy/setup-verification-iam.mjs --environment production --provider projects/198310540092/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider-cli --apply
 ```
 
-作成するSA:
+EnvironmentのSMOKE_SERVICE_ACCOUNTに対応メールを設定する。既存WIF_PROVIDER・SA_EMAILは環境別設定を使用する。検証直前にサービスURLをaudienceとする短命IDトークンを取得する。検証ツールは認証前に準備する。事前判定のデプロイSAにはサービス・Revision読み取りが必要だが、検証SAには渡さない。
 
-- staging: `github-smoke-staging@bubbly-trail-470023-e4.iam.gserviceaccount.com`
-- production: `github-smoke-production@bubbly-trail-470023-e4.iam.gserviceaccount.com`
-
-それぞれのSAに、既存WIFの**同一リポジトリ・該当Environmentのsubjectだけ**を`roles/iam.workloadIdentityUser`として許可する。各Cloud Runサービスに、対応するSAだけの`roles/run.invoker`を追加する。プロジェクト単位のロールやToken Creatorは追加しない。
-
-GitHub Environment Variablesへそれぞれのメールを`SMOKE_SERVICE_ACCOUNT`として設定する。既存`WIF_PROVIDER`・`SA_EMAIL`は引き続きEnvironmentごとの設定を使う。事前判定のデプロイSAにはサービス・Revisionの読み取りが必要で、専用検証SAにその権限は渡さない。
-
-本番はEnvironment Variable `DEPLOYMENT_VERIFICATION_PRODUCTION_ENABLED=true`になるまで、ビルド・公開に進まない。mainへの初回導入後も先にステージングの受入を完了させる。変数未設定中の本番実行は意図的に失敗する。
-
-## 直接検証とブラウザー検証
-
-期待ケースは`cases.mjs`に固定し、API例の既存テストでも共有する。
-
-| 券種 | 入力 | APIのmonths | 画面の期待金額 |
+| 券種 | 区間 | API | 期間 |
 | --- | --- | --- | --- |
-| 乗車券 | 茂原→新茂原 | なし | 160円 |
-| 定期券 | 茂原→新茂原 | 3 | 13,960円 |
-| IC定期券 | 茂原→新茂原 | 6 | 26,620円 |
+| 乗車券 | 茂原→新茂原 | /api/split/auto/ticket | なし |
+| 定期券 | 茂原→新茂原 | /api/split/auto/pass | months=3 |
+| IC定期券 | 茂原→新茂原 | /api/split/auto/ic-pass | months=6 |
 
-金額はリポジトリのJR東日本の3km運賃、幹線定期運賃表の3km欄、対象区間の非バリアフリー設定から固定した。実測から自動更新しない。運賃データ変更時は根拠を確認してfixtureをレビューする。
+共有fixtureはcases.mjs。各応答でHTTP 200、対象の完全SHA、JSON全体`{"normal":["茂原","新茂原"],"results":[["茂原","新茂原"]]}`を照合する。35秒タイムアウト。初回有効応答前の接続失敗・タイムアウト・識別ヘッダーなし503だけ起動待ち候補として5秒／10秒で最大2回再試行する。起動遅延と断定せず、401/403・アプリエラー・SHA/JSON不一致は即時失敗にする。
 
-3 APIとも期待JSONは`normal=[茂原,新茂原]`、`results=[[茂原,新茂原]]`。HTTP 200とJSON全体を比較する。直接検証だけバイナリSHAも比較する。
+stagingではIAMを変更せず、無認証403・別ホストの不正audienceで401/403となることを確認する。不正audience値は`https://deployment-verifier.invalid`で、このホストへ通信しない。production検証SAへの偽装拒否も記録し、実ログのPERMISSION_DENIEDを確認する。単なる通信障害をIAM制限の証拠にしない。
 
-直接HTTPは35秒でタイムアウト。最初の有効応答前の接続失敗・タイムアウト・識別ヘッダーなし503だけ、起動待ち候補として5秒/10秒で最大2回再試行する。起動遅延と断定しない。認証、アプリエラー、SHA/JSON不一致は即時失敗。公開HTTP・Playwrightのテスト再試行はしない。
+## 集計・記録・復旧
 
-公開ブラウザーはChromiumの新規コンテキストで、3券種の入力・期間を選択して検索する。操作前に、同一origin・GET・パス・駅・期間が一致するAPI応答待機を登録する。実APIの正常JSON、対象WASMの200・magic、区間・期間・分割前/最安金額の表示で判定する。内部Workerメッセージ形式は合否条件にしない。公開API障害をローカルフォールバック成功で代替しない。
+最終集計は先行失敗時も実行し、事前判定、必要な公開、API更新時の直接検証の失敗・キャンセル・予期しないskipを失敗にする。frontendのみではAPI・直接検証を対象外として記録する。
 
-## 受入検証と検証器のテスト
+preflight・Revision・direct・resultのartifactは14日保持する。APIの期待/実際SHA、Revision、digest、ステータス、JSON差異、request ID、再試行・所要時間、対象外理由をJSON・Summaryに記録する。API応答・例外の任意文字列や資格情報を保存せず、固定した診断値とトークンのマスクを維持する。
 
-検証器のテストはローカルで行う。共有stagingのアプリ・IAMは壊さない。
+本番成功記録はverificationVersion=2。更新対象、directVerified、publicPathVerified=falseを明示する。成功した両サービス更新・直接検証の記録だけをv2の復旧根拠にする。部分更新も成功記録は残すが復旧根拠にはしない。既存v1の復旧判定は維持し、いずれも対応するrun attemptの成功とDeploymentの過去successを必要とする。後続公開でinactiveになった記録も参照できる。記録保存失敗もActionsの失敗とする。
 
-```sh
-node --test tests/automation/*.test.mjs tests/verification/*.test.mjs
-npx playwright test --config playwright.dev.config.ts deployment-verifier.spec.mjs
-```
+復旧はmainから手動でmode=restore、main履歴上の完全SHA、理由、components=allを指定する。両サービスを再公開・直接検証する。自動ロールバックは行わない。部分公開の失敗時も旧版へ戻ったとは扱わない。ビルドartifactは1日保持のため、失効時は再ビルドする。
 
-- SHA/JSON不一致: 検証器の期待値だけ変更。
-- API/WASM障害: 検証器のローカルテストで通信失敗を再現。
-- 集計: 公開成功＋直接失敗でも全体失敗。必須ジョブのskipも失敗。
-- 判定/ガード: 配信中・ロールバック・分割配信・履歴不足・共通設定変更・古いrun/attemptの拒否。
+## 新方針の受入と本番有効化
 
-実環境の通常受入では通信を差し替えず、stagingでall/frontend/apiの3通りを実行する。初回はall必須。stagingの直接検証ではIAMを変更せず、無認証・不正audienceの要求が401/403となることも確認する。production検証SAへの環境越境の偽装失敗は別ステップに記録し、実ログで権限拒否が原因であることを確認する。単なるネットワーク障害によるAction失敗をIAM制限の証明にしない。
+本番ゲート`DEPLOYMENT_VERIFICATION_PRODUCTION_ENABLED`は、新方針の受入完了までfalseを維持する。mainへ反映後、同じ対象SHAの専用ブランチでstagingのall→frontend→apiを順に実行する。各最終結果と所要時間、直接検証・認証拒否結果、frontendのみの対象外記録を確認する。公開サイトへの通信は行わない。
 
-受入完了後に本番の有効化変数を設定し、初回本番はallで実行する。
+3パターン成功後に本番ゲートをtrueへ変更し、最新mainで初回本番をallとして新規実行する。本番の両公開・Revision照合・直接検証・v2成功記録を確認して完了とする。受入前のゲート停止は意図した失敗であり、その間main更新は本番へ公開されない。
 
-## 記録・再実行・復旧
+ローカルでは既存automation・verificationテスト、通常のローカルE2E、actionlint・ShellCheck・ESLint・Knipを実行する。検証器の失敗テストは期待値やローカル通信を変更し、共有アプリ・IAMを壊さない。削除した公開検証専用テストは実行しない。
 
-各runでpreflight、Revision照合、direct、public、resultのartifactを14日保持する。公開検証のJSON、API差分、期待/実際のSHA、request ID、所要時間、失敗時のtrace・スクリーンショットを確認する。資格情報ファイルをartifactに含めず、トークンは出力しない。
+ポートフォリオには「新APIの直接検証」「固定3ケース」「公開経路は対象外」を示す。frontendのみは公開後動作未検証であることも示す。過去の公開経路の失敗・ローカル試験と、新方針の実環境成功を区別する。過去traceはURL・本文・個人情報・内部情報まで確認してから外部公開する。
 
-ブラウザートレースを外部公開する前には、認証情報以外も含めてURL・本文・個人情報・内部情報を確認する。ポートフォリオには対象SHA・日時・検証範囲・正常/失敗検出の違いを添える。保持期間を超えて紹介する場合は、内容確認済みの記録を別途保存する。
+新方針のコード反映後のall/frontend/api受入と初回本番公開は未実施。以下は変更前の記録であり、新方針の完了を示さない。
 
-自動ロールバックはしない。部分公開後の検証失敗でも両サービスが旧版へ戻ったとは扱わない。前述の全ジョブ再実行か、必要なら次の明示的復旧を選ぶ。ビルドartifactは既存どおり1日保持なので、失効時は新しくビルドする。
-
-復旧は`deploy-production.yml`をmainから手動起動し、mode=restore、対象の完全SHA、理由を指定する。componentsはallに固定される。対象がmain履歴上にあり、検証導入後の成功した統括runに結び付く本番Deployment成功記録がある場合だけ受け付ける。古い任意SHAの通常公開は許可しない。
-
-本番正常公開後、GitHub Deploymentsへバージョン付きの成功記録を残す。記録に対応するrun attemptが失敗、記録なし、または本検証導入前なら拒否する。後続デプロイでinactiveになった履歴でも、記録したattemptの成功と過去のsuccess statusを確認できれば復旧対象にできる。記録保存に失敗した場合もrunを失敗とし、自動復旧対象として登録されたとは扱わない。
-
-## 導入時の実測記録
+## 旧方針の実測記録（履歴）
 
 コード内の検証器テストと、実環境の受入結果は分けて記録する。新ワークフローはmainの制御コードから動かすため、ローカルの成功だけでActionsやstagingを検証済みとしない。本番の有効化変数はステージング受入完了まで設定しない。
 
@@ -151,3 +116,10 @@ npx playwright test --config playwright.dev.config.ts deployment-verifier.spec.m
 制御コードはmain固定のため、修正PRのマージ後にallを再実行し、成功後にfrontend/apiを確認する。APIのみは既知の認証拒否検証失敗が解消するまで起動しない。本番の有効化条件は満たしていない。
 
 [フロントエンドのみ実行 39719409661](https://github.com/tojoryohei/kippu-navi/actions/runs/39719409661)は12:54:28〜12:58:27 JST、3分59秒で失敗。事前判定・フロントエンド公開は成功、API公開と直接検証は意図どおり対象外としてスキップされた。公開HTTPは128msで同じmanifest非JSONエラー、ブラウザー3ケースも同じ理由で失敗した。両サービス実行と同じ問題が再現しており、公開経路の受入も未完了。
+
+
+### 2026-10-22: PR #886反映後の旧方針での再受入
+
+[実行39720606353](https://github.com/tojoryohei/kippu-navi/actions/runs/39720606353)、対象SHA `fa0ab56a6e4eddbd5ce3003ce4c40d31045841e9`。13:07:34〜13:15:41 JST（8分7秒）。両公開とRevision照合、直接3券種は成功（計882ms）。配信Revisionは`calculation-engine-staging-00090-l9p`、digestは`sha256:1032dae8d5a0195faacd815e6c22a9283552ed26ac3f374502d0557d16ff8d0f`、メタデータ・バイナリ内SHAは対象と一致した。
+
+無認証403、不正audience401。環境越境の偽装はiam.serviceAccounts.getOpenIdTokenのPERMISSION_DENIED（403）で拒否。公開manifestは403・text/html・cf-mitigated: challengeで失敗（363ms）し、ブラウザー3ケースも失敗した。Cloudflare管理画面でも該当要求のBot Fightモードによるマネージドチャレンジを確認。旧方針の全体結果は失敗のまま保持し、新方針の受入成功として流用しない。Cloudflare保護設定・本番ゲートは変更していない。

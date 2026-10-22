@@ -142,7 +142,7 @@ WASM・Goランタイム・2種類のBINの内容からSHA-256を計算し、`/e
 
 ## デプロイ
 
-本番・ステージングのデプロイ、Cloud Run認証、鍵ローテーションは[運用手順](docs/deployment.md)を参照してください。
+本番・ステージングのデプロイ、Cloud Run認証、鍵ローテーションは[運用手順](docs/deployment.md)を参照してください。API更新時はCloud Runの配信Revision・SHAと固定3ケースの直接検索を検証します。公開サイト・Cloudflare接続・公開WASM・画面上の計算結果はデプロイ後検証の対象外です。
 
 Noto Sans JPはGoogle FontsのCSS2 APIが返す`unicode-range`別の可変フォントを使用します。Cloudflareダッシュボードの「Speed > Settings > Content Optimization」でCloudflare Fontsを有効にすると、Google FontsへのリンクがインラインCSSへ変換され、必要なサブセットだけが同一オリジンの`/cf-fonts/`から配信されます。Google Fontsへの`preconnect`はローカル開発や変換対象外時のフォールバック用で、変換時にはCloudflareが削除します。
 

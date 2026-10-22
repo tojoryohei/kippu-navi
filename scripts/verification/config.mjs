@@ -5,7 +5,6 @@ export function config(environment) {
   if (!['production', 'staging'].includes(environment)) throw new Error('不正な検証環境');
   // トークンを送る接続先は、ファイルや応答から取得せず固定定義から選ぶ。
   return Object.freeze({ environment,
-    publicUrl: environment === 'production' ? 'https://kippu-navi.com' : 'https://staging.kippu-navi.com',
     serviceUrl: environment === 'production'
       ? 'https://calculation-engine-198310540092.asia-northeast1.run.app'
       : 'https://calculation-engine-staging-198310540092.asia-northeast1.run.app',
@@ -13,10 +12,9 @@ export function config(environment) {
     project: 'bubbly-trail-470023-e4', region: 'asia-northeast1' });
 }
 
-export function trustedApiBase(base, authenticated = false) {
+export function trustedApiBase(base) {
   for (const environment of ['production', 'staging']) {
     const c = config(environment);
-    if (!authenticated && base === c.publicUrl) return c.publicUrl;
     if (base === c.serviceUrl) return c.serviceUrl;
   }
   throw new Error('検証APIの接続先が許可されていません');

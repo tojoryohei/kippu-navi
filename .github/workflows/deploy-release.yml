@@ -41,7 +41,6 @@ jobs:
       lease: ${{ steps.start.outputs.lease }}
       api: ${{ steps.plan.outputs.api }}
       frontend: ${{ steps.plan.outputs.frontend }}
-      frontend_sha: ${{ steps.plan.outputs.frontend_sha }}
       api_sha: ${{ steps.plan.outputs.api_sha }}
     env:
       TARGET_SHA: ${{ inputs.target_sha }}
@@ -198,48 +197,8 @@ jobs:
           name: direct-${{ inputs.staging && 'staging' || 'production' }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: verification-results/
           retention-days: 14
-  public:
-    needs: [preflight, frontend, api, direct]
-    # 直接検証に失敗しても公開経路の証拠を残し、最終集計は失敗にする。
-    if: ${{ !cancelled() && needs.preflight.result == 'success' && (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') && (needs.api.result == 'success' || needs.api.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    env:
-      TARGET_SHA: ${{ inputs.target_sha }}
-      DEPLOY_ENVIRONMENT: ${{ inputs.staging && 'staging' || 'production' }}
-      DEPLOY_LEASE: ${{ needs.preflight.outputs.lease }}
-      EXPECTED_FRONTEND_SHA: ${{ needs.preflight.outputs.frontend_sha }}
-      EXPECTED_API_SHA: ${{ needs.preflight.outputs.api_sha }}
-      VERIFY_MODE: public
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.workflow_sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version-file: .node-version
-      - run: node scripts/deploy/check-lease.mjs
-      - name: 固定版ブラウザー検証ツールを準備
-        run: node scripts/verification/prepare-browser.mjs
-      - name: 公開HTTP検証
-        id: http
-        run: node scripts/verification/run-http.mjs
-      - name: 公開ブラウザー検証
-        if: ${{ !cancelled() && steps.http.outcome != 'skipped' }}
-        run: node scripts/verification/run-browser.mjs
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: always()
-        with:
-          name: public-${{ inputs.staging && 'staging' || 'production' }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            verification-results/
-            test-results/
-          retention-days: 14
   result:
-    needs: [preflight, frontend, api, direct, public]
+    needs: [preflight, frontend, api, direct]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -269,14 +228,17 @@ jobs:
           name: result-${{ inputs.staging && 'staging' || 'production' }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: verification-results/
           retention-days: 14
-      - name: 検証済み本番SHAを復旧用に記録
+      - name: 検証範囲を付けて本番公開の成功を記録
         if: ${{ success() && !inputs.staging }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        env:
+          FRONTEND_UPDATED: ${{ needs.preflight.outputs.frontend }}
+          API_UPDATED: ${{ needs.preflight.outputs.api }}
         with:
           script: |
             const target = process.env.TARGET_SHA;
             const lease = JSON.parse(process.env.DEPLOY_LEASE);
             const deployment = await github.rest.repos.createDeployment({ ...context.repo, ref: target, environment: 'production', auto_merge: false, required_contexts: [],
-              description: '直接検証と公開経路検証に成功', payload: { verificationVersion: 1, target, runId: context.runId, attempt: process.env.GITHUB_RUN_ATTEMPT, controlSha: process.env.GITHUB_WORKFLOW_SHA, mode: lease.mode } });
+              description: '公開処理と必要なCloud Run直接検証に成功', payload: { verificationVersion: 2, target, runId: context.runId, attempt: process.env.GITHUB_RUN_ATTEMPT, controlSha: process.env.GITHUB_WORKFLOW_SHA, mode: lease.mode, frontendUpdated: process.env.FRONTEND_UPDATED === 'true', apiUpdated: process.env.API_UPDATED === 'true', directVerified: process.env.API_UPDATED === 'true', publicPathVerified: false } });
             await github.rest.repos.createDeploymentStatus({ ...context.repo, deployment_id: deployment.data.id, state: 'success', auto_inactive: false,
               log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`, environment_url: 'https://kippu-navi.com' });

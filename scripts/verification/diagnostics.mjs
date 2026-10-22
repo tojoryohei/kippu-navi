@@ -12,10 +12,6 @@ function identifier(value, pattern, alphabet) {
 export function commitDiagnostic(value) {
   return value === null || value === undefined ? null : identifier(value, /^[a-f0-9]{40}$/, hex);
 }
-export function enginePathDiagnostic(value) {
-  if (typeof value !== 'string' || !/^\/engine\/[a-f0-9]{64}$/.test(value)) return '[invalid]';
-  return `/engine/${identifier(value.slice(8), /^[a-f0-9]{64}$/, hex)}`;
-}
 export function requestIdDiagnostic(value) {
   return value === null ? null : identifier(value, /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i, uuid);
 }
@@ -48,8 +44,4 @@ export function jsonDiagnostic(value, fixture) {
   return { normal: path(value.normal, fixture), results: Array.isArray(value.results)
     ? { length: count(value.results.length), paths: value.results.slice(0, 8).map(result => path(result, fixture)), truncated: value.results.length > 8 }
     : { type: type(value.results) }, unexpectedKeyCount: count(Object.keys(value).filter(key => key !== 'normal' && key !== 'results').length) };
-}
-export function manifestDiagnostic(value) {
-  return { environment: ['production', 'staging'].find(environment => environment === value?.environment) ?? '[invalid]',
-    commit: commitDiagnostic(value?.commit), enginePath: enginePathDiagnostic(value?.enginePath) };
 }
