@@ -28,7 +28,14 @@ export async function verifyManifest(base, environment, sha, fetcher = fetch) {
   if (base !== selected.publicUrl) throw new Error('manifestの接続先が対象環境と一致しません');
   const response = await fetcher(`${selected.publicUrl}/deployment.json`, { signal: AbortSignal.timeout(35000), redirect: 'error' });
   let manifest;
-  try { manifest = await response.json(); } catch { throw new VerificationError('manifest_json'); }
+  try { manifest = await response.json(); } catch {
+    throw new VerificationError('manifest_json', {
+      status: statusDiagnostic(response.status),
+      contentType: ['application/json', 'text/html', 'text/plain'].find(type => response.headers.get('content-type')?.split(';')[0].trim() === type) ?? '[other]',
+      challenge: response.headers.get('cf-mitigated') === 'challenge',
+      cacheStatus: cacheDiagnostic(response.headers.get('cf-cache-status')),
+    });
+  }
   if (response.status !== 200 || manifest?.environment !== environment || !SHA.test(sha) || manifest?.commit !== sha
       || !/^\/engine\/[a-f0-9]{64}$/.test(manifest?.enginePath)) {
     throw new VerificationError('manifest', { status: statusDiagnostic(response.status), expected: { environment, commit: sha }, actual: manifestDiagnostic(manifest) });

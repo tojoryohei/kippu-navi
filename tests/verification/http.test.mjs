@@ -62,6 +62,13 @@ test('manifestの期待SHA・環境・WASMパス不一致を拒否する', async
   await assert.rejects(verifyManifest(config('staging').publicUrl, 'production', sha, fetcher));
   await assert.rejects(verifyManifest(config('staging').publicUrl, 'staging', 'b'.repeat(40), fetcher));
   await assert.rejects(verifyManifest(config('staging').publicUrl, 'staging', sha, async () => Response.json({ ...manifest, enginePath: 'https://other.invalid/engine' })));
+  await assert.rejects(verifyManifest(config('staging').publicUrl, 'staging', sha, async () => new Response('保存しない応答本文', {
+    status: 403, headers: { 'content-type': 'text/html; charset=utf-8', 'cf-mitigated': 'challenge' },
+  })), error => {
+    assert.deepEqual(error.details, { status: 403, contentType: 'text/html', challenge: true, cacheStatus: null });
+    assert.equal(JSON.stringify(error).includes('保存しない応答本文'), false);
+    return error.code === 'manifest_json';
+  });
 });
 
 test('APIがトークンをechoしてもartifactとSummaryのシリアライズでは伏せる', async () => {

@@ -166,7 +166,7 @@ jobs:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ vars.SMOKE_SERVICE_ACCOUNT }}
           token_format: id_token
-          id_token_audience: ${{ steps.config.outputs.audience }}/invalid-verifier-audience
+          id_token_audience: https://deployment-verifier.invalid
           create_credentials_file: false
           export_environment_variables: false
       - name: 無認証・不正audienceの拒否を確認
