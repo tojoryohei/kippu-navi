@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.1...kippu-navi-v5.2.2) (2026-10-23)
+
+
+### Bug Fixes
+
+* Renovateの既存PRを時間外も自動rebaseする ([#908](https://github.com/tojoryohei/kippu-navi/issues/908)) ([2b1b973](https://github.com/tojoryohei/kippu-navi/commit/2b1b973ba8441b6b7db11653c3f64e2133383820))
+
 ## [5.2.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.0...kippu-navi-v5.2.1) (2026-10-22)
 
 ### デプロイとCloud Run直接検証
