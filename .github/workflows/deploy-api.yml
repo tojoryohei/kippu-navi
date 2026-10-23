@@ -203,9 +203,6 @@ jobs:
           EXPECTED_SHA256: ${{ needs.build.outputs.api_sha256 }}
           EXPECTED_ATTEMPT: ${{ needs.build.outputs.attempt }}
         run: python3 control/scripts/deploy/artifact.py verify api incoming/api.tgz "$RUNNER_TEMP/verified-api"
-      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
-        with:
-          version: '565.0.0'
       - name: 資格情報を渡す前にイメージを読み込む
         run: |
           docker load -i "$RUNNER_TEMP/verified-api/image.tar"
@@ -214,6 +211,9 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.SA_EMAIL }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          version: '565.0.0'
       - name: 登録してdigestを記録
         id: publish
         run: |
@@ -258,9 +258,6 @@ jobs:
           node-version-file: control/.node-version
       - name: 現在の公開開始確認を照合
         run: node control/scripts/deploy/check-lease.mjs
-      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
-        with:
-          version: '565.0.0'
       - name: 登録結果と公開先を検証
         run: |
           set -euo pipefail
@@ -274,6 +271,9 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.SA_EMAIL }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          version: '565.0.0'
       - name: digestでCloud Runに公開
         run: |
           gcloud run deploy "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" \
