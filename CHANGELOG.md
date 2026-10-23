@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.2...kippu-navi-v5.2.3) (2026-10-23)
+
+
+### Bug Fixes
+
+* APIビルド用DockerイメージをGo 1.27.3に更新 ([#911](https://github.com/tojoryohei/kippu-navi/issues/911)) ([87f0c4a](https://github.com/tojoryohei/kippu-navi/commit/87f0c4a6ce3966cad8fad30cbf72fdf6e54e234e))
+
 ## [5.2.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.1...kippu-navi-v5.2.2) (2026-10-23)
 
 
