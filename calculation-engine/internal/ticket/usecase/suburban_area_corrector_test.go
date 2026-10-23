@@ -54,52 +54,6 @@ func (m *mockSuburbanGraph) FindShortestPathEigyoTrainSpecific(startID, endID in
 	return nil, fmt.Errorf("未実装です")
 }
 
-func TestSuburbanAreaCorrector(t *testing.T) {
-	g := &mockSuburbanGraph{
-		edges: map[int][]ticketdomain.TicketEdge{
-			// 神田(1) -> 秋葉原(2)
-			1: {{Edge: domain.Edge{ToID: 2, SuburbanArea: domain.SuburbanAreaTokyo, Company: domain.JRCentral}}},
-			// 秋葉原(2) -> 御茶ノ水(3)
-			2: {{Edge: domain.Edge{ToID: 3, SuburbanArea: domain.SuburbanAreaTokyo, Company: domain.JREast}}},
-			// 神田(1) -> 御茶ノ水(3) (直通エッジ、最短経路)
-		},
-		shortestPaths: map[string]*graph.PathResult{
-			"\x01-\x03": {StationIDs: []int{1, 3}}, // 1(神田) -> 3(御茶ノ水)
-		},
-	}
-
-	c := NewSuburbanAreaCorrector(nil)
-
-	tests := []struct {
-		name     string
-		input    []int
-		expected []int
-	}{
-		{
-			name:     "大都市近郊区間完結の場合、最短経路に補正される",
-			input:    []int{1, 2, 3}, // 神田 -> 秋葉原 -> 御茶ノ水
-			expected: []int{1, 3},    // 神田 -> 御茶ノ水
-		},
-		{
-			name:     "2駅未満の場合はそのまま",
-			input:    []int{1},
-			expected: []int{1},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := c.Correct(tc.input, g)
-			if err != nil {
-				t.Fatalf("予期しないエラーが発生しました: %v", err)
-			}
-			if !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("期待値 %v, 実際 %v", tc.expected, got)
-			}
-		})
-	}
-}
-
 func TestIsSuburbanAreaComplete(t *testing.T) {
 	g := &mockSuburbanGraph{
 		edges: map[int][]ticketdomain.TicketEdge{

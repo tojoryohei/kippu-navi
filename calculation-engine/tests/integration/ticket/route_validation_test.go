@@ -41,6 +41,10 @@ func TestRouteTicketRejectsOverlapBeforeModeCorrection(t *testing.T) {
 				}
 				path[i], steps[i].StationName = id, name
 			}
+			_, resolveErr := c.ResolvePath(steps)
+			if !errors.Is(resolveErr, domain.ErrDuplicateRoute) {
+				t.Fatalf("経路重複エラー=%v", resolveErr)
+			}
 			for _, mode := range []string{"normal", "cheapest", "uncorrect"} {
 				t.Run(stations[0]+"/"+mode, func(t *testing.T) {
 					assertDuplicate := func(err error) {
@@ -49,9 +53,7 @@ func TestRouteTicketRejectsOverlapBeforeModeCorrection(t *testing.T) {
 							t.Fatalf("経路重複エラーを期待しましたが、実際は%vでした", err)
 						}
 					}
-					_, err := c.ResolvePath(steps)
-					assertDuplicate(err)
-					_, _, err = c.Calculate(path, steps, mode)
+					_, _, err := c.Calculate(path, steps, mode)
 					assertDuplicate(err)
 					_, err = c.Split(steps, mode)
 					assertDuplicate(err)

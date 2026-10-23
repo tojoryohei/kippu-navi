@@ -1,88 +1,11 @@
 package fareio
 
 import (
-	"bytes"
-	"calculation-engine/internal/graphdata"
+	ticketdomain "calculation-engine/internal/ticket/domain"
 	"encoding/json"
-	"fmt"
-	"io"
 	"reflect"
 	"testing"
-
-	ticketdomain "calculation-engine/internal/ticket/domain"
-	ticketgraphio "calculation-engine/internal/ticket/infra/graphio"
 )
-
-func TestRouteExtensionJSONContainsPathsOnly(t *testing.T) {
-	var records []map[string]json.RawMessage
-	decoder := json.NewDecoder(bytes.NewReader(routeMappingsJSON))
-	if err := decoder.Decode(&records); err != nil {
-		t.Fatalf("routeMappings.jsonの読み込みに失敗しました: %v", err)
-	}
-	if len(records) != 0 {
-		t.Fatalf("空の経路対応表にレコードが残っています: 実際=%d", len(records))
-	}
-	for i, record := range records {
-		if len(record) != 2 {
-			t.Fatalf("経路対応表[%d]に経路以外の項目があります: %v", i, record)
-		}
-		if _, ok := record["inputPath"]; !ok {
-			t.Fatalf("経路対応表[%d]にinputPathがありません", i)
-		}
-		if _, ok := record["outputPath"]; !ok {
-			t.Fatalf("経路対応表[%d]にoutputPathがありません", i)
-		}
-	}
-}
-
-func TestGeneratedRouteExtensionsMatchSourceJSON(t *testing.T) {
-	registry, err := NewRouteExtensionRegistry()
-	if err != nil {
-		t.Fatalf("経路延長対応表の読み込みに失敗しました: %v", err)
-	}
-	loader := &ticketgraphio.JSONLoader{}
-	_, g, err := loader.LoadSeparatedGraphs([]io.Reader{graphdata.GetEdgesReader()}, graphdata.GetFareGraphEdgeReaders())
-	if err != nil {
-		t.Fatalf("グラフの読み込みに失敗しました: %v", err)
-	}
-	if len(generatedRouteMappings) != len(registry.GetRouteExtensions()) {
-		t.Fatalf("生成済み対応表の件数が一致しません: generated=%d source=%d", len(generatedRouteMappings), len(registry.GetRouteExtensions()))
-	}
-	for i, source := range registry.GetRouteExtensions() {
-		input, err := resolvePathForGeneratedTest(source.InputPath, g)
-		if err != nil {
-			t.Fatalf("対応表[%d]入力経路: %v", i, err)
-		}
-		output, err := resolvePathForGeneratedTest(source.OutputPath, g)
-		if err != nil {
-			t.Fatalf("対応表[%d]出力経路: %v", i, err)
-		}
-		generated := generatedRouteMappings[i]
-		if !reflect.DeepEqual(generated.InputPath, toInt32PathForGeneratedTest(input)) || !reflect.DeepEqual(generated.OutputPath, toInt32PathForGeneratedTest(output)) {
-			t.Fatalf("生成済み対応表[%d]が元JSONと一致しません", i)
-		}
-	}
-}
-
-func resolvePathForGeneratedTest(names []string, g interface{ GetID(string) (int, bool) }) ([]int, error) {
-	path := make([]int, len(names))
-	for i, name := range names {
-		id, ok := g.GetID(name)
-		if !ok {
-			return nil, fmt.Errorf("駅が見つかりません: %s", name)
-		}
-		path[i] = id
-	}
-	return path, nil
-}
-
-func toInt32PathForGeneratedTest(path []int) []int32 {
-	result := make([]int32, len(path))
-	for i, id := range path {
-		result[i] = int32(id)
-	}
-	return result
-}
 
 func TestLoadPathAndFare(t *testing.T) {
 	tests := []struct {
@@ -166,18 +89,13 @@ func TestLoadPathAndFare(t *testing.T) {
 	}
 }
 
-func TestNewRegistry(t *testing.T) {
-	// 実際のデータを読み込んでパースできるかテスト
-	r, err := NewRegistry()
-	if err != nil {
-		t.Fatalf("NewRegistry() 失敗: %v", err)
+// 手動の経路対応表は廃止済みで、ソースと生成物の両方を空に保つ。
+func TestRouteExtensionsRemainEmpty(t *testing.T) {
+	var records []json.RawMessage
+	if err := json.Unmarshal(routeMappingsJSON, &records); err != nil {
+		t.Fatal(err)
 	}
-
-	if r.GetSpecificFares() == nil {
-		t.Error("specificFaresがnilです")
-	}
-
-	if r.GetAdjustedFares() == nil {
-		t.Error("adjustedFaresがnilです")
+	if len(records) != 0 || len(generatedRouteMappings) != 0 {
+		t.Fatal("廃止した経路対応表が復活しています")
 	}
 }

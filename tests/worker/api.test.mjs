@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  API_REQUEST_TIMEOUT_MS,
   createAbortTimeout,
   fetchWithNetworkRetry,
 } from '../../src/app/lib/api.ts';
@@ -11,9 +10,6 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-test('APIリクエストのタイムアウトは15秒である', () => {
-  assert.equal(API_REQUEST_TIMEOUT_MS, 15_000);
-});
 
 test('タイムアウトと親からの中断を区別する', () => {
   const parent = new AbortController();

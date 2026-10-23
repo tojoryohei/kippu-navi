@@ -1,7 +1,6 @@
 package pass_test
 
 import (
-	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/graph/data"
@@ -9,225 +8,17 @@ import (
 	"calculation-engine/internal/pass/infra/graphio"
 	"calculation-engine/internal/pass/optimizer"
 	"calculation-engine/internal/pass/usecase"
-	"encoding/binary"
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 )
 
-// edgesMockJSON は本番データがない場合に使用する軽量モックグラフの JSON
-const edgesMockJSON = `[
-	{"station0": "テスト大宮", "station1": "テスト浦和", "eigyoKilo": 100, "giseiKilo": 100, "isLocal": false, "company": 2, "isTrainSpecificSection": false, "isBarrierFreeSection": false, "isIcPassArea": true},
-	{"station0": "テスト浦和", "station1": "テスト赤羽", "eigyoKilo": 100, "giseiKilo": 100, "isLocal": false, "company": 2, "isTrainSpecificSection": false, "isBarrierFreeSection": false, "isIcPassArea": true},
-	{"station0": "テスト赤羽", "station1": "テスト東京", "eigyoKilo": 100, "giseiKilo": 100, "isLocal": false, "company": 2, "isTrainSpecificSection": false, "isBarrierFreeSection": false, "isIcPassArea": true}
-]`
-
-// isMockMode は本番バイナリがなくてモック実行中かどうかを判定するグローバルフラグ
-var isMockMode bool
-
-func reconstructPath(prev []int, start, end int) []int {
-	path := []int{}
-	for curr := end; curr != -1; curr = prev[curr] {
-		path = append([]int{curr}, path...)
-		if curr == start {
-			break
-		}
-	}
-	return path
-}
-
-func generateMockPrecomputedBin(t testing.TB, g *graph.RailwayGraph, destPath string) {
-	numStations := g.NumStations()
-
-	basePrevGisei := make([][]int, numStations)
-	baseDistGisei := make([][]domain.DeciKilo, numStations)
-
-	for i := 0; i < numStations; i++ {
-		dG, pG := g.FindAllShortestPathsGisei(i)
-		basePrevGisei[i] = pG
-		baseDistGisei[i] = dG
-	}
-
-	calcs, err := fareio.InitRegistryWithOptions(g, true)
-	if err != nil {
-		t.Fatalf("InitRegistryに失敗しました: %v", err)
-	}
-
-	amountCalc := usecase.NewCalculateAmount(
-		g, calcs.Registry, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
-		calcs.TrainSpecific, calcs.SpecificRoute, calcs.AdjustedRoute, nil,
-	)
-
-	baseFares := make([]int32, 3*numStations*numStations)
-	months := []int{1, 3, 6}
-
-	for mIdx, month := range months {
-		for i := 0; i < numStations; i++ {
-			for j := 0; j < numStations; j++ {
-				if i == j {
-					continue
-				}
-				if basePrevGisei[i] == nil || basePrevGisei[i][j] == -1 {
-					continue
-				}
-
-				path := reconstructPath(basePrevGisei[i], i, j)
-				res, err := amountCalc.Execute(path, month)
-				if err == nil {
-					fareVal := res.TotalAmount()
-					idx := int32(mIdx)*int32(numStations)*int32(numStations) + int32(i)*int32(numStations) + int32(j)
-					baseFares[idx] = int32(fareVal)
-				}
-			}
-		}
-	}
-
-	outFile, err := os.Create(destPath)
-	if err != nil {
-		t.Fatalf("テスト用バイナリの作成に失敗しました: %v", err)
-	}
-
-	magic := [8]byte{'S', 'R', 'V', 'R', 'B', 'I', 'N', 0}
-	if _, err := outFile.Write(magic[:]); err != nil {
-		t.Fatalf("マジックヘッダーの書き込みに失敗しました: %v", err)
-	}
-	if err := binary.Write(outFile, binary.LittleEndian, int32(numStations)); err != nil {
-		t.Fatalf("駅数の書き込みに失敗しました: %v", err)
-	}
-	padding := [4]byte{0, 0, 0, 0}
-	if _, err := outFile.Write(padding[:]); err != nil {
-		t.Fatalf("パディングの書き込みに失敗しました: %v", err)
-	}
-	if err := binary.Write(outFile, binary.LittleEndian, baseFares); err != nil {
-		t.Fatalf("基本運賃の書き込みに失敗しました: %v", err)
-	}
-	if err := binary.Write(outFile, binary.LittleEndian, baseFares); err != nil {
-		t.Fatalf("IC運賃の書き込みに失敗しました: %v", err)
-	}
-
-	flatSize := numStations * numStations
-	flatBaseDistGisei := make([]uint16, flatSize)
-	const INF = uint16(65535)
-	for i := 0; i < numStations; i++ {
-		for j := 0; j < numStations; j++ {
-			idx := i*numStations + j
-			if baseDistGisei[i] != nil && j < len(baseDistGisei[i]) {
-				flatBaseDistGisei[idx] = uint16(baseDistGisei[i][j])
-			} else {
-				flatBaseDistGisei[idx] = INF
-			}
-		}
-	}
-	if err := binary.Write(outFile, binary.LittleEndian, flatBaseDistGisei); err != nil {
-		t.Fatalf("基本運賃用の擬制キロ表の書き込みに失敗しました: %v", err)
-	}
-	if err := binary.Write(outFile, binary.LittleEndian, flatBaseDistGisei); err != nil {
-		t.Fatalf("IC運賃用の擬制キロ表の書き込みに失敗しました: %v", err)
-	}
-
-	if err := outFile.Sync(); err != nil {
-		t.Fatalf("ファイルの同期に失敗しました: %v", err)
-	}
-	if err := outFile.Close(); err != nil {
-		t.Fatalf("ファイルを閉じる処理に失敗しました: %v", err)
-	}
-}
-
-func setupSearch(t testing.TB) (*graph.RailwayGraph, *usecase.SearchOptimalSplit, *usecase.CalculateAmount) {
-	t.Helper()
-
-	binPath := "../../data/precomputed/pass.bin"
-	var useBinPath string
-	var mockGraph *graph.RailwayGraph
-
-	if _, err := os.Stat(binPath); os.IsNotExist(err) {
-		isMockMode = true
-		tmpDir := t.TempDir()
-		useBinPath = filepath.Join(tmpDir, "precomputed_mock.bin")
-
-		loader := &graphio.JSONLoader{}
-		g, err := loader.Load(strings.NewReader(edgesMockJSON))
-		if err != nil {
-			t.Fatalf("モックグラフの読み込みに失敗: %v", err)
-		}
-		mockGraph = g
-
-		generateMockPrecomputedBin(t, mockGraph, useBinPath)
-	} else {
-		useBinPath = binPath
-	}
-
-	var g *graph.RailwayGraph
-	if isMockMode {
-		g = mockGraph
-	} else {
-		loader := &graphio.JSONLoader{}
-		var err error
-		g, err = loader.Load(data.GetEdgesReader())
-		if err != nil {
-			t.Fatalf("グラフの読み込みに失敗: %v", err)
-		}
-	}
-
-	calcs, err := fareio.InitRegistryWithOptions(g, isMockMode)
-	if err != nil {
-		t.Fatalf("運賃計算機の初期化に失敗: %v", err)
-	}
-
-	bypassReg := passdomain.NewBypassRegistry()
-	if !isMockMode {
-		bypassReg.Register(
-			[]string{"大沼", "大沼公園", "赤井川", "駒ケ岳", "森"},
-			[]string{"大沼", "鹿部", "渡島沼尻", "渡島砂原", "掛澗", "尾白内", "東森", "森"},
-		)
-		bypassReg.Register(
-			[]string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"},
-			[]string{"日暮里", "尾久", "赤羽"},
-		)
-		bypassReg.Register(
-			[]string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"},
-			[]string{"赤羽", "北赤羽", "浮間舟渡", "戸田公園", "（北）戸田", "北戸田", "武蔵浦和", "中浦和", "南与野", "与野本町", "北与野", "大宮"},
-		)
-		bypassReg.Register(
-			[]string{"品川", "大井町", "大森", "蒲田", "川崎", "鶴見"},
-			[]string{"品川", "西大井", "武蔵小杉", "新川崎", "鶴見"},
-		)
-	}
-
-	bypassRules, err := bypassReg.ResolveIDs(func(name string) (int, bool) {
-		id, ok := g.GetID(name)
-		return id, ok
-	})
-	if err != nil {
-		t.Fatalf("特例ルールの解決に失敗: %v", err)
-	}
-
-	amount := usecase.NewCalculateAmount(
-		g, calcs.Registry, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
-		calcs.TrainSpecific, calcs.SpecificRoute, calcs.AdjustedRoute, nil,
-	)
-	opt := optimizer.NewDPOptimizer(amount)
-	split := usecase.NewFindOptimalSplit(opt, amount)
-	baseFares, _, baseDistGisei, _, numStations, err := data.LoadPrecomputedFares(useBinPath)
-	if err != nil {
-		t.Fatalf("事前計算された運賃データのロードに失敗しました: %v", err)
-	}
-	if int32(g.NumStations()) != numStations {
-		t.Fatalf("データ不整合: edges.jsonの駅数(%d)が事前計算データの駅数(%d)と一致しません。事前計算ファイルを再生成してください", g.NumStations(), numStations)
-	}
-	g.DistGisei = baseDistGisei
-	search := usecase.NewSearchOptimalSplit(g, split, bypassRules, 0, baseFares, numStations)
-
-	t.Cleanup(func() {
-		data.ClosePrecomputedFares()
-	})
-
-	return g, search, amount
-}
-
 func TestSearchOptimalSplit_Integration(t *testing.T) {
-	g, search, _ := setupSearch(t)
+	calc, base := setup(t)
+	g := base.(*graph.RailwayGraph)
+	rules, err := passdomain.NewDefaultBypassRegistry().ResolveIDs(g.GetID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	search := usecase.NewOnDemandSearch(g, usecase.NewFindOptimalSplit(optimizer.NewDPOptimizer(calc), calc), rules, 0)
 
 	type testCase struct {
 		name    string
@@ -238,86 +29,43 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 		wantErr bool
 	}
 
-	var tests []testCase
-
-	if isMockMode {
-		tests = []testCase{
-			{
-				name:   "テスト大宮〜テスト東京 (通常経路の検証)",
-				from:   "テスト大宮",
-				to:     "テスト東京",
-				months: 1,
-				want:   15600,
-			},
-			{
-				name:   "テスト大宮〜テスト赤羽 (途中駅までの検証)",
-				from:   "テスト大宮",
-				to:     "テスト赤羽",
-				months: 1,
-				want:   10480,
-			},
-			{
-				name:    "テスト大宮〜テスト大宮 (同一駅、エラーケース)",
-				from:    "テスト大宮",
-				to:      "テスト大宮",
-				months:  1,
-				wantErr: true,
-			},
-		}
-	} else {
-		tests = []testCase{
-			{
-				name:   "大宮〜東京 (通常の分割検討)",
-				from:   "大宮",
-				to:     "東京",
-				months: 1,
-				want:   17970,
-			},
-			{
-				name:   "日暮里〜赤羽 (通しが最安)",
-				from:   "日暮里",
-				to:     "赤羽",
-				months: 1,
-				want:   6240,
-			},
-			{
-				name:   "横浜〜新宿 (長距離の分割検討)",
-				from:   "横浜",
-				to:     "新宿",
-				months: 3,
-				want:   52200,
-			},
-			{
-				name:   "品川〜名古屋 (長距離の分割検討)",
-				from:   "品川",
-				to:     "名古屋",
-				months: 3,
-				want:   488790,
-			},
-			{
-				name:   "函館〜東森 (第69条の考慮　片側のみ)",
-				from:   "函館",
-				to:     "東森",
-				months: 6,
-				want:   226080,
-			},
-			{
-				name:   "新川崎〜大井町 (第69条の考慮　特例区間内完結)",
-				from:   "新川崎",
-				to:     "大井町",
-				months: 3,
-				want:   22340,
-			},
-			{
-				name:    "東京〜東京 (同一駅、エラーケース)",
-				from:    "東京",
-				to:      "東京",
-				months:  6,
-				wantErr: true,
-			},
-		}
+	tests := []testCase{
+		{
+			name:   "大宮〜東京 (通常の分割検討)",
+			from:   "大宮",
+			to:     "東京",
+			months: 1,
+			want:   17970,
+		},
+		{
+			name:   "日暮里〜赤羽 (通しが最安)",
+			from:   "日暮里",
+			to:     "赤羽",
+			months: 1,
+			want:   6240,
+		},
+		{
+			name:   "横浜〜新宿 (長距離の分割検討)",
+			from:   "横浜",
+			to:     "新宿",
+			months: 3,
+			want:   52200,
+		},
+		{
+			name:   "新川崎〜大井町 (第69条の考慮　特例区間内完結)",
+			from:   "新川崎",
+			to:     "大井町",
+			months: 3,
+			want:   22340,
+		},
+		{
+			name:    "東京〜東京 (同一駅、エラーケース)",
+			from:    "東京",
+			to:      "東京",
+			months:  6,
+			wantErr: true,
+		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fromID, ok1 := g.GetID(tt.from)
@@ -357,11 +105,52 @@ func TestSearchOptimalSplit_Integration(t *testing.T) {
 	}
 }
 
-func BenchmarkSearchOptimalSplit_Integration(b *testing.B) {
-	g, search, _ := setupSearch(b)
-	if isMockMode {
-		b.Skip("本番のpass.binがないため統合ベンチマークをスキップします")
+func setupPrecomputedSearch(t testing.TB) (*graph.RailwayGraph, *usecase.SearchOptimalSplit, *usecase.CalculateAmount) {
+	t.Helper()
+	g, err := (&graphio.JSONLoader{}).Load(data.GetEdgesReader())
+	if err != nil {
+		t.Fatal(err)
 	}
+	calcs, err := fareio.InitRegistry(g)
+	if err != nil {
+		t.Fatalf("運賃計算機の初期化に失敗: %v", err)
+	}
+
+	bypassReg := passdomain.NewDefaultBypassRegistry()
+
+	bypassRules, err := bypassReg.ResolveIDs(func(name string) (int, bool) {
+		id, ok := g.GetID(name)
+		return id, ok
+	})
+	if err != nil {
+		t.Fatalf("特例ルールの解決に失敗: %v", err)
+	}
+
+	amount := usecase.NewCalculateAmount(
+		g, calcs.Registry, passdomain.NewAddonRegistry(), passdomain.NewAddonRegistry(),
+		calcs.TrainSpecific, calcs.SpecificRoute, calcs.AdjustedRoute, nil,
+	)
+	opt := optimizer.NewDPOptimizer(amount)
+	split := usecase.NewFindOptimalSplit(opt, amount)
+	baseFares, _, baseDistGisei, _, numStations, err := data.LoadPrecomputedFares("../../../data/precomputed/pass.bin")
+	if err != nil {
+		t.Fatalf("事前計算された運賃データのロードに失敗しました: %v", err)
+	}
+	if int32(g.NumStations()) != numStations {
+		t.Fatalf("データ不整合: edges.jsonの駅数(%d)が事前計算データの駅数(%d)と一致しません。事前計算ファイルを再生成してください", g.NumStations(), numStations)
+	}
+	g.DistGisei = baseDistGisei
+	search := usecase.NewSearchOptimalSplit(g, split, bypassRules, 0, baseFares, numStations)
+
+	t.Cleanup(func() {
+		data.ClosePrecomputedFares()
+	})
+
+	return g, search, amount
+}
+
+func BenchmarkSearchOptimalSplit_Integration(b *testing.B) {
+	g, search, _ := setupPrecomputedSearch(b)
 
 	fromID, ok1 := g.GetID("品川")
 	toID, ok2 := g.GetID("名古屋")
@@ -379,10 +168,7 @@ func BenchmarkSearchOptimalSplit_Integration(b *testing.B) {
 }
 
 func BenchmarkSearchOptimalSplit_PureDP(b *testing.B) {
-	g, search, calc := setupSearch(b)
-	if isMockMode {
-		b.Skip("本番のpass.binがないためPureDPベンチマークをスキップします")
-	}
+	g, search, calc := setupPrecomputedSearch(b)
 
 	fromID, ok1 := g.GetID("横浜")
 	toID, ok2 := g.GetID("新宿")

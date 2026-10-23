@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFile } from 'node:fs/promises';
-import ts from 'typescript';
+import { registerHooks } from 'node:module';
 
 // 応答を制御できるWorker通信で、実際のリクエスト振り分けを検証する。
 test('進捗通知は成功またはエラーまでリクエストを保持し、クライアント間で混在しない', async () => {
@@ -14,15 +13,14 @@ test('進捗通知は成功またはエラーまでリクエストを保持し�
     terminate() {}
     reply(data) { this.onmessage({ data }); }
   };
+  // Nodeでも実ソースを読み込み、ブラウザ専用の計測依存だけを置き換える。
+  const hooks = registerHooks({ resolve(specifier, context, nextResolve) {
+    if (specifier === "@/lib/analytics") return { url: "data:text/javascript,export const captureUnhandledError = () => {}", shortCircuit: true };
+    if (specifier === "@/lib/search-errors") return { url: new URL('../../src/lib/search-errors.ts', import.meta.url).href, shortCircuit: true };
+    return nextResolve(specifier, context);
+  } });
   try {
-    // ユーザー入力ではなく、リポジトリ内の固定テスト用URLを読み込む。
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- 上記の固定URLのみを使用する。
-    const source = await readFile(new URL('../../src/lib/engine-client.ts', import.meta.url), 'utf8');
-    const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-      .replace(/import .* from "@\/lib\/search-errors";/, `import { SearchOperationError } from ${JSON.stringify(new URL('../../src/lib/search-errors.ts', import.meta.url).href)};`)
-      .replace(/import .* from "@\/lib\/analytics";/, 'const captureUnhandledError = () => {};')
-      .replace('new URL("../app/split/split.worker.ts", import.meta.url)', '"mock-worker"');
-    const { createEngineClient } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+    const { createEngineClient } = await import('../../src/lib/engine-client.ts');
     const a = createEngineClient();
     const b = createEngineClient();
     const aEvents = [], bEvents = [];
@@ -40,5 +38,5 @@ test('進捗通知は成功またはエラーまでリクエストを保持し�
     assert.deepEqual(bEvents.map(e => e.type), ['progress', 'error']);
     assert.ok([...aEvents, ...bEvents].every(e => e.requestId === 1));
     a.terminate(); b.terminate();
-  } finally { globalThis.Worker = originalWorker; }
+  } finally { hooks.deregister(); globalThis.Worker = originalWorker; }
 });

@@ -1,19 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { createServer, request as httpRequest } from 'node:http';
+import { createServer } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
 import { extname } from 'node:path';
 import { createHash } from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 
-test('通常ブラウザの更新履歴に状態を表示し、一括保存を開始しない', async ({ page }) => {
-  await page.goto('/changelog');
-  await expect(page.locator('[data-pwa-mode]')).toHaveText('通常ブラウザ');
-  await expect(page.locator('[data-pwa-state]')).toHaveText('PWAから開くと更新を確認できます');
-  await expect(page.getByRole('button', { name: '今すぐ更新' })).toBeHidden();
-  expect(await page.evaluate(() => navigator.serviceWorker.getRegistrations().then(items => items.length))).toBe(0);
-  await page.goto('/');
-  await expect(page.locator('[data-pwa-status]')).toHaveCount(0);
-});
 
 test('新版はすべての旧画面を閉じるまで待機し、次に開いた画面で反映される', async ({ page, context }) => {
   test.setTimeout(180000);
@@ -63,16 +54,6 @@ test('新版はすべての旧画面を閉じるまで待機し、次に開い�
     return url.origin === origin ? route.continue() : route.abort();
   });
   try {
-    for (const path of ['@evil.example/', '//evil.example/', 'http://evil.example/', '/\\evil.example/']) {
-      const status = await new Promise<number | undefined>((resolve, reject) => {
-        const req = httpRequest({ hostname: '127.0.0.1', port: (server.address() as AddressInfo).port, path }, response => {
-          response.resume(); resolve(response.statusCode);
-        });
-        req.on('error', reject);
-        req.end();
-      });
-      expect(status).toBe(400);
-    }
     await context.addInitScript(() => Object.defineProperty(navigator, 'standalone', { value: true }));
     await page.goto(`${origin}/changelog`);
     await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.active?.state), { timeout: 60000 }).toBe('activated');

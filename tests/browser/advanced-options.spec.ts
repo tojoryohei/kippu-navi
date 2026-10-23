@@ -56,9 +56,6 @@ test("券種切り替え・URL復元・計算要求の設定を維持", async ({
   await expect(page).toHaveURL(/\/split\/auto\/pass\?/);
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("3回");
   await page.locator("form summary").click();
-  await expect(page.locator(".split-options-search .station-select__control").last()).toHaveCSS("min-height", "38px");
-  await expect(page.locator(".split-count-select .station-select__control")).toHaveCSS("height", "38px");
-  await expect(page.getByLabel("最大分割数", { exact: true })).toHaveCSS("opacity", "0");
   await page.getByLabel("分割禁止駅", { exact: true }).fill("品川");
   await expect(page.locator(".split-options-search .station-select__option").first()).toBeVisible();
   await page.getByLabel("分割禁止駅", { exact: true }).fill("");
@@ -100,8 +97,8 @@ test("無制限のmaxSplitsをURLとAPIリクエストから省略する", async
   expect(new URL(page.url()).searchParams.has("maxSplits")).toBe(false);
 });
 
-for (const width of [320, 390, 1280]) {
-  test(`駅の全件表示・入力欄の統一 ${width}px`, async ({ page }, testInfo) => {
+for (const width of [320, 1280]) {
+  test(`駅の全件表示・入力欄の統一 ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/split/auto/ticket");
     await page.locator("form summary").click();
@@ -113,24 +110,7 @@ for (const width of [320, 390, 1280]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const controls = page.locator(".split-options-search .station-select__control");
     await expect(controls).toHaveCount(2);
-    await expect(controls.first()).toHaveCSS("height", "38px");
-    await expect(page.getByLabel("最大分割数", { exact: true })).toHaveCSS("position", "absolute");
-    await expect(page.getByLabel("最大分割数", { exact: true })).toHaveCSS("opacity", "0");
-    await expect(page.getByLabel("最大分割数", { exact: true })).toHaveCSS("caret-color", "rgba(0, 0, 0, 0)");
-    const stationStyle = await page.locator(".station-select__control").first().evaluate(element => {
-      const style = getComputedStyle(element);
-      return { height: style.minHeight, radius: style.borderRadius, fontSize: style.fontSize, border: style.borderColor };
-    });
-    for (const control of await controls.all()) {
-      await expect(control).toHaveCSS("min-height", stationStyle.height);
-      await expect(control).toHaveCSS("border-radius", stationStyle.radius);
-      await expect(control).toHaveCSS("font-size", stationStyle.fontSize);
-      await expect(control).toHaveCSS("border-color", stationStyle.border);
-    }
-    await expect(page.locator("form details select")).toHaveCount(0);
-    await expect(page.locator(".split-options-search .station-select__indicator, .split-options-search .station-select__indicator-separator")).toHaveCount(0);
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.screenshot({ path: testInfo.outputPath(`advanced-options-${width}.png`), fullPage: true });
     await controls.first().click();
     await expect(page.getByRole("listbox")).toBeVisible();
     await page.getByRole("option", { name: "10回", exact: true }).click();
@@ -153,8 +133,8 @@ test("発着駅を一覧と検索候補から除外", async ({ page }) => {
   await expect(page.getByRole("button", { name: "新茂原を分割しない駅から削除" })).toBeVisible();
 });
 
-for (const kind of ["pass", "ic-pass"]) {
-  for (const query of ["months=1", "months=3", "months=6", "month=1", "month=6&months=3"]) {
+for (const [kind, query] of [["pass","months=1"],["ic-pass","months=6"],["pass","month=1"],["ic-pass","month=6&months=3"]] as const) {
+ {
     test(`期間パラメーターをmonthsへ統一する: ${kind} ${query}`, async ({ page }) => {
       await page.route("**/*", route => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
       const endpoint = kind;

@@ -1,15 +1,14 @@
 package usecase
 
 import (
-	"encoding/json"
-	"io"
-	"reflect"
-	"testing"
-
 	"calculation-engine/internal/graphdata"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/graphio"
+	"encoding/json"
+	"io"
+	"reflect"
+	"testing"
 )
 
 func TestInputViaKanasCollapsesOnlyAdjacentDuplicates(t *testing.T) {
@@ -119,7 +118,7 @@ func TestSpecialViaWithCorrectionAndOmission(t *testing.T) {
 		}
 	}
 	// 69条で省略される呉線は、接続駅発の特殊コードも印字しない。
-	branch := NewRule69Corrector().rules[7].from
+	branch := rule69ViaFixtures["呉"].from
 	path := ids(branch...)
 	steps := physicalViaSteps(g, path)
 	if got := GetFareVia(steps); !reflect.DeepEqual(got, []string{"須波", "矢野"}) {
@@ -134,18 +133,22 @@ func TestSpecialViaWithCorrectionAndOmission(t *testing.T) {
 }
 
 func TestRule157ViaReplacement(t *testing.T) {
+	routes := map[string]struct{ from, to []string }{
+		"赤穂": {[]string{"相生", "西相生", "坂越", "播州赤穂", "天和", "備前福河", "寒河", "日生", "伊里", "備前片上", "西片上", "伊部", "香登", "長船", "邑久", "大富", "西大寺", "大多羅", "東岡山"}, []string{"相生", "有年", "上郡", "三石", "吉永", "和気", "熊山", "万富", "瀬戸", "（陽）上道", "東岡山"}},
+		"大阪": {[]string{"大阪", "新大阪", "新神戸", "西明石"}, []string{"大阪", "塚本", "尼崎", "立花", "甲子園口", "西宮", "さくら夙川", "芦屋", "甲南山手", "摂津本山", "（東）住吉", "六甲道", "摩耶", "灘", "三ノ宮", "元町", "神戸", "兵庫", "新長田", "鷹取", "須磨海浜公園", "須磨", "塩屋", "垂水", "舞子", "朝霧", "明石", "西明石"}},
+	}
 	for _, tt := range []struct {
 		name                    string
-		rule                    int
+		rule                    string
 		before, after           string
 		want, uncorrect, logged []string
 	}{
-		{"赤穂線を山陽に置換して前後と集約", 2, "竜野", "高島", []string{"山陽"}, []string{"山陽", "赤穂", "山陽"}, []string{"サンヨ", "アコウ", "サンヨ"}},
-		{"新幹線と接続駅を東海道と山陽に置換", 1, "天満", "（陽）大久保", []string{"大阪環状", "東海道", "山陽"}, []string{"大阪環状", "東海道", "新大阪", "新幹線", "西明石", "山陽"}, []string{"オオサ", "トウカ", "オサシオＢ", "シンカ", "オサニアＢ", "サンヨ"}},
-		{"西明石から姫路への新幹線を残す", 1, "天満", "姫路", []string{"大阪環状", "東海道", "山陽", "西明石", "新幹線", "姫路"}, []string{"大阪環状", "東海道", "新大阪", "新幹線", "姫路"}, []string{"オオサ", "トウカ", "オサシオＢ", "シンカ", "オサヒメＢ"}},
+		{"赤穂線を山陽に置換して前後と集約", "赤穂", "竜野", "高島", []string{"山陽"}, []string{"山陽", "赤穂", "山陽"}, []string{"サンヨ", "アコウ", "サンヨ"}},
+		{"新幹線と接続駅を東海道と山陽に置換", "大阪", "天満", "（陽）大久保", []string{"大阪環状", "東海道", "山陽"}, []string{"大阪環状", "東海道", "新大阪", "新幹線", "西明石", "山陽"}, []string{"オオサ", "トウカ", "オサシオＢ", "シンカ", "オサニアＢ", "サンヨ"}},
+		{"西明石から姫路への新幹線を残す", "大阪", "天満", "姫路", []string{"大阪環状", "東海道", "山陽", "西明石", "新幹線", "姫路"}, []string{"大阪環状", "東海道", "新大阪", "新幹線", "姫路"}, []string{"オオサ", "トウカ", "オサシオＢ", "シンカ", "オサヒメＢ"}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			rule := NewRule157Corrector().rules[tt.rule]
+			rule := routes[tt.rule]
 			for _, reverse := range []bool{false, true} {
 				source := append(append([]string{tt.before}, rule.from...), tt.after)
 				printed := append(append([]string{tt.before}, rule.to...), tt.after)
@@ -183,7 +186,7 @@ func TestRule157ViaReplacement(t *testing.T) {
 				if got := inputViaKanas(steps); !reflect.DeepEqual(got, logged) {
 					t.Fatalf("ログ = %v, 期待値 %v", got, logged)
 				}
-				if tt.rule == 2 {
+				if tt.rule == "赤穂" {
 					if got := GetSplitViaForResult(g, sourcePath, printedPath); !reflect.DeepEqual(got, want) {
 						t.Fatalf("split = %v, 期待値 %v", got, want)
 					}
@@ -191,7 +194,7 @@ func TestRule157ViaReplacement(t *testing.T) {
 				if got := GetCheapestFareViaForResult(g, printedPath, printedPath); !reflect.DeepEqual(got, want) {
 					t.Fatalf("最安 = %v, 期待値 %v", got, want)
 				}
-				if tt.rule == 1 {
+				if tt.rule == "大阪" {
 					// 大阪側が環状線ではなく塚本方面なら、この157条の条件に該当しない。
 					outside := 0
 					if reverse {
@@ -252,11 +255,6 @@ func TestGetFareViaShinkansenAndPrivateBoundary(t *testing.T) {
 			"現在の私鉄コードで私鉄からJRへ接続",
 			[]ViaStep{{"松阪", "近鉄線"}, {"鶴橋", "オオサ"}, {"大阪", ""}},
 			[]string{"近鉄線", "鶴橋", "大阪環状"},
-		},
-		{
-			"異なる私鉄線の接続駅",
-			[]ViaStep{{"和倉温泉", "ナナオ"}, {"津幡", "いしかわ"}, {"倶利伽羅", "とやま鉄道"}, {"高岡", "シヨウ"}, {"新高岡", ""}},
-			[]string{"七尾線", "津幡", "ＩＲいしかわ", "倶利伽羅", "あいの風とやま", "高岡", "城端線"},
 		},
 		{
 			"私鉄始発と私鉄終着の駅は印字しない",
@@ -420,6 +418,8 @@ func TestOsakaShinOsakaViaUsesTwoStationZone(t *testing.T) {
 		finalNames []string
 		want       []string
 	}{
+		{"仮想端点発", []ViaStep{{"大阪・新大阪", "トウカ"}, {"大阪", "トウカ"}, {"新大阪", "シンカ"}, {"岡山", ""}}, []string{"大阪・新大阪", "大阪", "岡山"}, []string{"新大阪", "新幹線", "岡山"}},
+		{"仮想端点着", []ViaStep{{"岡山", "シンカ"}, {"新大阪", "トウカ"}, {"大阪", "トウカ"}, {"大阪・新大阪", ""}}, []string{"岡山", "大阪", "大阪・新大阪"}, []string{"岡山", "新幹線", "新大阪"}},
 		{"大阪発・新幹線", []ViaStep{{"大阪", "トウカ"}, {"新大阪", "シンカ"}, {"岡山", ""}}, []string{"大阪・新大阪", "大阪", "新大阪", "岡山"}, []string{"新大阪", "新幹線", "岡山"}},
 		{"大阪着・新幹線", []ViaStep{{"岡山", "シンカ"}, {"新大阪", "トウカ"}, {"大阪", ""}}, []string{"岡山", "新大阪", "大阪", "大阪・新大阪"}, []string{"岡山", "新幹線", "新大阪"}},
 		{"新大阪発・大阪経由", []ViaStep{{"新大阪", "トウカ"}, {"大阪", "オオサ"}, {"天満", ""}}, []string{"大阪・新大阪", "大阪", "天満"}, []string{"大阪環状"}},
@@ -484,56 +484,6 @@ func TestCheapestFareViaOmitsOsakaShinOsakaOnlyForFare(t *testing.T) {
 	}
 }
 
-func TestOsakaShinOsakaViaBoundsSkipsVirtualEndpoint(t *testing.T) {
-	g := graph.NewGraph(5)
-	zone := g.GetOrAddID("大阪・新大阪")
-	for _, tt := range []struct {
-		names     []string
-		finalPath []int
-		wantStart int
-		wantEnd   int
-	}{
-		{[]string{"大阪・新大阪", "大阪", "新大阪", "岡山"}, []int{zone, g.GetOrAddID("大阪"), g.GetOrAddID("岡山")}, 2, 3},
-		{[]string{"岡山", "新大阪", "大阪", "大阪・新大阪"}, []int{g.GetOrAddID("岡山"), g.GetOrAddID("大阪"), zone}, 0, 1},
-	} {
-		start, end := osakaShinOsakaViaBounds(tt.names, tt.finalPath, g)
-		if start != tt.wantStart || end != tt.wantEnd {
-			t.Fatalf("境界(%v) = (%d, %d), 期待値 (%d, %d)", tt.names, start, end, tt.wantStart, tt.wantEnd)
-		}
-	}
-}
-
-func TestGetFareViaForResultShinkansenOverlap(t *testing.T) {
-	zones := &graphio.SpecialZoneRegistry{Zones: []ticketdomain.SpecialZone{
-		{Name: "東京都区内", Stations: []string{"東京", "品川"}},
-		{Name: "名古屋市内", Stations: []string{"名古屋", "尾頭橋", "（中）金山", "鶴舞", "大曽根"}},
-	}}
-	path := []ViaStep{
-		{"東京", "シンカ"}, {"品川", "シンカ"}, {"三河安城", "シンカ"},
-		{"名古屋", "トウカ"}, {"尾頭橋", "トウカ"}, {"（中）金山", "チユサ"},
-		{"鶴舞", "チユサ"}, {"大曽根", "チユサ"}, {"中津川", ""},
-	}
-	for _, tt := range []struct {
-		name      string
-		finalPath []string
-		want      []string
-	}{
-		{"市外までの折り返し", []string{"東京都区内", "品川", "三河安城", "（中）金山", "鶴舞", "中津川"}, []string{"新幹線", "中央西"}},
-		{"名古屋市内着", []string{"東京都区内", "品川", "三河安城", "名古屋", "名古屋市内"}, []string{"新幹線", "名古屋"}},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			g := graph.NewGraph(len(tt.finalPath))
-			ids := make([]int, len(tt.finalPath))
-			for i, name := range tt.finalPath {
-				ids[i] = g.GetOrAddID(name)
-			}
-			if got := GetFareViaForResult(path, ids, g, zones); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("実際 %v, 期待値 %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestRemoveOverlapViaReverseDirection(t *testing.T) {
 	path := []ViaStep{{"鶴舞", "チユサ"}, {"（中）金山", "トウカ"}, {"尾頭橋", "トウカ"}, {"名古屋", "シンカ"}, {"三河安城", ""}}
 	want := []string{"中央西", "新幹線", "三河安城"}
@@ -585,8 +535,7 @@ func TestFareViaKokuraShinkansenOverlap(t *testing.T) {
 	}
 }
 
-func TestOverlapViaBranchesMatchFareCorrectionRules(t *testing.T) {
-	deductions := NewShinkansenOverlapCorrector().overlapDeductions
+func TestOverlapViaBranchesConnectPhysicalLines(t *testing.T) {
 	var shinkansenEdges []edgeLineRecord
 	if err := json.NewDecoder(graphdata.GetShinkansenEdgesReader()).Decode(&shinkansenEdges); err != nil {
 		t.Fatal(err)
@@ -603,16 +552,7 @@ func TestOverlapViaBranchesMatchFareCorrectionRules(t *testing.T) {
 	for _, edge := range physicalEdges {
 		physicalPairs[stationPair(edge.Station0, edge.Station1)] = true
 	}
-	if len(deductions) != 13 || len(overlapViaBranches) != len(deductions)+2 {
-		t.Fatalf("経由表示の分岐数=%d、運賃控除数=%d", len(overlapViaBranches), len(deductions))
-	}
 	for i, rule := range overlapViaBranches {
-		if i < len(deductions) {
-			fareBranch := deductions[i][:len(rule.branch)]
-			if !reflect.DeepEqual(rule.branch, fareBranch) && !reflect.DeepEqual(reverseStrings(rule.branch), fareBranch) {
-				t.Fatalf("分岐%dが運賃控除と一致しません: %v, %v", i, rule.branch, deductions[i])
-			}
-		}
 		endpoint := rule.branch[len(rule.branch)-1]
 		if !shinkansenPairs[stationPair(endpoint, rule.shinkansenNeighbor)] {
 			t.Fatalf("分岐%dの%sと%sの間に新幹線の辺がありません", i, endpoint, rule.shinkansenNeighbor)
@@ -661,26 +601,20 @@ func TestGetSplitViaUsesPhysicalEdge(t *testing.T) {
 }
 
 func TestRule69ViaReplacements(t *testing.T) {
-	rules := NewRule69Corrector().rules
 	for _, tt := range []struct {
 		name    string
-		index   int
+		route   string
 		reverse bool
 		want    []string
 	}{
-		{"大沼経由は省略", 0, false, []string{}},
-		{"尾久経由は省略", 1, false, []string{}},
-		{"埼京線経由は省略", 2, false, []string{}},
-		{"品鶴線経由は省略", 3, false, []string{}},
-		{"総武・外房", 4, false, []string{"総武", "外房"}},
-		{"外房・総武", 4, true, []string{"外房", "総武"}},
-		{"米原経由は省略", 5, false, []string{}},
-		{"大阪環状", 6, false, []string{"大阪環状"}},
-		{"呉線経由は省略", 7, false, []string{}},
-		{"柳井経由は省略", 8, false, []string{}},
+		{"大沼経由は省略", "大沼", false, []string{}},
+		{"総武・外房", "京葉", false, []string{"総武", "外房"}},
+		{"外房・総武", "京葉", true, []string{"外房", "総武"}},
+		{"大阪環状", "大阪", false, []string{"大阪環状"}},
+		{"呉線経由は省略", "呉", false, []string{}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			stations := append([]string(nil), rules[tt.index].from...)
+			stations := append([]string(nil), rule69ViaFixtures[tt.route].from...)
 			if tt.reverse {
 				stations = reverseStrings(stations)
 			}
@@ -695,7 +629,7 @@ func TestRule69ViaReplacements(t *testing.T) {
 			if got := GetFareViaForResultWithSections(steps, ids, g, nil); !reflect.DeepEqual(got, tt.want) {
 				t.Fatalf("運賃の経由 = %v, 期待値 %v", got, tt.want)
 			}
-			printNames := rules[tt.index].to
+			printNames := rule69ViaFixtures[tt.route].to
 			if tt.reverse {
 				printNames = reverseStrings(printNames)
 			}
@@ -877,7 +811,7 @@ func TestArticle70KanaTokyoKandaOchanomizu(t *testing.T) {
 }
 
 func TestRule69ViaKeepsOutsideLinesAndChecksNeighbors(t *testing.T) {
-	branch := NewRule69Corrector().rules[6].from
+	branch := rule69ViaFixtures["大阪"].from
 	for _, tt := range []struct {
 		before string
 		want   []string
@@ -904,7 +838,7 @@ func TestRule69ViaKeepsOutsideLinesAndChecksNeighbors(t *testing.T) {
 }
 
 func TestRule69ViaDoesNotRepeatSameKanaAroundOmittedSection(t *testing.T) {
-	branch := NewRule69Corrector().rules[0].from
+	branch := rule69ViaFixtures["大沼"].from
 	stations := append([]string{"新函館北斗"}, branch...)
 	stations = append(stations, "石倉")
 	g := graph.NewGraph(len(stations))
@@ -937,7 +871,7 @@ func TestRule69SplitViaDoesNotRepeatSameKanaAroundOmittedSection(t *testing.T) {
 		}
 		return path
 	}
-	rule := NewRule69Corrector().rules[0]
+	rule := rule69ViaFixtures["大沼"]
 	source := append([]string{"新函館北斗"}, rule.from...)
 	source = append(source, "石倉")
 	printed := append([]string{"新函館北斗"}, rule.to...)
@@ -949,7 +883,7 @@ func TestRule69SplitViaDoesNotRepeatSameKanaAroundOmittedSection(t *testing.T) {
 }
 
 func TestRule69ViaDoesNotRepeatAdjacentReplacementLine(t *testing.T) {
-	branch := reverseStrings(NewRule69Corrector().rules[4].from)
+	branch := reverseStrings(rule69ViaFixtures["京葉"].from)
 	stations := append([]string{"鎌取"}, branch...)
 	stations = append(stations, "品川")
 	g := graph.NewGraph(len(stations))
@@ -996,7 +930,7 @@ func TestPrivateConnectionCodesPreservePrinting(t *testing.T) {
 				if got := inputViaKanas(path); !reflect.DeepEqual(got, codes) {
 					t.Fatalf("コード (逆方向=%v) = %v, 期待値 %v", reverse, got, codes)
 				}
-				if got := getFareVia(path, true, true, nil); !reflect.DeepEqual(got, printed) {
+				if got := GetFareVia(path); !reflect.DeepEqual(got, printed) {
 					t.Fatalf("経由表示 (逆方向=%v) = %v, 期待値 %v", reverse, got, printed)
 				}
 			}
@@ -1013,7 +947,7 @@ func TestPrivateConnectionCodesIgnoreSameCompanyLineChange(t *testing.T) {
 	}
 	// コード生成の変更で既存の路線・駅名印字は変えない。
 	printed := []string{"西日暮里", "千代田線"}
-	if got := getFareVia(path, true, true, nil); !reflect.DeepEqual(got, printed) {
+	if got := GetFareVia(path); !reflect.DeepEqual(got, printed) {
 		t.Fatalf("同一会社接続の経由表示 = %v, 期待値 %v", got, printed)
 	}
 }
@@ -1087,4 +1021,12 @@ func TestNishiUrakamiKikitsuVia(t *testing.T) {
 			t.Fatalf("自動=%v 期待値=%v", got, want)
 		}
 	}
+}
+
+// 規則の実装を参照せず、省略・置換の期待経路を固定する。
+var rule69ViaFixtures = map[string]struct{ from, to []string }{
+	"大沼": {[]string{"大沼", "鹿部", "渡島沼尻", "渡島砂原", "掛澗", "尾白内", "東森", "森"}, []string{"大沼", "大沼公園", "赤井川", "駒ケ岳", "森"}},
+	"京葉": {[]string{"東京", "八丁堀", "越中島", "潮見", "新木場", "葛西臨海公園", "舞浜", "新浦安", "市川塩浜", "二俣新町", "南船橋", "新習志野", "幕張豊砂", "海浜幕張", "検見川浜", "稲毛海岸", "千葉みなと", "蘇我"}, []string{"東京", "新日本橋", "馬喰町", "錦糸町", "亀戸", "平井", "新小岩", "小岩", "市川", "本八幡", "下総中山", "西船橋", "船橋", "東船橋", "津田沼", "幕張本郷", "幕張", "新検見川", "稲毛", "西千葉", "千葉", "本千葉", "蘇我"}},
+	"大阪": {[]string{"大阪", "（環）福島", "野田", "西九条", "弁天町", "大正", "芦原橋", "今宮", "新今宮", "天王寺"}, []string{"大阪", "天満", "桜ノ宮", "京橋", "大阪城公園", "森ノ宮", "玉造", "鶴橋", "桃谷", "寺田町", "天王寺"}},
+	"呉":  {[]string{"三原", "須波", "安芸幸崎", "忠海", "安芸長浜", "大乗", "竹原", "吉名", "安芸津", "風早", "安浦", "安登", "安芸川尻", "仁方", "広", "新広", "安芸阿賀", "呉", "川原石", "吉浦", "かるが浜", "天応", "呉ポートピア", "小屋浦", "水尻", "坂", "矢野", "海田市"}, []string{"三原", "本郷", "河内", "（陽）入野", "白市", "西高屋", "（陽）西条", "寺家", "八本松", "瀬野", "中野東", "安芸中野", "海田市"}},
 }

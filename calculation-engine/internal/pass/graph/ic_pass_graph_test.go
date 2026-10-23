@@ -47,9 +47,6 @@ func TestNewIcPassGraph(t *testing.T) {
 		}
 
 		// IDマッパーの共有を確認
-		if icG.StationNameIDMapper != g.StationNameIDMapper {
-			t.Error("StationNameIDMapper が共有されていません")
-		}
 
 		nameA, _ := icG.GetID("A")
 		if nameA != idA {

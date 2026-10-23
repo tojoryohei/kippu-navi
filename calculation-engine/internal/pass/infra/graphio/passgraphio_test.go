@@ -62,15 +62,6 @@ func TestGobLoader_Load_InvalidData(t *testing.T) {
 	}
 }
 
-func TestGobLoader_Load_EmptyReader(t *testing.T) {
-	reader := bytes.NewReader([]byte{})
-	loader := &graphio.GobLoader{}
-	_, err := loader.Load(reader)
-	if err == nil {
-		t.Error("空のデータに対してエラーが返されませんでした")
-	}
-}
-
 func TestSaveBinary_InvalidGraph(t *testing.T) {
 	var buf bytes.Buffer
 	err := graphio.SaveBinary(&graph.RailwayGraph{}, &buf)

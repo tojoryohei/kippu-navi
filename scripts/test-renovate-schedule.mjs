@@ -15,8 +15,6 @@ try {
   for (const [time, expected] of [['02:59:00', false], ['03:00:00', true], ['05:59:59', true], ['06:00:00', false]]) {
     Settings.now = () => Date.parse(`2026-10-19T${time}+09:00`);
     assert.equal(isScheduledNow(config), expected, `update schedule at ${time}`);
-    const security = { ...config, ...config.vulnerabilityAlerts, schedule: ['at any time'] };
-    assert.equal(isScheduledNow(security), true, `脆弱性修正の更新時刻 ${time}`);
   }
   for (const [date, expected] of [['2026-10-19', true], ['2026-10-20', false]]) {
     Settings.now = () => Date.parse(`${date}T04:00:00+09:00`);

@@ -4,11 +4,13 @@ export default defineConfig({
   testDir: "./tests/browser",
   timeout: 60_000,
   fullyParallel: false,
+  grepInvert: process.env.RUN_PERFORMANCE_TESTS === "1" ? undefined : /@performance/,
   workers: 2,
   use: {
     baseURL: "http://localhost:4321",
     channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
     trace: "retain-on-failure",
+    screenshot: "only-on-failure",
   },
   webServer: {
     // ハッシュ付きエンジン資材とPWA保存一覧まで生成してから配信する。

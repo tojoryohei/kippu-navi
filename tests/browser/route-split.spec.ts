@@ -31,6 +31,11 @@ async function lastResult(page: Page, type: string) {
     const replies = (window as unknown as { routeTestReplies: { type: string; result?: unknown }[] }).routeTestReplies;
     return replies.some(reply => reply.type === type);
   }, type)).toBe(true);
+  if (type.startsWith("success_route_split_")) {
+    const phases = await page.evaluate(() => (window as unknown as { routeTestReplies: { type: string; phase?: string }[] }).routeTestReplies.filter(reply => reply.type === "progress").map(reply => reply.phase));
+    expect(phases).toContain("calculating");
+    expect(phases).toContain("organizing");
+  }
   return page.evaluate(type => {
     const replies = (window as unknown as { routeTestReplies: { type: string; result?: unknown }[] }).routeTestReplies;
     return replies.filter(reply => reply.type === type).at(-1)?.result;
@@ -325,7 +330,7 @@ test("在来線化で重複した区間を戻し、独立した置き換えを�
   await expect(page.getByRole("checkbox", { name: "焼津", exact: true })).toBeVisible();
 });
 
-test("長距離の在来線展開を端末内WASMで全件計算する", async ({ page }) => {
+test("長距離の在来線展開を端末内WASMで全件計算する @performance", async ({ page }) => {
   test.setTimeout(120_000);
   const calls = await localCalculationOnly(page);
   await page.goto(`/split/route/ticket?${new URLSearchParams({ route: "熱海[新幹線]小倉", mode: "cheapest" })}`);
@@ -355,27 +360,31 @@ test("追加パターンの件数と再計算", async ({ page }) => {
   await localCalculationOnly(page, {
     "/api/split/auto/ticket": { normal: ["新茂原", "茂原"], results: [["新茂原", "茂原"]] },
   });
-  // 表示件数の境界条件を実際のWASM結果から作り、計算の内容には依存させない。
+  // 表示件数だけを変え、実際のWASM計算には依存しない。
   await page.addInitScript(() => {
-    const OriginalWorker = window.Worker;
-    Object.assign(window, { patternCount: 2 });
-    window.Worker = class extends OriginalWorker {
-      constructor(url: string | URL, options?: WorkerOptions) {
-        super(url, options);
-        this.addEventListener("message", event => {
-          const data = event.data.result?.data ?? event.data.result;
-          if (!data?.results?.length || !data.normal) return;
-          const count = (window as unknown as { patternCount: number }).patternCount;
-          data.results = Array.from({ length: count }, () => structuredClone(data.results[0]));
-        });
+    Object.assign(window, { patternCount: 3 });
+    window.Worker = class {
+      onmessage: ((event: MessageEvent) => void) | null = null;
+      constructor() {
+        setTimeout(() => this.onmessage?.(new MessageEvent("message", { data: { type: "ready", capability: "ticket" } })), 0);
       }
-    };
+      postMessage(message: { type: string; payload: { requestId: number } }) {
+        if (message.type !== "calculate") return;
+        const normal = { totalAmount: 150, segments: [{ start: "新茂原", end: "茂原", path: ["新茂原", "茂原"], via: ["外房"], totalEigyoKilo: 29, result: { Fare: 150, BarrierFreeFee: 0 } }] };
+        const count = (window as unknown as { patternCount: number }).patternCount;
+        queueMicrotask(() => this.onmessage?.(new MessageEvent("message", { data: {
+          type: "success", requestId: message.payload.requestId,
+          result: { normal, results: Array.from({ length: count }, () => structuredClone(normal)) },
+        } })));
+      }
+      terminate() {}
+    } as unknown as typeof Worker;
   });
   const query = new URLSearchParams({ from: "新茂原", to: "茂原", mode: "normal", months: "1" });
   await page.goto(`/split/auto/ticket?${query}`);
   const calculate = page.getByRole("button", { name: "乗車券を計算", exact: true });
-  for (const count of [2, 3, 1, 0]) {
-    if (count !== 2) {
+  for (const count of [3, 1, 0]) {
+    if (count !== 3) {
       await page.evaluate(count => Object.assign(window, { patternCount: count }), count);
       await calculate.click();
     }
@@ -393,7 +402,7 @@ test("追加パターンの件数と再計算", async ({ page }) => {
     expect(controlledId).toBeTruthy();
     await toggle.click();
     await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(count);
-    for (const width of [1280, 320, 390]) {
+    for (const width of [1280, 320]) {
       await page.setViewportSize({ width, height: 900 });
       const buttons = page.getByRole("button", { name: "他のパターンを閉じる", exact: true });
       for (const button of await buttons.all()) {

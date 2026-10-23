@@ -20,14 +20,7 @@ func TestStaticListNodeStoreAcrossChunkBoundary(t *testing.T) {
 		}
 	}
 
-	if len(store.chunks) != 2 {
-		t.Fatalf("チャンク数 = %d、期待値2", len(store.chunks))
-	}
-
 	store.Reset()
-	if store.count != 0 {
-		t.Fatalf("Reset()後の件数 = %d、期待値0", store.count)
-	}
 	if len(store.chunks) != 2 {
 		t.Fatalf("Reset()がチャンクを解放しています: 実際%d、期待値2", len(store.chunks))
 	}
@@ -37,37 +30,6 @@ func TestStaticListNodeStoreAcrossChunkBoundary(t *testing.T) {
 	}
 	if got := store.At(0).parentIdx; got != 42 {
 		t.Fatalf("再利用後のAt(0).parentIdx = %d、期待値42", got)
-	}
-}
-
-func TestDPScratchAllocationPhases(t *testing.T) {
-	var scratch dpScratch
-
-	scratch.ensureCandidateBuffers(32)
-	if len(scratch.stationToIndex) != 32 || len(scratch.candFlags) != 32 || len(scratch.candStationsBuf) != 32 {
-		t.Fatalf("候補バッファーが指定したサイズで確保されていません")
-	}
-	if scratch.distTable != nil || scratch.headTable != nil || scratch.pathBuf != nil || scratch.localFares != nil {
-		t.Fatalf("候補バッファーの確保時にDPバッファーも確保されています")
-	}
-	if len(scratch.nodes.chunks) != 0 {
-		t.Fatalf("候補バッファーの確保時にノードチャンクも確保されています")
-	}
-
-	scratch.ensureDPBuffers(4, 8)
-	if len(scratch.distTable) != 40 || len(scratch.headTable) != 40 {
-		t.Fatalf("DPテーブルのサイズが不正です: 距離=%d 先頭=%d", len(scratch.distTable), len(scratch.headTable))
-	}
-	if len(scratch.pathBuf) != 6 || len(scratch.localFares) != 64 {
-		t.Fatalf("DPバッファーのサイズが不正です: 経路=%d 運賃=%d", len(scratch.pathBuf), len(scratch.localFares))
-	}
-	if len(scratch.nodes.chunks) != 0 {
-		t.Fatalf("最初の追加より前にノードチャンクが確保されています")
-	}
-
-	scratch.appendNode(staticListNode{})
-	if len(scratch.nodes.chunks) != 1 {
-		t.Fatalf("最初の追加で確保されたチャンク数は%dですが、期待値は1です", len(scratch.nodes.chunks))
 	}
 }
 

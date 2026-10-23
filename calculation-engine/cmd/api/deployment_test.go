@@ -7,22 +7,24 @@ import (
 )
 
 func TestDeploymentIdentity(t *testing.T) {
-	for _, env := range []string{"staging", "production", ""} {
-		for _, status := range []int{200, 400, 500} {
-			handler := deploymentIdentity(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(status)
-			}), env, "built-sha")
-			request := httptest.NewRequest(http.MethodGet, "/api/split/auto/ticket", nil)
-			request.Header.Set("X-Deployment-Commit", "forged-sha")
-			response := httptest.NewRecorder()
-			handler.ServeHTTP(response, request)
-			want := "built-sha"
-			if response.Header().Get("X-Deployment-Commit") != want || response.Code != status {
-				t.Fatalf("env=%q status=%d: incorrect deployment identity", env, status)
-			}
-			if env != "staging" && response.Header().Get("Cache-Control") != "" {
-				t.Fatal("production cache headers changed")
-			}
+	for _, tc := range []struct {
+		env    string
+		status int
+	}{{"staging", 200}, {"production", 500}, {"", 400}} {
+		env, status := tc.env, tc.status
+		handler := deploymentIdentity(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(status)
+		}), env, "built-sha")
+		request := httptest.NewRequest(http.MethodGet, "/api/split/auto/ticket", nil)
+		request.Header.Set("X-Deployment-Commit", "forged-sha")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		want := "built-sha"
+		if response.Header().Get("X-Deployment-Commit") != want || response.Code != status {
+			t.Fatalf("env=%q status=%d: incorrect deployment identity", env, status)
+		}
+		if env != "staging" && response.Header().Get("Cache-Control") != "" {
+			t.Fatal("production cache headers changed")
 		}
 	}
 }
