@@ -71,13 +71,13 @@ jobs:
             }
             const lease = await admit({ github, context, target, environment, mode, reason, components });
             core.setOutput('lease', JSON.stringify(lease));
-      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
-        with:
-          version: '565.0.0'
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.SA_EMAIL }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          version: '565.0.0'
       - name: 配信中Revisionを基準に更新対象を判定
         id: plan
         env:
