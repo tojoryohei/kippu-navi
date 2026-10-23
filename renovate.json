@@ -101,6 +101,22 @@
       "groupName": "eslint"
     },
     {
+      "description": "ESLint関連とTypeScriptのメジャー更新は互換性を確認してからDashboardで承認する",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "eslint",
+        "eslint-*",
+        "@typescript-eslint/**",
+        "typescript"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true
+    },
+    {
       "matchPackageNames": [
         "@sentry/**"
       ],
