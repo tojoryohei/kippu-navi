@@ -2,15 +2,98 @@
 
 ## 対象と結論
 
-追跡対象のテスト104ファイル（Go 77、Node 10、Playwright 15、Python 1、Renovateスクリプト1）を、期待値の独立性・重複・製品の観測結果・費用の観点で確認した。補助コード、テスト設定、呼び出す実装も参照した。末尾に全ファイルの処置を記す。今回の変更はこの一覧とlint修正であり、以下の削除・移設はまだ実施していない。
+追跡対象のテスト104ファイル（Go 77、Node 10、Playwright 15、Python 1、Renovateスクリプト1）を、期待値の独立性・重複・製品の観測結果・費用の観点で確認した。補助コード、テスト設定、呼び出す実装も参照した。末尾に全ファイルの処置を記す。候補をコードへ反映した。以下の候補欄は当初の判断を記録し、最終的な採否と変更内容は「反映結果」を正とする。
 
 優先順位はD（直接削除・少数ケースへ集約）、C（保証を移して統合）、R（弱い検証方式の置換）、E（ブラウザ・実行費用の削減）。IDは作業単位であり、削除できるテスト件数ではない。失う検知は右欄に明記し、件数・カバレッジ維持を理由に残していない。
 
 先に取り組む対象は、D07の空データ検証、R01/R02の事前計算コピーと暗黙mock、E01/E06/E07の待機・長距離計算・UI用実WASM、D02/C09/C12の同じ回帰入力の重複である。
 
+## 反映結果
+
+58項目を処置した。C16・E08は再評価で維持、C14・E09・E13は対象の一部を維持した。維持理由は件数やカバレッジではなく、固有の不具合検知と実行・保守費用で判断した。
+
+| ID | 最終的な変更・判断 |
+| --- | --- |
+| D01 | 固定15秒の定数比較を削除。timeout・親abort・再試行の動作検証を維持。 |
+| D02 | 重複する保存失敗3ケースを削除。診断通知側で旧キャッシュ維持と新キャッシュ破棄も検証。 |
+| D03 | テスト用HTTPサーバーの自己検証ループとhttpRequest importを削除。 |
+| D04 | ログだけの会津デバッグテストをファイルごと削除。 |
+| D05 | ほしみの重複デバッグテストをファイルごと削除。 |
+| D06 | デフォルト規則の件数だけを固定するテストを削除。 |
+| D07 | 空データに対する5テストを、ソース・生成物が空である1テストへ集約。グラフ読込と未実行ループを削除。 |
+| D08 | 同じTotalAmount同士の比較を削除。 |
+| D09 | 会社跨ぎのFare > 0だけのケースを削除。 |
+| D10 | 東京→大阪の非空スモークを削除。実グラフで金額・経路を検証する統合テストを維持。 |
+| D11 | registryの非nil確認を削除。 |
+| D12 | 確保サイズ・チャンク数・内部countの固定を削除。Append/At/Resetの結果と既存benchmarkを維持。 |
+| D13 | スライス・mapper・searchのポインタ同一性を削除。 |
+| D14 | テストが無条件scheduleを注入して確認する部分を削除。 |
+| C01 | 誤称のHashCollisionテストを削除し、同じ駅の並び順違いを通常のテーブルへ統合。実際の衝突検証は維持。 |
+| C02 | GobのEmptyReader重複を削除し、破損入力の伝播を維持。 |
+| C03 | 実グラフを読む各社Get確認を削除。未知会社拒否だけを小さいregistryケースへ。 |
+| C04 | 単一区間を削除し、複数区間の期待値に逆方向を統合。 |
+| C05 | 手作り逆引きmapを削除。LoadSpecialZonesの実データから駅・ゾーンを検索する検証へ。 |
+| C06 | 環境×statusを代表3組へ。WriteとWriteHeaderの違いは維持。 |
+| C07 | 廃止ルートのGET/POST重複を各パス1件へ。 |
+| C08 | 期間とオプションを4組へ縮小。欠損・破損・不整合と両券種を維持し、並行呼出しは欠損の代表条件へ集約。 |
+| C09 | TestPipelineCorrectorの重複3経路を削除。実グラフの統合ケースと補正前情報の伝播テストを維持。 |
+| C10 | 基本短縮と単駅のモックケースを削除。実グラフの基本短縮と、固有の混在・区間判定を維持。 |
+| C11 | 内部のmode対応表テストを削除。隣接区間の公開計算でunknownをnormalの結果と比較するケースへ。 |
+| C12 | 新幹線重複印字の単体2ケースを削除。統合側の具体経路を維持。 |
+| C13 | IRいしかわの重複ケースを削除し、私鉄印字テストを公開GetFareViaで実行。仮想端点を既存の印字テーブルへ移し、内部bounds固定を削除。 |
+| C14 | 第69/157条の規則配列参照を独立した固定入力・出力へ置換。省略条件の類似反復、控除件数13・添字対応を削除。物理接続の整合性は維持。pass/viaはもともと独立した期待値であり、当初候補の対象指定を訂正して維持。 |
+| C15 | ログ捕捉を、結果経路が使われる1件と印字生成時の無出力確認へ集約。 |
+| C16 | 再評価して維持。営業キロと擬制キロが異なる複数会社の集計で、JR西日本以外を減算する誤りと過剰控除を小さいfixtureで直接検出する。公開運賃に置き換えるには大きい料金fixtureが必要になり、削減より保守負担が増える。 |
+| C17 | 36組を料金合成・特例mode・1/3/6月を分担する6組へ縮小。独立した総当たりoracleは維持。 |
+| C18 | 重複拒否のResolvePathをmodeループ外へ。各公開計算入口の拒否は維持。 |
+| C19 | 補正器・入れ子補正の同じ検証をmodeループ外へ。 |
+| C20 | 元JSONを期待値へ使うWholeCorridorsを削除。具体経路と総当たりoracleを維持。 |
+| R01 | 事前計算のアルゴリズムコピーを削除。本番ComputeCheapestNoSplitはfixtureの表構築にだけ使い、正解経路は個別ケースで固定。0円fixtureの3/6月反復を削除。全ケースを固定行列に作り直す案は、既存の独立した期待経路を利用する方針へ変更。 |
+| R02 | 暗黙mockとmock用bin生成を削除。通常の統合テストは実グラフ・実運賃でon-demand検索し、短い具体経路と特例を確認。事前計算表との互換性はAPI fallbackへ集約。既存の事前計算benchmarkは正しいdataパスを使い、不在時は失敗する。 |
+| R03 | YAMLをparseしてbuildの有効権限・Environment・secret参照を検証。workflow側の権限/env継承も評価。既存lockfile内のyaml 2.9.1を直接devDependencyとして明示。境界を外す3種類の一時的mutationで失敗を確認。 |
+| R04 | transpileとソース文字列置換を削除。NodeのregisterHooksでブラウザ専用のanalytics依存とaliasを解決し、実TypeScriptをimport。 |
+| R05 | 進捗通知の時計を内部関数に注入し、sleepを削除。公開関数はtime.Nowを使用。全区間の厳密な評価件数を削除し、重複評価・結果・途中通知・失敗時未完了を維持。 |
+| E01 | 広告不在を代表1ケースへ。5500msの実待機をPlaywright clockで進める。 |
+| E02 | status×券種を5組へ縮小。全endpoint接続と408/429/503の違い、400拒否を維持。フォント分割数100固定を削除し、保存存在とオフライン文字読込を維持。 |
+| E03 | 会社線形状2件を1月/6月へ配分。期間切替は既存route-split側が1/3/6月を検証。 |
+| E04 | 全7ルートのSSRはHTTPで検証。代表3フォームで初期inert、URL復元、操作解除、高さ維持を同時に確認。 |
+| E05 | 専用の実WASM進捗2ケースを削除し、既存route-splitの実計算でcalculating/organizingの受信を確認。細かいUI状態は制御Workerで維持。 |
+| E06 | Go長距離はbenchmark、WASM長距離は@performanceタグへ。通常Playwrightではタグを除外。どちらも明示実行し成功を確認。 |
+| E07 | UI件数の検証に固定Worker応答を使い、実WASM初期化と計算を削除。3→1→0、展開リセット、狭幅/PCを確認。 |
+| E08 | 再評価して維持。現行のケースは置換後の候補駅、重複で戻る駅、印字文字列という異なるUI接続を確認する。Goの計算一致では代替できず、各ケース約0.4〜0.7秒の実測費用に対して価値がある。 |
+| E09 | API timeoutだけ制御時計へ。403/404の削除案は撤回し両方維持。frontend.test.mjsはサーバー側で、ブラウザWorkerの資材再取得とは別実装。 |
+| E10 | 記事のmobileメニュー重複を削除し、prefetch/非hydration/スクロール解除をheaderへ統合。クエリ往復はPC代表へ、mobile操作は別ケースで維持。 |
+| E11 | 38px・色・padding・ライブラリ内部DOMの固定を削除。入力幅、Emotion style消失後、非露出live region、はみ出しを維持。 |
+| E12 | 幅は320/1280へ、months正規化は新旧キーと優先順位を分担した4組へ。 |
+| E13 | 全キー操作は代表フォームへ集約。他フォームは末尾選択まで。全スクロール走査は維持：異なる候補データと同名駅の欠落を検知し、今回の実測は約1.1秒/3.2秒。中間点だけの検証へ置換する案は採らない。 |
+| E14 | 全記事はHTTP+DOMParserでmetadataを検証し、リンクは重複排除。JSなし実表示は代表記事。計算例の算術はpage fixtureを使わないケースに分離。元からrequest-onlyの全ページmetadataは維持。 |
+| E15 | stationData丸ごとコピー比較と派生集合の重複を削除。重複駅名・具体的な曖昧駅・API schema/配信契約を維持。 |
+| E16 | 旧説明文の不在とリンク6件固定を削除。関連リンク・表示と構造化データの契約を維持。 |
+| E17 | 通常閲覧の更新履歴状態とSW未登録をmanifestの遷移ケースへ統合。 |
+| E18 | 比較しない成功時画像を削除。Playwrightは失敗時画像のみ保存する設定へ。 |
+| E19 | dev起動はticket1月/pass3月/IC6月の3件へ。文書の期間キー、実APIの全期間対応、同じGo runtime配信の検証を維持。 |
+
+### 検証結果（反映後）
+
+- npm run lint：0 errors / 0 warnings。
+- npm run typecheck：0 errors / 0 warnings / 0 hints。npm run knip：成功。
+- Node worker / automation / verification：77 tests成功。
+- Go全パッケージ：成功。API・進捗処理のrace検査も成功。
+- ブラウザ：通常90ケースの一括実行が成功。その後維持に戻した403を含む403/404の2ケースも成功（最終構成の通常ケースは91）。
+- 開発サーバー：実API/WASMの7ケース成功。
+- 長距離WASM：1ケース成功、計算時間約17.66秒。Go benchmark：1回で約3.95秒、約6.80 GB/opの累積確保。メモリ量は同時使用量ではない。
+- ワークフローの有効権限・Environment・継承envのsecretを個別に緩めた一時的なmutationで、改修した境界テストがそれぞれ失敗することを確認。ワークフロー自体の変更は残していない。
+- 比較条件をそろえた変更前後のCI実測は行っていない。上記時間からCI全体の短縮率は算出しない。
+
+長距離計測は次で明示実行できる。
+
+    RUN_PERFORMANCE_TESTS=1 npx playwright test --grep @performance
+    cd calculation-engine
+    go test ./tests/integration/ticket -run '^$' -bench '^BenchmarkSplitConventionalLongRoute$' -benchtime=1x
+
 ## 候補一覧
 
-対象部分が処置単位であり、ファイル全体を削除する指示ではない。置換・統合は右欄の検証を移してから実施する。
+対象部分が処置単位であり、ファイル全体を削除する指示ではない。以下は当初候補であり、実際に維持・修正した判断は反映結果に記載した。
 
 ### 直接削除・部分削除
 
@@ -19,13 +102,13 @@
 | **D01** [tests/worker/api.test.mjs](../tests/worker/api.test.mjs)<br>API_REQUEST_TIMEOUT_MSの15000固定値比較 | **削除**。定数を変更すると落ちるだけ。タイムアウト時のフォールバックは別ケースが検証。 | 15秒という数値そのものの変更は検知しなくなる。動作保証とは分離する。 |
 | **D02** [tests/worker/pwa.test.mjs](../tests/worker/pwa.test.mjs)<br>99行目からの保存失敗3ケース | **削除**。149行目以降の失敗段階・資材通知テストも同じ失敗、旧キャッシュ維持、新キャッシュ破棄を確認。 | 後段3ケースを残せば同じ保存失敗の検知を失わない。 |
 | **D03** [tests/browser/pwa-update.spec.ts](../tests/browser/pwa-update.spec.ts)<br>テスト用HTTPサーバーへ不正パスを送るループ | **部分削除**。テスト自身が定義した400応答の自己検証。製品の更新処理を通らない。 | テストサーバーの拒否実装の変更は検知しなくなる。サーバー側の拒否コード自体は残す。 |
-| **D04** [calculation-engine/cmd/scan-article114/debug_aizu_test.go](../calculation-engine/cmd/scan-article114/debug_aizu_test.go)<br>TestDebugAizu | **削除**。結果をログ出力するだけで期待運賃・経路を比較しない。scanner_test.goに具体的な回帰経路がある。 | 当該デバッグ入力がエラーになることの単独検知のみ失う。計算結果の正しさは現状でも保証していない。 |
-| **D05** [calculation-engine/cmd/scan-article114/debug_hoshimi_test.go](../calculation-engine/cmd/scan-article114/debug_hoshimi_test.go)<br>TestDebugCheapestHoshimi | **削除**。scanner_test.goのTestArticle114RegressionRoutesでもほしみ→東旭川の4840円を検証。 | 同じ入力と期待金額の検証が残る。 |
-| **D06** [calculation-engine/internal/pass/domain/bypass_test.go](../calculation-engine/internal/pass/domain/bypass_test.go)<br>TestDefaultBypassRulesAreShared | **削除**。ルール件数4を固定しているだけで、共有・内容・適用結果を確認していない。 | ルール増減自体は検知しなくなる。個別の特例経路の結果テストを残す。 |
+| **D04** `calculation-engine/cmd/scan-article114/debug_aizu_test.go`（削除済み）<br>TestDebugAizu | **削除**。結果をログ出力するだけで期待運賃・経路を比較しない。scanner_test.goに具体的な回帰経路がある。 | 当該デバッグ入力がエラーになることの単独検知のみ失う。計算結果の正しさは現状でも保証していない。 |
+| **D05** `calculation-engine/cmd/scan-article114/debug_hoshimi_test.go`（削除済み）<br>TestDebugCheapestHoshimi | **削除**。scanner_test.goのTestArticle114RegressionRoutesでもほしみ→東旭川の4840円を検証。 | 同じ入力と期待金額の検証が残る。 |
+| **D06** `calculation-engine/internal/pass/domain/bypass_test.go`（削除済み）<br>TestDefaultBypassRulesAreShared | **削除**。ルール件数4を固定しているだけで、共有・内容・適用結果を確認していない。 | ルール増減自体は検知しなくなる。個別の特例経路の結果テストを残す。 |
 | **D07** [calculation-engine/internal/ticket/infra/fareio/json_loader_test.go](../calculation-engine/internal/ticket/infra/fareio/json_loader_test.go)<br>[calculation-engine/internal/ticket/usecase/route_extension_test.go](../calculation-engine/internal/ticket/usecase/route_extension_test.go)<br>TestRouteExtensionJSONContainsPathsOnly / TestGeneratedRouteExtensionsMatchSourceJSON / TestRouteExtensionRegistryIsEmptyAfterRemovingArticle114Routes / TestEmbeddedRouteExtensionsUsePhysicalJRPaths / TestGeneratedRouteExtensionsUsePhysicalPaths | **5本を最大1本へ**。データが空で物理経路チェックのループは実行されない。空データの一致に実グラフ読込は不要。 | 手動拡張ルールを復活させない方針を検証したい場合だけソースと生成データの空配列チェックを1本残す。将来の非空データを検証済みとは扱わない。 |
 | **D08** [calculation-engine/internal/pass/usecase/calculate_amount_test.go](../calculation-engine/internal/pass/usecase/calculate_amount_test.go)<br>構造体全体の一致後のTotalAmount同士の比較 | **部分削除**。同一フィールドに同じメソッドを適用して比較しており、TotalAmount自体の誤りを検出できない。 | 独立した合計値の検証ではなく、現実的な検出能力を失わない。 |
 | **D09** [calculation-engine/internal/ticket/usecase/calculate_amount_test.go](../calculation-engine/internal/ticket/usecase/calculate_amount_test.go)<br>通常運賃（会社跨ぎ）のFare > 0だけのケース | **ケース削除**。会社境界の誤った足し算でも通過。joint_test.goと実額を確認する統合テストの方が強い。 | そのダミー入力がゼロになる検知のみ失う。独自の合成分岐を維持するなら期待実額へ置換してから削除。 |
-| **D10** [calculation-engine/internal/ticket/graph/graph_test.go](../calculation-engine/internal/ticket/graph/graph_test.go)<br>TestRailwayGraph_LoadAndFindPath | **削除**。東京→大阪の非空確認だけで端点不在時にはskip。具体経路の統合テストと重複。 | この1経路の存在だけのスモーク検知を失う。実データの計算テストは残る。 |
+| **D10** `calculation-engine/internal/ticket/graph/graph_test.go`（削除済み）<br>TestRailwayGraph_LoadAndFindPath | **削除**。東京→大阪の非空確認だけで端点不在時にはskip。具体経路の統合テストと重複。 | この1経路の存在だけのスモーク検知を失う。実データの計算テストは残る。 |
 | **D11** [calculation-engine/internal/ticket/infra/fareio/json_loader_test.go](../calculation-engine/internal/ticket/infra/fareio/json_loader_test.go)<br>TestNewRegistry | **削除**。初期化後の非nil確認。実際にregistryを使う運賃計算が初期化不良も検知する。 | 未使用フィールドだけがnilになる変更は検知しなくなる。必要な計算結果を基準にする。 |
 | **D12** [calculation-engine/internal/pass/usecase/search_optimal_split_scratch_test.go](../calculation-engine/internal/pass/usecase/search_optimal_split_scratch_test.go)<br>TestDPScratchAllocationPhases、StaticListNodeStoreのchunks/count直接比較 | **削除・部分削除**。スライス長・チャンク数の固定は確保方式の改善を妨げる。Append/At/Resetの観測結果は維持。 | 確保量増大は機能テストでは検知しなくなる。必要なら既存benchmarkでB/op・allocs/opを評価。 |
 | **D13** [calculation-engine/internal/ticket/infra/graphio/json_test.go](../calculation-engine/internal/ticket/infra/graphio/json_test.go)<br>[calculation-engine/internal/pass/graph/ic_pass_graph_test.go](../calculation-engine/internal/pass/graph/ic_pass_graph_test.go)<br>[calculation-engine/cmd/api/pass_fallback_test.go](../calculation-engine/cmd/api/pass_fallback_test.go)<br>共有スライス・mapper・searchのポインタ同一性 | **部分削除**。結果が等しくても内部の共有方法を変更するだけで失敗する。 | 余分な複製・再生成の性能低下は見逃す。ID整合性・結果・同時アクセスを残し、性能はbenchmarkに分離。 |
@@ -100,7 +183,7 @@
 - network障害とHTTP 503、初回404と再試行、touchとキーボード、更新成功と容量不足は異なる障害経路。似た画面になるだけでは統合しない。
 - 署名claimとキャッシュ期限は自前の組立・更新判定を検証するため維持。ただしclaimを読むテストは暗号署名自体を検証していない。タイトルだけで暗号検証済みとは見なさない。
 
-## 実測と検証範囲
+## 精査時の実測と検証範囲（変更前の記録）
 
 - npm run lint: 修正前11 warnings、修正後0 errors / 0 warnings。全体のrule無効化はしていない。
 - node --test tests/worker/*.test.mjs tests/automation/*.test.mjs tests/verification/*.test.mjs: 81 tests成功、失敗0（今回約0.61秒）。短いNodeケースは主に保守負担削減で、大きな時間短縮は期待しない。
@@ -119,13 +202,13 @@
 | [calculation-engine/cmd/api/main_test.go](../calculation-engine/cmd/api/main_test.go) | C07 |
 | [calculation-engine/cmd/api/observability_test.go](../calculation-engine/cmd/api/observability_test.go) | 維持：固有の計算・入力・配信・保護境界の検証 |
 | [calculation-engine/cmd/api/pass_fallback_test.go](../calculation-engine/cmd/api/pass_fallback_test.go) | D13, C08 |
-| [calculation-engine/cmd/scan-article114/debug_aizu_test.go](../calculation-engine/cmd/scan-article114/debug_aizu_test.go) | D04 |
-| [calculation-engine/cmd/scan-article114/debug_hoshimi_test.go](../calculation-engine/cmd/scan-article114/debug_hoshimi_test.go) | D05 |
+| `calculation-engine/cmd/scan-article114/debug_aizu_test.go`（削除済み） | D04 |
+| `calculation-engine/cmd/scan-article114/debug_hoshimi_test.go`（削除済み） | D05 |
 | [calculation-engine/cmd/scan-article114/scanner_test.go](../calculation-engine/cmd/scan-article114/scanner_test.go) | 維持：固有の計算・入力・配信・保護境界の検証 |
 | [calculation-engine/cmd/wasm/ticket_initialization_test.go](../calculation-engine/cmd/wasm/ticket_initialization_test.go) | 維持：固有の計算・入力・配信・保護境界の検証 |
 | [calculation-engine/internal/domain/path_validation_test.go](../calculation-engine/internal/domain/path_validation_test.go) | 維持：固有の計算・入力・配信・保護境界の検証 |
 | [calculation-engine/internal/pass/domain/addon_test.go](../calculation-engine/internal/pass/domain/addon_test.go) | C04 |
-| [calculation-engine/internal/pass/domain/bypass_test.go](../calculation-engine/internal/pass/domain/bypass_test.go) | D06 |
+| `calculation-engine/internal/pass/domain/bypass_test.go`（削除済み） | D06 |
 | [calculation-engine/internal/pass/fare/barrier_free_test.go](../calculation-engine/internal/pass/fare/barrier_free_test.go) | 維持：固有の計算・入力・配信・保護境界の検証 |
 | [calculation-engine/internal/pass/fare/calculator_test.go](../calculation-engine/internal/pass/fare/calculator_test.go) | C03 |
 | [calculation-engine/internal/pass/fare/joint_test.go](../calculation-engine/internal/pass/fare/joint_test.go) | 維持：固有の計算・入力・配信・保護境界の検証 |
@@ -155,7 +238,7 @@
 | [calculation-engine/internal/ticket/fare/shikoku_test.go](../calculation-engine/internal/ticket/fare/shikoku_test.go) | 維持：固有の計算・入力・配信・保護境界の検証 |
 | [calculation-engine/internal/ticket/fare/standard_test.go](../calculation-engine/internal/ticket/fare/standard_test.go) | 維持：固有の計算・入力・配信・保護境界の検証 |
 | [calculation-engine/internal/ticket/fare/train_specific_section_test.go](../calculation-engine/internal/ticket/fare/train_specific_section_test.go) | 維持：固有の計算・入力・配信・保護境界の検証 |
-| [calculation-engine/internal/ticket/graph/graph_test.go](../calculation-engine/internal/ticket/graph/graph_test.go) | D10 |
+| `calculation-engine/internal/ticket/graph/graph_test.go`（削除済み） | D10 |
 | [calculation-engine/internal/ticket/handler/split_test.go](../calculation-engine/internal/ticket/handler/split_test.go) | 維持：固有の計算・入力・配信・保護境界の検証 |
 | [calculation-engine/internal/ticket/infra/fareio/json_loader_test.go](../calculation-engine/internal/ticket/infra/fareio/json_loader_test.go) | D07, D11 |
 | [calculation-engine/internal/ticket/infra/graphio/json_test.go](../calculation-engine/internal/ticket/infra/graphio/json_test.go) | D13 |
