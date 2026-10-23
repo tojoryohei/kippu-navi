@@ -11,6 +11,7 @@ var privateFaresJSON []byte
 
 // PrivateFare 構造体は私鉄の運賃区間を定義します。
 type PrivateFare struct {
+	Company      string `json:"company"`
 	StartStation string `json:"startStation"`
 	EndStation   string `json:"endStation"`
 	Fare         int    `json:"fare"`
@@ -30,10 +31,13 @@ func NewPrivateFareRegistry() (*PrivateFareRegistry, error) {
 	return &PrivateFareRegistry{fares: fares}, nil
 }
 
-// GetFare は指定された開始駅と終了駅間の私鉄運賃を取得します。
+// GetFare は指定会社内の開始駅と終了駅間の私鉄運賃を取得します。
 // 両方向（Start->End, End->Start）でマッチします。
-func (r *PrivateFareRegistry) GetFare(startStation, endStation string) (int, bool) {
+func (r *PrivateFareRegistry) GetFare(company, startStation, endStation string) (int, bool) {
 	for _, f := range r.fares {
+		if f.Company != company {
+			continue
+		}
 		if (f.StartStation == startStation && f.EndStation == endStation) ||
 			(f.StartStation == endStation && f.EndStation == startStation) {
 			return f.Fare, true

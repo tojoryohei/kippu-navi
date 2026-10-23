@@ -32,7 +32,7 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		FromID: id("A"), ToID: id("河原田"),
 		EigyoKilo: 100, GiseiKilo: 100, IsLocal: false, Company: domain.JRCentral,
 	}})
-	g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{
+	g.AddEdge(ticketdomain.TicketEdge{Line: "伊勢鉄道線", Edge: domain.Edge{
 		FromID: id("河原田"), ToID: id("津"),
 		EigyoKilo: 223, GiseiKilo: 223, IsLocal: false, Company: domain.Other,
 	}})

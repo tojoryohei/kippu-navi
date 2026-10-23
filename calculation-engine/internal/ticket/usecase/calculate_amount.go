@@ -55,7 +55,7 @@ func NewCalculateAmount(
 }
 
 type routeSummary struct {
-	edges          []*domain.Edge
+	edges          []*ticketdomain.TicketEdge
 	totalEigyo     domain.DeciKilo // JRの合計
 	totalGisei     domain.DeciKilo // JRの合計
 	totalPathEigyo domain.DeciKilo // JR・私鉄を含めた経路全体の営業キロ
@@ -78,7 +78,7 @@ func (u *CalculateAmount) analyzePath(path []int) (*routeSummary, error) {
 	}
 
 	summary := &routeSummary{
-		edges:          make([]*domain.Edge, 0, len(path)-1),
+		edges:          make([]*ticketdomain.TicketEdge, 0, len(path)-1),
 		statsByCompany: make([]companyStats, domain.CompanyCount),
 	}
 
@@ -86,11 +86,11 @@ func (u *CalculateAmount) analyzePath(path []int) (*routeSummary, error) {
 		fromID := path[i]
 		toID := path[i+1]
 
-		var edge *domain.Edge
+		var edge *ticketdomain.TicketEdge
 		edges := u.graph.GetEdges(fromID)
 		for j := range edges {
 			if edges[j].ToID == toID {
-				edge = &edges[j].Edge
+				edge = &edges[j]
 				break
 			}
 		}
@@ -183,7 +183,7 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 	var jrEdges []*domain.Edge
 	for _, edge := range summary.edges {
 		if edge.Company != domain.Other {
-			jrEdges = append(jrEdges, edge)
+			jrEdges = append(jrEdges, &edge.Edge)
 		}
 	}
 
@@ -271,36 +271,12 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 		}
 	}
 
-	// 私鉄運賃の計算 (Company == 0 の区間)
 	if u.privateFareReg != nil {
-		var privateStartIdx = -1
-		for i, edge := range summary.edges {
-			if edge.Company == domain.Other {
-				if privateStartIdx == -1 {
-					privateStartIdx = i
-				}
-			} else {
-				if privateStartIdx != -1 {
-					startName := u.graph.GetName(farePath[privateStartIdx])
-					endName := u.graph.GetName(farePath[i])
-					if f, ok := u.privateFareReg.GetFare(startName, endName); ok {
-						totalFare += f
-					} else {
-						return nil, fmt.Errorf("運賃が未登録です: %s - %s", startName, endName)
-					}
-					privateStartIdx = -1
-				}
-			}
+		privateFare, err := u.calculatePrivateFare(summary.edges)
+		if err != nil {
+			return nil, err
 		}
-		if privateStartIdx != -1 {
-			startName := u.graph.GetName(farePath[privateStartIdx])
-			endName := u.graph.GetName(farePath[len(summary.edges)])
-			if f, ok := u.privateFareReg.GetFare(startName, endName); ok {
-				totalFare += f
-			} else {
-				return nil, fmt.Errorf("運賃が未登録です: %s - %s", startName, endName)
-			}
-		}
+		totalFare += privateFare
 	}
 
 	return &CalculationResult{
