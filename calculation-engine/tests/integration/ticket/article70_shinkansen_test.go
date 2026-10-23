@@ -1,15 +1,14 @@
 package ticket_test
 
 import (
-	"io"
-	"reflect"
-	"slices"
-	"testing"
-
 	"calculation-engine/internal/graphdata"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/infra/graphio"
 	"calculation-engine/internal/ticket/usecase"
+	"io"
+	"reflect"
+	"slices"
+	"testing"
 )
 
 func TestArticle70Shinkansen(t *testing.T) {
@@ -78,28 +77,31 @@ func TestArticle70Shinkansen(t *testing.T) {
 				slices.Reverse(wantVia)
 			}
 			steps[len(steps)-1].LineName = ""
+			path, err := calculator.ResolvePath(steps)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tc.invalid {
+				// 通常のCorrectと、入れ子の補正でも展開前の要求を保持する。
+				if _, err := corrector.Correct(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
+					t.Fatalf("補正時のエラー = %v", err)
+				}
+				nested := usecase.NewPipelineCorrector(usecase.NewShinkansenOverlapCorrector(), usecase.NewPipelineCorrector(usecase.NewArticle70Corrector(routes)))
+				if _, err := nested.Correct(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
+					t.Fatalf("入れ子の補正時のエラー = %v", err)
+				}
+				if _, _, err := nested.CorrectWithPreShinkansenPath(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
+					t.Fatalf("入れ子の追跡付き補正時のエラー = %v", err)
+				}
+			}
 			for _, mode := range []string{"normal", "cheapest", "uncorrect"} {
 				t.Run(tc.name+"/"+steps[0].StationName+"/"+mode, func(t *testing.T) {
-					path, err := calculator.ResolvePath(steps)
-					if err != nil {
-						t.Fatal(err)
-					}
 					fare, _, err := calculator.Calculate(path, steps, mode)
 					if tc.invalid && mode != "uncorrect" {
 						if err == nil || err.Error() != "再考：要求区間誤り" {
 							t.Fatalf("エラー = %v, 期待値 再考：要求区間誤り", err)
 						}
-						// 通常のCorrectと、入れ子の補正でも展開前の要求を保持する。
-						if _, err := corrector.Correct(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
-							t.Fatalf("補正時のエラー = %v", err)
-						}
-						nested := usecase.NewPipelineCorrector(usecase.NewShinkansenOverlapCorrector(), usecase.NewPipelineCorrector(usecase.NewArticle70Corrector(routes)))
-						if _, err := nested.Correct(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
-							t.Fatalf("入れ子の補正時のエラー = %v", err)
-						}
-						if _, _, err := nested.CorrectWithPreShinkansenPath(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
-							t.Fatalf("入れ子の追跡付き補正時のエラー = %v", err)
-						}
+
 						return
 					}
 					if err != nil {

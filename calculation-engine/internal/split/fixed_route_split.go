@@ -20,6 +20,7 @@ type progressReporter struct {
 	callback       ProgressCallback
 	visited, total int
 	last           time.Time
+	now            func() time.Time
 }
 
 // 次の候補に入る直前に、それまでに完了した候補数を通知する。
@@ -28,9 +29,10 @@ func (p *progressReporter) beginCandidate() {
 	if p.callback == nil {
 		return
 	}
-	if time.Since(p.last) >= 100*time.Millisecond {
+	now := p.now()
+	if now.Sub(p.last) >= 100*time.Millisecond {
 		p.callback(Progress{"calculating", p.visited, p.total})
-		p.last = time.Now()
+		p.last = p.now()
 	}
 	p.visited++
 }
@@ -56,6 +58,10 @@ func OptimizeFixedRoute(n int, evaluate func(int, int) (RouteSplitSegment, error
 }
 
 func OptimizeFixedRouteWithProgress(n int, evaluate func(int, int) (RouteSplitSegment, error), callback ProgressCallback, limits ...int) ([]RouteSplitPlan, error) {
+	return optimizeFixedRouteWithClock(n, evaluate, callback, time.Now, limits...)
+}
+
+func optimizeFixedRouteWithClock(n int, evaluate func(int, int) (RouteSplitSegment, error), callback ProgressCallback, now func() time.Time, limits ...int) ([]RouteSplitPlan, error) {
 	if n < 2 {
 		return nil, domain.ErrInvalidPath
 	}
@@ -66,7 +72,7 @@ func OptimizeFixedRouteWithProgress(n int, evaluate func(int, int) (RouteSplitSe
 		}
 		total *= min(limits[0]+1, n-1)
 	}
-	progress := &progressReporter{callback: callback, total: total, last: time.Now()}
+	progress := &progressReporter{callback: callback, total: total, last: now(), now: now}
 	if callback != nil {
 		callback(Progress{"calculating", 0, total})
 	}

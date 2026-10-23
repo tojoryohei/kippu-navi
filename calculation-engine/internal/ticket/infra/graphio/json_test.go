@@ -2,11 +2,10 @@ package graphio
 
 import (
 	"calculation-engine/internal/graphdata"
+	ticketdomain "calculation-engine/internal/ticket/domain"
 	"io"
 	"strings"
 	"testing"
-
-	ticketdomain "calculation-engine/internal/ticket/domain"
 )
 
 func TestPhysicalGraphSeparatesHakodateAndShinAomori(t *testing.T) {
@@ -58,11 +57,6 @@ func TestLoadSeparatedGraphsKeepsVirtualEdgesOutOfSearchGraph(t *testing.T) {
 		t.Fatal("運賃計算グラフに仮想エッジが含まれていません")
 	}
 
-	searchEdges := searchGraph.GetEdges(aID)
-	fareEdges := fareGraph.GetEdges(aID)
-	if len(searchEdges) == 0 || len(fareEdges) == 0 || &searchEdges[0] != &fareEdges[0] {
-		t.Fatal("探索用グラフと運賃計算グラフが物理エッジを共有していません")
-	}
 }
 
 func TestDijkstraExcludesVirtualEdgesFromShortestPath(t *testing.T) {

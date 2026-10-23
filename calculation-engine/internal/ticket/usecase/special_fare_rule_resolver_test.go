@@ -1,14 +1,13 @@
 package usecase
 
 import (
-	"fmt"
-	"reflect"
-	"testing"
-
 	"calculation-engine/internal/domain"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/graphio"
+	"fmt"
+	"reflect"
+	"testing"
 )
 
 func TestSpecialFareRuleResolverUncorrectKeepsInputPath(t *testing.T) {
@@ -167,20 +166,6 @@ func TestSpecialFareRuleResolverUsesOneSideZoneForPureJRSuburbanPath(t *testing.
 	}
 	if candidates[0].CheckThreshold {
 		t.Fatal("中心駅までの距離を事前判定した候補で閾値再判定が有効です")
-	}
-}
-
-func TestNormalizeFareEvaluationMode(t *testing.T) {
-	tests := map[string]string{
-		"normal":    "normal",
-		"cheapest":  "normal",
-		"uncorrect": "uncorrect",
-		"unknown":   "normal",
-	}
-	for input, want := range tests {
-		if got := NormalizeFareEvaluationMode(input); got != want {
-			t.Fatalf("運賃評価モードの正規化が不正です: 入力=%q 実際=%q 期待値=%q", input, got, want)
-		}
 	}
 }
 

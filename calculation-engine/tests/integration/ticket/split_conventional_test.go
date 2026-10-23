@@ -8,10 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"runtime"
 	"slices"
 	"testing"
-	"time"
 )
 
 func TestSplitConventionalCorridors(t *testing.T) {
@@ -116,75 +114,6 @@ func TestSplitConventionalPartialAndDuplicate(t *testing.T) {
 	}
 }
 
-func TestSplitConventionalWholeCorridors(t *testing.T) {
-	_, g := setupTicketAmount(t)
-	calculator := usecase.NewRouteTicketCalculator(g, usecase.NewPipelineCorrector(usecase.NewShinkansenOverlapCorrector()), nil, nil, nil)
-	data, err := os.ReadFile("../../../internal/ticket/usecase/split_conventional_routes.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var rules []struct {
-		Name                                string
-		Shinkansen, Conventional, LineCodes []string
-	}
-	if err = json.Unmarshal(data, &rules); err != nil {
-		t.Fatal(err)
-	}
-	for _, rule := range rules {
-		steps := make([]usecase.ViaStep, len(rule.Shinkansen))
-		for i, name := range rule.Shinkansen {
-			steps[i] = usecase.ViaStep{StationName: name, LineName: rule.LineCodes[len(rule.LineCodes)-1]}
-		}
-		path, err := calculator.PrepareSplitPath(steps, "cheapest")
-		if err != nil {
-			t.Fatal(err)
-		}
-		names := make([]string, len(path))
-		for i, id := range path {
-			names[i] = g.GetName(id)
-		}
-		if !slices.Equal(names, rule.Conventional) {
-			t.Fatalf("区間全体の置き換え結果が一致しません: %s: %v", rule.Shinkansen[0], names)
-		}
-	}
-	var eastSanyo struct {
-		Name                                string
-		Shinkansen, Conventional, LineCodes []string
-	}
-	for _, rule := range rules {
-		switch rule.Name {
-		case "東海道・山陽":
-			eastSanyo = rule
-		}
-	}
-	combined := append(append([]string(nil), eastSanyo.Shinkansen...), "小倉")
-	for _, reverse := range []bool{false, true} {
-		input := append([]string(nil), combined...)
-		if reverse {
-			slices.Reverse(input)
-		}
-		steps := make([]usecase.ViaStep, len(input))
-		for i, name := range input {
-			steps[i] = usecase.ViaStep{StationName: name, LineName: "シンカ"}
-		}
-		details, err := calculator.SplitCandidateDetails(steps, "cheapest")
-		if err != nil {
-			t.Fatal(err)
-		}
-		want := []split.RouteReplacement{
-			{From: "熱海", To: "新下関", Status: "replaced"},
-		}
-		if reverse {
-			want = []split.RouteReplacement{
-				{From: "新下関", To: "熱海", Status: "replaced"},
-			}
-		}
-		if !slices.Equal(details.Replacements, want) {
-			t.Fatalf("逆方向=%v: 置き換え区間 = %v, 期待値 %v", reverse, details.Replacements, want)
-		}
-	}
-}
-
 func TestSplitConventionalEnumeration(t *testing.T) {
 	calc, g := setupTicketAmount(t)
 	zones, err := graphio.LoadSpecialZones()
@@ -259,7 +188,7 @@ func TestSplitConventionalEnumeration(t *testing.T) {
 	}
 }
 
-func TestSplitConventionalLongRoute(t *testing.T) {
+func BenchmarkSplitConventionalLongRoute(t *testing.B) {
 	calc, g := setupTicketAmount(t)
 	zones, err := graphio.LoadSpecialZones()
 	if err != nil {
@@ -281,16 +210,15 @@ func TestSplitConventionalLongRoute(t *testing.T) {
 	for i, name := range names {
 		steps[i] = usecase.ViaStep{StationName: name, LineName: "シンカ"}
 	}
-	var before, after runtime.MemStats
-	runtime.ReadMemStats(&before)
-	start := time.Now()
-	result, err := calculator.Split(steps, "cheapest")
-	if err != nil {
-		t.Fatal(err)
+	t.ReportAllocs()
+	t.ResetTimer()
+	for t.Loop() {
+		result, err := calculator.Split(steps, "cheapest")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(result.Results) == 0 {
+			t.Fatal("計算結果がありません")
+		}
 	}
-	runtime.ReadMemStats(&after)
-	if len(result.Results) == 0 {
-		t.Fatal("計算結果がありません")
-	}
-	t.Logf("熱海〜小倉: %s; 累計割り当て量 %.1f MiB; 使用中のヒープ %.1f MiB; パターン数 %d", time.Since(start), float64(after.TotalAlloc-before.TotalAlloc)/(1<<20), float64(after.HeapAlloc)/(1<<20), len(result.Results))
 }

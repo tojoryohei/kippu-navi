@@ -2,40 +2,16 @@ package graphio_test
 
 import (
 	"calculation-engine/internal/domain"
-	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/infra/graphio"
 	"reflect"
 	"testing"
 )
 
 func TestSpecialZoneRegistry(t *testing.T) {
-	buildMockRegistry := func() *graphio.SpecialZoneRegistry {
-		reg := &graphio.SpecialZoneRegistry{
-			Zones: []ticketdomain.SpecialZone{
-				{
-					Name:                "東京都区内",
-					MinDistanceDeciKilo: 2000,
-					MaxDistanceDeciKilo: 99999,
-					Stations:            []string{"東京", "品川", "新宿", "池袋"},
-				},
-				{
-					Name:                "東京山手線内",
-					MinDistanceDeciKilo: 1000,
-					MaxDistanceDeciKilo: 2000,
-					Stations:            []string{"東京", "品川", "新宿"},
-				},
-			},
-			StationToZones: make(map[string][]ticketdomain.SpecialZone),
-		}
-		for _, z := range reg.Zones {
-			for _, s := range z.Stations {
-				reg.StationToZones[s] = append(reg.StationToZones[s], z)
-			}
-		}
-		return reg
+	reg, err := graphio.LoadSpecialZones()
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	reg := buildMockRegistry()
 
 	t.Run("FindZonesByStation", func(t *testing.T) {
 		tests := []struct {
@@ -48,10 +24,10 @@ func TestSpecialZoneRegistry(t *testing.T) {
 			},
 			{
 				station:   "池袋",
-				wantZones: []string{"東京都区内"},
+				wantZones: []string{"東京都区内", "東京山手線内"},
 			},
 			{
-				station:   "横浜",
+				station:   "存在しない駅",
 				wantZones: nil, // 存在しない駅
 			},
 		}

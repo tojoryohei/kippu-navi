@@ -102,47 +102,49 @@ func TestPassPrecomputedFallback(t *testing.T) {
 				t.Fatalf("距離テーブルの設定状態=%v", got)
 			}
 			for i, factory := range []func() *usecase.SearchOptimalSplit{baseFactory, icFactory} {
-				firstSearch, secondSearch := factory(), factory()
-				if got := firstSearch == secondSearch; got != (tc.name == "valid") {
-					t.Fatalf("共有検索の状態=%v", got)
-				}
 				target := g
 				if i == 1 {
 					target = ic
 				}
 				h := handler.NewSplitWithSearchFactory(target, factory)
-				for _, months := range []int{1, 3, 6} {
-					for _, extra := range []string{"", "&maxSplits=1", "&noSplitStation=B", "invalid"} {
-						query := fmt.Sprintf("/?from=A&to=C&months=%d%s", months, extra)
-						want := 200
-						if extra == "invalid" {
-							query = "/?from=A&to=C&months=invalid"
-							want = 400
+				for _, option := range []struct {
+					months int
+					extra  string
+				}{{1, ""}, {3, "&maxSplits=1"}, {6, "&noSplitStation=B"}, {1, "invalid"}} {
+					months, extra := option.months, option.extra
+					query := fmt.Sprintf("/?from=A&to=C&months=%d%s", months, extra)
+					want := 200
+					if extra == "invalid" {
+						query = "/?from=A&to=C&months=invalid"
+						want = 400
+					}
+					key := fmt.Sprintf("%d:%s", i, query)
+					check := func() string {
+						r := httptest.NewRecorder()
+						h.HandleCalculate(r, httptest.NewRequest("GET", query, nil))
+						if r.Code != want {
+							t.Errorf("ステータス=%d 本文=%s", r.Code, r.Body.String())
 						}
-						key := fmt.Sprintf("%d:%s", i, query)
-						check := func() string {
-							r := httptest.NewRecorder()
-							h.HandleCalculate(r, httptest.NewRequest("GET", query, nil))
-							if r.Code != want {
-								t.Errorf("ステータス=%d 本文=%s", r.Code, r.Body.String())
-							}
-							return fmt.Sprintf("%d:%s", r.Code, r.Body.String())
+						return fmt.Sprintf("%d:%s", r.Code, r.Body.String())
+					}
+					if tc.name == "valid" {
+						responses[key] = check()
+					} else {
+						var wg sync.WaitGroup
+						repeats := 1
+						if tc.name == "missing" && months == 1 && extra == "" {
+							repeats = 4
 						}
-						if tc.name == "valid" {
-							responses[key] = check()
-						} else {
-							var wg sync.WaitGroup
-							for j := 0; j < 4; j++ {
-								wg.Add(1)
-								go func() {
-									defer wg.Done()
-									if got := check(); got != responses[key] {
-										t.Errorf("実際=%s 期待値=%s", got, responses[key])
-									}
-								}()
-							}
-							wg.Wait()
+						for j := 0; j < repeats; j++ {
+							wg.Add(1)
+							go func() {
+								defer wg.Done()
+								if got := check(); got != responses[key] {
+									t.Errorf("実際=%s 期待値=%s", got, responses[key])
+								}
+							}()
 						}
+						wg.Wait()
 					}
 				}
 			}

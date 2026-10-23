@@ -47,7 +47,11 @@ func TestRouteSplitRealRoutesAndModes(t *testing.T) {
 		{"他社線", "イセ", []string{"河原田", "津"}},
 	}
 	for _, tc := range cases {
-		for _, mode := range []string{"normal", "cheapest", "uncorrect"} {
+		modes := []string{"normal", "cheapest", "uncorrect"}
+		if tc.name == "隣接" {
+			modes = append(modes, "unknown")
+		}
+		for _, mode := range modes {
 			t.Run(tc.name+"/"+mode, func(t *testing.T) {
 				steps := make([]usecase.ViaStep, len(tc.stations))
 				for i, name := range tc.stations {
@@ -60,7 +64,11 @@ func TestRouteSplitRealRoutesAndModes(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				baseline, _, err := calculator.Calculate(path, steps, mode)
+				baselineMode := mode
+				if mode == "unknown" {
+					baselineMode = "normal"
+				}
+				baseline, _, err := calculator.Calculate(path, steps, baselineMode)
 				if err != nil {
 					t.Fatal(err)
 				}

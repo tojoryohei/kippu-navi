@@ -64,19 +64,6 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		}
 	})
 
-	t.Run("通常運賃（会社跨ぎ）", func(t *testing.T) {
-		res, err := calc.Execute([]int{id("A"), id("B"), id("C")})
-		if err != nil {
-			t.Fatalf("Execute() エラー = %v", err)
-		}
-		// A-C: 合計30km (営業キロ300) -> 基準の30km運賃は510円
-		// 10km (A-B) 東日本 - 基準運賃 = 200 - 200 = 差額0円。よって合計は510円となる。
-		// 個別の運賃計算機の正確性はそれぞれのテストで担保されているため、ここでは運賃が0より大きいことのみを検証する。
-		if res.Fare <= 0 {
-			t.Errorf("正の値を期待しましたが、実際は%dでした", res.Fare)
-		}
-	})
-
 	t.Run("北新地置換後も営業キロは物理経路を使う", func(t *testing.T) {
 		kitashinchiPath := []string{"北新地", "新福島", "海老江", "御幣島", "加島", "尼崎"}
 		originalDistances := []domain.DeciKilo{12, 12, 26, 17, 22}

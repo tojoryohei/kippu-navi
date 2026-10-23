@@ -1,9 +1,6 @@
 package ticket_test
 
 import (
-	"io"
-	"testing"
-
 	"calculation-engine/internal/graphdata"
 	"calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/fare"
@@ -11,10 +8,12 @@ import (
 	"calculation-engine/internal/ticket/infra/fareio"
 	"calculation-engine/internal/ticket/infra/graphio"
 	"calculation-engine/internal/ticket/usecase"
+	"io"
+	"testing"
 )
 
 // setupTicketAmount は乗車券用の運賃計算ユースケースを初期化します
-func setupTicketAmount(t *testing.T) (*usecase.CalculateAmount, graph.Graph) {
+func setupTicketAmount(t testing.TB) (*usecase.CalculateAmount, graph.Graph) {
 	t.Helper()
 
 	// 1. グラフのロード（edges.json と運賃計算用補助エッジ の両方をロード）

@@ -1,10 +1,9 @@
 package domain
 
 import (
+	basedomain "calculation-engine/internal/domain"
 	"errors"
 	"testing"
-
-	basedomain "calculation-engine/internal/domain"
 )
 
 func TestAddonRegistry_ResolveIDs(t *testing.T) {
@@ -35,24 +34,6 @@ func TestAddonRegistry_ResolveIDs(t *testing.T) {
 		}
 		wantErr error
 	}{
-		{
-			name: "正常系: 全ての駅名が解決可能（逆引き含む）",
-			registers: []struct {
-				s1, s2 string
-				fare   PassPrice
-			}{
-				{"StationA", "StationB", PassPrice{OneMonth: 100}},
-			},
-			wantLookup: []struct {
-				id1, id2 int
-				wantHit  bool
-				wantFare int
-			}{
-				{1, 2, true, 100}, // 順引き
-				{2, 1, true, 100}, // 逆引き
-			},
-			wantErr: nil,
-		},
 		{
 			name: "異常系: 同一駅の登録",
 			registers: []struct {
@@ -88,6 +69,7 @@ func TestAddonRegistry_ResolveIDs(t *testing.T) {
 				wantFare int
 			}{
 				{1, 2, true, 100},
+				{2, 1, true, 100},
 				{2, 3, true, 200},
 			},
 			wantErr: nil,

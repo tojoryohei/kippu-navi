@@ -43,6 +43,10 @@ func TestPathMatcher(t *testing.T) {
 		}
 	})
 
+	if err := matcher.Insert([]int{idA, idC, idB}, passdomain.PassPrice{OneMonth: 200}); err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
 		name     string
 		path     []int
@@ -61,6 +65,7 @@ func TestPathMatcher(t *testing.T) {
 			wantHit:  true,
 			wantFare: 100,
 		},
+		{name: "同じ駅でも順序が違う経路", path: []int{idA, idC, idB}, wantHit: true, wantFare: 200},
 		{
 			name:     "一部不一致（短い）",
 			path:     []int{idA, idB},
@@ -139,38 +144,5 @@ func TestPathMatcher_DefensiveCopy(t *testing.T) {
 	// 書き換え後の経路 {999, 2, 3} ではヒットしないべき
 	if _, ok := matcher.Search([]int{999, 2, 3}); ok {
 		t.Error("書き換え後のスライスでヒットしてしまいました。内部で同じ参照を保持している可能性があります。")
-	}
-}
-
-// ハッシュ値の衝突が起きた場合でも正しく動作するか検証するテスト
-func TestPathMatcher_HashCollision(t *testing.T) {
-	matcher := fare.NewPathMatcher()
-
-	// A-B-C と B-A-C は同じ要素だが順序が異なるため、FNV-1aではハッシュが異なる可能性が高いが、
-	// 念のため類似配列を登録して干渉しないかテストする
-	route1 := []int{1, 2, 3}
-	route2 := []int{1, 3, 2}
-
-	fare1 := passdomain.PassPrice{OneMonth: 100}
-	fare2 := passdomain.PassPrice{OneMonth: 200}
-
-	_ = matcher.Insert(route1, fare1) // route1 と その逆順 が 100 で登録される
-	_ = matcher.Insert(route2, fare2) // route2 と その逆順 が 200 で登録される
-
-	// 検証
-	if f, hit := matcher.Search([]int{1, 2, 3}); !hit || f.OneMonth != 100 {
-		t.Errorf("route1は運賃100を返すはずです, 実際 hit=%v, 運賃=%v", hit, f.OneMonth)
-	}
-	if f, hit := matcher.Search([]int{3, 2, 1}); !hit || f.OneMonth != 100 {
-		t.Errorf("route3 (route1の逆順) は運賃100を返すはずです, 実際 hit=%v, 運賃=%v", hit, f.OneMonth)
-	}
-	if f, hit := matcher.Search([]int{1, 3, 2}); !hit || f.OneMonth != 200 {
-		t.Errorf("route2は運賃200を返すはずです, 実際 hit=%v, 運賃=%v", hit, f.OneMonth)
-	}
-	if f, hit := matcher.Search([]int{2, 3, 1}); !hit || f.OneMonth != 200 {
-		t.Errorf("route2の逆順は運賃200を返すはずです, 実際 hit=%v, 運賃=%v", hit, f.OneMonth)
-	}
-	if _, hit := matcher.Search([]int{1, 2}); hit {
-		t.Errorf("部分的な経路は一致しないはずです")
 	}
 }

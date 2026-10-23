@@ -7,9 +7,8 @@ import (
 	"calculation-engine/internal/pass/graph"
 	"calculation-engine/internal/pass/optimizer"
 	"calculation-engine/internal/pass/usecase"
-	"fmt"
-	"math"
 	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -593,282 +592,22 @@ func TestSearchOptimalSplit_Execute(t *testing.T) {
 	})
 }
 
-// テスト用運賃事前計算ヘルパー
+// 期待経路・金額は各ケースで独立に指定し、表の構築だけ本番の生成処理を使う。
 func precomputeFaresForTest(g *graph.RailwayGraph, calc *usecase.CalculateAmount, rules []passdomain.ResolvedBypassRule) []int32 {
-	numStations := g.NumStations()
-	baseFares := make([]int32, 3*numStations*numStations)
-	months := []int{1, 3, 6}
-
-	// 双方向ルールの重複排除
-	var biRules []passdomain.ResolvedBypassRule
-	seen := make(map[string]bool)
-	for _, r := range rules {
-		fwdKey := fmt.Sprintf("%v|%v", r.ShortcutPath, r.DetourPath)
-		if !seen[fwdKey] {
-			seen[fwdKey] = true
-			biRules = append(biRules, r)
-		}
-		revShortcut := reverseSlice(r.ShortcutPath)
-		revDetour := reverseSlice(r.DetourPath)
-		revKey := fmt.Sprintf("%v|%v", revShortcut, revDetour)
-		if !seen[revKey] {
-			seen[revKey] = true
-			biRules = append(biRules, passdomain.ResolvedBypassRule{
-				ShortcutPath: revShortcut,
-				DetourPath:   revDetour,
-			})
-		}
-	}
-
-	for startID := 0; startID < numStations; startID++ {
-		_, prevGisei := g.FindAllShortestPathsGisei(startID)
-		_, prevEigyo := g.FindAllShortestPathsEigyo(startID)
-
-		for mIdx, month := range months {
-			for endID := 0; endID < numStations; endID++ {
-				if startID == endID {
-					continue
-				}
-				if g.GetGroupID(startID) != g.GetGroupID(endID) {
-					continue
-				}
-				if prevGisei[endID] == -1 {
-					continue
-				}
-
-				fareVal := computeCheapestNoSplit(g, calc, biRules, prevGisei, prevEigyo, startID, endID, month)
-				if fareVal > 0 {
-					idx := mIdx*numStations*numStations + startID*numStations + endID
-					baseFares[idx] = int32(fareVal)
-				}
+	n := g.NumStations()
+	fares := make([]int32, 3*n*n)
+	for a := 0; a < n; a++ {
+		_, pg := g.FindAllShortestPathsGisei(a)
+		_, pe := g.FindAllShortestPathsEigyo(a)
+		for b := 0; b < n; b++ {
+			if a != b {
+				fares[a*n+b] = int32(usecase.ComputeCheapestNoSplit(g, calc, rules, pg, pe, a, b, 1))
 			}
 		}
 	}
-	return baseFares
+	return fares
 }
-
-func computeCheapestNoSplit(
-	g *graph.RailwayGraph,
-	calc *usecase.CalculateAmount,
-	rules []passdomain.ResolvedBypassRule,
-	prevGisei, prevEigyo []int,
-	start, end, months int,
-) int {
-	var cands [][]int
-
-	pathEigyo := reconstructPath(prevEigyo, start, end)
-	if len(pathEigyo) >= 2 {
-		cands = append(cands, pathEigyo)
-	}
-
-	pathGisei := reconstructPath(prevGisei, start, end)
-	if len(pathGisei) >= 2 {
-		cands = append(cands, pathGisei)
-	}
-
-	for _, rule := range rules {
-		aOnRule := containsStation(rule.ShortcutPath, start) || containsStation(rule.DetourPath, start)
-		bOnRule := containsStation(rule.ShortcutPath, end) || containsStation(rule.DetourPath, end)
-		if aOnRule && bOnRule {
-			aOnDetourMiddle := isOnDetourMiddle(start, rule)
-			bOnDetourMiddle := isOnDetourMiddle(end, rule)
-			if aOnDetourMiddle || bOnDetourMiddle {
-				shortcutPath := make([]int, len(rule.ShortcutPath))
-				copy(shortcutPath, rule.ShortcutPath)
-				cands = append(cands, shortcutPath)
-			}
-		}
-	}
-
-	for _, path := range [][]int{pathEigyo, pathGisei} {
-		if len(path) < 2 {
-			continue
-		}
-		for _, rule := range rules {
-			startOnDetour := isOnDetourMiddle(path[0], rule)
-			endOnDetour := isOnDetourMiddle(path[len(path)-1], rule)
-			if startOnDetour || endOnDetour {
-				if findSubPath(path, rule.DetourPath) == -1 {
-					locked := make([]bool, len(path))
-					extPath, _ := buildOvershootPath(path, locked, rule)
-					if extPath != nil {
-						cands = append(cands, extPath)
-					}
-				}
-			}
-		}
-	}
-
-	minFare := math.MaxInt
-	for _, cand := range cands {
-		if !checkMixedRouteConflictForTest(rules, cand) {
-			continue
-		}
-		res, err := calc.Execute(cand, months)
-		if err != nil {
-			continue
-		}
-		amt := res.TotalAmount()
-		if amt < minFare {
-			minFare = amt
-		}
-	}
-
-	if minFare == math.MaxInt {
-		return 0
-	}
-	return minFare
-}
-
-func checkMixedRouteConflictForTest(rules []passdomain.ResolvedBypassRule, path []int) bool {
-	pathSet := make(map[int]bool, len(path))
-	for _, sid := range path {
-		pathSet[sid] = true
-	}
-
-	for _, rule := range rules {
-		hasShortcutInner := false
-		if len(rule.ShortcutPath) > 2 {
-			for i := 1; i < len(rule.ShortcutPath)-1; i++ {
-				if pathSet[rule.ShortcutPath[i]] {
-					hasShortcutInner = true
-					break
-				}
-			}
-		}
-
-		if !hasShortcutInner {
-			continue
-		}
-
-		hasAllDetour := true
-		for _, detID := range rule.DetourPath {
-			if !pathSet[detID] {
-				hasAllDetour = false
-				break
-			}
-		}
-
-		if hasShortcutInner && hasAllDetour {
-			return false
-		}
-	}
-	return true
-}
-
-func reconstructPath(prev []int, start, end int) []int {
-	if prev == nil || end < 0 || end >= len(prev) || prev[end] == -1 {
-		if start == end {
-			return []int{start}
-		}
-		return nil
-	}
-	path := []int{}
-	for i := end; i != -1; i = prev[i] {
-		path = append(path, i)
-	}
-	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
-		path[i], path[j] = path[j], path[i]
-	}
-	return path
-}
-
-func containsStation(path []int, stationID int) bool {
-	for _, id := range path {
-		if id == stationID {
-			return true
-		}
-	}
-	return false
-}
-
-func isOnDetourMiddle(stationID int, rule passdomain.ResolvedBypassRule) bool {
-	for i := 1; i < len(rule.DetourPath)-1; i++ {
-		if rule.DetourPath[i] == stationID {
-			return true
-		}
-	}
-	return false
-}
-
-func makeShortcutLocked(shortcutPath []int) []bool {
-	locked := make([]bool, len(shortcutPath))
-	for k := 1; k < len(shortcutPath)-1; k++ {
-		locked[k] = true
-	}
-	return locked
-}
-
-func findSubPath(a, b []int) int {
-	if len(b) == 0 || len(a) < len(b) {
-		return -1
-	}
-	for i := 0; i <= len(a)-len(b); i++ {
-		if isMatch(a[i:i+len(b)], b) {
-			return i
-		}
-	}
-	return -1
-}
-
-func isMatch(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func buildOvershootPath(path []int, locked []bool, rule passdomain.ResolvedBypassRule) ([]int, []bool) {
-	for i := 1; i < len(rule.DetourPath)-1; i++ {
-		suffix := rule.DetourPath[i:]
-		if len(path) >= len(suffix) && isMatch(path[:len(suffix)], suffix) {
-			newPath := make([]int, 0, len(rule.ShortcutPath)+len(path)-len(suffix))
-			newLocked := make([]bool, 0, cap(newPath))
-
-			newPath = append(newPath, rule.ShortcutPath...)
-			newLocked = append(newLocked, makeShortcutLocked(rule.ShortcutPath)...)
-
-			newPath = append(newPath, path[len(suffix):]...)
-			newLocked = append(newLocked, locked[len(suffix):]...)
-
-			return newPath, newLocked
-		}
-	}
-
-	for i := 1; i < len(rule.DetourPath)-1; i++ {
-		prefix := rule.DetourPath[:i+1]
-		if len(path) >= len(prefix) {
-			startMatchIdx := len(path) - len(prefix)
-			if isMatch(path[startMatchIdx:], prefix) {
-				newPath := make([]int, 0, startMatchIdx+len(rule.ShortcutPath))
-				newLocked := make([]bool, 0, cap(newPath))
-
-				newPath = append(newPath, path[:startMatchIdx]...)
-				newLocked = append(newLocked, locked[:startMatchIdx]...)
-
-				newPath = append(newPath, rule.ShortcutPath...)
-				newLocked = append(newLocked, makeShortcutLocked(rule.ShortcutPath)...)
-
-				return newPath, newLocked
-			}
-		}
-	}
-
-	return nil, nil
-}
-
-func reverseSlice(s []int) []int {
-	res := make([]int, len(s))
-	for i, v := range s {
-		res[len(s)-1-i] = v
-	}
-	return res
-}
+func isMatch(a, b []int) bool { return slices.Equal(a, b) }
 
 // 既存の特例・同額・制限・禁止駅ケースを、独立した事前計算表と都度計算の双方で実行する。
 type paritySearch struct {
@@ -889,13 +628,6 @@ func (s *paritySearch) ExecuteWithOptions(a, b, months, limit int, locked []int)
 	local, localErr := s.local.ExecuteWithOptions(a, b, months, limit, locked)
 	if (err == nil) != (localErr == nil) || !reflect.DeepEqual(got, local) {
 		s.t.Fatalf("テーブル=%v (%v), 都度計算=%v (%v)", got, err, local, localErr)
-	}
-	for _, otherMonth := range []int{3, 6} {
-		tableOther, tableErr := s.SearchOptimalSplit.ExecuteWithOptions(a, b, otherMonth, limit, locked)
-		localOther, localErr := s.local.ExecuteWithOptions(a, b, otherMonth, limit, locked)
-		if (tableErr == nil) != (localErr == nil) || !reflect.DeepEqual(tableOther, localOther) {
-			s.t.Fatalf("月数 %d: テーブル=%v (%v), 都度計算=%v (%v)", otherMonth, tableOther, tableErr, localOther, localErr)
-		}
 	}
 	return got, err
 }

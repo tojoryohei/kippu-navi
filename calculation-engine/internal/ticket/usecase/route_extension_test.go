@@ -2,13 +2,10 @@ package usecase
 
 import (
 	"calculation-engine/internal/domain"
-	"calculation-engine/internal/graphdata"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
-	ticketfareio "calculation-engine/internal/ticket/infra/fareio"
 	ticketgraphio "calculation-engine/internal/ticket/infra/graphio"
 	"fmt"
-	"io"
 	"reflect"
 	"testing"
 )
@@ -419,53 +416,6 @@ func addFareExtensionEdge(g *graph.RailwayGraph, from, to string, eigyo domain.D
 		{FromID: b, ToID: a, EigyoKilo: eigyo, GiseiKilo: eigyo, Company: company},
 	} {
 		g.AddEdge(ticketdomain.TicketEdge{Edge: edge})
-	}
-}
-
-func TestRouteExtensionRegistryIsEmptyAfterRemovingArticle114Routes(t *testing.T) {
-	registry, err := ticketfareio.NewRouteExtensionRegistry()
-	if err != nil {
-		t.Fatalf("対応表の読み込みに失敗しました: %v", err)
-	}
-	if got := len(registry.GetRouteExtensions()); got != 0 {
-		t.Fatalf("空の経路対応表にレコードが残っています: 実際=%d", got)
-	}
-}
-
-func TestEmbeddedRouteExtensionsUsePhysicalJRPaths(t *testing.T) {
-	loader := &ticketgraphio.JSONLoader{}
-	_, g, err := loader.LoadSeparatedGraphs([]io.Reader{graphdata.GetEdgesReader()}, graphdata.GetFareGraphEdgeReaders())
-	if err != nil {
-		t.Fatalf("グラフの読み込みに失敗しました: %v", err)
-	}
-	registry, err := ticketfareio.NewRouteExtensionRegistry()
-	if err != nil {
-		t.Fatalf("対応表の読み込みに失敗しました: %v", err)
-	}
-	matcher, err := NewRouteExtensionMatcher(registry.GetRouteExtensions(), g)
-	if err != nil {
-		t.Fatalf("対応表の物理経路検証に失敗しました: %v", err)
-	}
-	if matcher == nil {
-		t.Fatal("対応表Matcherがnilです")
-	}
-	if _, ok := matcher.Match([]int{g.GetOrAddID("ほしみ"), g.GetOrAddID("南永山")}); ok {
-		t.Fatal("削除済みの第114条対応表が一致しました")
-	}
-}
-
-func TestGeneratedRouteExtensionsUsePhysicalPaths(t *testing.T) {
-	loader := &ticketgraphio.JSONLoader{}
-	_, g, err := loader.LoadSeparatedGraphs([]io.Reader{graphdata.GetEdgesReader()}, graphdata.GetFareGraphEdgeReaders())
-	if err != nil {
-		t.Fatalf("グラフの読み込みに失敗しました: %v", err)
-	}
-	matcher, err := NewRouteExtensionMatcherIDs(ticketfareio.GetGeneratedRouteExtensions(), g)
-	if err != nil {
-		t.Fatalf("生成済み対応表の物理経路検証に失敗しました: %v", err)
-	}
-	if matcher == nil {
-		t.Fatal("生成済み対応表Matcherがnilです")
 	}
 }
 

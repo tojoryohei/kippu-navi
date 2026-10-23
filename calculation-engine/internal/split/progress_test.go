@@ -12,6 +12,7 @@ import (
 func TestProgressCountsSkippedAndCachedCandidates(t *testing.T) {
 	for _, limit := range []int{0, 1, 10} {
 		t.Run(fmt.Sprintf("limit_%d", limit), func(t *testing.T) {
+			now := time.Unix(0, 0)
 			var events []Progress
 			calls := map[[2]int]int{}
 			evaluate := func(i, j int) (RouteSplitSegment, error) {
@@ -22,7 +23,7 @@ func TestProgressCountsSkippedAndCachedCandidates(t *testing.T) {
 				}
 				return RouteSplitSegment{Fare: RouteFare{Fare: j - i}}, nil
 			}
-			got, err := OptimizeFixedRouteWithProgress(4, evaluate, func(p Progress) { events = append(events, p) }, limit)
+			got, err := optimizeFixedRouteWithClock(4, evaluate, func(p Progress) { events = append(events, p) }, func() time.Time { return now }, limit)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -50,14 +51,15 @@ func TestProgressCountsSkippedAndCachedCandidates(t *testing.T) {
 func TestProgressDoesNotCompleteOnEvaluationError(t *testing.T) {
 	failure := errors.New("評価に失敗しました")
 	for _, limit := range []int{0, 1} {
+		now := time.Unix(0, 0)
 		var events []Progress
-		_, err := OptimizeFixedRouteWithProgress(4, func(i, j int) (RouteSplitSegment, error) {
+		_, err := optimizeFixedRouteWithClock(4, func(i, j int) (RouteSplitSegment, error) {
 			if j == 1 {
-				time.Sleep(110 * time.Millisecond)
+				now = now.Add(110 * time.Millisecond)
 				return RouteSplitSegment{Fare: RouteFare{Fare: 1}}, nil
 			}
 			return RouteSplitSegment{}, failure
-		}, func(p Progress) { events = append(events, p) }, limit)
+		}, func(p Progress) { events = append(events, p) }, func() time.Time { return now }, limit)
 		if !errors.Is(err, failure) || len(events) != 2 || events[0].Completed != 0 || events[1].Completed != 1 || events[1].Phase != "calculating" {
 			t.Fatalf("エラー=%v 進捗通知=%+v", err, events)
 		}
@@ -65,13 +67,14 @@ func TestProgressDoesNotCompleteOnEvaluationError(t *testing.T) {
 }
 
 func TestProgressReportsCompletedWorkDuringCalculation(t *testing.T) {
+	now := time.Unix(0, 0)
 	var events []Progress
-	_, err := OptimizeFixedRouteWithProgress(3, func(i, j int) (RouteSplitSegment, error) {
+	_, err := optimizeFixedRouteWithClock(3, func(i, j int) (RouteSplitSegment, error) {
 		if j == 1 {
-			time.Sleep(110 * time.Millisecond)
+			now = now.Add(110 * time.Millisecond)
 		}
 		return RouteSplitSegment{Fare: RouteFare{Fare: 1}}, nil
-	}, func(p Progress) { events = append(events, p) })
+	}, func(p Progress) { events = append(events, p) }, func() time.Time { return now })
 	if err != nil {
 		t.Fatal(err)
 	}

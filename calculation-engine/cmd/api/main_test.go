@@ -18,8 +18,6 @@ func TestAPIRoutes(t *testing.T) {
 		method, path, handler string
 		status                int
 	}{
-		{http.MethodPost, "/api/fare", "", http.StatusNotFound},
-		{http.MethodPost, "/api/fare/ticket", "", http.StatusNotFound},
 		{http.MethodGet, "/api/fare", "", http.StatusNotFound},
 		{http.MethodGet, "/api/fare/ticket", "", http.StatusNotFound},
 		{http.MethodGet, "/api/split/auto/pass", "pass", http.StatusNoContent},

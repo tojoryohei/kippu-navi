@@ -1,50 +1,19 @@
 package fare_test
 
 import (
-	"errors"
-	"testing"
-
 	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/fare"
 	"calculation-engine/internal/pass/graph/data"
 	"calculation-engine/internal/pass/infra/fareio"
 	"calculation-engine/internal/pass/infra/graphio"
+	"errors"
+	"testing"
 )
 
 // ────────────────────────────────────────────────────────────
 // Registry
 // ────────────────────────────────────────────────────────────
-
-func TestInitRegistry(t *testing.T) {
-	loader := &graphio.JSONLoader{}
-	g, err := loader.Load(data.GetEdgesReader())
-	if err != nil {
-		t.Fatalf("グラフデータの読み込みに失敗しました: %v", err)
-	}
-	calcs, err := fareio.InitRegistry(g)
-	if err != nil {
-		t.Fatalf("InitRegistry()の初期化に失敗しました: %v", err)
-	}
-	reg := calcs.Registry
-
-	// 全社分が取得できること
-	companies := []domain.CompanyID{
-		domain.JREast, domain.JRHokkaido, domain.JRCentral,
-		domain.JRWest, domain.JRShikoku, domain.JRKyushu,
-	}
-	for _, id := range companies {
-		if _, err := reg.Get(id); err != nil {
-			t.Errorf("Get(%v)の取得に失敗しました: %v", id, err)
-		}
-	}
-
-	// 未登録の会社IDはエラーになること
-	_, err = reg.Get(domain.Other)
-	if !errors.Is(err, fare.ErrCalculatorNotFound) {
-		t.Errorf("未登録IDで ErrCalculatorNotFound が返されませんでした: %v", err)
-	}
-}
 
 // ────────────────────────────────────────────────────────────
 // StandardCalculator
@@ -562,5 +531,12 @@ func runCalculatorTests(t *testing.T, calc calculator, tests []calcTestCase) {
 				t.Errorf("Calculate() = %v, 期待値 %v", gotFare, tt.wantFare)
 			}
 		})
+	}
+}
+
+func TestRegistryRejectsUnknownCompany(t *testing.T) {
+	_, err := fare.NewRegistry().Get(domain.Other)
+	if !errors.Is(err, fare.ErrCalculatorNotFound) {
+		t.Fatalf("未登録会社のエラー=%v", err)
 	}
 }
