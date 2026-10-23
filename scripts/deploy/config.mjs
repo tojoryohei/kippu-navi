@@ -5,7 +5,7 @@ const environment = process.env.DEPLOY_ENVIRONMENT;
 if (!['staging', 'production'].includes(environment)) throw new Error('公開環境が不正です');
 // control_shaの設定から値を明示的に選び、buildや自動探索設定を継承しない。
 const source = JSON.parse(readFileSync(new URL('./wrangler-settings.json', import.meta.url), 'utf8'));
-const selected = source.environments[environment];
+const selected = environment === 'production' ? source.environments.production : source.environments.staging;
 const artifact = resolve(process.env.RUNNER_TEMP, 'verified-frontend');
 const config = {
   name: selected.name,

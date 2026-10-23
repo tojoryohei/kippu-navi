@@ -5,7 +5,8 @@ import { pathToFileURL } from 'node:url';
 export function checkRuntimeVersions(root = new URL('../', import.meta.url)) {
   const read = path => readFileSync(new URL(path, root), 'utf8');
   const node = read('.node-version').trim();
-  assert.match(node, /^\d+(?:\.\d+){0,2}$/);
+  const parts = node.split('.');
+  assert.ok(parts.length >= 1 && parts.length <= 3 && parts.every(part => /^\d+$/.test(part)), 'Nodeのバージョンが不正です');
   const major = value => Number(value.match(/\d+/)?.[0]);
   const pkg = JSON.parse(read('package.json'));
   const lock = JSON.parse(read('package-lock.json'));
