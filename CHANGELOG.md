@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.3...kippu-navi-v5.2.4) (2026-10-23)
+
+
+### Bug Fixes
+
+* 私鉄運賃を会社別に計算し途中駅での分割に対応 ([#914](https://github.com/tojoryohei/kippu-navi/issues/914)) ([9c0beef](https://github.com/tojoryohei/kippu-navi/commit/9c0beef27699d742adb45048e8c15c2fa1ffed1c))
+
 ## [5.2.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.2...kippu-navi-v5.2.3) (2026-10-23)
 
 
