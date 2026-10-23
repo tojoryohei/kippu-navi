@@ -136,6 +136,7 @@ jobs:
         with:
           go-version-file: calculation-engine/go.mod
           cache: true
+          cache-dependency-path: calculation-engine/go.mod
 
       - name: Setup Takumi Guard for Go
         uses: flatt-security/setup-takumi-guard-golang@02545d3425218766aac4dca114dcc3f6eaa0df4a # v1
