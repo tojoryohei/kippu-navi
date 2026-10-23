@@ -186,7 +186,7 @@ jobs:
       - name: Install pinned Renovate validator outside the repository
         # renovate: datasource=npm depName=renovate
         env:
-          RENOVATE_VALIDATOR_VERSION: 44.166.0
+          RENOVATE_VALIDATOR_VERSION: 44.171.1
         run: npm install --prefix "$RUNNER_TEMP/renovate-validator" --ignore-scripts --no-audit --no-fund "renovate@$RENOVATE_VALIDATOR_VERSION"
       - name: Validate repository config and real Renovate schedule semantics
         env:
