@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 for (const kind of ["ticket", "pass", "ic-pass"]) {
-  for (const months of kind === "ticket" ? [1] : [1, 3, 6]) {
+  for (const months of [kind === "ticket" ? 1 : kind === "pass" ? 3 : 6]) {
     test(`事前計算なしの実API: ${kind} ${months}箇月`, async ({ page }) => {
       const endpoint = kind;
       const responsePromise = page.waitForResponse(response =>

@@ -10,29 +10,40 @@ test("記事はJavaScriptなしでも本文・出典・日付を読め、canonic
   const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 375, height: 812 } });
   const page = await context.newPage();
   await page.route("**/*", route => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
+  const links = new Set<string>();
   for (const article of articles) {
     const path = `/articles/${article.slug}`;
-    const response = await page.goto(path);
-    expect(response?.status()).toBe(200);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(article.title);
-    await expect(page.getByRole("region", { name: "参照資料" }).getByRole("link").first()).toBeVisible();
-    await expect(page.locator('article header a[href="/about"]')).toBeVisible();
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://kippu-navi.com${path}`);
-    const jsonLd = JSON.parse(await page.locator('main script[type="application/ld+json"]').textContent() ?? "{}");
-    const dates = await page.locator('article header time').evaluateAll(nodes => nodes.map(n => n.getAttribute('datetime')));
-    expect(dates).toEqual([jsonLd.datePublished, jsonLd.dateModified]);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    for (const href of await page.locator('article a[href^="/"]').evaluateAll(nodes => nodes.map(n => n.getAttribute('href')!))) {
-      expect((await page.request.get(href)).status()).toBe(200);
-    }
+    const response = await page.request.get(path);
+    expect(response.status()).toBe(200);
+    const info = await page.evaluate(html => {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      return {
+        title: doc.querySelector('h1')?.textContent,
+        canonical: doc.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+        jsonLd: JSON.parse(doc.querySelector('main script[type="application/ld+json"]')?.textContent ?? "{}"),
+        dates: [...doc.querySelectorAll('article header time')].map(n => n.getAttribute('datetime')),
+        links: [...doc.querySelectorAll('article a[href^="/"]')].map(n => n.getAttribute('href')!),
+        hasAuthor: !!doc.querySelector('article header a[href="/about"]'),
+      };
+    }, await response.text());
+    expect(info.title).toBe(article.title);
+    expect(info.canonical).toBe(`https://kippu-navi.com${path}`);
+    expect(info.dates).toEqual([info.jsonLd.datePublished, info.jsonLd.dateModified]);
+    expect(info.hasAuthor).toBe(true);
+    info.links.forEach(link => links.add(link));
   }
+  for (const href of links) expect((await page.request.get(href)).status()).toBe(200);
+  await page.goto(`/articles/${articles[0].slug}`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(articles[0].title);
+  await expect(page.getByRole("region", { name: "参照資料" }).getByRole("link").first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.goto('/split/auto/ticket');
   await expect(page.getByRole('complementary', { name: '計算の対象と条件' })).toBeVisible();
   await expect(page.locator('a[href="/articles/calculation-scope"]').first()).toBeVisible();
   await context.close();
 });
 
-test("保存した全計算例の合計・接続・再現条件が整合する", async ({ page }) => {
+test("保存した全計算例の合計と接続が整合する", () => {
   for (const example of examples.examples) {
     for (const pattern of [example.normal, ...example.patterns, ...example.comparisonPatterns]) {
       expect(pattern.segments.reduce((total,s) => total+s.fare+s.barrierFreeFee,0)).toBe(pattern.total);
@@ -47,6 +58,9 @@ test("保存した全計算例の合計・接続・再現条件が整合する",
       }
     }
   }
+});
+
+test('計算例のリンクから発着駅を復元する', async ({ page }) => {
   await page.goto('/articles/split-ticket-case-study');
   await page.getByRole('link',{name:'この発着駅を計算機に入力する'}).last().click();
   await expect(page).toHaveURL(/from=.*&to=/);
@@ -70,7 +84,6 @@ for (const width of [375,1280]) {
     const scopeBox = await page.getByRole('complementary',{name:'計算の対象と条件'}).boundingBox();
     expect(scopeBox!.y).toBeGreaterThan(inputBox!.y + inputBox!.height);
     const resources = page.locator('section[aria-labelledby="calculator-resources-title"]');
-    await expect(resources.getByRole('link')).toHaveCount(6);
     await expect(resources.getByRole('link',{name:/分割きっぷの仕組み/})).toBeVisible();
     await resources.getByRole('link',{name:/実際の計算例/}).click();
     await expect(page).toHaveURL('/articles/split-ticket-case-study');

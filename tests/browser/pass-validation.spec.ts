@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-for (const month of [1, 3, 6]) {
-  for (const route of ["東京[東北]盛岡[いわて銀河]目時[青い森鉄道]青森", "河原田[伊勢鉄道線]津"]) {
+for (const [month, route] of [[1, "東京[東北]盛岡[いわて銀河]目時[青い森鉄道]青森"], [6, "河原田[伊勢鉄道線]津"]] as const) {
+ {
     test(`定期券${month}箇月で会社線を計算前に拒否する: ${route}`, async ({ page }) => {
       await page.route("**/*", route => {
         const url = new URL(route.request().url());

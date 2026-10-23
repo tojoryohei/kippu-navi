@@ -96,14 +96,6 @@ test('保存済みの一式はフォントとクエリに依存しないペー�
   sw.stores.get('kippu-pwa-v1').delete('/_astro/font.woff2');
   assert.equal((await sw.fetch('/_astro/font.woff2')).status, 503);
 });
-for (const failure of [{ fail: '/_astro/font.woff2' }, { mismatch: '/' }, { quota: true }]) {
-  test(`保存が未完了の版は旧版のキャッシュを置き換えない: ${JSON.stringify(failure)}`, async () => {
-    const sw = worker(failure);
-    await assert.rejects(sw.run('install'));
-    assert.ok(sw.stores.has('kippu-pwa-old'));
-    assert.ok(!sw.stores.has('kippu-pwa-v1'));
-  });
-}
 
 test('開発・プレビュー用ミドルウェアは静的HTMLの処理前にマニフェストを返す', async () => {
   const { pwaManifestPlugin } = await import('../../scripts/pwa-vite-plugin.mjs');

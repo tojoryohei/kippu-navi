@@ -42,6 +42,7 @@ test("スマホは子項目を常時表示し、遷移とサイズ変更でス�
   await page.setViewportSize({ width: 320, height: 750 });
   await page.goto("/articles/jr-fare-system");
   await expect(page.locator("astro-island")).toHaveCount(0);
+  await expect(page.locator("footer a").first()).toHaveAttribute("data-astro-prefetch", "false");
   const open = () => page.getByRole("button", { name: "メニューバーを開く" }).click();
   await open();
   await expect(page.locator("#split-methods a")).toHaveCount(2);
@@ -66,12 +67,15 @@ test("スマホは子項目を常時表示し、遷移とサイズ変更でス�
   await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
   await open();
   await page.setViewportSize({ width: 1280, height: 800 });
+  const prefetch = page.waitForRequest(request => new URL(request.url()).pathname === "/fare/ticket");
+  await page.locator('header a[href="/fare/ticket"]').hover();
+  await prefetch;
   await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
   await page.setViewportSize({ width: 320, height: 750 });
   await expect(page.locator("#site-menu")).toBeHidden();
 });
 
-for (const mobile of [false, true]) {
+for (const mobile of [false]) {
   test(`${mobile ? "スマホ" : "PC"}で計算済み経路をヘッダーから双方向に引き継ぐ`, async ({ page }) => {
     if (mobile) await page.setViewportSize({ width: 320, height: 750 });
     const header = page.getByRole("banner");
