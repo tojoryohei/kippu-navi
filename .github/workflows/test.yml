@@ -161,7 +161,7 @@ jobs:
           cache: false
       - uses: flatt-security/setup-takumi-guard-golang@02545d3425218766aac4dca114dcc3f6eaa0df4a # v1
       - uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd # v1
-      - name: 固定版actionlintとShellCheckをインストール
+      - name: Install actionlint and ShellCheck
         env:
           # renovate: datasource=github-releases depName=rhysd/actionlint
           ACTIONLINT_VERSION: v1.7.12
@@ -177,18 +177,18 @@ jobs:
             --output "$tool_dir/shellcheck.tar.xz"
           tar -xJf "$tool_dir/shellcheck.tar.xz" -C "$tool_dir"
           install "$tool_dir/shellcheck-$SHELLCHECK_VERSION/shellcheck" "$tool_dir/shellcheck"
-      - name: 全workflowとシェルスクリプトを検査
+      - name: Check workflows and shell scripts
         run: '"$RUNNER_TEMP/ci-tools/actionlint" -shellcheck "$RUNNER_TEMP/ci-tools/shellcheck"'
       - run: npm ci
       - run: node scripts/check-runtime-versions.mjs
       - run: node --test tests/automation/*.test.mjs tests/verification/*.test.mjs
       - run: node --test tests/deploy/*.test.mjs
-      - name: Install pinned Renovate validator outside the repository
+      - name: Install Renovate validator
         # renovate: datasource=npm depName=renovate
         env:
           RENOVATE_VALIDATOR_VERSION: 44.171.1
         run: npm install --prefix "$RUNNER_TEMP/renovate-validator" --ignore-scripts --no-audit --no-fund "renovate@$RENOVATE_VALIDATOR_VERSION"
-      - name: Validate repository config and real Renovate schedule semantics
+      - name: Validate Renovate config and schedule
         env:
           RENOVATE_PACKAGE_ROOT: ${{ runner.temp }}/renovate-validator/node_modules/renovate
           RENOVATE_X_IGNORE_RE2: 'true'

@@ -91,7 +91,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: control/.node-version
-      - name: 資格情報を渡す前に固定版ツールを準備
+      - name: Set up deploy tools
         run: node control/scripts/deploy/prepare-tools.mjs
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -104,7 +104,7 @@ jobs:
           cache: false
       - uses: flatt-security/setup-takumi-guard-golang@02545d3425218766aac4dca114dcc3f6eaa0df4a
       - uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd
-      - name: 依存関係を導入してビルド
+      - name: Install dependencies and build
         working-directory: target
         env:
           SENTRY_CLI_BIN: ${{ runner.temp }}/publish-tools/node_modules/.bin/sentry-cli
@@ -112,7 +112,7 @@ jobs:
         run: |
           npm ci
           npm run build
-      - name: 完成済みWorkerと静的ファイルのmanifestを生成
+      - name: Generate build manifest
         id: pack
         run: node control/scripts/deploy/package-frontend.mjs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -155,20 +155,20 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: control/.node-version
-      - name: 現在の公開開始確認を照合
+      - name: Check deployment lease
         run: node control/scripts/deploy/check-lease.mjs
-      - name: 資格情報を渡す前に固定版ツールを準備
+      - name: Set up deploy tools
         run: node control/scripts/deploy/prepare-tools.mjs
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           artifact-ids: ${{ needs.build.outputs.sentry_id }}
           path: incoming
-      - name: 成果物を検証して公開用ディレクトリへ配置
+      - name: Validate and prepare artifacts
         env:
           EXPECTED_MANIFEST_SHA256: ${{ needs.build.outputs.sentry_manifest_sha256 }}
           EXPECTED_ATTEMPT: ${{ needs.build.outputs.attempt }}
         run: node control/scripts/deploy/artifact.mjs verify sentry incoming "$RUNNER_TEMP/verified-sentry"
-      - name: Sentryへの送信とリリース確定
+      - name: Upload to Sentry and finalize release
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ fromJSON(needs.resolve.outputs.public_config).SENTRY_ORG }}
@@ -197,34 +197,34 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: control/.node-version
-      - name: 現在の公開開始確認を照合
+      - name: Check deployment lease
         run: node control/scripts/deploy/check-lease.mjs
-      - name: 資格情報を渡す前に固定版ツールを準備
+      - name: Set up deploy tools
         run: node control/scripts/deploy/prepare-tools.mjs
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           artifact-ids: ${{ needs.build.outputs.frontend_id }}
           path: incoming
-      - name: 成果物を検証して公開用ディレクトリへ配置
+      - name: Validate and prepare artifacts
         env:
           EXPECTED_MANIFEST_SHA256: ${{ needs.build.outputs.frontend_manifest_sha256 }}
           EXPECTED_ATTEMPT: ${{ needs.build.outputs.attempt }}
         run: node control/scripts/deploy/artifact.mjs verify frontend incoming "$RUNNER_TEMP/verified-frontend"
-      - name: 信頼済み公開設定を生成
+      - name: Generate deploy config
         run: node control/scripts/deploy/config.mjs
-      - name: ステージングの公開先を確認
+      - name: Check staging deploy target
         if: needs.resolve.outputs.environment == 'staging'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node control/scripts/check-staging-target.mjs
-      - name: 完成済み成果物を公開
+      - name: Deploy build artifacts
         working-directory: ${{ runner.temp }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: '"$RUNNER_TEMP/publish-tools/node_modules/.bin/wrangler" deploy --config "$RUNNER_TEMP/publish-wrangler.json" --no-bundle'
-      - name: 公開結果を記録
+      - name: Record deployment result
         run: |
           # shellcheck disable=SC2016
           printf 'Environment: `%s`\nCommit: `%s`\nControl: `%s`\n' "$DEPLOY_ENVIRONMENT" "$TARGET_SHA" "$CONTROL_SHA" >> "$GITHUB_STEP_SUMMARY"

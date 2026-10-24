@@ -195,18 +195,18 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: control/.node-version
-      - name: 現在の公開開始確認を照合
+      - name: Check deployment lease
         run: node control/scripts/deploy/check-lease.mjs
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           artifact-ids: ${{ needs.build.outputs.api_id }}
           path: incoming
-      - name: 成果物を検証して公開用ディレクトリへ配置
+      - name: Validate and prepare artifacts
         env:
           EXPECTED_MANIFEST_SHA256: ${{ needs.build.outputs.api_manifest_sha256 }}
           EXPECTED_ATTEMPT: ${{ needs.build.outputs.attempt }}
         run: node control/scripts/deploy/artifact.mjs verify api incoming "$RUNNER_TEMP/verified-api"
-      - name: 資格情報を渡す前にイメージを読み込む
+      - name: Load Docker image
         run: |
           docker load -i "$RUNNER_TEMP/verified-api/image.tar"
           docker image inspect "kippu-api:$TARGET_SHA" >/dev/null
@@ -217,7 +217,7 @@ jobs:
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
         with:
           version: '565.0.0'
-      - name: 登録してdigestを記録
+      - name: Push image and save digest
         id: publish
         run: |
           set -euo pipefail
@@ -229,7 +229,7 @@ jobs:
           image_digest=$(gcloud artifacts docker images describe "$image_path:$image_tag" --format='value(image_summary.digest)')
           [[ "$image_digest" =~ ^sha256:[a-f0-9]{64}$ ]] || exit 1
           echo "image=$image_path@$image_digest" >> "$GITHUB_OUTPUT"
-      - name: Docker認証を削除
+      - name: Remove Docker credentials
         if: always()
         run: docker logout "$REGION-docker.pkg.dev"
 
@@ -259,9 +259,9 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: control/.node-version
-      - name: 現在の公開開始確認を照合
+      - name: Check deployment lease
         run: node control/scripts/deploy/check-lease.mjs
-      - name: 登録結果と公開先を検証
+      - name: Check image and deploy target
         run: |
           set -euo pipefail
           [ "$PUBLISHED_TARGET" = "$TARGET_SHA" ]
@@ -277,14 +277,14 @@ jobs:
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
         with:
           version: '565.0.0'
-      - name: digestでCloud Runに公開
+      - name: Deploy to Cloud Run by digest
         run: |
           gcloud run deploy "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" \
             --image "$PUBLISHED_IMAGE" --update-env-vars "DEPLOY_ENVIRONMENT=$DEPLOY_ENVIRONMENT,DEPLOY_COMMIT=$TARGET_SHA" \
             --invoker-iam-check --service-account "$RUNTIME_SERVICE_ACCOUNT" \
             --memory 512Mi --concurrency 2 --timeout 30s --quiet
           gcloud run services update-traffic "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" --to-latest --quiet
-      - name: Cloud Runの呼び出し認証を維持
+      - name: Require Cloud Run authentication
         run: |
           set -euo pipefail
           gcloud run services add-iam-policy-binding "$SERVICE_NAME" \
@@ -336,7 +336,7 @@ jobs:
             exit 1
           }
 
-      - name: 配信Revision・メタデータSHA・digestを照合
+      - name: Verify revision, SHA, and digest
         run: node control/scripts/deploy/verify-revision.mjs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
