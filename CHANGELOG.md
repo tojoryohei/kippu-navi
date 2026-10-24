@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.4...kippu-navi-v5.2.5) (2026-10-24)
+
+
+### Bug Fixes
+
+* 計算フォーム初期化中のページ遷移エラーを防止 ([#919](https://github.com/tojoryohei/kippu-navi/issues/919)) ([1266e76](https://github.com/tojoryohei/kippu-navi/commit/1266e76b3e8d8b84dd798cc5d5b3d96a1f9f045d))
+
 ## [5.2.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.3...kippu-navi-v5.2.4) (2026-10-23)
 
 
@@ -23,15 +30,9 @@
 
 ## [5.2.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.0...kippu-navi-v5.2.1) (2026-10-22)
 
-### デプロイとCloud Run直接検証
+### Bug Fixes
 
-* API更新時に、専用サービスアカウントとWorkload Identity Federationを使ったCloud Run直接検証を必須化。配信Revision・image digest・メタデータSHA・バイナリ内SHAと、乗車券・定期券・IC定期券の固定3ケースのJSON応答を照合する。 ([#884](https://github.com/tojoryohei/kippu-navi/pull/884), [#888](https://github.com/tojoryohei/kippu-navi/pull/888))
-* 配信中Revisionを基準とするAPI更新判定、環境別排他制御、公開開始時のmain先頭照合、古い実行・attemptの拒否、明示的な復旧と検証範囲付きの成功記録を整備する。 ([#884](https://github.com/tojoryohei/kippu-navi/pull/884), [#888](https://github.com/tojoryohei/kippu-navi/pull/888))
-* 不正audienceの認証拒否条件と失敗時の診断記録を修正する。 ([#886](https://github.com/tojoryohei/kippu-navi/pull/886))
-* 公開サイト経由のHTTP・ブラウザー検証と専用テストを削除し、API更新時の直接検証に範囲を整理する。通常のローカルE2Eとdeployment.jsonの生成・配信は維持する。 ([#888](https://github.com/tojoryohei/kippu-navi/pull/888))
-* ステージングの3更新パターンと初回本番公開・直接検証の成功を記録し、導入時だけの本番ゲートを撤去する。 ([#890](https://github.com/tojoryohei/kippu-navi/pull/890), [#891](https://github.com/tojoryohei/kippu-navi/pull/891))
-
-固定3ケースの確認であり、公開サイト・Cloudflare接続・公開WASM・画面上の計算結果・全経路の計算正確性は保証対象外。
+* API更新時のCloud Run直接検証を必須化し、デプロイ制御・認証・診断記録を整備して検証範囲を固定3ケースに整理 ([#884](https://github.com/tojoryohei/kippu-navi/pull/884), [#886](https://github.com/tojoryohei/kippu-navi/pull/886), [#888](https://github.com/tojoryohei/kippu-navi/pull/888), [#890](https://github.com/tojoryohei/kippu-navi/pull/890), [#891](https://github.com/tojoryohei/kippu-navi/pull/891))
 
 ## [5.2.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.1.0...kippu-navi-v5.2.0) (2026-10-20)
 
