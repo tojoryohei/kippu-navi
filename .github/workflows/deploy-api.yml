@@ -92,7 +92,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ./target/calculation-engine/data/precomputed/pass.bin
-          key: precomputed-pass-v2-${{ hashFiles('target/calculation-engine/cmd/precompute-pass-fares/**', 'target/calculation-engine/internal/domain/**', 'target/calculation-engine/internal/pass/**', 'target/calculation-engine/internal/graphdata/edges.json', 'target/calculation-engine/go.mod', 'target/calculation-engine/go.sum') }}
+          key: precomputed-pass-${{ hashFiles('target/calculation-engine/cmd/precompute-pass-fares/**', 'target/calculation-engine/internal/domain/**', 'target/calculation-engine/internal/pass/**', 'target/calculation-engine/internal/graphdata/edges.json', 'target/calculation-engine/go.mod', 'target/calculation-engine/go.sum') }}
 
       - name: Generate precomputed pass fares
         if: steps.cache-pass.outputs.cache-hit != 'true'
@@ -107,7 +107,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ./target/calculation-engine/data/precomputed/ticket.bin
-          key: precomputed-ticket-v2-${{ hashFiles('target/calculation-engine/cmd/precompute-ticket-fares/**', 'target/calculation-engine/internal/domain/**', 'target/calculation-engine/internal/graphdata/**', 'target/calculation-engine/internal/ticket/**', 'target/calculation-engine/go.mod', 'target/calculation-engine/go.sum') }}
+          key: precomputed-ticket-${{ hashFiles('target/calculation-engine/cmd/precompute-ticket-fares/**', 'target/calculation-engine/internal/domain/**', 'target/calculation-engine/internal/graphdata/**', 'target/calculation-engine/internal/ticket/**', 'target/calculation-engine/go.mod', 'target/calculation-engine/go.sum') }}
 
       - name: Generate precomputed ticket fares
         if: steps.cache-ticket.outputs.cache-hit != 'true'
@@ -152,7 +152,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: control/.node-version
-      - name: イメージを一度だけ作成してmanifestを生成
+      - name: Generate manifest
         id: pack
         run: |
           set -euo pipefail

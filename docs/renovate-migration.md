@@ -6,7 +6,7 @@
 Dependabotの更新設定と専用自動マージworkflowは廃止します。GitHub側のDependabot security updatesは停止し、Dependabot alertsは検出元として維持します。
 
 マージ条件は既存の必須CI・CodeQLと最新mainへの追従です。
-PRごとの共有stagingへの自動デプロイ、疎通確認、専用Appの`Staging verification`は廃止します。
+共有stagingの公開結果はマージ条件にせず、専用Appの`Staging verification`も使用しません。
 2026-10-18にmainの必須条件から`request`を除外しました。通常CIと最新mainへの追従は維持しています。
 共有環境の競合やCloudflareによる実行元の拒否で依存更新を止める構成にはしません。
 通常CIが通っても本番の画面・計算結果・外部サービスとの連携を保証するものではありません。
@@ -35,17 +35,20 @@ Reactのmajor移行時にも`@astrojs/react`やUIライブラリの対応が必�
 
 ## stagingと本番デプロイ
 
-通常ブランチとRenovateブランチのpush・PR作成からstagingへは自動公開しません。
-必要時のみActionsの`Deploy staging manually`をmainから起動し、同一リポジトリの対象ブランチを指定します。
-main以外からのworkflow起動、外部fork、実行開始時に最新headと一致しない対象は拒否します。
+通常ブランチ・Renovateブランチとも、main以外へのpush、main向けの同一リポジトリPRの作成・再オープンで`Staging request`を起動し、要求の完了後に`Deploy staging`が共有stagingへ自動公開します。PRのない開発ブランチもpushで公開できます。
+CIとは独立して公開を進めます。外部fork、要求元ブランチの削除、要求時のSHAから先端が進んだ場合は公開しません。PR更新時はpushを契機にし、PRの`synchronize`イベントは重ねて登録しません。
+手動公開はActionsの`Deploy staging`をmainから起動し、同一リポジトリの非mainブランチを指定します。PRのないブランチも手動公開できます。
+公開要求では対象ブランチのコードや資格情報を使いません。公開処理はmainの制御コードから起動し、排他待機後にも対象SHAと現在のブランチ先端を照合します。
 mainのworkflow定義を用い、固定した対象SHAからフロントエンドとAPIを順番に公開します。
-手動実行同士は共通concurrencyで排他制御します。待機実行が置き換えられた場合は必要に応じて再実行します。
-手動stagingデプロイの成功・失敗はPRのマージ条件にしません。
+自動・手動公開は共通concurrencyで排他制御し、自動公開ではフロントエンドとAPIの両方を更新します。共有環境は最後に公開したブランチの内容になります。待機実行が置き換えられた場合は必要に応じて公開要求の再実行または手動公開を使います。
+stagingデプロイの成功・失敗はPRのマージ条件にしません。Cloud Run直接検証は維持し、Cloudflare経由の公開疎通確認は復活させません。
 本番は既存どおりmainへのマージ後に公開します。frontend/API個別workflowの手動実行もmainの本番用です。
 
 既存のstaging専用SHAヘッダーとキャッシュ分離は調査用に維持します。
 専用チェックAppと`staging-checks` Environmentはworkflowから参照しなくなります。
 これらのGitHub側の削除はこのPRでは行いません。Appの登録や秘密鍵は今後の導入条件ではありません。
+
+自動起動の復元は、この変更をmainへ反映した後の公開要求から有効になります。既存ブランチでpushを契機にするには、`staging-request.yml`を含むmainを取り込んでください。既存PRをそのまま公開する場合は手動公開も使えます。
 
 ## 運用と移行の証跡
 

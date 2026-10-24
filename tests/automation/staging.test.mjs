@@ -8,13 +8,26 @@ const sha = 'a'.repeat(40);
 const other = 'b'.repeat(40);
 const target = { sha, branch: 'test/staging' };
 const repo = { owner: 'owner', repo: 'repo' };
+const pull = {
+  head: { ref: target.branch, sha, repo: { full_name: 'owner/repo' } },
+};
+const run = {
+  path: '.github/workflows/staging-request.yml', event: 'push', status: 'completed', conclusion: 'success',
+  repository: { full_name: 'owner/repo' }, head_repository: { full_name: 'owner/repo' },
+  head_branch: target.branch, head_sha: sha, pull_requests: [],
+};
+const automatic = { repo, eventName: 'workflow_run', payload: { workflow_run: { id: 123 } } };
 
-function fakeGitHub({ refSha = sha, prSha = sha } = {}) {
+function fakeGitHub({ refSha = sha, prSha = sha, pulls = [{ ...pull, head: { ...pull.head, sha: prSha } }], workflowRun = run } = {}) {
   return {
-    paginate: async () => [{ head: { sha: prSha, repo: { full_name: 'owner/repo' } } }],
+    paginate: async () => pulls,
     rest: {
       git: { getRef: async () => ({ data: { object: { sha: refSha } } }) },
       pulls: { list: () => {} },
+      actions: { getWorkflowRun: async params => {
+        assert.deepEqual(params, { ...repo, run_id: 123 });
+        return { data: workflowRun };
+      } },
     },
   };
 }
@@ -24,13 +37,32 @@ test('branch and PR must still point to the verified SHA', async () => {
   await assert.rejects(assertCurrentTarget(fakeGitHub({ prSha: other }), repo, target), /PR head changed/);
 });
 
-test('stagingは明示的な手動実行だけを受け付ける', async () => {
+test('手動公開はPRのない非mainブランチも受け付け、直接のpush・PRイベントは拒否する', async () => {
   const context = { repo, eventName: 'workflow_dispatch', payload: { inputs: { branch: target.branch } } };
   assert.deepEqual(await resolveTarget(fakeGitHub(), context), target);
-  for (const eventName of ['workflow_run', 'push', 'pull_request']) {
+  assert.deepEqual(await resolveTarget(fakeGitHub({ pulls: [] }), context), target);
+  for (const eventName of ['push', 'pull_request', 'pull_request_target']) {
     await assert.rejects(resolveTarget(fakeGitHub(), { ...context, eventName }), /Unsupported deployment event/);
   }
   await assert.rejects(resolveTarget(fakeGitHub(), { ...context, payload: { inputs: { branch: 'main' } } }), /Select a non-main branch/);
+});
+
+test('push・PR作成の公開要求から対象SHAを固定し、外部forkや古い要求を拒否する', async () => {
+  for (const event of ['push', 'pull_request']) {
+    assert.deepEqual(await resolveTarget(fakeGitHub({ workflowRun: { ...run, event } }), automatic), target);
+  }
+  // PRがない開発ブランチもpushで公開できる。
+  assert.deepEqual(await resolveTarget(fakeGitHub({ pulls: [] }), automatic), target);
+  await assert.rejects(resolveTarget(fakeGitHub({ refSha: other }), automatic), /Branch head changed/);
+  // イベント内の実行情報で公開可否を決めず、取得した実行記録を照合する。
+  for (const change of [
+    { path: '.github/workflows/test.yml' }, { event: 'workflow_dispatch' }, { status: 'in_progress' },
+    { conclusion: 'failure' }, { conclusion: 'cancelled' },
+    { repository: { full_name: 'other/repo' } }, { head_repository: { full_name: 'fork/repo' } },
+    { head_branch: 'main' }, { head_sha: 'invalid' },
+  ]) {
+    assert.equal(await resolveTarget(fakeGitHub({ workflowRun: { ...run, ...change } }), automatic), null);
+  }
 });
 
 test('ビルドと公開でWranglerの配信先・bindingsを一致させる', () => {
