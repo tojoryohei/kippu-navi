@@ -1,3 +1,4 @@
+import { appendSplitResults } from "@/lib/append-split-results";
 import { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import { useForm, Controller, type SubmitHandler, useWatch } from "react-hook-form";
 import { RiArrowUpDownLine } from "react-icons/ri";
@@ -82,6 +83,7 @@ function adaptWasmResponseToSplitFareResult(wasmRes: SplitCalculationResponse): 
         });
 
         return {
+            id: JSON.stringify(res.segments.map(seg => [seg.start, seg.end, seg.path])),
             totalFare: res.totalAmount || 0,
             segments,
         };
@@ -170,6 +172,7 @@ export default function SplitForm({
     const workerRef = useRef<EngineClient | null>(null);
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
     const latestCalcIdRef = useRef<number>(0);
+    const [resultSearchId, setResultSearchId] = useState(0);
 
     const defaultSearchType = (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6")
         ? initialSearchType
@@ -214,6 +217,7 @@ export default function SplitForm({
     const onSubmit: SubmitHandler<ExtendedSplitFormInput> = useCallback(async (data) => {
         if (!mountedRef.current) return;
         const calcId = ++latestCalcIdRef.current;
+        setResultSearchId(calcId);
         if (!data.startStation?.name || !data.endStation?.name) return;
         const shouldRestartEngine = isRetryableEngineError(pendingErrorRef.current);
 
@@ -303,9 +307,11 @@ export default function SplitForm({
             searchContext.readiness = readiness;
             localWorker.postMessage({
                 type: capability === "ticket" ? "calculateOptimalSplitTicket" : "calculateOptimalSplitPass",
-                payload: { startStationName: data.startStation!.name, endStationName: data.endStation!.name,
+                payload: {
+                    startStationName: data.startStation!.name, endStationName: data.endStation!.name,
                     maxSplits: data.maxSplits, noSplitStations: data.forbiddenStations.map(station => station.name),
-                    months: monthsMap[data.searchType] || 1, isIc: isIcPass, requestId: calcId },
+                    months: monthsMap[data.searchType] || 1, isIc: isIcPass, requestId: calcId
+                },
             });
         };
         const apiTimeout = createAbortTimeout(abort.signal);
@@ -424,9 +430,11 @@ export default function SplitForm({
             worker.onmessage = (e) => {
                 const { type, result, error, requestId, details } = e.data;
                 if (requestId !== undefined && requestId !== latestCalcIdRef.current) return;
-                if (type === "success" || type === "success_calculate_optimal_split_ticket") {
+                if (type === "partial_result") {
+                    setResult(current => appendSplitResults(current, adaptWasmResponseToSplitFareResult(result)));
+                } else if (type === "success" || type === "success_calculate_optimal_split_ticket") {
                     // 最新のリクエストIDと一致する場合のみ結果を反映（古い計算結果を破棄）
-                    if (requestId === latestCalcIdRef.current) {
+                    if (requestId === latestCalcIdRef.current && !result.streamed) {
                         const adaptedResult = adaptWasmResponseToSplitFareResult(result);
                         setResult(adaptedResult);
                     }
@@ -510,7 +518,7 @@ export default function SplitForm({
 
     // 検索完了の匿名集計と障害通知（計算結果またはエラーが返ってきたタイミングで実行）
     useEffect(() => {
-        if (typeof window === "undefined") return;
+        if (typeof window === "undefined" || isCalculating) return;
 
         const currentFrom = getValues("startStation")?.name;
         const currentTo = getValues("endStation")?.name;
@@ -526,7 +534,7 @@ export default function SplitForm({
             // 同じ検索条件での重複送信を防止
             if (lastTrackedSearch.current !== currentSearchKey) {
                 // 1. 正常に計算結果が返ってきた場合
-                if (result) {
+                if (result && !error) {
                     const runTracking = () => {
                         if (!context) return;
                         const best = result.results.reduce<SplitFarePlan | undefined>(
@@ -568,7 +576,7 @@ export default function SplitForm({
                 }
             }
         }
-    }, [result, error, getValues]);
+    }, [result, error, isCalculating, getValues]);
 
     const baseLabel = SEARCH_TYPE_OPTIONS.find(
         o => o.value === searchedType
@@ -907,7 +915,7 @@ export default function SplitForm({
             </form>
 
             <div className="my-8">
-                {isCalculating && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
+                {isCalculating && !result && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
                 {!isCalculating && serverTime != null && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
                 {!isCalculating && error && (
                     <div className="py-5 border-t text-center text-red-500">
@@ -915,8 +923,8 @@ export default function SplitForm({
                     </div>
                 )}
 
-                {!isCalculating && result && (
-                    <SplitResults result={result} searchedTypeLabel={searchedTypeLabel} />
+                {result && (
+                    <SplitResults key={resultSearchId} incomplete={Boolean(error)} onRetry={() => void handleSubmit(onSubmit)()} result={result} searchedTypeLabel={searchedTypeLabel} />
                 )}
             </div>
             <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
