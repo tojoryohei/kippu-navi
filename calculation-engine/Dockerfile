@@ -15,7 +15,7 @@ ARG DEPLOY_COMMIT=local
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-X main.deploymentCommit=${DEPLOY_COMMIT}" -o server ./cmd/api
 
 # 2. 実行環境 (本番用軽量イメージ)
-FROM alpine:latest@sha256:71e9b7bae160ba167fa17414401b94cbcdaf3c32feeab9298bd794a2a0614c35
+FROM alpine:latest@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
 # タイムゾーンデータとルート証明書（HTTPS通信用）のみインストール
 RUN apk --no-cache add ca-certificates tzdata
 
