@@ -1063,8 +1063,10 @@ export default function Form({
             </form>
 
             <div className={isRouteSplit ? "my-8" : "my-8 p-4"}>
+                <p className="min-h-4 text-right text-xs text-gray-400">
+                    {!isLoading && serverTime != null ? `計算時間: ${serverTime}ms` : null}
+                </p>
                 {isLoading && (isRouteSplit ? <CalculationProgress progress={progress} /> : <p className="py-5 border-t text-center text-gray-500">計算中...</p>)}
-                {!isLoading && serverTime && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
 
                 {!isLoading && error && (
                     <div className="py-5 border-t text-center text-red-500">

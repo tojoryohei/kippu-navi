@@ -295,7 +295,13 @@ export default function SplitForm({
             // 通常検索は既存の共有Workerを維持し、重い端末内探索だけ終了可能なWorkerに分離する。
             const localWorker = createEngineClient({ isolated: true });
             localWorkerRef.current = localWorker;
+            let receivedFirstResult = false;
             localWorker.onmessage = event => {
+                if (abort.signal.aborted || calcId !== latestCalcIdRef.current) return;
+                if (!receivedFirstResult && (event.data.type === "partial_result" || String(event.data.type).startsWith("success"))) {
+                    receivedFirstResult = true;
+                    setServerTime(performance.now() - calculationStartedAt);
+                }
                 workerRef.current?.onmessage?.(event);
                 if (event.data.type === "error" || String(event.data.type).startsWith("success")) {
                     localWorker.terminate();
@@ -915,8 +921,10 @@ export default function SplitForm({
             </form>
 
             <div className="my-8">
+                <p className="min-h-4 text-right text-xs text-gray-400">
+                    {serverTime != null ? `計算時間: ${serverTime}ms` : null}
+                </p>
                 {isCalculating && !result && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
-                {!isCalculating && serverTime != null && <p className="text-right text-xs text-gray-400">計算時間: {serverTime}ms</p>}
                 {!isCalculating && error && (
                     <div className="py-5 border-t text-center text-red-500">
                         <p>{isEngineRetryable ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
