@@ -1,9 +1,15 @@
 import { NonceProvider } from "react-select";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 /** 実際のフォームを初期HTMLに含め、URLからの入力復元が反映されるまで操作を禁止する。 */
 export default function CalculatorHydration({ hydrated, children }: { hydrated: boolean; children: ReactNode }) {
   const [ready, setReady] = useState(false);
+  const shell = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    // 操作準備とは別に、初回commit完了を遷移ガードへ伝える。
+    if (shell.current) shell.current.dataset.calculatorHydrated = "true";
+  }, []);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -20,7 +26,7 @@ export default function CalculatorHydration({ hydrated, children }: { hydrated: 
   }, [hydrated]);
 
   return (
-    <div className="relative" aria-busy={!ready} data-calculator-ready={ready}>
+    <div ref={shell} className="relative" aria-busy={!ready} data-calculator-ready={ready} data-calculator-hydrated="false">
       <div inert={!ready} aria-hidden={!ready}>
         {/* ページ遷移後の初期HTMLも正常に初期化できるよう、Emotionのキャッシュをフォーム内に閉じる。 */}
         <NonceProvider cacheKey="calculator" nonce="">{children}</NonceProvider>
