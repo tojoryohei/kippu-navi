@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.5...kippu-navi-v5.3.0) (2026-10-24)
+
+
+### Features
+
+* 経路自動検索の最安分割結果を段階表示する ([#921](https://github.com/tojoryohei/kippu-navi/issues/921)) ([2030b22](https://github.com/tojoryohei/kippu-navi/commit/2030b221f961d9ed8d8551a1da68d2fab8a8fe2b))
+
 ## [5.2.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.4...kippu-navi-v5.2.5) (2026-10-24)
 
 
