@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readFileSync, readdirSync, appendFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
+import { prepare } from './artifact.mjs';
 
 const temp = process.env.RUNNER_TEMP;
 const tools = join(temp, 'publish-tools/node_modules/.bin');
@@ -22,6 +23,6 @@ for (const name of readdirSync(maps)) {
 }
 const env = { ...process.env, RELEASE: release };
 for (const kind of ['frontend', 'sentry']) {
-  execFileSync('python3', ['control/scripts/deploy/artifact.py', 'pack', kind, join(temp, `${kind}-bundle`), join(temp, `${kind}.tgz`)], { env, stdio: 'inherit' });
+  await prepare(kind, join(temp, `${kind}-bundle`), env);
 }
 appendFileSync(process.env.GITHUB_OUTPUT, `release=${release}\nattempt=${process.env.GITHUB_RUN_ATTEMPT}\n`);
