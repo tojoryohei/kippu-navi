@@ -2,21 +2,20 @@ import { useId, useRef, useState } from "react";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 import type { SplitFareResult } from "@/app/types";
 
-export default function SplitResults({ result, searchedTypeLabel = "乗車券", beforeLabel }: { result: SplitFareResult; searchedTypeLabel?: string; beforeLabel?: string }) {
-    const [expandedResult, setExpandedResult] = useState<SplitFareResult | null>(null);
-    const showAllPatterns = expandedResult === result;
+export default function SplitResults({ result, searchedTypeLabel = "乗車券", beforeLabel, incomplete = false, onRetry }: {
+    result: SplitFareResult; searchedTypeLabel?: string; beforeLabel?: string;
+    incomplete?: boolean; onRetry?: () => void;
+}) {
+    const [showAllPatterns, setShowAllPatterns] = useState(false);
     const additionalPatternsId = useId();
     const toggleRef = useRef<HTMLButtonElement>(null);
     const buttonClassName = "max-w-full px-5 py-2.5 bg-white border border-gray-300 text-gray-600 font-medium rounded-full hover:bg-gray-50 transition-colors shadow-sm inline-flex items-center justify-center gap-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
     const renderPattern = (splitPlan: SplitFareResult["results"][number], planIndex: number) => (
-        <div key={planIndex} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <div key={splitPlan.id ?? JSON.stringify(splitPlan.segments)} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
             <div>
-                {result.results.length > 1 && (
-                    <h4 className="font-bold text-gray-700 mb-3 ml-1">
-                        パターン {planIndex + 1}
-                    </h4>
-                )}
-
+                <h4 className="font-bold text-gray-700 mb-3 ml-1">
+                    最安分割パターン{result.results.length > 1 && planIndex + 1}
+                </h4>
                 <div className="flex flex-col gap-3">
                     {splitPlan.segments.map((segment, segIndex) => (
                         <div key={segIndex} className="bg-white p-4 rounded border border-gray-200 shadow-sm relative">
@@ -109,6 +108,10 @@ export default function SplitResults({ result, searchedTypeLabel = "乗車券", 
                         );
                     })()}
 
+                    {incomplete && <div role="status" className="text-center text-red-600">
+                        <p>残りの計算に失敗しました。表示済みの結果は一部です</p>
+                        <button type="button" className={buttonClassName} onClick={onRetry}>再計算</button>
+                    </div>}
                     <div className="space-y-6">
                         {renderPattern(result.results[0], 0)}
                         {result.results.length > 1 && (
@@ -119,11 +122,11 @@ export default function SplitResults({ result, searchedTypeLabel = "乗車券", 
                                         type="button"
                                         aria-expanded={showAllPatterns}
                                         aria-controls={additionalPatternsId}
-                                        onClick={() => setExpandedResult(showAllPatterns ? null : result)}
+                                        onClick={() => setShowAllPatterns(!showAllPatterns)}
                                         className={buttonClassName}
                                     >
                                         {showAllPatterns ? <HiChevronUp aria-hidden="true" className="text-lg shrink-0" /> : <HiChevronDown aria-hidden="true" className="text-lg shrink-0" />}
-                                        <span>{showAllPatterns ? "他のパターンを閉じる" : `他のパターンを表示（残り${result.results.length - 1}件）`}</span>
+                                        <span>{showAllPatterns ? "他のパターンを閉じる" : `他の${result.results.length - 1}パターンを表示`}</span>
                                     </button>
                                 </div>
                                 <div id={additionalPatternsId} hidden={!showAllPatterns} className="space-y-6">
@@ -135,7 +138,7 @@ export default function SplitResults({ result, searchedTypeLabel = "乗車券", 
                                                 aria-expanded={showAllPatterns}
                                                 aria-controls={additionalPatternsId}
                                                 onClick={() => {
-                                                    setExpandedResult(null);
+                                                    setShowAllPatterns(false);
                                                     toggleRef.current?.focus();
                                                 }}
                                                 className={buttonClassName}

@@ -96,7 +96,7 @@ function createEnginePool(isolated = false) {
         settleFailure(details);
       } else {
         const request = requests.get(requestId);
-        if (type !== "progress") requests.delete(requestId);
+        if (type !== "progress" && type !== "partial_result") requests.delete(requestId);
         if (request) notify(request.client, { ...event.data, requestId: request.requestId });
       }
     };

@@ -161,6 +161,7 @@ export default function Form({
     const [isWasmReady, setIsWasmReady] = useState(false);
     const isWasmReadyRef = useRef<boolean>(false);
     const latestCalcIdRef = useRef<number>(0);
+    const [resultSearchId, setResultSearchId] = useState(0);
     const isPassPage = (pathname === "/fare/pass" || pathname === "/split/route/pass");
     const defaultSearchType = initialSearchType || (isPassPage ? "pass6" : "ticket");
     const [selectedPeriod, setSelectedPeriod] = useState<SearchType>(defaultSearchType);
@@ -233,6 +234,7 @@ export default function Form({
     const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
         if (!mountedRef.current) return;
         const calcId = ++latestCalcIdRef.current;
+        setResultSearchId(calcId);
         const shouldRestartEngine = isRetryableEngineError(pendingErrorRef.current);
         pendingErrorRef.current = null;
         setProgress({ phase: "preparing", completed: 0, total: 0 });
@@ -508,7 +510,7 @@ export default function Form({
 
     // 検索完了の匿名集計と障害通知（計算結果またはエラーが返ってきたタイミングで実行）
     useEffect(() => {
-        if (typeof window === "undefined") return;
+        if (typeof window === "undefined" || isLoading) return;
 
         const startStation = getValues("startStation");
         const segments = getValues("segments");
@@ -526,7 +528,7 @@ export default function Form({
             // 同じ検索条件での重複送信を防止
             if (lastTrackedSearch.current !== currentSearchKey) {
                 // 1. 乗車券の計算結果が返ってきた場合
-                if (splitResult) {
+                if (splitResult && !error) {
                     const best = splitResult.results[0];
                     if (context) captureSuccessfulSearch(context, {
                         normalFareYen: splitResult.normal.fare,
@@ -585,7 +587,7 @@ export default function Form({
                 }
             }
         }
-    }, [result, resultPass, splitResult, error, getValues]);
+    }, [result, resultPass, splitResult, error, isLoading, getValues]);
 
     const currentType = selectedPeriod;
     const calculateButtonLabel = isRouteSplit
@@ -1072,6 +1074,7 @@ export default function Form({
 
                 {!isLoading && splitResult && (
                     <SplitResults
+                        key={resultSearchId}
                         result={splitResult}
                         beforeLabel={isPassPage ? `分割前の${({ ticket: "乗車券", pass1: "定期券１箇月", pass3: "定期券３箇月", pass6: "定期券６箇月" } satisfies Record<SearchType, string>)[currentType]}` : "分割前の乗車券"}
                         searchedTypeLabel={isPassPage ? "定期券" : "乗車券"}

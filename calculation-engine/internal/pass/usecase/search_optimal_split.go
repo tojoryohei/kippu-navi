@@ -78,7 +78,9 @@ func (u *SearchOptimalSplit) Execute(startID, endID, months int) ([][]int, error
 // ExecuteWithOptions は最大区間数と分割禁止駅を指定して、最適な分割を探索します。
 // 返値は0分割（発着駅のみ）を含む最安候補の一覧です。
 // maxSections が0以下の場合は、コンストラクタで設定された既定値を使用します。
-func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, months, maxSections int, lockedStations []int) ([][]int, error) {
+// visitorsを指定すると最安金額の確定後に各駅列を通知し、返値には蓄積しません。
+// コールバックへ渡す駅列は独立した配列です。省略時の順序・戻り値は従来どおりです。
+func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, months, maxSections int, lockedStations []int, visitors ...func([]int)) ([][]int, error) {
 	locked := makeLockedStationSet(lockedStations)
 	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
 	if err != nil {
@@ -178,10 +180,14 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, months, maxSecti
 	}
 	candStations := scratch.candStationsBuf[:candLen]
 
-	_, optimalPaths, err := u.searchOptimalSplitDPMinimalWithLocks(startID, endID, months, effectiveMaxSections, candStations, scratch, locked)
+	_, optimalPaths, err := u.searchOptimalSplitDPMinimalWithLocks(startID, endID, months, effectiveMaxSections, candStations, scratch, locked, visitors...)
 
 	if err != nil {
 		if errors.Is(err, domain.ErrNoValidPattern) {
+			if len(visitors) > 0 {
+				visitors[0]([]int{startID, endID})
+				return nil, nil
+			}
 			return [][]int{{startID, endID}}, nil
 		}
 		return nil, err
@@ -492,6 +498,7 @@ func (u *SearchOptimalSplit) collectOptimalPaths(
 	candStations []int,
 	N int,
 	optimalPaths *[][]int,
+	visitors ...func([]int),
 ) {
 	if depth >= len(scratch.pathBuf) {
 		return
@@ -503,7 +510,11 @@ func (u *SearchOptimalSplit) collectOptimalPaths(
 		for i := 0; i <= depth; i++ {
 			path[i] = scratch.pathBuf[depth-i]
 		}
-		*optimalPaths = append(*optimalPaths, path)
+		if len(visitors) > 0 {
+			visitors[0](path)
+		} else {
+			*optimalPaths = append(*optimalPaths, path)
+		}
 		return
 	}
 
@@ -511,7 +522,7 @@ func (u *SearchOptimalSplit) collectOptimalPaths(
 	nodeIdx := scratch.headTable[targetIdx]
 	for nodeIdx != -1 {
 		node := scratch.nodes.At(nodeIdx)
-		u.collectOptimalPaths(node.parentIdx, node.sections, scratch, depth+1, startIdx, candStations, N, optimalPaths)
+		u.collectOptimalPaths(node.parentIdx, node.sections, scratch, depth+1, startIdx, candStations, N, optimalPaths, visitors...)
 		nodeIdx = node.next
 	}
 }
@@ -893,7 +904,7 @@ func GetCandStationsBufForTest(scratch interface{}) []int {
 	return scratch.(*dpScratch).candStationsBuf
 }
 
-func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID, months, maxSections int, candStations []int, scratch *dpScratch, locked map[int]struct{}) (int, [][]int, error) {
+func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID, months, maxSections int, candStations []int, scratch *dpScratch, locked map[int]struct{}, visitors ...func([]int)) (int, [][]int, error) {
 	numStations := int(u.numStations)
 
 	maxK := maxSections
@@ -1026,11 +1037,11 @@ func (u *SearchOptimalSplit) searchOptimalSplitDPMinimalWithLocks(startID, endID
 	var optimalPaths [][]int
 	for s := 1; s <= maxK; s++ {
 		if scratch.distTable[s*N+endIdx] == minCostToEnd {
-			u.collectOptimalPaths(endIdx, s, scratch, 0, startIdx, candStations, N, &optimalPaths)
+			u.collectOptimalPaths(endIdx, s, scratch, 0, startIdx, candStations, N, &optimalPaths, visitors...)
 		}
 	}
 
-	if len(optimalPaths) == 0 {
+	if len(visitors) == 0 && len(optimalPaths) == 0 {
 		return 0, nil, domain.ErrNoValidPattern
 	}
 
