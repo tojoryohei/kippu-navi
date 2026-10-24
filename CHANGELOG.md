@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.0...kippu-navi-v5.3.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* 計算時間の表示による結果の位置ずれを防ぐ ([#924](https://github.com/tojoryohei/kippu-navi/issues/924)) ([4549833](https://github.com/tojoryohei/kippu-navi/commit/4549833b77963583f5f67c2af0e76b1f524b52d0))
+
 ## [5.3.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.2.5...kippu-navi-v5.3.0) (2026-10-24)
 
 
