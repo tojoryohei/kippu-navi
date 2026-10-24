@@ -77,6 +77,8 @@ export interface SplitFareSegment {
 }
 
 export interface SplitFarePlan {
+    /** 途中駅を表示しない場合にも保持する、全経路の識別子。 */
+    id?: string;
     segments: SplitFareSegment[];
     totalFare: number;
 }

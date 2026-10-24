@@ -42,4 +42,18 @@ test("準備・探索・割合と件数・整理・エラー・再計算の表�
   await expect(bar).not.toHaveAttribute("value");
   await reply({ type: "progress", phase: "calculating", completed: 0, total: 6 });
   await expect(bar).toHaveAttribute("value", "0");
+  await reply({ type: "progress", phase: "calculating", completed: 6, total: 6 });
+  await expect(bar).toHaveAttribute("value", "100");
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);
+  await reply({ type: "progress", phase: "organizing", completed: 6, total: 6 });
+  await expect(page.getByRole("status")).toHaveText("結果を整理中…");
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);
+  const fare = { departureStation: "新茂原", arrivalStation: "茂原", fare: 160, totalEigyoKilo: 29, printedViaLines: ["外房"], validDays: 1 };
+  await reply({ type: "success_route_split_ticket", result: { time: 10, data: {
+    normal: fare,
+    results: [{ totalFare: 160, segments: [{ departureStation: "新茂原", arrivalStation: "茂原", fare }] }],
+  } } });
+  await expect(bar).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "乗車券を計算", exact: true })).toBeEnabled();
 });

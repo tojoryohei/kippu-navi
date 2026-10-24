@@ -4,6 +4,7 @@ import (
 	"calculation-engine/internal/domain"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
+	"errors"
 	"math"
 	"reflect"
 	"testing"
@@ -146,4 +147,59 @@ func unavailableFares(numStations int) []int32 {
 		fares[i] = math.MaxInt32
 	}
 	return fares
+}
+
+func TestStreamingSearchWaitsForCheapestCandidate(t *testing.T) {
+	g := graph.NewGraph(4)
+	a, b, c, d := g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C"), g.GetOrAddID("D")
+	add := func(x, y, k int) {
+		g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{FromID: x, ToID: y, EigyoKilo: domain.DeciKilo(k), GiseiKilo: domain.DeciKilo(k), Company: domain.JREast}})
+	}
+	add(a, b, 100)
+	add(b, d, 100)
+	add(a, c, 110)
+	add(c, d, 110)
+	fares := unavailableFares(4)
+	fares[a*4+d] = 500
+	fares[a*4+b] = 200
+	fares[b*4+d] = 200
+	fares[a*4+c] = 100
+	fares[c*4+d] = 100
+	search := NewSearchOptimalSplit(g, nil)
+	search.SetPrecomputedFares(fares)
+	for _, limit := range []int{0, 2} {
+		for _, locked := range [][]int{nil, {c}} {
+			want, err := search.ExecuteWithOptions(a, d, limit, locked)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got [][]int
+			remaining, err := search.ExecuteWithOptions(a, d, limit, locked, func(path []int) { got = append(got, path) })
+			if err != nil || len(remaining) != 0 || !reflect.DeepEqual(got, want) {
+				t.Fatalf("limit=%d locked=%v: %v != %v (%v)", limit, locked, got, want, err)
+			}
+			if locked == nil && !reflect.DeepEqual(got, [][]int{{a, c, d}}) {
+				t.Fatalf("高い候補が通知されました: %v", got)
+			}
+		}
+	}
+}
+
+func TestDisconnectedSearchPreservesNoPathError(t *testing.T) {
+	g := graph.NewGraph(4)
+	a, b, c, d := g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C"), g.GetOrAddID("D")
+	for _, pair := range [][2]int{{a, b}, {b, a}, {c, d}, {d, c}} {
+		g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{FromID: pair[0], ToID: pair[1], EigyoKilo: 10, GiseiKilo: 10}})
+	}
+	// WASMの探索用ビューと同じく、連結成分の事前計算なしでも原因を保持する。
+	search := NewSearchOptimalSplit(g, nil)
+	notified := false
+	_, err := search.ExecuteWithOptions(a, d, 0, nil, func([]int) { notified = true })
+	if !errors.Is(err, domain.ErrNoPathExists) || notified {
+		t.Fatalf("err=%v, notified=%v", err, notified)
+	}
+	_, err = search.GetCheapestTicketSegments(a, d)
+	if !errors.Is(err, domain.ErrNoPathExists) {
+		t.Fatalf("分割前のエラー=%v", err)
+	}
 }

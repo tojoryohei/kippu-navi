@@ -3,6 +3,7 @@ package usecase
 import (
 	"calculation-engine/internal/domain"
 	"calculation-engine/internal/ticket/graph"
+	"fmt"
 	"math"
 )
 
@@ -45,7 +46,9 @@ func (u *SearchOptimalSplit) Execute(startID, endID, maxSections int) ([][]int, 
 
 // ExecuteWithOptions は分割禁止駅を考慮して、指定された区間の最適分割を探索します。
 // lockedStations に含まれる駅は、経路上に存在しても分割境界として使用しません。
-func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int, lockedStations []int) ([][]int, error) {
+// visitorsを指定すると最安金額の確定後に各駅列を通知し、返値には蓄積しません。
+// コールバックへ渡す駅列は独立した配列です。省略時の順序・戻り値は従来どおりです。
+func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int, lockedStations []int, visitors ...func([]int)) ([][]int, error) {
 	if startID == endID {
 		return nil, domain.ErrInvalidPath
 	}
@@ -55,30 +58,30 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 	// 最短経路から駅を抽出します。
 	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
 	if err != nil {
-		return nil, domain.ErrInvalidPath
+		return nil, err
 	}
 
 	// 乗車券の場合は、運賃の振れ幅がそこまで大きくないため、最短経路＋多少の迂回経路の駅を候補とします。
 	maxGisei := shortest.GiseiKilo + 50
 	pathsResult, err := u.graph.FindUnboundedKShortestPathsGisei(startID, endID, maxGisei)
 	if err != nil {
-		return nil, domain.ErrInvalidPath
+		return nil, err
 	}
 
 	minTotalFare := math.MaxInt
-	var bestResultPaths [][]int
+	var enumerators []func(func([]int))
 
 	for _, pr := range pathsResult {
 		path := pr.StationIDs
 		n := len(path)
 		if maxSections <= 0 {
-			minCostToEnd, splitPaths := u.searchUnlimitedSplitWithLocks(path, locked)
+			minCostToEnd, enumerate := u.prepareUnlimitedSplit(path, locked)
 			if minCostToEnd < minTotalFare {
 				minTotalFare = minCostToEnd
-				bestResultPaths = nil
+				enumerators = nil
 			}
 			if minCostToEnd == minTotalFare && minCostToEnd != math.MaxInt {
-				bestResultPaths = append(bestResultPaths, splitPaths...)
+				enumerators = append(enumerators, enumerate)
 			}
 			continue
 		}
@@ -163,55 +166,67 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 
 		if minCostToEnd < minTotalFare {
 			minTotalFare = minCostToEnd
-			bestResultPaths = nil
+			enumerators = nil
 		}
 
 		if minCostToEnd == minTotalFare && minCostToEnd != math.MaxInt {
-			var backtrack func(j, k int, currentPaths [][]int)
-			backtrack = func(j, k int, currentPaths [][]int) {
-				if j == 0 {
-					var splitStations []int
-					// The first station of the first path
-					if len(currentPaths) > 0 {
-						splitStations = append(splitStations, currentPaths[len(currentPaths)-1][0])
+			enumerators = append(enumerators, func(emit func([]int)) {
+				var backtrack func(j, k int, currentPaths [][]int)
+				backtrack = func(j, k int, currentPaths [][]int) {
+					if j == 0 {
+						var splitStations []int
+						// 最初の経路の始点
+						if len(currentPaths) > 0 {
+							splitStations = append(splitStations, currentPaths[len(currentPaths)-1][0])
+						}
+						// 各経路の終点
+						for x := len(currentPaths) - 1; x >= 0; x-- {
+							path := currentPaths[x]
+							splitStations = append(splitStations, path[len(path)-1])
+						}
+						emit(splitStations)
+						return
 					}
-					// The last station of each path
-					for x := len(currentPaths) - 1; x >= 0; x-- {
-						path := currentPaths[x]
-						splitStations = append(splitStations, path[len(path)-1])
+					for _, i := range prev[k][j] {
+						eval := cache[i*n+j]
+						newPaths := make([][]int, len(currentPaths))
+						copy(newPaths, currentPaths)
+						newPaths = append(newPaths, eval.oPath)
+						backtrack(i, k-1, newPaths)
 					}
-					bestResultPaths = append(bestResultPaths, splitStations)
-					return
 				}
-				for _, i := range prev[k][j] {
-					eval := cache[i*n+j]
-					newPaths := make([][]int, len(currentPaths))
-					copy(newPaths, currentPaths)
-					newPaths = append(newPaths, eval.oPath)
-					backtrack(i, k-1, newPaths)
-				}
-			}
 
-			for k := 1; k <= maxK; k++ {
-				if dp[k][n-1] == minCostToEnd {
-					backtrack(n-1, k, nil)
+				for k := 1; k <= maxK; k++ {
+					if dp[k][n-1] == minCostToEnd {
+						backtrack(n-1, k, nil)
+					}
 				}
-			}
+			})
 		}
 	}
 
-	if minTotalFare == math.MaxInt || len(bestResultPaths) == 0 {
-		return [][]int{{startID, endID}}, nil
-	}
-
-	uniquePaths := make([][]int, 0, len(bestResultPaths))
-	for _, path := range bestResultPaths {
-		if !containsPath(uniquePaths, path) {
-			uniquePaths = append(uniquePaths, path)
+	var results [][]int
+	seen := map[string]bool{}
+	emit := func(path []int) {
+		key := fmt.Sprint(path)
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		if len(visitors) > 0 {
+			visitors[0](path)
+		} else {
+			results = append(results, path)
 		}
 	}
-
-	return uniquePaths, nil
+	if minTotalFare == math.MaxInt || len(enumerators) == 0 {
+		emit([]int{startID, endID})
+	} else {
+		for _, enumerate := range enumerators {
+			enumerate(emit)
+		}
+	}
+	return results, nil
 }
 
 // searchUnlimitedSplit は区間数無制限の最適分割を O(n²) で探索し、
@@ -221,6 +236,15 @@ func (u *SearchOptimalSplit) searchUnlimitedSplit(path []int) (int, [][]int) {
 }
 
 func (u *SearchOptimalSplit) searchUnlimitedSplitWithLocks(path []int, locked map[int]struct{}) (int, [][]int) {
+	cost, enumerate := u.prepareUnlimitedSplit(path, locked)
+	var results [][]int
+	if enumerate != nil {
+		enumerate(func(path []int) { results = append(results, path) })
+	}
+	return cost, results
+}
+
+func (u *SearchOptimalSplit) prepareUnlimitedSplit(path []int, locked map[int]struct{}) (int, func(func([]int))) {
 	n := len(path)
 	dp := make([]int, n)
 	prev := make([][]int, n)
@@ -260,29 +284,30 @@ func (u *SearchOptimalSplit) searchUnlimitedSplitWithLocks(path []int, locked ma
 		return math.MaxInt, nil
 	}
 
-	var results [][]int
-	var backtrack func(j int, reversedEnds []int)
-	backtrack = func(j int, reversedEnds []int) {
-		if j == 0 {
-			splitStations := make([]int, len(reversedEnds)+1)
-			splitStations[0] = path[0]
-			for i, pathIndex := range reversedEnds {
-				splitStations[len(reversedEnds)-i] = path[pathIndex]
+	enumerate := func(emit func([]int)) {
+		var backtrack func(j int, reversedEnds []int)
+		backtrack = func(j int, reversedEnds []int) {
+			if j == 0 {
+				splitStations := make([]int, len(reversedEnds)+1)
+				splitStations[0] = path[0]
+				for i, pathIndex := range reversedEnds {
+					splitStations[len(reversedEnds)-i] = path[pathIndex]
+				}
+				emit(splitStations)
+				return
 			}
-			results = append(results, splitStations)
-			return
-		}
 
-		for _, i := range prev[j] {
-			nextEnds := make([]int, len(reversedEnds)+1)
-			copy(nextEnds, reversedEnds)
-			nextEnds[len(reversedEnds)] = j
-			backtrack(i, nextEnds)
+			for _, i := range prev[j] {
+				nextEnds := make([]int, len(reversedEnds)+1)
+				copy(nextEnds, reversedEnds)
+				nextEnds[len(reversedEnds)] = j
+				backtrack(i, nextEnds)
+			}
 		}
+		backtrack(n-1, nil)
+
 	}
-	backtrack(n-1, nil)
-
-	return dp[n-1], results
+	return dp[n-1], enumerate
 }
 
 func makeLockedStationSet(stations []int) map[int]struct{} {
@@ -325,13 +350,13 @@ func (u *SearchOptimalSplit) segmentFare(path []int) (int, bool) {
 func (u *SearchOptimalSplit) GetCheapestTicketSegments(start, end int) ([]TicketSplitSegment, error) {
 	shortest, err := u.graph.FindShortestPathGisei(start, end)
 	if err != nil {
-		return nil, domain.ErrInvalidPath
+		return nil, err
 	}
 	maxGisei := shortest.GiseiKilo + 50
 
 	pathsResult, err := u.graph.FindUnboundedKShortestPathsGisei(start, end, maxGisei)
 	if err != nil {
-		return nil, domain.ErrInvalidPath
+		return nil, err
 	}
 
 	minFare := math.MaxInt

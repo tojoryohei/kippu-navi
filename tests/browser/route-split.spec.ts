@@ -125,22 +125,22 @@ test("全最安パターンの展開・折りたたみと画面遷移", async ({
   await page.goto(`/split/route/ticket?${new URLSearchParams({ route: "東京[新幹線]名古屋", mode: "normal" })}`);
   const result = await lastResult(page, "success_route_split_ticket");
   expect(result.data.results.length).toBeGreaterThan(1);
-  const expand = page.getByRole("button", { name: `他のパターンを表示（残り${result.data.results.length - 1}件）`, exact: true });
-  await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(1);
+  const expand = page.getByRole("button", { name: `他の${result.data.results.length - 1}パターンを表示`, exact: true });
+  await expect(page.getByRole("heading", { name: /^最安分割パターン/ })).toHaveCount(1);
   await expect(expand).toHaveAttribute("aria-expanded", "false");
   await expect(expand).toBeVisible();
   await expand.focus();
   await page.keyboard.press("Enter");
   const close = page.getByRole("button", { name: "他のパターンを閉じる", exact: true });
   await expect(close.first()).toHaveAttribute("aria-expanded", "true");
-  await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(result.data.results.length);
+  await expect(page.getByRole("heading", { name: /^最安分割パターン/ })).toHaveCount(result.data.results.length);
   await close.first().focus();
   await page.keyboard.press("Space");
   await expect(expand).toHaveAttribute("aria-expanded", "false");
   await expand.click();
   await close.last().click();
   await expect(expand).toBeFocused();
-  await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: /^最安分割パターン/ })).toHaveCount(1);
   await expect(expand).toBeVisible();
   await page.getByRole("link", { name: "経路自動検索", exact: false }).click();
   await expect(page).toHaveURL(/\/split\/auto\/ticket$/);
@@ -388,20 +388,20 @@ test("追加パターンの件数と再計算", async ({ page }) => {
       await page.evaluate(count => Object.assign(window, { patternCount: count }), count);
       await calculate.click();
     }
-    const toggle = page.getByRole("button", { name: /^他のパターンを表示/ });
+    const toggle = page.getByRole("button", { name: /^他の\d+パターンを表示$/ });
     if (count < 2) {
       await expect(toggle).toHaveCount(0);
       if (count === 0) await expect(page.getByText("有効な分割候補が見つかりませんでした。", { exact: true })).toBeVisible();
       else await expect(page.getByText("利用区間", { exact: true })).toHaveCount(1);
       continue;
     }
-    await expect(toggle).toHaveText(`他のパターンを表示（残り${count - 1}件）`);
+    await expect(toggle).toHaveText(`他の${count - 1}パターンを表示`);
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
-    await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(1);
+    await expect(page.getByRole("heading", { name: /^最安分割パターン/ })).toHaveCount(1);
     const controlledId = await toggle.getAttribute("aria-controls");
     expect(controlledId).toBeTruthy();
     await toggle.click();
-    await expect(page.getByRole("heading", { name: /^パターン / })).toHaveCount(count);
+    await expect(page.getByRole("heading", { name: /^最安分割パターン/ })).toHaveCount(count);
     for (const width of [1280, 320]) {
       await page.setViewportSize({ width, height: 900 });
       const buttons = page.getByRole("button", { name: "他のパターンを閉じる", exact: true });

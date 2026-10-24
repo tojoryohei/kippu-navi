@@ -1,30 +1,8 @@
+import { createSplitResultStream } from "@/lib/split-result-stream";
 /// <reference lib="webworker" />
 import * as Sentry from "@sentry/browser";
 import { classifyCalculationError, normalizeCalculationError } from "@/lib/search-errors";
 import { sentryDataCollection } from "@/lib/sentry-data-collection";
-
-interface SplitCalculationSegment {
-  start: string;
-  end: string;
-  path: string[];
-  via: string[];
-  totalEigyoKilo: number;
-  result?: {
-    Fare: number;
-    BarrierFreeFee: number;
-    Charge?: number;
-  };
-}
-
-interface SplitCalculationResult {
-  totalAmount: number;
-  segments: SplitCalculationSegment[];
-}
-
-interface SplitCalculationResponse {
-  normal: SplitCalculationResult | null;
-  results: SplitCalculationResult[];
-}
 
 // Blob Worker環境でも正しいオリジンを抽出するヘルパー関数
 function getBaseOrigin(): string {
@@ -107,6 +85,8 @@ declare const Go: {
   new(): GoInstance;
 };
 
+type ResultCallback = (json: string) => void;
+
 type ProgressCallback = (phase: 'calculating' | 'organizing', completed: number, total: number) => void;
 
 function routeProgress(requestId: unknown): ProgressCallback {
@@ -119,14 +99,14 @@ interface WorkerGlobalScope {
   initPassGraphFromBuffer(size: number): boolean | string;
   prepareTicketGraphBuffer(size: number): number;
   initTicketGraphFromBuffer(size: number): boolean | string;
-  reconstructAndCalculate(splitStationsJson: string, months: number, isIc: boolean): string;
-  reconstructAndCalculateTicket(splitStationsJson: string): string;
+  reconstructAndCalculate(splitStationsJson: string, months: number, isIc: boolean, result?: ResultCallback): string;
+  reconstructAndCalculateTicket(splitStationsJson: string, result?: ResultCallback): string;
   calculateRoutePass(stationNamesJson: string, months: number, isIc: boolean, calculationMode: string): string;
   calculateRouteTicket(jsonStr: string): string;
   calculateRouteSplitTicket(jsonStr: string, progress?: ProgressCallback): string;
   calculateRouteSplitPass(jsonStr: string, progress?: ProgressCallback): string;
-  calculateOptimalSplitPass(request: string): string;
-  calculateOptimalSplitTicket(startStationName: string, endStationName: string, maxSplits?: number, noSplitStationsJson?: string): string;
+  calculateOptimalSplitPass(request: string, result?: ResultCallback): string;
+  calculateOptimalSplitTicket(startStationName: string, endStationName: string, maxSplits?: number, noSplitStationsJson?: string, result?: ResultCallback): string;
 }
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
 
@@ -401,6 +381,7 @@ onmessage = async (e: MessageEvent) => {
       postWorkerError(err, payload?.requestId, 'ticket');
     }
   } else if (type === 'calculateOptimalSplitTicket') {
+    const stream = createSplitResultStream(data => postMessage(data), payload?.requestId, 'ticket', 'auto');
     if (!ticketGraphInitialized) {
       postMessage({ type: 'error', requestId: payload?.requestId, error: 'Wasm graph not initialized yet' });
       return;
@@ -413,19 +394,24 @@ onmessage = async (e: MessageEvent) => {
         endStationName,
         maxSplits,
         JSON.stringify(noSplitStations || []),
+        stream.accept,
       );
       const result = JSON.parse(resultJsonStr);
       if (result.error) {
+        stream.flush();
         postWorkerError(result.error, payload?.requestId, 'ticket');
         return;
       }
+      stream.flush();
       postMessage({ type: 'success_calculate_optimal_split_ticket', requestId, result });
     } catch (err) {
+      stream.flush();
       postWorkerError(err, payload?.requestId, 'ticket');
     }
   } else if (type === 'calculate' || type === 'calculateOptimalSplitPass') {
     const { months, isIc, isTicket, requestId } = payload;
-    let { splitPaths } = payload;
+    const stream = createSplitResultStream(data => postMessage(data), requestId, isTicket ? 'ticket' : 'pass', 'auto');
+    const { splitPaths } = payload;
     if (isTicket ? !ticketGraphInitialized : !passGraphInitialized) {
       postMessage({ type: 'error', requestId: payload?.requestId, error: 'Wasm graph not initialized yet' });
       return;
@@ -433,62 +419,24 @@ onmessage = async (e: MessageEvent) => {
 
     try {
       if (type === 'calculateOptimalSplitPass') {
-        const paths = JSON.parse(workerSelf.calculateOptimalSplitPass(JSON.stringify({
+        const response = JSON.parse(workerSelf.calculateOptimalSplitPass(JSON.stringify({
           from: payload.startStationName, to: payload.endStationName, months, isIc,
           maxSplits: payload.maxSplits, noSplitStations: payload.noSplitStations,
-        })));
-        if (paths.error) { postWorkerError(paths.error, requestId, 'pass'); return; }
-        splitPaths = paths.results?.length ? paths.results : [paths.normal];
-      }
-      const combinedResults: SplitCalculationResult[] = [];
-      let normalResult: SplitCalculationResult | null = null;
-
-      for (const path of splitPaths) {
-        // splitStations は JSON 文字列として Go に渡す
-        const splitStationsJson = JSON.stringify(path);
-        let resultJsonStr = "";
-
-        if (isTicket) {
-          resultJsonStr = workerSelf.reconstructAndCalculateTicket(splitStationsJson);
-        } else {
-          resultJsonStr = workerSelf.reconstructAndCalculate(splitStationsJson, months, isIc);
-        }
-
-        const result = JSON.parse(resultJsonStr);
-        if (result.error) {
-          postWorkerError(result.error, payload?.requestId, isTicket ? 'ticket' : 'pass');
-          return;
-        }
-
-        if (!normalResult) {
-          normalResult = result.normal;
-        }
-
-        if (result.results) {
-          combinedResults.push(...result.results);
+        }), stream.accept));
+        if (response.error) throw new Error(response.error);
+      } else {
+        for (const path of splitPaths) {
+          const json = isTicket
+            ? workerSelf.reconstructAndCalculateTicket(JSON.stringify(path), stream.accept)
+            : workerSelf.reconstructAndCalculate(JSON.stringify(path), months, isIc, stream.accept);
+          const response = JSON.parse(json);
+          if (response.error) throw new Error(response.error);
         }
       }
-
-      // 重複する経路（同一 segments）がある場合は排除しつつ、最安順にソート
-      const seenPaths = new Set<string>();
-      const uniqueResults: SplitCalculationResult[] = [];
-
-      for (const res of combinedResults) {
-        const pathKey = res.segments.map((seg: SplitCalculationSegment) => `${seg.start}-${seg.end}:${seg.path.join(',')}`).join('|');
-        if (!seenPaths.has(pathKey)) {
-          seenPaths.add(pathKey);
-          uniqueResults.push(res);
-        }
-      }
-
-      uniqueResults.sort((a, b) => a.totalAmount - b.totalAmount);
-
-      const response: SplitCalculationResponse = {
-        normal: normalResult,
-        results: uniqueResults,
-      };
-      postMessage({ type: 'success', requestId, result: response });
+      stream.flush();
+      postMessage({ type: 'success', requestId, result: { streamed: true } });
     } catch (err) {
+      stream.flush();
       postWorkerError(err, payload?.requestId, isTicket ? 'ticket' : 'pass');
     }
   }

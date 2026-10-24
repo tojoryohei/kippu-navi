@@ -626,6 +626,13 @@ func (s *paritySearch) ExecuteWithOptions(a, b, months, limit int, locked []int)
 	s.t.Helper()
 	got, err := s.SearchOptimalSplit.ExecuteWithOptions(a, b, months, limit, locked)
 	local, localErr := s.local.ExecuteWithOptions(a, b, months, limit, locked)
+	for _, search := range []*usecase.SearchOptimalSplit{s.SearchOptimalSplit, s.local} {
+		var streamed [][]int
+		remaining, streamErr := search.ExecuteWithOptions(a, b, months, limit, locked, func(path []int) { streamed = append(streamed, path) })
+		if (streamErr == nil) != (err == nil) || len(remaining) != 0 || !reflect.DeepEqual(streamed, got) {
+			s.t.Fatalf("逐次=%v (%v), 全件=%v (%v)", streamed, streamErr, got, err)
+		}
+	}
 	if (err == nil) != (localErr == nil) || !reflect.DeepEqual(got, local) {
 		s.t.Fatalf("テーブル=%v (%v), 都度計算=%v (%v)", got, err, local, localErr)
 	}
