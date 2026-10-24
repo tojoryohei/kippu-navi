@@ -67,8 +67,8 @@ jobs:
     outputs:
       frontend_id: ${{ steps.frontend.outputs.artifact-id }}
       sentry_id: ${{ steps.sentry.outputs.artifact-id }}
-      frontend_sha256: ${{ steps.pack.outputs.frontend_sha256 }}
-      sentry_sha256: ${{ steps.pack.outputs.sentry_sha256 }}
+      frontend_manifest_sha256: ${{ steps.pack.outputs.frontend_manifest_sha256 }}
+      sentry_manifest_sha256: ${{ steps.pack.outputs.sentry_manifest_sha256 }}
       release: ${{ steps.pack.outputs.release }}
       attempt: ${{ steps.pack.outputs.attempt }}
     env:
@@ -112,25 +112,27 @@ jobs:
         run: |
           npm ci
           npm run build
-      - name: 完成済みWorkerと静的ファイルを梱包
+      - name: 完成済みWorkerと静的ファイルのmanifestを生成
         id: pack
         run: node control/scripts/deploy/package-frontend.mjs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         id: frontend
         with:
           name: frontend-${{ needs.resolve.outputs.environment }}-${{ needs.resolve.outputs.target_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/frontend.tgz
+          path: ${{ runner.temp }}/frontend-bundle
+          # 検証済みのstatic/.well-knownも転送する。
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
-          compression-level: 0
+          compression-level: 6
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         id: sentry
         with:
           name: sentry-${{ needs.resolve.outputs.environment }}-${{ needs.resolve.outputs.target_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/sentry.tgz
+          path: ${{ runner.temp }}/sentry-bundle
           if-no-files-found: error
           retention-days: 1
-          compression-level: 0
+          compression-level: 6
   sentry-upload:
     needs: [resolve, build]
     runs-on: ubuntu-latest
@@ -161,11 +163,11 @@ jobs:
         with:
           artifact-ids: ${{ needs.build.outputs.sentry_id }}
           path: incoming
-      - name: 成果物を明示的に検証して展開
+      - name: 成果物を検証して公開用ディレクトリへ配置
         env:
-          EXPECTED_SHA256: ${{ needs.build.outputs.sentry_sha256 }}
+          EXPECTED_MANIFEST_SHA256: ${{ needs.build.outputs.sentry_manifest_sha256 }}
           EXPECTED_ATTEMPT: ${{ needs.build.outputs.attempt }}
-        run: python3 control/scripts/deploy/artifact.py verify sentry incoming/sentry.tgz "$RUNNER_TEMP/verified-sentry"
+        run: node control/scripts/deploy/artifact.mjs verify sentry incoming "$RUNNER_TEMP/verified-sentry"
       - name: Sentryへの送信とリリース確定
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -203,11 +205,11 @@ jobs:
         with:
           artifact-ids: ${{ needs.build.outputs.frontend_id }}
           path: incoming
-      - name: 成果物を明示的に検証して展開
+      - name: 成果物を検証して公開用ディレクトリへ配置
         env:
-          EXPECTED_SHA256: ${{ needs.build.outputs.frontend_sha256 }}
+          EXPECTED_MANIFEST_SHA256: ${{ needs.build.outputs.frontend_manifest_sha256 }}
           EXPECTED_ATTEMPT: ${{ needs.build.outputs.attempt }}
-        run: python3 control/scripts/deploy/artifact.py verify frontend incoming/frontend.tgz "$RUNNER_TEMP/verified-frontend"
+        run: node control/scripts/deploy/artifact.mjs verify frontend incoming "$RUNNER_TEMP/verified-frontend"
       - name: 信頼済み公開設定を生成
         run: node control/scripts/deploy/config.mjs
       - name: ステージングの公開先を確認

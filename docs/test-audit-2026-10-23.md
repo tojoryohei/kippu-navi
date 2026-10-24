@@ -192,6 +192,29 @@
 - ブラウザE2E・開発サーバーE2E、Renovate専用スケジュール実行は今回実行していない。E欄は反復・明示待機からの提案で、削除後のCI壁時計時間を実測したものではない。
 - lint修正はNodeバージョン判定の分割、等価なバージョン正規表現、許可済み環境の明示選択、固定URL読込への局所ESLint抑制。テスト件数・製品挙動は変更していない。
 
+## 2026-10-24：成果物検証のJS移行に伴う追加テストの再評価
+
+独自tarを廃止した後の責務に合わせ、追加ケースを次のように精査した。件数ではなく、削除すると見逃す公開事故と、別の拒否条件に隠されず検証できるかで判断した。
+
+| 対象 | 判断と理由 |
+| --- | --- |
+| API・frontend・Sentryの正常受け渡し | 維持。異なる必須ファイルと転送後の配置、生成attemptによる照合を確認する。APIのCLI確認はここへ統合し、専用の重複した正常系は削除 |
+| manifestの改変 | 維持。取得内容だけでなくビルド出力に固定したハッシュを照合する境界。期待ハッシュの入力例の列挙は集約 |
+| SHA・環境・run・attempt・release・種別 | 維持。別の公開対象の成果物を誤って使わない境界。各値を単独で変更する |
+| ファイル改変・欠落・追加 | 維持。内容の変更とファイル集合の増減は別の事故。欠落対象は必須ファイル検査に隠れない任意CSSへ変更 |
+| 公開不可ファイル | 維持。設定ファイル、sourcemap、実行スクリプト、Workerの余分なファイル、隠しファイル・隠しディレクトリ、バックスラッシュを別々に確認。package-lockはpackage.jsonと重複するため削除。`.env`は拡張子でも拒否されるため、隠しパス検査が必要な`.secret.json`へ変更 |
+| manifestだけに書いた不正パス7例 | 削除。実在ファイル一覧との不一致でも失敗し、パス検査の有効性を立証しない。アーカイブ展開の親参照・絶対パス処理はActions側の責務。自前コードでは実在する隠しパス・バックスラッシュとリンクを検査 |
+| symlink・hardlink・FIFO・実行権限 | 維持。ファイル、配下ディレクトリ、ルートのリンクは追跡を止める場所が異なる。hardlinkはsymlink検査では拒否できず、FIFOはハッシュ読込の停止を防ぐ。setuidの専用例は権限検査との重複と環境依存のため削除 |
+| manifestの欠落・サイズ上限 | 維持。検証情報の欠落と読込前の容量制限を確認。null・配列・不正JSONの列挙は削除し、構造比較や標準JSON解析の細部を固定しない |
+| 成果物の容量上限 | 維持。巨大ファイルをハッシュ計算前に拒否する。sparse fileを使い大容量の実書込を避ける |
+| manifestも整合する必須ファイル欠落 | 維持。ファイル一覧・ハッシュが正しくても公開できない不完全成果物を拒否する |
+| deployment.json | 維持。manifestとは別の配信メタデータの取り違えを拒否する。commitとenvironmentを同時に変えていた例を、片方ずつ変える検証へ修正 |
+| 既存出力先・壊れたsymlink | 維持。古い成果物との混在や出力先の上書きを防ぐ。通常の存在確認では見落とす壊れたリンクも確認 |
+| 生成側の拒否ケース | 空の成果物・既存manifestだけ維持。検証側と同じ共通処理を通るリンク・公開不可ファイル・SHA形式の列挙は削除 |
+| workflowの転送・検証順序 | 既存の`tests/automation/deployment-verification.test.mjs`へ集約。bundleの直接転送、`.well-known`の同梱、ID・manifestハッシュの対応、資格情報付与前の検証を確認。setup-nodeの単なる記述確認は削除 |
+
+一時コピーでmanifest照合・ファイルハッシュ・許可パス・必須成果物・deploymentのcommit／environment照合をそれぞれ無効にし、対応テストが期待した拒否の欠落として失敗することを確認した。Actionsによる実転送・リモートCI・デプロイの成功を証明するものではない。
+
 ## 全テストファイルの確認記録
 
 「維持」は全assertを永久に残す意味ではなく、今回の基準で具体的な削除対象を見いだしていないという意味。IDのあるファイルも、それ以外の固有の回帰条件は維持する。
@@ -291,7 +314,7 @@
 | [tests/browser/route-progress.spec.ts](../tests/browser/route-progress.spec.ts) | E05, E18 |
 | [tests/browser/route-split.spec.ts](../tests/browser/route-split.spec.ts) | E05, E06, E07, E08 |
 | [tests/browser/station-virtualization.spec.ts](../tests/browser/station-virtualization.spec.ts) | E13 |
-| [tests/deploy/test_artifact.py](../tests/deploy/test_artifact.py) | 維持：固有の計算・入力・配信・保護境界の検証 |
+| [tests/deploy/artifact.test.mjs](../tests/deploy/artifact.test.mjs) | 維持：固有の計算・入力・配信・保護境界の検証。2026-10-24にPython版からJS版のディレクトリ成果物検証へ移行 |
 | [tests/dev/public-api.spec.ts](../tests/dev/public-api.spec.ts) | E19 |
 | [tests/dev/startup.spec.ts](../tests/dev/startup.spec.ts) | E19 |
 | [tests/verification/http.test.mjs](../tests/verification/http.test.mjs) | 維持：固有の計算・入力・配信・保護境界の検証 |

@@ -64,7 +64,7 @@ jobs:
       contents: read
     outputs:
       api_id: ${{ steps.api.outputs.artifact-id }}
-      api_sha256: ${{ steps.pack.outputs.api_sha256 }}
+      api_manifest_sha256: ${{ steps.pack.outputs.api_manifest_sha256 }}
       attempt: ${{ steps.pack.outputs.attempt }}
     env:
       TARGET_SHA: ${{ needs.resolve.outputs.target_sha }}
@@ -149,23 +149,26 @@ jobs:
             exit 1
           fi
 
-      - name: イメージを一度だけ作成して梱包
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: control/.node-version
+      - name: イメージを一度だけ作成してmanifestを生成
         id: pack
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/api-bundle"
           docker build --build-arg DEPLOY_COMMIT="$TARGET_SHA" -t "kippu-api:$TARGET_SHA" target/calculation-engine
           docker save -o "$RUNNER_TEMP/api-bundle/image.tar" "kippu-api:$TARGET_SHA"
-          python3 control/scripts/deploy/artifact.py pack api "$RUNNER_TEMP/api-bundle" "$RUNNER_TEMP/api.tgz"
+          node control/scripts/deploy/artifact.mjs prepare api "$RUNNER_TEMP/api-bundle"
           echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         id: api
         with:
           name: api-${{ needs.resolve.outputs.environment }}-${{ needs.resolve.outputs.target_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/api.tgz
+          path: ${{ runner.temp }}/api-bundle
           if-no-files-found: error
           retention-days: 1
-          compression-level: 0
+          compression-level: 6
   publish:
     needs: [resolve, build]
     runs-on: ubuntu-latest
@@ -198,11 +201,11 @@ jobs:
         with:
           artifact-ids: ${{ needs.build.outputs.api_id }}
           path: incoming
-      - name: 成果物を明示的に検証して展開
+      - name: 成果物を検証して公開用ディレクトリへ配置
         env:
-          EXPECTED_SHA256: ${{ needs.build.outputs.api_sha256 }}
+          EXPECTED_MANIFEST_SHA256: ${{ needs.build.outputs.api_manifest_sha256 }}
           EXPECTED_ATTEMPT: ${{ needs.build.outputs.attempt }}
-        run: python3 control/scripts/deploy/artifact.py verify api incoming/api.tgz "$RUNNER_TEMP/verified-api"
+        run: node control/scripts/deploy/artifact.mjs verify api incoming "$RUNNER_TEMP/verified-api"
       - name: 資格情報を渡す前にイメージを読み込む
         run: |
           docker load -i "$RUNNER_TEMP/verified-api/image.tar"

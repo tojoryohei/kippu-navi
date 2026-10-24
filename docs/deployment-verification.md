@@ -16,6 +16,8 @@
 
 本番は`deploy-production.yml`、ステージングはmainから`deploy-staging.yml`を手動起動し、同一リポジトリの非mainブランチを指定する。両入口は`deploy-release.yml`へ統合し、通常公開・復旧とも環境別の`deployment-production`／`deployment-staging`で排他制御する。子ワークフローは再利用専用。資格情報なしのビルド、control_sha固定の制御コード、artifact ID・ハッシュ照合を維持する。
 
+成果物は`upload-artifact`／`download-artifact`でディレクトリとして受け渡し、独自のtar圧縮・解析は行わない。`scripts/deploy/artifact.mjs`はNode.js標準機能だけでmanifestを生成・検証する。ビルドジョブの出力に固定したmanifestのSHA-256と、対象SHA・control SHA・環境・生成run/attempt・releaseを照合し、全ファイルの一覧・SHA-256・許可パス・必須ファイル・容量上限を確認する。リンク・特殊ファイルを拒否し、全検証後に新規の公開用ディレクトリへ通常ファイルだけを配置する。公開資格情報は検証後のステップだけに渡す。フロントエンドは検証済みの`static/.well-known`も転送するため`include-hidden-files: true`を指定する。Dockerイメージの`image.tar`は`docker save`／`docker load`用に維持する。
+
 通常本番は排他取得後の公開開始時に対象SHAとmain先頭の一致を確認し、その実行中は固定する。途中でmainが進んでも継続し、古い対象をmainへ読み替えない。開始確認はrun ID・attempt・SHA・環境に結び付ける。失敗ジョブだけの再実行は古いattemptの確認を拒否するため、統括から全ジョブを再実行する。対象が古い通常公開は最新mainの新規実行を使う。
 
 Cloud Runの実配信状態がReady・観測済みで、正の割合のRevisionが1つ、合計100%の場合だけ実行時DEPLOY_COMMITを比較元にする。latestCreated/latestReadyや0%タグは基準にしない。分割配信・未確定・SHA不明・履歴不足・差分失敗ではAPI更新を省略しない。frontendを明示してもAPI変更・基準不明ならallでの再実行を求める。

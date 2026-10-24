@@ -182,7 +182,7 @@ jobs:
       - run: npm ci
       - run: node scripts/check-runtime-versions.mjs
       - run: node --test tests/automation/*.test.mjs tests/verification/*.test.mjs
-      - run: python3 -m unittest discover -s tests/deploy -v
+      - run: node --test tests/deploy/*.test.mjs
       - name: Install pinned Renovate validator outside the repository
         # renovate: datasource=npm depName=renovate
         env:
