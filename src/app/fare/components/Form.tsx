@@ -818,7 +818,7 @@ export default function Form({
                         render={({ field, fieldState }) => (
                             <div className="flex flex-col w-full">
                                 <div className="flex items-center gap-5 w-full whitespace-nowrap">
-                                    <label htmlFor="react-select-start-station-input" className="w-12 shrink-0">発駅</label>
+                                    <label htmlFor="station-start-station-input" className="w-12 shrink-0">発駅</label>
                                     <div className="flex-1 w-full min-w-0">
                                         <SelectStation
                                             instanceId="start-station"
@@ -935,7 +935,7 @@ export default function Form({
                                     render={({ field, fieldState }) => (
                                         <div className="flex flex-col w-full">
                                             <div className="flex items-center gap-5 w-full whitespace-nowrap">
-                                                <label htmlFor={`react-select-dest-station-${index}-input`} className="w-12 shrink-0">{stationLabel}</label>
+                                                <label htmlFor={`station-dest-station-${index}-input`} className="w-12 shrink-0">{stationLabel}</label>
                                                 <div className="flex-1 w-full min-w-0">
                                                     <SelectStation
                                                         instanceId={`dest-station-${index}`}

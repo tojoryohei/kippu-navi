@@ -124,7 +124,7 @@ test("読み上げ対象を画面外でも保持し、ホイール操作で戻�
   await menu.evaluate(node => { node.scrollTop = 800; });
   await expect.poll(() => menu.evaluate(node => node.scrollTop)).toBeGreaterThan(300);
   await expect.poll(() => page.evaluate(() => {
-    const input = document.querySelector<HTMLInputElement>("#react-select-start-station-input");
+    const input = document.querySelector<HTMLInputElement>("#station-start-station-input");
     const id = input?.getAttribute("aria-activedescendant");
     const option = id ? document.getElementById(id) : null;
     const menu = document.querySelector(".station-select__menu-list");
@@ -138,12 +138,12 @@ test("読み上げ対象を画面外でも保持し、ホイール操作で戻�
   await page.mouse.wheel(0, 800);
   await expect.poll(() => menu.evaluate(node => node.scrollTop)).toBeGreaterThan(300);
   await expect.poll(() => page.evaluate(() => {
-    const id = document.querySelector("#react-select-start-station-input")?.getAttribute("aria-activedescendant");
+    const id = document.querySelector("#station-start-station-input")?.getAttribute("aria-activedescendant");
     return Boolean(id && document.getElementById(id));
   })).toBe(true);
   await input.press("End");
   await expect.poll(() => page.evaluate(() => {
-    const id = document.querySelector("#react-select-start-station-input")?.getAttribute("aria-activedescendant");
+    const id = document.querySelector("#station-start-station-input")?.getAttribute("aria-activedescendant");
     const option = id ? document.getElementById(id) : null;
     const menu = document.querySelector(".station-select__menu-list");
     const total = Number(document.querySelector('[role="option"]')?.getAttribute("aria-setsize"));
