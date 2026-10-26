@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.4...kippu-navi-v5.3.5) (2026-10-26)
+
+
+### Bug Fixes
+
+* 路線距離と近郊区間データを修正 ([#936](https://github.com/tojoryohei/kippu-navi/issues/936)) ([138e339](https://github.com/tojoryohei/kippu-navi/commit/138e3390ded84aaae3616aa82b4e523ba5ccd9a7))
+
 ## [5.3.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.3...kippu-navi-v5.3.4) (2026-10-26)
 
 
