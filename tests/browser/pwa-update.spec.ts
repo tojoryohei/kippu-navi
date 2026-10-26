@@ -22,6 +22,16 @@ test('新版はすべての旧画面を閉じるまで待機し、次に開い�
   const newHtml = originalHtml.replace('<html', '<html data-test-release="new"');
   const nextRelease = { ...release, version: `${release.version}-test-update`, assets: release.assets.map((asset: { url: string }) => asset.url === '/changelog'
     ? { ...asset, size: Buffer.byteLength(newHtml), sha256: createHash('sha256').update(newHtml).digest('hex') } : asset) };
+  // 最終配信データと両版の一覧で、フォント・WASMのURLと内容が同一であることを確認する。
+  const unchanged = release.assets.filter((asset: { url: string }) => /\.(woff2|wasm)$/.test(asset.url));
+  expect(unchanged.some((asset: { url: string }) => asset.url.endsWith('.woff2'))).toBe(true);
+  expect(unchanged.some((asset: { url: string }) => asset.url.endsWith('.wasm'))).toBe(true);
+  expect(nextRelease.assets.filter((asset: { url: string }) => /\.(woff2|wasm)$/.test(asset.url))).toEqual(unchanged);
+  for (const asset of unchanged) {
+    expect(createHash('sha256').update(staticAssets.get(asset.url)!.body).digest('hex')).toBe(asset.sha256);
+  }
+  let scriptRequests = 0;
+  const assetRequests: string[] = [];
   let publish = false;
   let broken = false;
   const server = createServer((req, res) => {
@@ -31,10 +41,12 @@ test('新版はすべての旧画面を閉じるまで待機し、次に開い�
       }
       const path = new URL(req.url, 'http://localhost').pathname;
       if (path === '/sw.js') {
+        scriptRequests++;
         res.writeHead(200, { 'Content-Type': 'text/javascript', 'Cache-Control': 'no-store', 'Service-Worker-Allowed': '/' });
         res.end(publish || broken ? `const RELEASE = ${JSON.stringify(broken ? { ...nextRelease, version: `${nextRelease.version}-broken` } : nextRelease)};\n${script.slice(script.indexOf('\n') + 1)}` : script);
         return;
       }
+      if (staticAssets.has(path)) assetRequests.push(path);
       if (path === '/changelog' && publish) {
         res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
         res.end(newHtml);
@@ -71,8 +83,12 @@ test('新版はすべての旧画面を閉じるまで待機し、次に開い�
     expect(await page.locator('html').getAttribute('data-test-release')).toBeNull();
     broken = false;
     publish = true;
+    scriptRequests = 0;
+    assetRequests.length = 0;
     await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); });
     await expect(page.locator('[data-pwa-state]')).toHaveText('次回起動で反映予定', { timeout: 60000 });
+    expect(scriptRequests).toBeGreaterThan(0);
+    expect(assetRequests).toEqual(['/changelog']);
     await expect(page.locator('[data-pwa-error]')).toBeEmpty();
     expect(await page.locator('html').getAttribute('data-test-release')).toBeNull();
     await expect(page.getByRole('button', { name: '今すぐ更新' })).toHaveCount(0);

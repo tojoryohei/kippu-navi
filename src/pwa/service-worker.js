@@ -34,6 +34,7 @@ async function checkedFetch(asset) {
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     try {
+      const candidates = (await caches.keys()).filter(key => key.startsWith(PREFIX) && key !== CACHE);
       const cache = await operation('保存領域の準備', undefined, () => caches.open(CACHE));
       // 全Promiseを待ってから失敗キャッシュを削除し、遅い書き込みによる復活を防ぐ。
       let next = 0;
@@ -42,7 +43,19 @@ self.addEventListener('install', event => {
           const asset = RELEASE.assets[next++];
           const prior = await operation('保存済み資材の確認', asset.url, () => cache.match(asset.url));
           if (prior && await digest(await prior.clone().arrayBuffer()) === asset.sha256) continue;
-          const response = await checkedFetch(asset);
+          let response;
+          for (const key of candidates) {
+            try {
+              const old = await caches.open(key);
+              const cached = await old.match(asset.url);
+              if (cached && await digest(await cached.clone().arrayBuffer()) === asset.sha256) {
+                response = cached;
+                break;
+              }
+            } catch { /* 読み出せない旧版は見送り、次の候補かネットワークを使う。 */ }
+          }
+          response ??= await checkedFetch(asset);
+          // 保存失敗は旧版の読み出し失敗と分離し、インストールを失敗させる。
           await operation('端末への保存', asset.url, () => cache.put(asset.url, response));
         }
       }));
