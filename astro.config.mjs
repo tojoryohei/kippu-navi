@@ -15,7 +15,7 @@ export default defineConfig({
   site: "https://kippu-navi.com",
   output: "static",
   trailingSlash: "never",
-  build: { format: "file" },
+  build: { format: "file", inlineStylesheets: "never" },
   integrations: [react()],
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   server: { host: "0.0.0.0", port: 3000 },

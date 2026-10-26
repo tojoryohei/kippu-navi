@@ -1,5 +1,10 @@
-import { NonceProvider } from "react-select";
+import { CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+
+// react-selectの外観はglobals.cssで配信する。実行時のstyle要素は生成しない。
+const selectCache = createCache({ key: "calculator" });
+selectCache.insert = () => undefined;
 
 /** 実際のフォームを初期HTMLに含め、URLからの入力復元が反映されるまで操作を禁止する。 */
 export default function CalculatorHydration({ hydrated, children }: { hydrated: boolean; children: ReactNode }) {
@@ -28,8 +33,8 @@ export default function CalculatorHydration({ hydrated, children }: { hydrated: 
   return (
     <div ref={shell} className="relative" aria-busy={!ready} data-calculator-ready={ready} data-calculator-hydrated="false">
       <div inert={!ready} aria-hidden={!ready}>
-        {/* ページ遷移後の初期HTMLも正常に初期化できるよう、Emotionのキャッシュをフォーム内に閉じる。 */}
-        <NonceProvider cacheKey="calculator" nonce="">{children}</NonceProvider>
+        {/* ClientRouterの画面遷移でも外部CSSを使用する。 */}
+        <CacheProvider value={selectCache}>{children}</CacheProvider>
       </div>
       {!ready && (
         <div className="sr-only" role="status">

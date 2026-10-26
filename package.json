@@ -24,6 +24,8 @@
   },
   "dependencies": {
     "@astrojs/react": "^7.0.1",
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
     "@fontsource-variable/noto-sans-jp": "5.3.1",
     "@sentry/browser": "^11.6.0",
     "@tanstack/react-virtual": "^3.14.15",
@@ -51,6 +53,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-security": "^4.1.0",
     "knip": "^6.41.0",
+    "parse5": "^8.0.1",
     "tailwindcss": "^4.3.3",
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2",

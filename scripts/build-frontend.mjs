@@ -38,4 +38,5 @@ if (process.env.CI_SOURCEMAPS === "1") {
     if (name.endsWith(".map")) rmSync(join(root, "dist/_astro", name));
   }
 }
+run(process.execPath, ["scripts/build-csp.mjs"], env);
 run(process.execPath, ["scripts/build-pwa.mjs"], env);

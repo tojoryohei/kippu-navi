@@ -21,9 +21,8 @@ body {
 }
 
 /*
- * react-select normally supplies these rules through Emotion. Astro's
- * ClientRouter can remove dynamically inserted style tags during a page
- * transition, so keep the control usable even when those tags are absent.
+ * react-selectのスタイルはCSPに従い外部CSSで配信する。
+ * CalculatorHydrationでEmotionの挿入を停止するため、各状態の外観をここで定義する。
  */
 [class*="a11yText"],
 [class$="__a11yText"] {
