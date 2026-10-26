@@ -39,7 +39,7 @@ test('版を厳密に指定したエンジンリクエストは現行の配信�
 
 const source = readFileSync('src/pwa/service-worker.js', 'utf8');
 const sha = body => createHash('sha256').update(body).digest('hex');
-function worker({ fail = '', mismatch = '', quota = false, windows = [{ id: 'current' }] } = {}) {
+function worker({ fail = '', mismatch = '', quota = false, readFail = '', windows = [{ id: 'current' }] } = {}) {
   const events = new Map();
   const stores = new Map([['kippu-pwa-old', new Map()], ['unrelated', new Map()]]);
   const bodies = new Map([['/', 'html-v1'], ['/engine/v1/main.wasm', 'wasm-v1'], ['/_astro/font.woff2', 'font-v1'], ['/deployment.json', '{"enginePath":"/engine/v1"}']]);
@@ -52,7 +52,10 @@ function worker({ fail = '', mismatch = '', quota = false, windows = [{ id: 'cur
     open: async key => {
       if (!stores.has(key)) stores.set(key, new Map());
       const store = stores.get(key);
-      return { match: async url => store.get(url)?.clone(), put: async (url, response) => {
+      return { match: async url => {
+        if (key === readFail) throw new Error('旧キャッシュの読み出し失敗');
+        return store.get(url)?.clone();
+      }, put: async (url, response) => {
         if (quota) throw new Error('QuotaExceededError');
         store.set(url, response.clone());
       } };
@@ -70,7 +73,7 @@ function worker({ fail = '', mismatch = '', quota = false, windows = [{ id: 'cur
   });
   vm.runInContext(source, context);
   const run = async name => { let promise; events.get(name)({ waitUntil(p) { promise = p; } }); await promise; };
-  return { stores, requests, notifications, run, get applied() { return applied; }, async message(type, path = '/changelog', messageOrigin = origin, sourceOrigin = origin) {
+  return { stores, bodies, requests, notifications, run, get applied() { return applied; }, async message(type, path = '/changelog', messageOrigin = origin, sourceOrigin = origin) {
     let promise;
     let reply;
     events.get('message')({ origin: messageOrigin, data: { type }, source: { id: 'current', url: sourceOrigin + path }, ports: [{ postMessage(value) { reply = value; } }], waitUntil(value) { promise = value; } });
@@ -154,3 +157,67 @@ for (const [failure, stage, asset] of [
     assert.ok(sw.stores.has('kippu-pwa-old'));
   });
 }
+
+function seedOld(sw, key = 'kippu-pwa-old') {
+  const store = new Map([...sw.bodies].map(([url, body]) => [url, new Response(body)]));
+  sw.stores.set(key, store);
+  return store;
+}
+
+test('同じ資材は再利用し、変更・追加された資材だけを取得する', async () => {
+  const sw = worker();
+  const old = seedOld(sw);
+  old.set('/', new Response('html-old'));
+  old.delete('/deployment.json');
+  await sw.run('install');
+  assert.deepEqual(sw.requests.sort(), ['/', '/deployment.json']);
+  assert.equal(await old.get('/').text(), 'html-old');
+  sw.setOffline();
+  assert.equal(await (await sw.fetch('/_astro/font.woff2')).text(), 'font-v1');
+  assert.equal(await (await sw.fetch('/engine/v1/main.wasm')).text(), 'wasm-v1');
+});
+
+test('破損した旧キャッシュは再利用せず正常なデータを再取得する', async () => {
+  const sw = worker();
+  seedOld(sw).set('/_astro/font.woff2', new Response('corrupt'));
+  await sw.run('install');
+  assert.deepEqual(sw.requests, ['/_astro/font.woff2']);
+  assert.equal(await (await sw.fetch('/_astro/font.woff2')).text(), 'font-v1');
+});
+
+for (const failure of ['内容不一致', '読み出し', 'ハッシュ検証']) {
+  test(`旧候補の${failure}失敗は次の正常な候補へ進む`, async () => {
+    const sw = worker({ readFail: failure === '読み出し' ? 'kippu-pwa-old' : '' });
+    const old = seedOld(sw);
+    if (failure === '内容不一致') old.set('/', new Response('corrupt'));
+    if (failure === 'ハッシュ検証') old.set('/', { clone: () => ({ clone: () => ({ arrayBuffer: async () => { throw new Error('保存済みレスポンスの読み出し失敗'); } }) }) });
+    seedOld(sw, 'kippu-pwa-older');
+    await sw.run('install');
+    assert.deepEqual(sw.requests, []);
+  });
+}
+
+test('旧キャッシュの読み出し失敗でネットワーク取得へ進む', async () => {
+  const sw = worker({ readFail: 'kippu-pwa-old' });
+  seedOld(sw);
+  await sw.run('install');
+  assert.deepEqual(sw.requests.sort(), [...sw.bodies.keys()].sort());
+});
+
+test('別アプリのキャッシュを再利用しない', async () => {
+  const sw = worker();
+  seedOld(sw, 'unrelated');
+  await sw.run('install');
+  assert.deepEqual(sw.requests.sort(), [...sw.bodies.keys()].sort());
+});
+
+test('再利用資材の保存失敗はインストールを失敗させ旧版を維持する', async () => {
+  const sw = worker({ quota: true });
+  const old = seedOld(sw);
+  await assert.rejects(sw.run('install'));
+  assert.deepEqual(sw.requests, []);
+  assert.equal(sw.notifications[0].detail.stage, '端末への保存');
+  assert.equal(sw.stores.has('kippu-pwa-v1'), false);
+  assert.equal(sw.stores.get('kippu-pwa-old'), old);
+  assert.equal(await old.get('/_astro/font.woff2').text(), 'font-v1');
+});
