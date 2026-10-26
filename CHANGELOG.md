@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.2...kippu-navi-v5.3.3) (2026-10-26)
+
+
+### Performance Improvements
+
+* PWA更新で変更のない資材の再ダウンロードを防ぐ ([#932](https://github.com/tojoryohei/kippu-navi/issues/932)) ([f11f852](https://github.com/tojoryohei/kippu-navi/commit/f11f85233f267994497fe838bd60acffbf42cd03))
+
 ## [5.3.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.1...kippu-navi-v5.3.2) (2026-10-26)
 
 
