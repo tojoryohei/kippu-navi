@@ -154,7 +154,8 @@ func (s *SuburbanAreaCorrector) segmentCandidates(path []int, segment suburbanJR
 	original := append([]int(nil), path[segment.startIndex:segment.endIndex+1]...)
 	candidates := make([][]int, 0, 3)
 	appendCandidate := func(candidate []int) {
-		if len(candidate) == 0 {
+		// 1駅だけの最短経路は運賃を計算できないため、補正候補に含めない。
+		if len(candidate) < 2 {
 			return
 		}
 		for _, existing := range candidates {
