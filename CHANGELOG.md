@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.3...kippu-navi-v5.3.4) (2026-10-26)
+
+
+### Bug Fixes
+
+* 駅名の読み仮名を修正 ([#934](https://github.com/tojoryohei/kippu-navi/issues/934)) ([4a2b55e](https://github.com/tojoryohei/kippu-navi/commit/4a2b55e4b993454e4d5b796f16e31274c56c387e))
+
 ## [5.3.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.2...kippu-navi-v5.3.3) (2026-10-26)
 
 
