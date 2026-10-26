@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.1...kippu-navi-v5.3.2) (2026-10-26)
+
+
+### Bug Fixes
+
+* 全ページ共通のCSPをビルド後に生成する ([#929](https://github.com/tojoryohei/kippu-navi/issues/929)) ([80b77e4](https://github.com/tojoryohei/kippu-navi/commit/80b77e48572c5851d2d8ae6e9b36d00e19822107))
+
 ## [5.3.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.0...kippu-navi-v5.3.1) (2026-10-24)
 
 
