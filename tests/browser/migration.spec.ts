@@ -442,32 +442,11 @@ test("駅候補のアクセシビリティ通知を画面に露出させない",
   for (const route of ["/fare/ticket", "/split/auto/pass"]) {
     await page.goto(route);
     await expect(page.getByRole("combobox").first()).toBeVisible();
-    const placeholder = page
-      .locator(".station-select__placeholder")
-      .first();
-    const beforeStyleRemoval = await placeholder.boundingBox();
-    // ClientRouter遷移でEmotionのstyle要素が失われても表示を維持する。
-    await page.evaluate(() => {
-      document.querySelectorAll("style[data-emotion]").forEach((style) => {
-        style.remove();
-      });
-    });
-    const afterStyleRemoval = await placeholder.boundingBox();
-    expect(beforeStyleRemoval).not.toBeNull();
-    expect(afterStyleRemoval).not.toBeNull();
-    expect(
-      Math.abs(beforeStyleRemoval!.x - afterStyleRemoval!.x),
-    ).toBeLessThanOrEqual(1);
     if (route === "/fare/ticket") {
       const lineControl = page.locator(".line-select__control").first();
       await expect(lineControl).toBeVisible();
     }
     const input = page.getByRole("combobox").first();
-    const inputBox = await input.boundingBox();
-    const placeholderBox = await placeholder.boundingBox();
-    expect(inputBox).not.toBeNull();
-    expect(placeholderBox).not.toBeNull();
-    expect(Math.abs(inputBox!.x - placeholderBox!.x)).toBeLessThan(20);
     await input.fill("hoge");
     await input.focus();
     const inputDimensions = await input.evaluate((element) => ({
@@ -482,6 +461,7 @@ test("駅候補のアクセシビリティ通知を画面に露出させない",
       .locator(".station-select__menu-notice--no-options")
       .first();
     await expect(noOptions).toBeVisible();
+    await expect(page.locator("style[data-emotion]")).toHaveCount(0);
     const liveRegion = page.locator('[aria-live="polite"]').first();
     await expect(liveRegion).toHaveCSS("width", "1px");
     expect(await liveRegion.boundingBox()).toMatchObject({

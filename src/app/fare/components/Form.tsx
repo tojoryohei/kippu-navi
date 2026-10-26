@@ -3,7 +3,6 @@ import RouteSplitOptions from "@/app/split/components/RouteSplitOptions";
 import SplitResults from "@/app/split/components/SplitResults";
 import type { SplitFareResult } from "@/app/types";
 import { useForm, Controller, type SubmitHandler, useFieldArray, useWatch } from "react-hook-form";
-import type { SingleValue } from "react-select";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
@@ -648,8 +647,8 @@ export default function Form({
         );
 
     const handleFieldChange = (
-        value: SingleValue<Station | Line>,
-        fieldOnChange: (value: SingleValue<Station | Line>) => void,
+        value: Station | Line | null,
+        fieldOnChange: (value: Station | Line | null) => void,
         resetLogic: () => void
     ) => {
         fieldOnChange(value);
@@ -819,7 +818,7 @@ export default function Form({
                         render={({ field, fieldState }) => (
                             <div className="flex flex-col w-full">
                                 <div className="flex items-center gap-5 w-full whitespace-nowrap">
-                                    <label htmlFor="react-select-start-station-input" className="w-12 shrink-0">発駅</label>
+                                    <label htmlFor="station-start-station-input" className="w-12 shrink-0">発駅</label>
                                     <div className="flex-1 w-full min-w-0">
                                         <SelectStation
                                             instanceId="start-station"
@@ -936,7 +935,7 @@ export default function Form({
                                     render={({ field, fieldState }) => (
                                         <div className="flex flex-col w-full">
                                             <div className="flex items-center gap-5 w-full whitespace-nowrap">
-                                                <label htmlFor={`react-select-dest-station-${index}-input`} className="w-12 shrink-0">{stationLabel}</label>
+                                                <label htmlFor={`station-dest-station-${index}-input`} className="w-12 shrink-0">{stationLabel}</label>
                                                 <div className="flex-1 w-full min-w-0">
                                                     <SelectStation
                                                         instanceId={`dest-station-${index}`}

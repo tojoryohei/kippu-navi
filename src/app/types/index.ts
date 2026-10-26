@@ -1,4 +1,3 @@
-import type { SingleValue } from "react-select";
 
 export interface Station {
     name: string;
@@ -9,7 +8,7 @@ export interface Station {
 export interface SelectStationProps {
     instanceId: string;
     value: Station | null;
-    onChange: (newValue: SingleValue<Station>) => void;
+    onChange: (newValue: Station | null) => void;
     options?: Station[];
     isDisabled?: boolean;
 }
@@ -22,7 +21,7 @@ export interface Line {
 export interface SelectLineProps {
     instanceId: string;
     value: Line | null;
-    onChange: (newValue: SingleValue<Line>) => void;
+    onChange: (newValue: Line | null) => void;
     options: Line[];
     isDisabled?: boolean;
 }

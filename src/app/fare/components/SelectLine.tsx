@@ -1,48 +1,6 @@
-import Select, { components, type OptionProps } from "react-select";
+import ChoiceSelect from "@/components/ChoiceSelect";
+import type { SelectLineProps } from "@/app/types";
 
-import type { Line, SelectLineProps } from "@/app/types";
-
-const formatLabel = (option: Line): string => {
-  return option.name.split("_")[0];
-};
-
-const CustomOption = (props: OptionProps<Line>) => (
-  <components.Option {...props}>
-    <div className="leading-tight text-black">{formatLabel(props.data)}</div>
-  </components.Option>
-);
-
-const SelectLine = ({
-  instanceId,
-  value,
-  onChange,
-  options,
-  isDisabled,
-}: SelectLineProps) => {
-  return (
-    <div className="my-2 w-full">
-      <Select
-        instanceId={instanceId}
-        aria-label="経由路線"
-        className="line-select"
-        classNamePrefix="line-select"
-        value={value}
-        onChange={onChange}
-        isMulti={false}
-        options={options}
-        isDisabled={isDisabled}
-        placeholder="経由路線を選択"
-        getOptionLabel={formatLabel}
-        getOptionValue={(option) => option.name}
-        isSearchable={false}
-        components={{
-          DropdownIndicator: () => null,
-          IndicatorSeparator: () => null,
-          Option: CustomOption,
-        }}
-      />
-    </div>
-  );
-};
-
-export default SelectLine;
+export default function SelectLine({ instanceId, value, onChange, options, isDisabled }: SelectLineProps) {
+  return <div className="my-2 w-full"><ChoiceSelect inputId={instanceId} prefix="line-select" label="経由路線" value={value} onChange={onChange} options={options} disabled={isDisabled} placeholder="経由路線を選択" getKey={option => option.name} getLabel={option => option.name.split("_")[0]} /></div>;
+}
