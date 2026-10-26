@@ -88,6 +88,13 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
   page,
 }) => {
   await isolateServices(page);
+  await page.addInitScript(() => {
+    const violations: string[] = [];
+    Object.assign(window, { cspViolations: violations });
+    document.addEventListener("securitypolicyviolation", event => {
+      violations.push(`${event.effectiveDirective}: ${event.blockedURI}`);
+    });
+  });
   let workers = 0;
   page.on("worker", () => workers++);
   const errors: string[] = [];
@@ -123,6 +130,7 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
   expect(workers).toBe(1);
   expect(errors).toEqual([]);
+  expect(await page.evaluate(() => (window as unknown as { cspViolations: string[] }).cspViolations)).toEqual([]);
 });
 
 test("臨時駅を含む経路を定期券として計算できる", async ({
