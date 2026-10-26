@@ -25,12 +25,12 @@ for (const path of ["/fare/ticket", "/split/auto/ticket"]) {
     const last = page.locator(`[role=option][aria-posinset="${total}"]`);
     await expect(last).toBeInViewport();
     const active = await input.getAttribute("aria-activedescendant");
-    // Apple環境ではreact-selectがライブ領域で読み上げる。
-    if (active) expect(active).toBe(await last.getAttribute("id"));
+    expect(active).toBe(await last.getAttribute("id"));
     await expect(last).toHaveClass(/is-focused/);
     const name = (await last.innerText()).split("\n").at(-1)!;
     await input.press("Enter");
     await expect(input).toHaveValue(name);
+    await expect(input).toBeFocused();
     if (path === "/split/auto/ticket") return;
     await input.fill("し");
     await input.press("Home");
@@ -110,11 +110,7 @@ test("除外駅の多数候補も仮想化し、変換中のEnterでは確定し
 });
 
 test("読み上げ対象を画面外でも保持し、ホイール操作で戻さない", async ({ page }) => {
-  // Apple以外のreact-selectが使うaria-activedescendantも確認する。
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, "platform", { get: () => "Win32" });
-    Object.defineProperty(navigator, "userAgentData", { get: () => ({ platform: "Windows" }) });
-  });
+  // aria-activedescendantが参照する候補をスクロール後も保持する。
   await page.route("**/*", route => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
   await page.goto("/fare/ticket");
   await expect(page.locator('[data-calculator-ready="true"]')).toBeVisible();

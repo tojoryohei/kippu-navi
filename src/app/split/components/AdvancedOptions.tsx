@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import Select from "react-select";
+import ChoiceSelect from "@/components/ChoiceSelect";
 import { RiArrowDownSLine, RiCloseFill } from "react-icons/ri";
 import type { Station } from "@/app/types";
 import SelectStations from "@/app/split/components/SelectStations";
@@ -49,18 +49,14 @@ export default function AdvancedOptions({ stationSelection = "search", stationSt
           ) : (
             <>
               <label htmlFor="max-splits" className="block text-sm font-semibold text-slate-800">最大分割数</label>
-              <Select
-                instanceId="max-splits"
+              <ChoiceSelect
                 inputId="max-splits"
-                aria-describedby="max-splits-help"
+                describedBy="max-splits-help"
                 className="station-select split-options-search split-count-select min-w-0"
-                classNamePrefix="station-select"
                 options={splitOptions}
-                value={splitOptions.find(option => option.value === maxSplits)}
+                value={splitOptions.find(option => option.value === maxSplits) ?? null}
                 onChange={option => { if (option) onMaxSplitsChange(option.value); }}
-                isSearchable={false}
-                isClearable={false}
-                components={{ DropdownIndicator: null, IndicatorSeparator: null }}
+                getLabel={option => option.label}
               />
               <p id="max-splits-help" className="text-sm leading-relaxed text-slate-600">1回の分割で乗車券・定期券は2枚になります。</p>
             </>

@@ -3,7 +3,6 @@ import RouteSplitOptions from "@/app/split/components/RouteSplitOptions";
 import SplitResults from "@/app/split/components/SplitResults";
 import type { SplitFareResult } from "@/app/types";
 import { useForm, Controller, type SubmitHandler, useFieldArray, useWatch } from "react-hook-form";
-import type { SingleValue } from "react-select";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowUpDownLine } from "react-icons/ri";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
@@ -648,8 +647,8 @@ export default function Form({
         );
 
     const handleFieldChange = (
-        value: SingleValue<Station | Line>,
-        fieldOnChange: (value: SingleValue<Station | Line>) => void,
+        value: Station | Line | null,
+        fieldOnChange: (value: Station | Line | null) => void,
         resetLogic: () => void
     ) => {
         fieldOnChange(value);
