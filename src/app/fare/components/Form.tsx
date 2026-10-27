@@ -270,7 +270,7 @@ export default function Form({
                 searchSurface: isRouteSplit ? "split" : "fare",
                 searchUrl: buildSearchUrl(window.location),
                 originStation: data.startStation?.name ?? "",
-                destinationStation: routeStations.at(-1) ?? "",
+                destinationStation: routeStations[routeStations.length - 1] ?? "",
                 routeStations,
                 routeLines,
                 months: monthsMap[data.searchType],
