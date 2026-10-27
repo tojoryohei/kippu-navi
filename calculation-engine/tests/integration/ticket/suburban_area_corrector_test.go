@@ -1,10 +1,12 @@
 package ticket_test
 
 import (
+	"errors"
 	"io"
 	"reflect"
 	"testing"
 
+	"calculation-engine/internal/domain"
 	"calculation-engine/internal/graphdata"
 	"calculation-engine/internal/ticket/infra/graphio"
 	"calculation-engine/internal/ticket/usecase"
@@ -46,7 +48,14 @@ func TestSuburbanAreaCorrector_Integration(t *testing.T) {
 		inputNames     []string
 		expectedNames  []string
 		expectComplete bool
+		expectError    error
 	}{
+		{
+			name:           "近郊区間内の同駅発着は要求区間誤り",
+			inputNames:     []string{"神田", "秋葉原", "御茶ノ水", "神田"},
+			expectComplete: true,
+			expectError:    domain.ErrRequestedSection,
+		},
 		{
 			name:           "東京近郊区間完結の場合、最短経路に補正される",
 			inputNames:     []string{"神田", "秋葉原", "御茶ノ水"}, // 秋葉原経由
@@ -74,6 +83,12 @@ func TestSuburbanAreaCorrector_Integration(t *testing.T) {
 
 			// 補正処理のテスト
 			gotPath, err := c.Correct(inputPath, g)
+			if tc.expectError != nil {
+				if !errors.Is(err, tc.expectError) {
+					t.Fatalf("エラー = %v, 期待値 %v", err, tc.expectError)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("予期しないエラーが発生しました: %v", err)
 			}
