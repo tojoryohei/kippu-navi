@@ -87,6 +87,10 @@ func (c *RouteTicketCalculator) calculate(path []int, steps []ViaStep, mode stri
 	if err != nil {
 		return fare, nil, &RouteCorrectionError{Err: err}
 	}
+	if mode == "cheapest" {
+		// 最安の券面で在来線へ置換する区間は、入力時の新幹線ではなく採用経路で判定する。
+		suburban = cheapestSuburbanPath(corrected, c.graph)
+	}
 	res, transformed, err := c.evaluator.ExecuteWithMode(corrected, 0, evaluationMode)
 	if err != nil {
 		return fare, nil, err

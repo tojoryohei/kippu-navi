@@ -1,10 +1,33 @@
 package usecase
 
-import "slices"
+import (
+	"calculation-engine/internal/ticket/graph"
+	"slices"
+)
 
-// 最安の経由印字専用。単独駅を通過する完全な駅列だけを置換する。
-// 運賃計算の駅列や分割候補は変更せず、単独駅発着・途中折返しは維持する。
+// 最安の経由印字は、有効日数・途中下車制限と同じ在来線置換を使います。
 func conventionalThroughVia(steps []ViaStep) []ViaStep {
+	printed, _ := conventionalThroughViaAndPath(steps)
+	return printed
+}
+
+// 最安で採用した物理経路を、経由印字と同じ在来線置換で近郊区間判定へ渡します。
+// 運賃計算用の仮想ゾーンを含めず、単独駅発着や重複によって残る新幹線は維持します。
+func cheapestSuburbanPath(path []int, g graph.Graph) []int {
+	_, names := conventionalThroughViaAndPath(cheapestViaSteps(g, path))
+	result := make([]int, len(names))
+	for i, name := range names {
+		id, ok := g.GetID(name)
+		if !ok {
+			return slices.Clone(path)
+		}
+		result[i] = id
+	}
+	return result
+}
+
+// 単独駅を通過する完全な駅列だけを置換し、印字用の経由と省略前の全駅列を返します。
+func conventionalThroughViaAndPath(steps []ViaStep) ([]ViaStep, []string) {
 	rules := []struct {
 		stations []string
 		code     string
@@ -28,12 +51,14 @@ func conventionalThroughVia(steps []ViaStep) []ViaStep {
 	}
 	// 印字を省略する前の全駅列で比較できるよう、駅名に一時的なIDを割り当てます。
 	ids := map[string]int{}
+	namesByID := []string{}
 	idFor := func(name string) int {
 		if id, ok := ids[name]; ok {
 			return id
 		}
 		id := len(ids)
 		ids[name] = id
+		namesByID = append(namesByID, name)
 		return id
 	}
 	original := make([]int, len(steps))
@@ -116,9 +141,10 @@ func conventionalThroughVia(steps []ViaStep) []ViaStep {
 			i++
 		}
 	}
-	if _, err := resolveConventionalReplacements(original, blocks, nil, nil); err != nil {
+	resolved, err := resolveConventionalReplacements(original, blocks, nil, nil)
+	if err != nil {
 		// 任意の印字用置換で成立しない場合は、元の経由を保持します。
-		return slices.Clone(steps)
+		return slices.Clone(steps), viaStepNames(steps)
 	}
 	result := make([]ViaStep, 0, len(steps))
 	at := 0
@@ -131,5 +157,9 @@ func conventionalThroughVia(steps []ViaStep) []ViaStep {
 		}
 		at = block.end
 	}
-	return append(result, steps[at:]...)
+	names := make([]string, len(resolved))
+	for i, id := range resolved {
+		names[i] = namesByID[id]
+	}
+	return append(result, steps[at:]...), names
 }
