@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.6...kippu-navi-v5.3.7) (2026-10-27)
+
+
+### Bug Fixes
+
+* 鹿島線の東京近郊区間設定を修正 ([#943](https://github.com/tojoryohei/kippu-navi/issues/943)) ([02dcee1](https://github.com/tojoryohei/kippu-navi/commit/02dcee1ed8bf908180565c97af3a2a2e2b714f77))
+
 ## [5.3.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.5...kippu-navi-v5.3.6) (2026-10-27)
 
 
