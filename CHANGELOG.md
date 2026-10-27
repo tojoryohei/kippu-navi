@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.5...kippu-navi-v5.3.6) (2026-10-27)
+
+
+### Bug Fixes
+
+* 近郊区間内の同駅発着を要求区間誤りにする ([#941](https://github.com/tojoryohei/kippu-navi/issues/941)) ([8b06b0b](https://github.com/tojoryohei/kippu-navi/commit/8b06b0beec33f00ecd3c6f7587d3aca8b8db3504))
+
 ## [5.3.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.4...kippu-navi-v5.3.5) (2026-10-26)
 
 
