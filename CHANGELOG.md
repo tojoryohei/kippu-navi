@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.4.0...kippu-navi-v5.4.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* 最安経路の在来線置換後に有効日数と途中下車制限を判定 ([#948](https://github.com/tojoryohei/kippu-navi/issues/948)) ([f30d8ea](https://github.com/tojoryohei/kippu-navi/commit/f30d8eac938b55df42ab0aed765c1e58a0dff0a0))
+
 ## [5.4.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.7...kippu-navi-v5.4.0) (2026-10-27)
 
 
