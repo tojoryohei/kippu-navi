@@ -31,6 +31,9 @@ func (s *SuburbanAreaCorrector) Correct(path []int, g graph.Graph) ([]int, error
 	if !ok || jrArea == domain.SuburbanAreaNone || len(segments) == 0 {
 		return path, nil
 	}
+	if path[0] == path[len(path)-1] {
+		return nil, domain.ErrRequestedSection
+	}
 
 	segmentCandidates := make([][][]int, 0, len(segments))
 	for _, segment := range segments {
