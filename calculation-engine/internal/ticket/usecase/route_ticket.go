@@ -109,6 +109,7 @@ func (c *RouteTicketCalculator) calculate(path []int, steps []ViaStep, mode stri
 		Fare:             res.TotalAmount(),
 		ValidDays:        CalculateTicketValidDays(res.TotalPathEigyoKilo, suburban, c.graph),
 	}
+	fare.StopoverRestriction = CalculateStopoverRestriction(res.TotalPathEigyoKilo, suburban, c.graph, c.zones, fare.DepartureStation, fare.ArrivalStation)
 	return fare, res, nil
 }
 

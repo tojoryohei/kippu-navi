@@ -1105,10 +1105,13 @@ export default function Form({
                             </div>
                         </div>
                         <span>経由：{result.printedViaLines.length === 0 ? "ーーー" : result.printedViaLines.join("・")}</span>
-                        <span className="flex justify-between items-center mt-2">
-                            <span>{result.validDays + " 日間有効"}</span>
-                            <span className="text-xl">¥{result.fare > 0 ? result.fare.toLocaleString() : "***"}</span>
-                        </span>
+                        <div className="flex justify-between items-start mt-2 gap-2">
+                            <div className="min-w-0">
+                                <div>{result.validDays + " 日間有効"}</div>
+                                {result.stopoverRestriction && <div className="ml-3 shrink-0">{result.stopoverRestriction}</div>}
+                            </div>
+                            <span className="text-xl shrink-0">¥{result.fare > 0 ? result.fare.toLocaleString() : "***"}</span>
+                        </div>
                     </div>
                 )}
 
