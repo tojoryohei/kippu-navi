@@ -183,3 +183,34 @@ func TestCheapestThroughReplacementDuplicate(t *testing.T) {
 		}
 	}
 }
+
+func TestCheapestKyotoAioiTicketConditions(t *testing.T) {
+	amount, g := setupTicketAmount(t)
+	zones, err := graphio.LoadSpecialZones()
+	if err != nil {
+		t.Fatal(err)
+	}
+	evaluator := usecase.NewTicketSegmentEvaluator(amount, usecase.NewSpecialZoneApplier(g, zones), usecase.NewPostZoneCleanupCorrector(), zones, g)
+	corrector := usecase.NewPipelineCorrector(usecase.NewShinkansenOverlapCorrector(), usecase.NewRule43_2Corrector(), usecase.NewRule69Corrector(), usecase.NewRule157Corrector())
+	calculator := usecase.NewRouteTicketCalculator(g, corrector, evaluator, nil, zones)
+	steps := []usecase.ViaStep{{StationName: "京都", LineName: "シンカ"}, {StationName: "新大阪", LineName: "シンカ"}, {StationName: "新神戸", LineName: "シンカ"}, {StationName: "西明石", LineName: "シンカ"}, {StationName: "姫路", LineName: "シンカ"}, {StationName: "相生"}}
+	path, err := calculator.ResolvePath(steps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, mode := range []string{"normal", "cheapest", "uncorrect"} {
+		t.Run(mode, func(t *testing.T) {
+			got, _, err := calculator.Calculate(path, steps, mode)
+			if err != nil {
+				t.Fatal(err)
+			}
+			days, restriction := 2, ""
+			if mode == "cheapest" {
+				days, restriction = 1, "下車前途無効"
+			}
+			if got.ValidDays != days || got.StopoverRestriction != restriction {
+				t.Fatalf("有効日数・途中下車制限が不正です: %+v", got)
+			}
+		})
+	}
+}
