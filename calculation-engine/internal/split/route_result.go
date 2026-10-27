@@ -1,12 +1,13 @@
 package split
 
 type RouteFare struct {
-	TotalEigyoKilo   int      `json:"totalEigyoKilo"`
-	DepartureStation string   `json:"departureStation"`
-	ArrivalStation   string   `json:"arrivalStation"`
-	PrintedViaLines  []string `json:"printedViaLines"`
-	Fare             int      `json:"fare"`
-	ValidDays        int      `json:"validDays"`
+	TotalEigyoKilo      int      `json:"totalEigyoKilo"`
+	DepartureStation    string   `json:"departureStation"`
+	ArrivalStation      string   `json:"arrivalStation"`
+	PrintedViaLines     []string `json:"printedViaLines"`
+	Fare                int      `json:"fare"`
+	ValidDays           int      `json:"validDays"`
+	StopoverRestriction string   `json:"stopoverRestriction"`
 }
 
 type RouteSplitSegment struct {

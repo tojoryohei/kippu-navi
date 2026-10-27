@@ -49,6 +49,7 @@ export interface TicketFareResult extends FareCalculationSummary {
     arrivalStation: string;
     fare: number;
     validDays: number;
+    stopoverRestriction?: string;
 }
 
 export interface PassFareResult extends FareCalculationSummary {

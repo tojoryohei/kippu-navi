@@ -66,6 +66,9 @@ func TestRouteSplitExtendsTicketsButNeverSplitBoundaries(t *testing.T) {
 			if err != nil || !reflect.DeepEqual(baseline, got.Normal) {
 				t.Fatalf("基準運賃が一致しません: %+v %+v %v", baseline, got.Normal, err)
 			}
+			if baseline.StopoverRestriction != "下車前途無効" || segment.Fare.StopoverRestriction != "下車前途無効" {
+				t.Fatalf("短距離券の途中下車制限がありません: %+v %+v", baseline, segment.Fare)
+			}
 		})
 	}
 }
