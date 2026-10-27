@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.7...kippu-navi-v5.4.0) (2026-10-27)
+
+
+### Features
+
+* 乗車券の有効日数の下に途中下車制限を表示 ([#945](https://github.com/tojoryohei/kippu-navi/issues/945)) ([2b51170](https://github.com/tojoryohei/kippu-navi/commit/2b51170a0c3f425bcb2a9479946d2fb904113943))
+
 ## [5.3.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.3.6...kippu-navi-v5.3.7) (2026-10-27)
 
 
