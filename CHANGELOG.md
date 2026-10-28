@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.4.1...kippu-navi-v5.5.0) (2026-10-28)
+
+
+### Features
+
+* エラー診断とWorkerの共有自動復旧を追加 ([#951](https://github.com/tojoryohei/kippu-navi/issues/951)) ([36ea862](https://github.com/tojoryohei/kippu-navi/commit/36ea86257b046b9db7131da87ea5d02340459d43))
+
 ## [5.4.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.4.0...kippu-navi-v5.4.1) (2026-10-27)
 
 
