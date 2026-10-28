@@ -1,3 +1,5 @@
+import { createResourceDiagnostics } from "@/lib/resource-diagnostics";
+import { exceptionDiagnostics } from "@/lib/error-diagnostics";
 import { appendSplitResults } from "@/lib/append-split-results";
 import { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import { useForm, Controller, type SubmitHandler, useWatch } from "react-hook-form";
@@ -203,7 +205,7 @@ export default function SplitForm({
     const apiAbortRef = useRef<AbortController | null>(null);
     const localWorkerRef = useRef<EngineClient | null>(null);
     useEffect(() => () => {
-        apiAbortRef.current?.abort();
+        apiAbortRef.current?.abort("disposed");
         localWorkerRef.current?.terminate();
         localWorkerRef.current = null;
     }, []);
@@ -221,7 +223,7 @@ export default function SplitForm({
         if (!data.startStation?.name || !data.endStation?.name) return;
         const shouldRestartEngine = isRetryableEngineError(pendingErrorRef.current);
 
-        apiAbortRef.current?.abort();
+        apiAbortRef.current?.abort("superseded");
         const abort = new AbortController();
         apiAbortRef.current = abort;
         const stopLocalWorker = () => {
@@ -321,6 +323,7 @@ export default function SplitForm({
             });
         };
         const apiTimeout = createAbortTimeout(abort.signal);
+        const apiDiagnostics = createResourceDiagnostics();
         try {
             if (!navigator.onLine) { apiTimeout.dispose(); await runLocally(); return; }
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
@@ -347,19 +350,21 @@ export default function SplitForm({
             }
             let apiRes: Response;
             try {
-                apiRes = await fetchWithNetworkRetry(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: apiTimeout.signal });
+                apiRes = await fetchWithNetworkRetry(`${getApiUrl(endpoint)}?${query.toString()}`, { signal: apiTimeout.signal }, apiDiagnostics);
             } catch (fetchError) {
                 if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
                 throw new SearchOperationError({ message: fetchError instanceof Error ? fetchError.message : String(fetchError), code: "api_network_failed", source: "api", stage: "api_fetch", capability, exceptionName: fetchError instanceof Error ? fetchError.name : "Error", retryable: true, retryCount: 0, workerRestartCount: 0 });
             }
             if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
+            searchContext.requestId = apiRes.headers.get("X-Request-ID") || undefined;
             if (apiRes.status === 408 || apiRes.status === 429 || apiRes.status >= 500) {
                 throw createApiHttpError(apiRes.status, capability);
             }
-            searchContext.requestId = apiRes.headers.get("X-Request-ID") || undefined;
             let rawResponse: unknown;
             try {
-                rawResponse = await apiRes.json();
+                rawResponse = await apiDiagnostics.measure(apiRes.url || endpoint, "api_response_parse", 1, () => apiRes.json(), {
+                    status: () => apiRes.status, timedOut: () => apiTimeout.didTimeout(),
+                });
             } catch (parseError) {
                 if (apiTimeout.didTimeout()) throw createApiTimeoutError(capability);
                 if (!apiRes.ok) throw createApiHttpError(apiRes.status, capability);
@@ -404,12 +409,24 @@ export default function SplitForm({
                 });
             }
         } catch (err: unknown) {
+            const snapshot = apiDiagnostics.snapshot();
+            if (err instanceof SearchOperationError && err.details.source === "api") {
+                const fetches = snapshot.resources?.filter(resource => resource.phase === "api_fetch") || [];
+                err.details.retryCount = Math.max(0, fetches.length - 1);
+                err.details.diagnostics = { ...snapshot, exception: snapshot.resources?.slice().reverse().find(resource => resource.exception)?.exception || exceptionDiagnostics(err),
+                    abortReason: apiTimeout.didTimeout() ? "timeout" : abort.signal.aborted ? (abort.signal.reason === "disposed" ? "disposed" : "superseded") : undefined };
+            }
             apiTimeout.dispose();
             if (abort.signal.aborted) return;
             const details = err instanceof SearchOperationError ? err.details : null;
             if (details && (details.code === "api_network_failed" || details.code === "api_timeout" ||
                 (details.code === "api_http_failed" && (details.httpStatus === 408 || details.httpStatus === 429 || (details.httpStatus || 0) >= 500)))) {
-                try { await runLocally(); return; } catch (localError) { err = localError; }
+                searchContext.apiFailure = details;
+                searchContext.localFallbackOutcome = "started";
+                try { await runLocally(); return; } catch (localError) {
+                    searchContext.localFallbackOutcome = "failure";
+                    err = localError;
+                }
             }
             if (abort.signal.aborted) return;
             stopLocalWorker();

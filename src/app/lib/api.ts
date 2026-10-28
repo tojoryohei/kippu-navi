@@ -68,10 +68,20 @@ function waitForRetry(delayMs: number, signal: AbortSignal | undefined): Promise
     });
 }
 
-export async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestInit, diagnostics?: ReturnType<typeof import("../../lib/resource-diagnostics").createResourceDiagnostics>): Promise<Response> {
     for (let attempt = 0; attempt <= NETWORK_RETRY_DELAYS_MS.length; attempt++) {
         try {
-            const response = await fetch(input, init);
+            let status: number | undefined;
+            const run = async () => {
+                const response = await fetch(input, init);
+                status = response.status;
+                return response;
+            };
+            const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+            const response = diagnostics ? await diagnostics.measure(url, "api_fetch", attempt + 1, run, {
+                status: () => status,
+                timedOut: () => init?.signal?.reason?.name === "TimeoutError",
+            }) : await run();
             const retryableStatus = response.status === 408 || response.status >= 500;
             if (!retryableStatus || attempt === NETWORK_RETRY_DELAYS_MS.length) return response;
             await waitForRetry(NETWORK_RETRY_DELAYS_MS[attempt], init?.signal ?? undefined);

@@ -52,6 +52,39 @@ export type SearchErrorStage =
   | "calculation"
   | "calculation_result_parse";
 
+export interface ExceptionDiagnostics {
+  message?: string;
+  name?: string;
+  stack?: string;
+  filename?: string;
+  line?: number;
+  column?: number;
+}
+
+export interface ResourceAttempt {
+  url: string;
+  phase: string;
+  attempt: number;
+  elapsedMs: number;
+  status?: number;
+  timedOut?: boolean;
+  outcome: "success" | "failure";
+  exception?: ExceptionDiagnostics;
+  fallbackFrom?: string;
+}
+
+export interface SearchDiagnostics {
+  exception?: ExceptionDiagnostics;
+  workerUrl?: string;
+  workerLocation?: string;
+  generation?: number;
+  phases?: Record<string, { phase: string; state: "started" | "completed"; elapsedMs: number }>;
+  resources?: ResourceAttempt[];
+  attempts?: Array<{ code: SearchErrorCode; stage: SearchErrorStage; diagnostics?: SearchDiagnostics }>;
+  recoverySuppressed?: "active_requests";
+  abortReason?: "timeout" | "superseded" | "disposed" | "aborted";
+}
+
 export interface SearchErrorDetails {
   message: string;
   code: SearchErrorCode;
@@ -67,6 +100,7 @@ export interface SearchErrorDetails {
   pathCount?: number;
   invalidPathCount?: number;
   minimumPathLength?: number;
+  diagnostics?: SearchDiagnostics;
 }
 
 const BUSINESS_ERROR_CODES = new Set<SearchErrorCode>(["duplicate_route", "path_invalid", "fare_unregistered"]);

@@ -2,6 +2,37 @@ import { test, expect } from "@playwright/test";
 
 const paths = ["/split/auto/ticket", "/split/auto/pass", "/split/auto/ic-pass", "/fare/ticket", "/fare/pass", "/split/route/ticket", "/split/route/pass"];
 
+test("Workerの初回読込失敗から一度だけ復旧し実WASMで計算する", async ({ page, context }) => {
+  let loads = 0;
+  await context.route("**/*", route => {
+    const url = new URL(route.request().url());
+    if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return route.abort();
+    if (/\/split\.worker[^/]*\.js$/.test(url.pathname) && ++loads === 1) return route.abort();
+    return route.continue();
+  });
+  await page.addInitScript(() => {
+    const state = window as unknown as { engineDiagnostics: { urls: string[]; locations: string[] } };
+    state.engineDiagnostics = { urls: [], locations: [] };
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super(url, options);
+        state.engineDiagnostics.urls.push(String(url));
+        this.addEventListener("message", event => {
+          if (event.data.type === "ready") state.engineDiagnostics.locations.push(event.data.diagnostics.workerLocation);
+        });
+      }
+    };
+  });
+  await page.goto("/fare/ticket?" + new URLSearchParams({ route: "東京[東海道]品川", mode: "normal" }));
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
+  const info = await page.evaluate(() => (window as unknown as { engineDiagnostics: { urls: string[]; locations: string[] } }).engineDiagnostics);
+  expect(info.urls).toHaveLength(2);
+  expect(info.urls[0]).toMatch(/\/_astro\/split\.worker.+\.js$/);
+  expect(info.urls[1]).toBe(info.urls[0]);
+  expect(info.locations.some(location => location.endsWith(info.urls[1]))).toBe(true);
+});
+
 test("Reactの初期化途中に記事へ移動してもエラーにならない", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));

@@ -5,6 +5,9 @@ import { buildSearchCompletedProperties, buildSearchUrl, type SearchAnalyticsInp
 import { initializeGoogleAnalytics, trackGooglePageView } from "@/lib/google-analytics";
 import { classifyCalculationError, isBusinessSearchError, SearchOperationError, type EngineCapability } from "@/lib/search-errors";
 import { sentryDataCollection } from "@/lib/sentry-data-collection";
+import { copyDiagnostics, exceptionDiagnostics } from "@/lib/error-diagnostics";
+import { browserDiagnostics, initializeBrowserDiagnostics } from "@/lib/browser-diagnostics";
+import type { SearchErrorDetails } from "@/lib/search-errors";
 
 const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY;
 const googleAnalyticsId = import.meta.env.PUBLIC_GOOGLE_ANALYTICS_ID;
@@ -46,6 +49,7 @@ function initialize() {
   }
   initializeGoogleAnalytics(googleAnalyticsId, window, document);
   if (sentryDsn) {
+    initializeBrowserDiagnostics();
     Sentry.init({
       dsn: sentryDsn,
       tunnel: "/monitoring",
@@ -54,6 +58,8 @@ function initialize() {
       dataCollection: sentryDataCollection,
       sendClientReports: false,
       tracesSampleRate: 0,
+      // 試行履歴内の元例外まで構造化contextを保持する。
+      normalizeDepth: 10,
       // Astro can reject an older native View Transition when a newer
       // navigation starts. This is an expected navigation race, not an app
       // failure.
@@ -67,6 +73,7 @@ function initialize() {
         return defaultIntegrations.filter(integration => integration.name !== "BrowserSession");
       },
       beforeSend(event) {
+        event.contexts = { ...event.contexts, browser_diagnostics: browserDiagnostics() };
         const exception = event.exception?.values?.[0];
         const frames = exception?.stacktrace?.frames || [];
         // Sentry's browser-extension inbound filter is enabled. These
@@ -122,6 +129,8 @@ export interface SearchEventContext {
   search: SearchAnalyticsInput;
   readiness?: EngineReadiness;
   requestId?: string;
+  apiFailure?: SearchErrorDetails;
+  localFallbackOutcome?: "started" | "success" | "failure";
 }
 
 export function createSearchId() {
@@ -131,11 +140,17 @@ export function createSearchId() {
 export function normalizeSearchError(error: unknown, capability: EngineCapability): SearchOperationError {
   if (error instanceof SearchOperationError) return error;
   const exception = error instanceof Error ? error : new Error(String(error));
-  return new SearchOperationError({ message: exception.message, code: classifyCalculationError(exception.message), source: "client", stage: "calculation", exceptionName: exception.name, capability, retryable: false, retryCount: 0, workerRestartCount: 0 });
+  return new SearchOperationError({ message: exception.message, code: classifyCalculationError(exception.message), source: "client", stage: "calculation", exceptionName: exception.name, capability, retryable: false, retryCount: 0, workerRestartCount: 0, diagnostics: { exception: exceptionDiagnostics(error) } });
+}
+
+function attachErrorDiagnostics(scope: Sentry.Scope, details: SearchErrorDetails) {
+  const { diagnostics, ...summary } = details;
+  scope.setContext("search_error", { ...summary, message: summary.message.slice(0, 1_000) });
+  if (diagnostics) scope.setContext("engine_diagnostics", { ...copyDiagnostics(diagnostics) });
 }
 
 function completedSearchProperties(context: SearchEventContext, outcome: SearchOutcome, errorCode?: string, result?: SearchResultAnalytics) {
-  return buildSearchCompletedProperties({
+  return { ...buildSearchCompletedProperties({
     searchType: context.searchType,
     calculationMode: context.calculationMode,
     capability: context.capability,
@@ -147,10 +162,11 @@ function completedSearchProperties(context: SearchEventContext, outcome: SearchO
     errorCode,
     search: context.search,
     result,
-  });
+  }), ...(context.apiFailure ? { api_fallback_outcome: context.localFallbackOutcome, api_error_code: context.apiFailure.code } : {}) };
 }
 
 export function captureSearchError(error: unknown, context: SearchEventContext) {
+  if (context.apiFailure) context.localFallbackOutcome = "failure";
   const normalized = normalizeSearchError(error, context.capability);
   const details = normalized.details;
   const businessError = isBusinessSearchError(details);
@@ -160,6 +176,9 @@ export function captureSearchError(error: unknown, context: SearchEventContext) 
     initialize();
     if (sentryDsn) {
       Sentry.withScope(scope => {
+        attachErrorDiagnostics(scope, details);
+        if (context.apiFailure) scope.setContext("api_fallback", { failure: { ...context.apiFailure, diagnostics: copyDiagnostics(context.apiFailure.diagnostics) }, outcome: context.localFallbackOutcome });
+        if (context.readiness?.initialError) scope.setContext("engine_recovery", { ...context.readiness, diagnostics: copyDiagnostics(context.readiness.diagnostics) });
         scope.setTags({ error_code: details.code, error_stage: details.stage, capability: details.capability || context.capability, http_status: details.httpStatus?.toString() || "none", retry_count: details.retryCount.toString(), worker_restart_count: details.workerRestartCount.toString(), app_version: __APP_VERSION__, engine_version: __WASM_VERSION__, deploy_commit: __DEPLOY_COMMIT__ });
         if (details.elapsedMs !== undefined) scope.setTag("elapsed_ms", details.elapsedMs.toString());
         if (context.requestId) scope.setTag("request_id", context.requestId);
@@ -177,6 +196,7 @@ export function captureEngineRecovery(readiness: EngineReadiness, context: Searc
 }
 
 export function captureSuccessfulSearch(context: SearchEventContext, result: SearchResultAnalytics) {
+  if (context.apiFailure) context.localFallbackOutcome = "success";
   analytics.capture("search_completed", completedSearchProperties(context, "success", undefined, result));
 }
 
@@ -184,6 +204,8 @@ export function captureUnhandledError(error: unknown, component: string) {
   initialize();
   if (!sentryDsn) return;
   Sentry.withScope(scope => {
+    if (error instanceof SearchOperationError) attachErrorDiagnostics(scope, error.details);
+    else scope.setContext("exception_diagnostics", { ...exceptionDiagnostics(error) });
     scope.setTag("component", component);
     scope.setTags(releaseProperties());
     Sentry.captureException(error);

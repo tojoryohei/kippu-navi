@@ -1,7 +1,9 @@
 import { createSplitResultStream } from "@/lib/split-result-stream";
 /// <reference lib="webworker" />
 import * as Sentry from "@sentry/browser";
-import { classifyCalculationError, normalizeCalculationError } from "@/lib/search-errors";
+import { classifyCalculationError, normalizeCalculationError, type SearchDiagnostics, type SearchErrorDetails } from "@/lib/search-errors";
+import { exceptionDiagnostics } from "@/lib/error-diagnostics";
+import { createResourceDiagnostics } from "@/lib/resource-diagnostics";
 import { sentryDataCollection } from "@/lib/sentry-data-collection";
 
 // Blob Worker環境でも正しいオリジンを抽出するヘルパー関数
@@ -27,6 +29,19 @@ function getBaseOrigin(): string {
 }
 
 const baseOrigin = getBaseOrigin();
+const resourceDiagnostics = createResourceDiagnostics(value => {
+  postMessage({ type: 'initialization_progress', diagnostics: { ...value, workerLocation: self.location.href } });
+});
+function workerDiagnostics(error?: unknown): SearchDiagnostics {
+  return { ...resourceDiagnostics.snapshot(), workerLocation: self.location.href, exception: error === undefined ? undefined : exceptionDiagnostics(error) };
+}
+function firstAssetError(capability: 'ticket' | 'pass'): SearchErrorDetails | undefined {
+  const resources = resourceDiagnostics.snapshot().resources || [];
+  const failure = resources.find(resource => resource.outcome === 'failure' && !resource.url.includes(capability === 'ticket' ? 'pass_graph' : 'ticket_graph'));
+  if (!failure) return undefined;
+  const stage = failure.phase.startsWith('ticket_') ? 'ticket_graph_fetch' : failure.phase.startsWith('pass_') ? 'pass_graph_fetch' : failure.phase === 'wasm_fetch' ? 'wasm_fetch' : 'worker_bootstrap';
+  return { message: failure.exception?.message || 'エンジン資材の取得を再試行しました。', code: 'engine_asset_fetch_failed', source: 'worker', stage, capability, exceptionName: failure.exception?.name, httpStatus: failure.status, retryable: true, retryCount: failure.attempt - 1, workerRestartCount: 0, diagnostics: { ...workerDiagnostics(), exception: failure.exception } };
+}
 const sentryDsn = import.meta.env.PUBLIC_SENTRY_DSN;
 if (sentryDsn) {
   Sentry.init({
@@ -58,18 +73,18 @@ async function getCurrentEngineBaseUrl() {
     return currentEngineBaseUrl;
   }
 
-  currentEngineBaseUrlPromise = fetch(`${origin}/deployment.json`, { cache: 'no-store' })
-    .then(async response => {
-      if (!response.ok) return null;
-      const deployment = await response.json() as { enginePath?: unknown };
-      if (typeof deployment.enginePath !== 'string') return null;
-
-      const engineUrl = new URL(deployment.enginePath, `${origin}/deployment.json`);
-      if (engineUrl.origin !== origin || !/^\/engine\/[a-f0-9]{64}$/.test(engineUrl.pathname)) return null;
-
-      return engineUrl.href.replace(/\/$/, '');
-    })
-    .catch(() => null);
+  const manifestUrl = `${origin}/deployment.json`;
+  let status: number | undefined;
+  currentEngineBaseUrlPromise = resourceDiagnostics.measure(manifestUrl, 'deployment_manifest', 1, async () => {
+    const response = await fetch(manifestUrl, { cache: 'no-store' });
+    status = response.status;
+    if (!response.ok) throw new Error(`配信情報の取得に失敗しました (${status})`);
+    const deployment = await response.json() as { enginePath?: unknown };
+    if (typeof deployment.enginePath !== 'string') throw new Error('配信情報のenginePathが不正です。');
+    const engineUrl = new URL(deployment.enginePath, manifestUrl);
+    if (engineUrl.origin !== origin || !/^\/engine\/[a-f0-9]{64}$/.test(engineUrl.pathname)) throw new Error('配信情報のenginePathが不正です。');
+    return engineUrl.href.replace(/\/$/, '');
+  }, { status: () => status }).catch(() => null);
 
   currentEngineBaseUrl = await currentEngineBaseUrlPromise;
   currentEngineBaseUrlPromise = undefined;
@@ -134,6 +149,7 @@ interface InitFailure {
   capability?: 'ticket' | 'pass';
   retryable: boolean;
   retryCount: number;
+  diagnostics?: SearchDiagnostics;
 }
 
 const RETRY_DELAYS_MS = [150, 500];
@@ -145,31 +161,35 @@ function isRetryableStatus(status: number) {
 async function loadWasmRuntime() {
   const runtimeUrl = `${engineBaseUrl}/wasm_exec.js`;
   try {
-    await import(/* @vite-ignore */ runtimeUrl);
+    await resourceDiagnostics.measure(runtimeUrl, 'runtime_import', 1, () => import(/* @vite-ignore */ runtimeUrl));
     return;
   } catch (error) {
     const currentBaseUrl = await getCurrentEngineBaseUrl();
     const fallbackUrl = currentBaseUrl ? `${currentBaseUrl}/wasm_exec.js` : null;
     if (!fallbackUrl || fallbackUrl === runtimeUrl) throw error;
-    await import(/* @vite-ignore */ fallbackUrl);
+    await resourceDiagnostics.measure(fallbackUrl, 'runtime_import', 1, () => import(/* @vite-ignore */ fallbackUrl), { fallbackFrom: runtimeUrl });
   }
 }
 
-async function fetchAssetWithRetry(url: string) {
+async function fetchAssetWithRetry(url: string, phase: string, fallbackFrom?: string) {
   let lastError: unknown;
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), ASSET_REQUEST_TIMEOUT_MS);
+    let timedOut = false;
+    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, ASSET_REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch(url, { signal: controller.signal });
-      if (response.ok) return { response, retryCount: attempt };
-      const error = new Error(`${url}: ${response.status} ${response.statusText}`);
-      Object.assign(error, { httpStatus: response.status, retryCount: attempt });
-      if (!isRetryableStatus(response.status) || attempt === RETRY_DELAYS_MS.length) throw error;
-      lastError = error;
+      let status: number | undefined;
+      const response = await resourceDiagnostics.measure(url, phase, attempt + 1, async () => {
+        const response = await fetch(url, { signal: controller.signal });
+        status = response.status;
+        if (!response.ok) throw Object.assign(new Error(`${url}: ${response.status} ${response.statusText}`), { httpStatus: response.status, retryCount: attempt });
+        return response;
+      }, { status: () => status, timedOut: () => timedOut, fallbackFrom });
+      return { response, retryCount: attempt, url };
+
     } catch (error) {
       lastError = error;
-      const status = (error as { httpStatus?: number }).httpStatus;
+      const status = (error as { httpStatus?: number } | null)?.httpStatus;
       if ((status !== undefined && !isRetryableStatus(status)) || attempt === RETRY_DELAYS_MS.length) {
         if (error && typeof error === 'object') Object.assign(error, { retryCount: attempt, assetFetch: true });
         throw error;
@@ -182,11 +202,11 @@ async function fetchAssetWithRetry(url: string) {
   throw lastError;
 }
 
-async function fetchAsset(url: string) {
+async function fetchAsset(url: string, phase: string) {
   try {
-    return await fetchAssetWithRetry(url);
+    return await fetchAssetWithRetry(url, phase);
   } catch (error) {
-    const status = (error as { httpStatus?: number }).httpStatus;
+    const status = (error as { httpStatus?: number } | null)?.httpStatus;
     const assetMatch = url.match(/\/engine\/[a-f0-9]{64}\/([^/?#]+)$/);
     if ((status !== 403 && status !== 404) || !assetMatch) throw error;
 
@@ -200,7 +220,7 @@ async function fetchAsset(url: string) {
       // A stale HTML/Worker bundle can retain an engine hash from a previous
       // deployment. Use the current deployment manifest when that version was
       // removed from the active static-assets manifest.
-      const fallback = await fetchAssetWithRetry(fallbackUrl);
+      const fallback = await fetchAssetWithRetry(fallbackUrl, phase, url);
       return { ...fallback, retryCount: fallback.retryCount + 1 };
     } catch (fallbackError) {
       if (fallbackError && typeof fallbackError === 'object') {
@@ -213,7 +233,7 @@ async function fetchAsset(url: string) {
 
 function initFailure(error: unknown, stage: InitStage, retryCount: number, capability?: 'ticket' | 'pass'): InitFailure {
   const exception = error instanceof Error ? error : new Error(String(error));
-  const httpStatus = (error as { httpStatus?: number }).httpStatus;
+  const httpStatus = (error as { httpStatus?: number } | null)?.httpStatus;
   return {
     type: 'initialization_error',
     error: exception.message,
@@ -225,8 +245,9 @@ function initFailure(error: unknown, stage: InitStage, retryCount: number, capab
     exceptionName: exception.name,
     httpStatus,
     capability,
-    retryable: httpStatus === undefined || isRetryableStatus(httpStatus),
+    retryable: typeof WebAssembly !== 'undefined' && (httpStatus === undefined || isRetryableStatus(httpStatus)),
     retryCount,
+    diagnostics: workerDiagnostics(error),
   };
 }
 
@@ -243,6 +264,7 @@ function postWorkerError(error: unknown, requestId: unknown, capability: 'ticket
     retryable: false,
     retryCount: 0,
     workerRestartCount: 0,
+    diagnostics: workerDiagnostics(error),
   };
   postMessage({ type: 'error', requestId, error: message, details });
 }
@@ -252,25 +274,29 @@ async function initWasm() {
 
   try {
     try {
+      resourceDiagnostics.phase('bootstrap', 'runtime_import', 'started');
       await loadWasmRuntime();
       go = new Go();
+      resourceDiagnostics.phase('bootstrap', 'runtime_import', 'completed');
     } catch (error) {
       postMessage(initFailure(error, 'worker_bootstrap', 0));
       return;
     }
     let wasmFetch;
     try {
-      wasmFetch = await fetchAsset(WASM_URL);
+      wasmFetch = await fetchAsset(WASM_URL, 'wasm_fetch');
     } catch (error) {
-      postMessage(initFailure(error, 'wasm_fetch', Number((error as { retryCount?: number }).retryCount || 0)));
+      postMessage(initFailure(error, 'wasm_fetch', Number((error as { retryCount?: number } | null)?.retryCount || 0)));
       return;
     }
     const wasmResponse = wasmFetch.response;
     wasmRetryCount = wasmFetch.retryCount;
-    const wasmArrayBuffer = await wasmResponse.arrayBuffer();
+    const wasmArrayBuffer = await resourceDiagnostics.measure(wasmFetch.url, 'wasm_body_read', 1, () => wasmResponse.arrayBuffer());
     let result: WebAssembly.WebAssemblyInstantiatedSource;
     try {
+      resourceDiagnostics.phase('wasm', 'wasm_instantiate', 'started');
       result = await WebAssembly.instantiate(wasmArrayBuffer, go.importObject);
+      resourceDiagnostics.phase('wasm', 'wasm_instantiate', 'completed');
     } catch (error) {
       postMessage(initFailure(error, 'wasm_instantiate', wasmFetch.retryCount));
       return;
@@ -289,33 +315,37 @@ async function initWasm() {
 
 async function initializeTicketGraph() {
   try {
-    const fetched = await fetchAsset(TICKET_GRAPH_URL);
-    const buffer = await fetched.response.arrayBuffer();
+    const fetched = await fetchAsset(TICKET_GRAPH_URL, 'ticket_graph_fetch');
+    const buffer = await resourceDiagnostics.measure(fetched.url, 'ticket_graph_body_read', 1, () => fetched.response.arrayBuffer());
+    resourceDiagnostics.phase('ticket', 'ticket_graph_initialize', 'started');
     const ptr = workerSelf.prepareTicketGraphBuffer(buffer.byteLength);
     const memory = new Uint8Array((wasmInstance!.exports.mem as WebAssembly.Memory).buffer);
     memory.set(new Uint8Array(buffer), ptr);
     const initialized = workerSelf.initTicketGraphFromBuffer(buffer.byteLength);
     if (initialized !== 'ok') throw new Error(`Ticket graph initialization failed: ${initialized}`);
     ticketGraphInitialized = true;
-    postMessage({ type: 'ready', capability: 'ticket', retryCount: wasmRetryCount + fetched.retryCount });
+    resourceDiagnostics.phase('ticket', 'ticket_graph_initialize', 'completed');
+    postMessage({ type: 'ready', capability: 'ticket', retryCount: wasmRetryCount + fetched.retryCount, initialError: firstAssetError('ticket'), diagnostics: workerDiagnostics() });
   } catch (error) {
-    postMessage(initFailure(error, (error as { assetFetch?: boolean }).assetFetch ? 'ticket_graph_fetch' : 'ticket_graph_initialize', Number((error as { retryCount?: number }).retryCount || 0), 'ticket'));
+    postMessage(initFailure(error, (error as { assetFetch?: boolean } | null)?.assetFetch ? 'ticket_graph_fetch' : 'ticket_graph_initialize', Number((error as { retryCount?: number } | null)?.retryCount || 0), 'ticket'));
   }
 }
 
 async function initializePassGraph() {
   try {
-    const fetched = await fetchAsset(PASS_GRAPH_URL);
-    const buffer = await fetched.response.arrayBuffer();
+    const fetched = await fetchAsset(PASS_GRAPH_URL, 'pass_graph_fetch');
+    const buffer = await resourceDiagnostics.measure(fetched.url, 'pass_graph_body_read', 1, () => fetched.response.arrayBuffer());
+    resourceDiagnostics.phase('pass', 'pass_graph_initialize', 'started');
     const ptr = workerSelf.preparePassGraphBuffer(buffer.byteLength);
     const memory = new Uint8Array((wasmInstance!.exports.mem as WebAssembly.Memory).buffer);
     memory.set(new Uint8Array(buffer), ptr);
     const initialized = workerSelf.initPassGraphFromBuffer(buffer.byteLength);
     if (initialized !== true) throw new Error(`Pass graph initialization failed: ${initialized}`);
     passGraphInitialized = true;
-    postMessage({ type: 'ready', capability: 'pass', retryCount: wasmRetryCount + fetched.retryCount });
+    resourceDiagnostics.phase('pass', 'pass_graph_initialize', 'completed');
+    postMessage({ type: 'ready', capability: 'pass', retryCount: wasmRetryCount + fetched.retryCount, initialError: firstAssetError('pass'), diagnostics: workerDiagnostics() });
   } catch (error) {
-    postMessage(initFailure(error, (error as { assetFetch?: boolean }).assetFetch ? 'pass_graph_fetch' : 'pass_graph_initialize', Number((error as { retryCount?: number }).retryCount || 0), 'pass'));
+    postMessage(initFailure(error, (error as { assetFetch?: boolean } | null)?.assetFetch ? 'pass_graph_fetch' : 'pass_graph_initialize', Number((error as { retryCount?: number } | null)?.retryCount || 0), 'pass'));
   }
 }
 

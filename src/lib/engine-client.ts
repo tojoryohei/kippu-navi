@@ -1,5 +1,7 @@
-import { SearchOperationError, type EngineCapability, type SearchErrorDetails, type SearchErrorStage } from "@/lib/search-errors";
+import { SearchOperationError, isRetryableEngineError, isBusinessSearchError, type EngineCapability, type SearchDiagnostics, type SearchErrorDetails, type SearchErrorStage } from "@/lib/search-errors";
+import { copyDiagnostics, exceptionDiagnostics } from "@/lib/error-diagnostics";
 import { captureUnhandledError } from "@/lib/analytics";
+import engineWorkerUrl from "../app/split/split.worker.ts?worker&url";
 
 export interface EngineReadiness {
   capability: EngineCapability;
@@ -8,8 +10,8 @@ export interface EngineReadiness {
   workerRestartCount: number;
   recoveryMs: number;
   initialError?: SearchErrorDetails;
+  diagnostics?: SearchDiagnostics;
 }
-
 export interface EngineClient {
   onmessage: ((event: MessageEvent) => void) | null;
   ensureReady(capability: EngineCapability): Promise<EngineReadiness>;
@@ -17,83 +19,122 @@ export interface EngineClient {
   restart(): void;
   terminate(): void;
 }
+type Waiter = { client: EngineClient; resolve: (value: EngineReadiness) => void; reject: (reason: Error) => void };
+const CAPABILITIES: EngineCapability[] = ["ticket", "pass"];
+const ENGINE_READY_TIMEOUT_MS = 30_000;
 
-type Waiter = { resolve: (retryCount: number) => void; reject: (reason: Error) => void };
 function createEnginePool(isolated = false) {
   let worker: Worker | null = null;
-  let sequence = 0;
-  let generation = 0;
+  let sequence = 0, generation = 0, workerRestartCount = 0, cycleStartedAt = 0, deadline = 0;
+  let initialError: SearchErrorDetails | undefined;
+  let runtimeDiagnostics: SearchDiagnostics = {};
   const clients = new Set<EngineClient>();
   const requests = new Map<number, { client: EngineClient; requestId: unknown }>();
-  const ready = new Map<EngineCapability, number>();
+  const ready = new Map<EngineCapability, EngineReadiness>();
   const failures = new Map<EngineCapability, SearchErrorDetails>();
-  const waiters = new Map<EngineCapability, Set<Waiter>>([["ticket", new Set()], ["pass", new Set()]]);
-  const ENGINE_READY_TIMEOUT_MS = 30_000;
+  const waiters = new Map<EngineCapability, Set<Waiter>>(CAPABILITIES.map(capability => [capability, new Set()]));
+  const timers = new Map<EngineCapability, ReturnType<typeof setTimeout>>();
 
   function notify(client: EngineClient, data: unknown) {
-    client.onmessage?.(new MessageEvent("message", { data }));
+    if (clients.has(client)) client.onmessage?.(new MessageEvent("message", { data }));
   }
-
-  function structuredFailure(data: Record<string, unknown>, restartCount = 0): SearchErrorDetails {
+  function clearTimer(capability: EngineCapability) {
+    clearTimeout(timers.get(capability));
+    timers.delete(capability);
+  }
+  function diagnostics(value?: SearchDiagnostics): SearchDiagnostics {
+    return copyDiagnostics({ workerUrl: engineWorkerUrl, ...runtimeDiagnostics, ...value, generation })!;
+  }
+  function structuredFailure(data: Record<string, unknown>): SearchErrorDetails {
     return {
       message: String(data.error || "計算エンジンの初期化に失敗しました。"),
       code: (data.errorCode as SearchErrorDetails["code"]) || "engine_initialization_failed",
-      source: "worker",
-      stage: (data.errorStage as SearchErrorStage) || "worker_bootstrap",
+      source: "worker", stage: (data.errorStage as SearchErrorStage) || "worker_bootstrap",
       exceptionName: String(data.exceptionName || "Error"),
       httpStatus: typeof data.httpStatus === "number" ? data.httpStatus : undefined,
       capability: data.capability as EngineCapability | undefined,
-      retryable: Boolean(data.retryable),
-      retryCount: Number(data.retryCount || 0),
-      workerRestartCount: restartCount,
+      retryable: Boolean(data.retryable), retryCount: Number(data.retryCount || 0), workerRestartCount,
+      diagnostics: diagnostics(data.diagnostics as SearchDiagnostics | undefined),
     };
   }
-
-  function settleReady(capability: EngineCapability, retryCount: number) {
-    ready.set(capability, retryCount);
-    failures.delete(capability);
-    for (const waiter of waiters.get(capability)!) waiter.resolve(retryCount);
+  function settleReady(capability: EngineCapability, retryCount: number, assetError?: SearchErrorDetails, value?: SearchDiagnostics) {
+    if (!waiters.has(capability) || failures.has(capability)) return;
+    clearTimer(capability);
+    const info: EngineReadiness = {
+      capability, recovered: workerRestartCount > 0 || retryCount > 0 || Boolean(assetError), retryCount,
+      workerRestartCount, recoveryMs: cycleStartedAt ? performance.now() - cycleStartedAt : 0,
+      initialError: initialError || assetError, diagnostics: diagnostics(value),
+    };
+    ready.set(capability, info);
+    for (const waiter of waiters.get(capability)!) waiter.resolve(info);
     waiters.get(capability)!.clear();
   }
-
-  function settleFailure(details: SearchErrorDetails) {
-    const targets = details.capability ? [details.capability] : (["ticket", "pass"] as EngineCapability[]);
-    for (const capability of targets) {
-      const targeted = { ...details, capability };
-      failures.set(capability, targeted);
-      for (const waiter of waiters.get(capability)!) waiter.reject(new SearchOperationError(targeted));
+  function withHistory(details: SearchErrorDetails) {
+    const current = { ...details, workerRestartCount, diagnostics: diagnostics(details.diagnostics) };
+    if (initialError) current.diagnostics.attempts = [initialError, current].map(error => ({
+      code: error.code, stage: error.stage, diagnostics: copyDiagnostics({ ...error.diagnostics, attempts: undefined }),
+    }));
+    return current;
+  }
+  function rejectFailures() {
+    for (const [capability, failure] of failures) {
+      clearTimer(capability);
+      for (const waiter of waiters.get(capability)!) waiter.reject(new SearchOperationError(failure));
       waiters.get(capability)!.clear();
     }
   }
-
-  function createWorker(): Worker {
-    try {
-      return new Worker(new URL("../app/split/split.worker.ts", import.meta.url), { type: "module" });
-    } catch (error) {
-      const exception = error instanceof Error ? error : new Error(String(error));
-      throw new SearchOperationError({ message: exception.message, code: "worker_creation_failed", source: "client", stage: "worker_create", exceptionName: exception.name, retryable: true, retryCount: 0, workerRestartCount: 0 });
-    }
+  function stopWorker() {
+    generation++;
+    worker?.terminate();
+    worker = null;
+    for (const capability of CAPABILITIES) clearTimer(capability);
+    ready.clear();
+    runtimeDiagnostics = {};
   }
-
+  function recover(details: SearchErrorDetails): boolean {
+    if (workerRestartCount !== 0 || details.diagnostics?.recoverySuppressed || requests.size > 0
+      || isBusinessSearchError(details) || !isRetryableEngineError(new SearchOperationError(details))) return false;
+    initialError = details;
+    workerRestartCount = 1;
+    stopWorker();
+    failures.clear();
+    deadline = performance.now() + ENGINE_READY_TIMEOUT_MS;
+    initialize();
+    for (const capability of CAPABILITIES) armTimeout(capability);
+    return true;
+  }
+  function settleFailure(details: SearchErrorDetails) {
+    const failure = withHistory(details);
+    if (requests.size > 0) failure.diagnostics.recoverySuppressed = "active_requests";
+    const targets = failure.capability ? [failure.capability] : CAPABILITIES;
+    for (const capability of targets) {
+      ready.delete(capability);
+      failures.set(capability, { ...failure, capability });
+    }
+    if (targets.some(capability => waiters.get(capability)!.size > 0) && recover(failure)) return;
+    rejectFailures();
+  }
   function initialize() {
     if (worker) return;
+    const currentGeneration = ++generation;
     try {
-      worker = createWorker();
+      // Viteが生成したURLを起動と診断の両方に使う。
+      worker = new Worker(engineWorkerUrl, { type: "module" });
     } catch (error) {
-      const details = error instanceof SearchOperationError ? error.details : { message: String(error), code: "worker_creation_failed" as const, source: "client" as const, stage: "worker_create" as const, retryable: true, retryCount: 0, workerRestartCount: 0 };
-      settleFailure(details);
+      const original = exceptionDiagnostics(error);
+      settleFailure({ message: original.message || "計算エンジンを起動できませんでした。", code: "worker_creation_failed", source: "client", stage: "worker_create", exceptionName: original.name, retryable: typeof Worker !== "undefined", retryCount: 0, workerRestartCount, diagnostics: { exception: original } });
       return;
     }
-    const currentGeneration = ++generation;
     worker.onmessage = event => {
       if (currentGeneration !== generation) return;
       const { type, requestId, capability } = event.data;
-      if (type === "ready") {
-        settleReady(capability, Number(event.data.retryCount || 0));
+      if (type === "initialization_progress") {
+        runtimeDiagnostics = diagnostics(event.data.diagnostics);
+      } else if (type === "ready") {
+        settleReady(capability, Number(event.data.retryCount || 0), event.data.initialError, event.data.diagnostics);
         clients.forEach(client => notify(client, event.data));
       } else if (type === "initialization_error") {
-        const details = structuredFailure(event.data);
-        settleFailure(details);
+        settleFailure(structuredFailure(event.data));
       } else {
         const request = requests.get(requestId);
         if (type !== "progress" && type !== "partial_result") requests.delete(requestId);
@@ -101,59 +142,50 @@ function createEnginePool(isolated = false) {
       }
     };
     worker.onerror = event => {
-      const details: SearchErrorDetails = { message: event.message || "計算エンジンの読み込みに失敗しました。", code: "worker_runtime_failed", source: "worker", stage: "worker_bootstrap", exceptionName: "ErrorEvent", retryable: true, retryCount: 0, workerRestartCount: 0 };
-      settleFailure(details);
+      if (currentGeneration !== generation) return;
+      const details = withHistory({ message: event.message || "計算エンジンの読み込みに失敗しました。", code: "worker_runtime_failed", source: "worker", stage: "worker_bootstrap", exceptionName: "ErrorEvent", retryable: true, retryCount: 0, workerRestartCount, diagnostics: diagnostics({ exception: exceptionDiagnostics(event.error, event) }) });
+      if (requests.size > 0) details.diagnostics.recoverySuppressed = "active_requests";
       captureUnhandledError(new SearchOperationError(details), "calculation_web_worker");
       for (const request of requests.values()) notify(request.client, { type: "error", requestId: request.requestId, error: details.message, details });
       requests.clear();
+      settleFailure(details);
     };
   }
-
-  function resetWorker() {
-    for (const pending of waiters.values()) { for (const waiter of pending) waiter.reject(new DOMException("Superseded", "AbortError")); pending.clear(); }
-    worker?.terminate();
-    worker = null;
-    generation++;
-    ready.clear();
-    failures.clear();
-    requests.clear();
-    initialize();
+  function armTimeout(capability: EngineCapability) {
+    if (!waiters.get(capability)!.size || timers.has(capability) || ready.has(capability) || failures.has(capability)) return;
+    const currentGeneration = generation;
+    timers.set(capability, setTimeout(() => {
+      timers.delete(capability);
+      if (currentGeneration !== generation) return;
+      settleFailure({ message: "計算エンジンの初期化がタイムアウトしました。", code: "engine_initialization_timeout", source: "client", stage: "worker_bootstrap", capability, exceptionName: "TimeoutError", retryable: true, retryCount: 0, workerRestartCount, elapsedMs: Math.round(performance.now() - cycleStartedAt), diagnostics: diagnostics({ abortReason: "timeout" }) });
+    }, Math.max(0, deadline - performance.now())));
   }
-
-  function waitUntilReady(capability: EngineCapability, timeoutMs = 15_000, startedAt = performance.now()): Promise<number> {
-    const retryCount = ready.get(capability);
-    if (retryCount !== undefined) return Promise.resolve(retryCount);
-    const failure = failures.get(capability);
-    if (failure) return Promise.reject(new SearchOperationError(failure));
-    return new Promise((resolve, reject) => {
-      const waiter: Waiter = { resolve, reject };
-      waiters.get(capability)!.add(waiter);
-      setTimeout(() => {
-        if (!waiters.get(capability)!.delete(waiter)) return;
-        reject(new SearchOperationError({ message: "計算エンジンの初期化がタイムアウトしました。", code: "engine_initialization_timeout", source: "client", stage: "worker_bootstrap", capability, exceptionName: "TimeoutError", retryable: true, retryCount: 0, workerRestartCount: 0, elapsedMs: Math.round(performance.now() - startedAt) }));
-      }, timeoutMs);
-    });
+  function cancelWaiters(reason: string, client?: EngineClient) {
+    for (const [capability, pending] of waiters) {
+      for (const waiter of pending) if (!client || waiter.client === client) {
+        pending.delete(waiter);
+        waiter.reject(new DOMException(reason, "AbortError"));
+      }
+      if (!pending.size) clearTimer(capability);
+    }
   }
-
-  function recoveredAssetFailure(capability: EngineCapability, retryCount: number): SearchErrorDetails | undefined {
-    if (retryCount === 0) return undefined;
-    return { message: "エンジン資材の取得を再試行しました。", code: "engine_asset_fetch_failed", source: "worker", stage: capability === "ticket" ? "ticket_graph_fetch" : "pass_graph_fetch", exceptionName: "FetchError", capability, retryable: true, retryCount, workerRestartCount: 0 };
-  }
-
   function createClient(): EngineClient {
-    initialize();
+    // 失敗した生成を画面数だけ繰り返さない。
+    if (!failures.size) initialize();
     const client: EngineClient = {
       onmessage: null,
-      async ensureReady(capability) {
-        const startedAt = performance.now();
-        try {
-          const retryCount = await waitUntilReady(capability, ENGINE_READY_TIMEOUT_MS, startedAt);
-          return { capability, recovered: retryCount > 0, retryCount, workerRestartCount: 0, recoveryMs: performance.now() - startedAt, initialError: recoveredAssetFailure(capability, retryCount) };
-        } catch (firstError) {
-          const initial = firstError instanceof SearchOperationError ? firstError : null;
-          if (!initial?.details.retryable) throw firstError;
-          throw firstError;
-        }
+      ensureReady(capability) {
+        if (!clients.has(client)) return Promise.reject(new DOMException("Disposed", "AbortError"));
+        const cached = ready.get(capability);
+        if (cached) return Promise.resolve(cached);
+        if (!deadline) { cycleStartedAt = performance.now(); deadline = cycleStartedAt + ENGINE_READY_TIMEOUT_MS; }
+        return new Promise((resolve, reject) => {
+          waiters.get(capability)!.add({ client, resolve, reject });
+          const failure = failures.get(capability);
+          if (failure) {
+            if (!recover(failure)) rejectFailures();
+          } else armTimeout(capability);
+        });
       },
       postMessage(message) {
         if (!clients.has(client) || !worker) return;
@@ -162,16 +194,20 @@ function createEnginePool(isolated = false) {
         worker.postMessage({ ...message, payload: { ...message.payload, requestId } });
       },
       restart() {
-        resetWorker();
+        if (!clients.has(client)) return;
+        cancelWaiters("Superseded");
+        stopWorker();
+        requests.clear();
+        failures.clear();
+        workerRestartCount = 0; initialError = undefined; deadline = 0; cycleStartedAt = 0;
+        initialize();
       },
       terminate() {
         clients.delete(client);
-        for (const [id, request] of requests) if (request.client === client) requests.delete(id);
+        cancelWaiters("Disposed", client);
+        // 画面が消えてもWorker内の計算は継続するため、終端通知まで実行中として扱う。
         client.onmessage = null;
-        if (isolated && clients.size === 0) {
-          worker?.terminate(); worker = null; generation++;
-          for (const pending of waiters.values()) { for (const waiter of pending) waiter.reject(new DOMException("Disposed", "AbortError")); pending.clear(); }
-        }
+        if (isolated && clients.size === 0) { stopWorker(); requests.clear(); }
       },
     };
     clients.add(client);
@@ -181,7 +217,6 @@ function createEnginePool(isolated = false) {
     });
     return client;
   }
-
   return createClient;
 }
 const sharedEngine = createEnginePool();
