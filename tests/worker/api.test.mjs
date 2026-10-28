@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { registerHooks } from 'node:module';
 
 import {
   createAbortTimeout,
@@ -54,7 +55,14 @@ test('通信の再試行待機はAPIのタイムアウトで中断される', as
   }
 });
 
-test('一時的なHTTP 502は1回再試行して成功レスポンスを返す', async () => {
+test('一時的なHTTP 502は1回再試行して成功レスポンスと取得診断を返す', async () => {
+  const hooks = registerHooks({ resolve(specifier, context, nextResolve) {
+    if (specifier === '@/lib/error-diagnostics') return { url: new URL('../../src/lib/error-diagnostics.ts', import.meta.url).href, shortCircuit: true };
+    return nextResolve(specifier, context);
+  } });
+  const { createResourceDiagnostics } = await import('../../src/lib/resource-diagnostics.ts');
+  hooks.deregister();
+  const diagnostics = createResourceDiagnostics();
   const originalFetch = globalThis.fetch;
   let calls = 0;
   globalThis.fetch = async () => {
@@ -65,8 +73,10 @@ test('一時的なHTTP 502は1回再試行して成功レスポンスを返す',
   };
 
   try {
-    const response = await fetchWithNetworkRetry('https://example.invalid');
+    const response = await fetchWithNetworkRetry('https://example.invalid?from=A&to=B', undefined, diagnostics);
     assert.equal(calls, 2);
+    assert.deepEqual(diagnostics.snapshot().resources.map(({ attempt, status, outcome }) => [attempt, status, outcome]), [[1, 502, 'failure'], [2, 200, 'success']]);
+    assert.equal(diagnostics.snapshot().resources[0].url, 'https://example.invalid?from=A&to=B');
     assert.deepEqual(await response.json(), { ok: true });
   } finally {
     globalThis.fetch = originalFetch;
