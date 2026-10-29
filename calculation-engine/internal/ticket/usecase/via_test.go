@@ -499,23 +499,6 @@ func TestRemoveOverlapViaKeepsUncorrectedTurnaround(t *testing.T) {
 	}
 }
 
-func TestRemoveOverlapViaUenoNippori(t *testing.T) {
-	for _, tt := range []struct {
-		name string
-		path []ViaStep
-		want []string
-	}{
-		{"日暮里から上野", []ViaStep{{"三河島", "シヨハ"}, {"日暮里", "トウホ"}, {"鶯谷", "トウホ"}, {"上野", "トホシ"}, {"大宮", ""}}, []string{"常磐", "上野", "新幹線", "大宮"}},
-		{"上野から日暮里", []ViaStep{{"大宮", "トホシ"}, {"上野", "トウホ"}, {"鶯谷", "トウホ"}, {"日暮里", "シヨハ"}, {"三河島", ""}}, []string{"大宮", "新幹線", "上野", "常磐"}},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := GetFareVia(removeOverlapVia(tt.path)); !reflect.DeepEqual(got, tt.want) {
-				t.Fatalf("実際 %v, 期待値 %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestFareViaKokuraShinkansenOverlap(t *testing.T) {
 	path := []ViaStep{
 		{"行橋", "ニツホ"}, {"小波瀬西工大前", "ニツホ"},
@@ -674,6 +657,26 @@ func TestArticle70ViaPrintsShinkansenConnectionAtEntry(t *testing.T) {
 		steps []ViaStep
 		want  []string
 	}{
+		{
+			name: "中央線の折り返しより70条の東京接続印字を優先",
+			steps: []ViaStep{
+				{"八王子", "チユト"}, {"立川", "チユト"}, {"三鷹", "チユト"},
+				{"中野", "チユト"}, {"新宿", "チユト"}, {"四ツ谷", "チユト"},
+				{"御茶ノ水", "チユト"}, {"神田", "チユト"}, {"東京", "シヨシ"},
+				{"上野", "シヨシ"}, {"大宮", "シヨシ"}, {"熊谷", "シヨシ"}, {"本庄早稲田", ""},
+			},
+			want: []string{"中央東", "東京", "新幹線", "本庄早稲田"},
+		},
+		{
+			name: "中央線への折り返しより70条の東京接続印字を優先",
+			steps: []ViaStep{
+				{"本庄早稲田", "シヨシ"}, {"熊谷", "シヨシ"}, {"大宮", "シヨシ"},
+				{"上野", "シヨシ"}, {"東京", "チユト"}, {"神田", "チユト"},
+				{"御茶ノ水", "チユト"}, {"四ツ谷", "チユト"}, {"新宿", "チユト"},
+				{"中野", "チユト"}, {"三鷹", "チユト"}, {"立川", "チユト"}, {"八王子", ""},
+			},
+			want: []string{"本庄早稲田", "新幹線", "東京", "中央東"},
+		},
 		{
 			name: "上野から70条区間へ入る",
 			steps: []ViaStep{

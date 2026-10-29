@@ -411,6 +411,7 @@ type viaSections struct {
 	replacements          map[string][]string
 	replacementLineByEdge map[string]string
 	article70Entry        map[string]bool
+	article70Omitted      map[string]bool
 	specialVia            map[string]string
 }
 
@@ -537,7 +538,7 @@ func applyRuleViaSections(sections *viaSections, printNames []string, rules []ru
 
 func sectionsForPath(sourceNames, printNames []string, g graph.Graph, selected map[string]string, rule157Sections []ruleViaSection) viaSections {
 	loadViaData()
-	sections := viaSections{omitted: make(map[string]bool), replacements: make(map[string][]string), replacementLineByEdge: make(map[string]string), article70Entry: make(map[string]bool)}
+	sections := viaSections{omitted: make(map[string]bool), replacements: make(map[string][]string), replacementLineByEdge: make(map[string]string), article70Entry: make(map[string]bool), article70Omitted: make(map[string]bool)}
 	applyRuleViaSections(&sections, printNames, findRule69ViaSections(sourceNames))
 	applyRuleViaSections(&sections, printNames, rule157Sections)
 	for _, segment := range boldViaSegments(sourceNames, g) {
@@ -613,6 +614,9 @@ func sectionsForPath(sourceNames, printNames []string, g graph.Graph, selected m
 				continue
 			}
 			afterShinkansen := i > start && stationPair(printNames[i-1], printNames[i]) == stationPair("東京", "上野")
+			if mode == "passing" {
+				sections.article70Omitted[pair] = true
+			}
 			if (i == start || afterShinkansen) && !sections.omitted[pair] {
 				sections.article70Entry[pair] = true
 			}
@@ -646,8 +650,6 @@ type overlapViaRule struct {
 	branch                []string
 	shinkansenNeighbor    string
 	conventionalNeighbors []string
-	// 控除区間の路線を省略しても、実際の新幹線乗換駅を印字する。
-	printConnection bool
 }
 
 var overlapViaBranches = []overlapViaRule{
@@ -663,7 +665,7 @@ var overlapViaBranches = []overlapViaRule{
 	{branch: []string{"倉敷", "中庄", "庭瀬", "北長瀬", "岡山"}, shinkansenNeighbor: "新倉敷", conventionalNeighbors: []string{"清音"}},
 	{branch: []string{"浦上", "長崎"}, shinkansenNeighbor: "諫早", conventionalNeighbors: []string{"西浦上"}},
 	{branch: []string{"宇土", "富合", "川尻", "西熊本", "熊本"}, shinkansenNeighbor: "新八代", conventionalNeighbors: []string{"緑川"}},
-	{branch: []string{"日暮里", "鶯谷", "上野"}, shinkansenNeighbor: "大宮", conventionalNeighbors: []string{"三河島"}, printConnection: true},
+	{branch: []string{"日暮里", "鶯谷", "上野"}, shinkansenNeighbor: "大宮", conventionalNeighbors: []string{"三河島"}},
 	{branch: []string{"吉塚", "博多"}, shinkansenNeighbor: "小倉", conventionalNeighbors: []string{"柚須"}},
 	{branch: []string{"西小倉", "小倉"}, shinkansenNeighbor: "博多", conventionalNeighbors: []string{"南小倉"}},
 }
@@ -683,6 +685,10 @@ func removeOverlapVia(path []ViaStep) []ViaStep {
 }
 
 func removeOverlapViaWithSuppression(path []ViaStep) ([]ViaStep, map[string]bool) {
+	return removeOverlapViaWithSections(path, viaSections{})
+}
+
+func removeOverlapViaWithSections(path []ViaStep, sections viaSections) ([]ViaStep, map[string]bool) {
 	result := append([]ViaStep(nil), path...)
 	removed := make([]bool, len(path))
 	suppressedStations := make(map[string]bool)
@@ -708,15 +714,18 @@ func removeOverlapViaWithSuppression(path []ViaStep) ([]ViaStep, map[string]bool
 			if !conventional {
 				continue
 			}
+			// 第70条の通過区間では、折り返し特例による駅の削除より
+			// 第70条の省略を優先し、実際の新幹線接続駅を残す。
+			article70 := false
+			for j := i; j < last; j++ {
+				article70 = article70 || sections.article70Omitted[stationPair(path[j].StationName, path[j+1].StationName)]
+			}
+			if article70 {
+				continue
+			}
 			if forward && path[last+1].StationName == rule.shinkansenNeighbor && containsStation(rule.conventionalNeighbors, path[i-1].StationName) && !shinkansenLines[path[i-1].LineName] && shinkansenLines[path[last].LineName] &&
 				path[i-1].StationName != branch[1] && path[last+1].StationName != branch[len(branch)-2] &&
 				path[i-1].StationName != path[last+1].StationName {
-				if rule.printConnection {
-					for j := i; j < last; j++ {
-						removed[j] = true
-					}
-					break
-				}
 				// 分岐駅から折り返し駅までの在来線を除き、新幹線のコードを分岐駅へ移す。
 				result[i].LineName = path[last].LineName
 				suppressedStations[path[i].StationName] = true
@@ -728,13 +737,6 @@ func removeOverlapViaWithSuppression(path []ViaStep) ([]ViaStep, map[string]bool
 			if backward && path[i-1].StationName == rule.shinkansenNeighbor && containsStation(rule.conventionalNeighbors, path[last+1].StationName) && shinkansenLines[path[i-1].LineName] && !shinkansenLines[path[last].LineName] &&
 				path[i-1].StationName != branch[len(branch)-2] && path[last+1].StationName != branch[1] &&
 				path[i-1].StationName != path[last+1].StationName {
-				if rule.printConnection {
-					result[i].LineName = path[last].LineName
-					for j := i + 1; j <= last; j++ {
-						removed[j] = true
-					}
-					break
-				}
 				// 新幹線の終端駅から分岐駅までの折り返し区間を除く。
 				suppressedStations[path[last].StationName] = true
 				for j := i; j < last; j++ {
@@ -769,6 +771,8 @@ func getFareViaForResult(path []ViaStep, finalPath []int, g graph.StationProvide
 		return getFareVia(path, true, true, nil)
 	}
 
+	// 特殊経由線の判定を最初に行い、その後に第70条などの印字処理を適用する。
+	selected := inputSpecialViaOverrides(removeOverlapVia(path))
 	sourceNames := viaStepNames(path)
 	if sectionGraph != nil {
 		path = article70FareViaPath(path, sectionGraph)
@@ -811,14 +815,13 @@ func getFareViaForResult(path []ViaStep, finalPath []int, g graph.StationProvide
 		return getFareVia(path, true, true, nil)
 	}
 	trimmed := path[start : end+1]
-	selected := inputSpecialViaOverrides(path)
 	sections := viaSections{specialVia: selected}
 	if sectionGraph != nil {
 		names := viaStepNames(trimmed)
 		sections = sectionsForPath(names, names, sectionGraph, selected, rule157Sections)
 		sections.specialVia = selected
 	}
-	printPath, suppressedStations := removeOverlapViaWithSuppression(trimmed)
+	printPath, suppressedStations := removeOverlapViaWithSections(trimmed, sections)
 	return getFareViaWithSections(printPath, !isTokyoZone(startZoneName), !isTokyoZone(endZoneName), suppressedStations, sections)
 }
 
