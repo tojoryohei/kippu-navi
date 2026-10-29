@@ -505,8 +505,8 @@ func TestRemoveOverlapViaUenoNippori(t *testing.T) {
 		path []ViaStep
 		want []string
 	}{
-		{"日暮里から上野", []ViaStep{{"三河島", "シヨハ"}, {"日暮里", "トウホ"}, {"鶯谷", "トウホ"}, {"上野", "トホシ"}, {"大宮", ""}}, []string{"常磐", "新幹線", "大宮"}},
-		{"上野から日暮里", []ViaStep{{"大宮", "トホシ"}, {"上野", "トウホ"}, {"鶯谷", "トウホ"}, {"日暮里", "シヨハ"}, {"三河島", ""}}, []string{"大宮", "新幹線", "常磐"}},
+		{"日暮里から上野", []ViaStep{{"三河島", "シヨハ"}, {"日暮里", "トウホ"}, {"鶯谷", "トウホ"}, {"上野", "トホシ"}, {"大宮", ""}}, []string{"常磐", "上野", "新幹線", "大宮"}},
+		{"上野から日暮里", []ViaStep{{"大宮", "トホシ"}, {"上野", "トウホ"}, {"鶯谷", "トウホ"}, {"日暮里", "シヨハ"}, {"三河島", ""}}, []string{"大宮", "新幹線", "上野", "常磐"}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := GetFareVia(removeOverlapVia(tt.path)); !reflect.DeepEqual(got, tt.want) {

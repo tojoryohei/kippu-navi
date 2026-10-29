@@ -17,6 +17,7 @@ func TestRouteTicketRejectsOverlapBeforeModeCorrection(t *testing.T) {
 	// DPの区間評価など、ResolvePathを経由せずCalculateを呼ぶ場合も対象です。
 	c := usecase.NewRouteTicketCalculator(g, usecase.NewSuburbanAreaCorrector(nil), nil, nil, nil)
 	for _, names := range [][]string{
+		{"鶯谷", "上野", "大宮"},
 		{"天童", "山形", "北山形"},
 		{"（北）福島", "米沢", "関根"},
 		{"大石田", "新庄", "舟形"},

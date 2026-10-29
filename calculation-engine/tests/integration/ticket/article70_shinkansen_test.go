@@ -56,6 +56,7 @@ func TestArticle70Shinkansen(t *testing.T) {
 		invalid    bool
 	}{
 		{"水道橋から東京上野だけ新幹線", append(append(slices.Clone(central[7:]), leg("トホシ", "東京")...), toOmiya...), 0, 0, nil, true},
+		{"三河島から上野折り返しで小山", append(append(leg("シヨハ", "三河島"), leg("トウホ", "日暮里", "鶯谷")...), leg("トホシ", "上野", "大宮", "小山")...), 760, 1410, []string{"常磐", "上野", "新幹線", "小山"}, false},
 		{"新宿から東京乗換で小山", append(slices.Clone(central), leg("トホシ", "東京", "上野", "大宮", "小山")...), 777, 1410, []string{"東京", "新幹線", "小山"}, false},
 		{"目黒から上野乗換で小山", append(append(slices.Clone(meguro), leg("トウホ", "東京", "神田", "秋葉原", "御徒町")...), leg("トホシ", "上野", "大宮", "小山")...), 842, 1600, []string{"上野", "新幹線", "小山"}, false},
 		{"目黒から東京乗換で小山も有効", append(slices.Clone(meguro), leg("トホシ", "東京", "上野", "大宮", "小山")...), 842, 1600, []string{"東京", "新幹線", "小山"}, false},
