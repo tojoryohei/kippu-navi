@@ -95,6 +95,8 @@ func (p *PipelineCorrector) CorrectWithPreShinkansenPath(path []int, g graph.Gra
 // --- SpecificSectionCorrector ---
 
 type SpecificSectionCorrector struct {
+	// 特定区間の一致判定に限り新幹線の対応する駅列を参照する。
+	projectShinkansen bool
 	// From -> To の置換ルール (駅名の配列)
 	rules []struct {
 		from        []string
@@ -106,6 +108,7 @@ type SpecificSectionCorrector struct {
 
 func NewRule69Corrector() *SpecificSectionCorrector {
 	return &SpecificSectionCorrector{
+		projectShinkansen: true,
 		rules: []struct {
 			from        []string
 			to          []string
@@ -347,7 +350,15 @@ func (c *SpecificSectionCorrector) Correct(path []int, g graph.Graph) ([]int, er
 		return path, nil
 	}
 
-	result := make([]int, 0, len(path))
+	original := path
+	origins := make([]int, len(path))
+	for i := range origins {
+		origins[i] = i - 1
+	}
+	if c.projectShinkansen {
+		path, origins = NewShinkansenOverlapCorrector().expand(path, g)
+	}
+	var edits []pathEdit
 
 	for i := 0; i < len(path); {
 		matched := false
@@ -431,21 +442,23 @@ func (c *SpecificSectionCorrector) Correct(path []int, g graph.Graph) ([]int, er
 						continue
 					}
 
-					// 置換処理
+					// 置換範囲を記録し、関係しない新幹線区間は保持する。
+					var replacement []int
 					if matchFwd {
 						for _, name := range rule.to {
 							if id, ok := g.GetID(name); ok {
-								result = append(result, id)
+								replacement = append(replacement, id)
 							}
 						}
 					} else {
 						// 逆方向の場合は ToPath も逆順にする
 						for j := len(rule.to) - 1; j >= 0; j-- {
 							if id, ok := g.GetID(rule.to[j]); ok {
-								result = append(result, id)
+								replacement = append(replacement, id)
 							}
 						}
 					}
+					edits = append(edits, pathEdit{i, i + len(rule.from) - 1, replacement})
 					i += len(rule.from)
 					matched = true
 					break
@@ -453,11 +466,10 @@ func (c *SpecificSectionCorrector) Correct(path []int, g graph.Graph) ([]int, er
 			}
 		}
 		if !matched {
-			result = append(result, path[i])
 			i++
 		}
 	}
-	return result, nil
+	return applyProjectedEdits(original, path, origins, edits), nil
 }
 
 // --- ShinkansenOverlapCorrector ---
@@ -545,111 +557,138 @@ func reverseStrings(s []string) []string {
 	return res
 }
 
+// Correctは折り返し控除に関係する元の区間だけを在来線へ展開する。
 func (c *ShinkansenOverlapCorrector) Correct(path []int, g graph.Graph) ([]int, error) {
+	return c.correct(path, g, false), nil
+}
+
+// expandは元のエッジ位置を各展開後エッジに対応させる。会社情報は持たない。
+func (c *ShinkansenOverlapCorrector) expand(path []int, g graph.Graph) ([]int, []int) {
 	if len(path) == 0 {
 		return path, nil
 	}
-
-	// 1. 新幹線エッジの展開
-	expanded := make([]int, 0, len(path))
-	expanded = append(expanded, path[0])
-
-	for i := 0; i < len(path)-1; i++ {
-		startName := g.GetName(path[i])
-		endName := g.GetName(path[i+1])
-
-		mapped := false
+	expanded := []int{path[0]}
+	origins := []int{-1}
+	for i := 0; i+1 < len(path); i++ {
+		start, end := g.GetName(path[i]), g.GetName(path[i+1])
+		var mapping []string
 		for _, m := range c.mappings {
 			if len(m) < 2 {
 				continue
 			}
-			startStation := m[0]
-			endStation := m[len(m)-1]
-
-			if startName == startStation && endName == endStation {
-				for j, name := range m {
-					if j == 0 {
-						continue // 始点はすでに入っているのでスキップ
-					}
-					if id, ok := g.GetID(name); ok {
-						expanded = append(expanded, id)
-					}
-				}
-				mapped = true
+			if start == m[0] && end == m[len(m)-1] {
+				mapping = m
 				break
-			} else if startName == endStation && endName == startStation {
-				// 逆方向の場合
-				revPath := reverseStrings(m)
-				for j, name := range revPath {
-					if j == 0 {
-						continue
-					}
-					if id, ok := g.GetID(name); ok {
-						expanded = append(expanded, id)
-					}
-				}
-				mapped = true
+			}
+			if end == m[0] && start == m[len(m)-1] {
+				mapping = reverseStrings(m)
 				break
 			}
 		}
-
-		if !mapped {
+		if mapping == nil {
 			expanded = append(expanded, path[i+1])
+			origins = append(origins, i)
+			continue
+		}
+		for _, name := range mapping[1:] {
+			if id, ok := g.GetID(name); ok {
+				expanded = append(expanded, id)
+				origins = append(origins, i)
+			}
 		}
 	}
+	return expanded, origins
+}
 
-	// 2. 決められた重複部分の控除
-	result := make([]int, 0, len(expanded))
-	for i := 0; i < len(expanded); {
-		deducted := false
+type overlapSpan struct{ start, end int }
+
+// deductionSpansは従来と同じ条件・優先順で成立した折り返し位置を返す。
+func (c *ShinkansenOverlapCorrector) deductionSpans(path []int, g graph.Graph) []overlapSpan {
+	var spans []overlapSpan
+	for i := 0; i < len(path); {
+		matched := false
 		for _, deduction := range c.overlapDeductions {
-			if i+len(deduction) <= len(expanded) {
-				match := true
-				for j, name := range deduction {
-					if g.GetName(expanded[i+j]) != name {
-						match = false
-						break
-					}
-				}
-				if match {
-					// 控除パターンに一致した場合、その前後（外側）の駅を評価する
-					// 「分岐駅を通過する列車に乗車する場合の特例」に基づく要件：
-					// 1. パターンの前後に駅が存在すること（通過であるため、始発・終着ではない）
-					// 2. パターンに進入する直前の駅が、折り返し区間内の駅ではないこと
-					// 3. パターンから退出した直後の駅が、折り返し区間内の駅ではないこと
-					// 4. 進入元の駅と退出先の駅が異なること（「一方の線区から他方の線区へ」）
-					if i > 0 && i+len(deduction) < len(expanded) {
-						beforeStation := g.GetName(expanded[i-1])
-						afterStation := g.GetName(expanded[i+len(deduction)])
-
-						// 折り返しパターンの内側の駅（分岐駅から進む最初の駅）
-						insideFirst := deduction[1]
-						insideLast := deduction[len(deduction)-2]
-
-						if beforeStation != insideFirst && afterStation != insideLast && beforeStation != afterStation {
-							// 全ての条件を満たした場合のみ、重複区間を控除する
-							if deduction[0] == deduction[len(deduction)-1] {
-								result = append(result, expanded[i])
-								i += len(deduction)
-								deducted = true
-								break
-							} else {
-								i += len(deduction)
-								deducted = true
-								break
-							}
-						}
-					}
+			end := i + len(deduction) - 1
+			if len(deduction) < 3 || i == 0 || end+1 >= len(path) {
+				continue
+			}
+			equal := true
+			for j, name := range deduction {
+				if g.GetName(path[i+j]) != name {
+					equal = false
+					break
 				}
 			}
+			if !equal {
+				continue
+			}
+			before, after := g.GetName(path[i-1]), g.GetName(path[end+1])
+			if before == deduction[1] || after == deduction[len(deduction)-2] || before == after {
+				continue
+			}
+			spans = append(spans, overlapSpan{i, end})
+			i = end + 1
+			matched = true
+			break
 		}
-		if !deducted {
-			result = append(result, expanded[i])
+		if !matched {
 			i++
 		}
 	}
+	return spans
+}
 
-	return result, nil
+func (c *ShinkansenOverlapCorrector) correct(path []int, g graph.Graph, expandAll bool) []int {
+	expanded, origins := c.expand(path, g)
+	if len(expanded) == 0 {
+		return expanded
+	}
+	spans := c.deductionSpans(expanded, g)
+	if !expandAll && len(spans) == 0 {
+		return append([]int(nil), path...)
+	}
+	var edits []pathEdit
+	for _, span := range spans {
+		edits = append(edits, pathEdit{span.start, span.end, []int{expanded[span.start]}})
+	}
+	if expandAll {
+		// 検証・在来線券採用では全区間を明示的に保持する。
+		original := expanded
+		identity := make([]int, len(expanded))
+		for i := range identity {
+			identity[i] = i - 1
+		}
+		return applyProjectedEdits(original, expanded, identity, edits)
+	}
+	return applyProjectedEdits(path, expanded, origins, edits)
+}
+
+// 全展開は重複検証、または実際に在来線の券を採用する処理だけが使う。
+type conventionalPathCorrector struct{ *ShinkansenOverlapCorrector }
+
+func (c *conventionalPathCorrector) Correct(path []int, g graph.Graph) ([]int, error) {
+	return c.correct(path, g, true), nil
+}
+
+func (c *conventionalPathCorrector) correctWithPreShinkansenPath(path, source []int, g graph.Graph) ([]int, []int, bool, error) {
+	corrected, err := c.Correct(path, g)
+	return corrected, append([]int(nil), path...), true, err
+}
+
+// 最安の既存の在来線券候補を維持する。通常計算には使用しない。
+func cheapestPathCorrector(c PathCorrector) PathCorrector {
+	switch v := c.(type) {
+	case *PipelineCorrector:
+		children := make([]PathCorrector, len(v.correctors))
+		for i, child := range v.correctors {
+			children[i] = cheapestPathCorrector(child)
+		}
+		return NewPipelineCorrector(children...)
+	case *ShinkansenOverlapCorrector:
+		return &conventionalPathCorrector{v}
+	default:
+		return c
+	}
 }
 
 // 補正禁止モードでも適用する二つの特例。
@@ -661,6 +700,9 @@ func newUncorrectPathCorrector() PathCorrector {
 // 通常・最安では指定された全補正を適用し、補正禁止では上記二つの特例だけを適用します。
 // 特定都区市内・東京山手線内・大阪新大阪特例などの運賃特例は、その後SpecialFareRuleResolverがモードごとの順序で適用します。
 func CorrectPathForMode(path []int, g graph.Graph, corrector PathCorrector, mode string) ([]int, error) {
+	if mode == "cheapest" {
+		corrector = cheapestPathCorrector(corrector)
+	}
 	if mode == "uncorrect" {
 		return newUncorrectPathCorrector().Correct(path, g)
 	}
@@ -670,6 +712,9 @@ func CorrectPathForMode(path []int, g graph.Graph, corrector PathCorrector, mode
 // correctPathForModeWithPreShinkansenPath は、一般的な経路補正結果と
 // 大都市近郊区間判定に使う新幹線展開直前の経路を返します。
 func correctPathForModeWithPreShinkansenPath(path []int, g graph.Graph, corrector PathCorrector, mode string) (corrected []int, before []int, err error) {
+	if mode == "cheapest" {
+		corrector = cheapestPathCorrector(corrector)
+	}
 	if mode == "uncorrect" {
 		corrected, err = newUncorrectPathCorrector().Correct(path, g)
 		return corrected, append([]int(nil), path...), err

@@ -21,7 +21,7 @@ func newInputPathCorrector() PathCorrector {
 			overlap.mappings = append(overlap.mappings, kagoshima[start:end])
 		}
 	}
-	return NewPipelineCorrector(NewRule43_2Corrector(), overlap)
+	return NewPipelineCorrector(NewRule43_2Corrector(), &conventionalPathCorrector{overlap})
 }
 
 // validateInputPath は、新幹線の展開と重複控除の後に、残った重複を判定します。

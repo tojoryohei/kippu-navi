@@ -3,6 +3,7 @@ package usecase
 import (
 	"calculation-engine/internal/ticket/graph"
 	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -49,14 +50,14 @@ func TestShinkansenOverlapCorrector(t *testing.T) {
 		expected []int
 	}{
 		{
-			name:     "新幹線エッジの展開（順方向）",
+			name:     "折り返しのない新幹線を保持（順方向）",
 			input:    []int{1, 7}, // 姫路 -> 相生
-			expected: []int{1, 2, 3, 4, 5, 6, 7},
+			expected: []int{1, 7},
 		},
 		{
-			name:     "新幹線エッジの展開（逆方向）",
+			name:     "折り返しのない新幹線を保持（逆方向）",
 			input:    []int{7, 1}, // 相生 -> 姫路
-			expected: []int{7, 6, 5, 4, 3, 2, 1},
+			expected: []int{7, 1},
 		},
 		{
 			name:     "展開が不要な経路",
@@ -125,7 +126,7 @@ func TestPipelineCorrectorCapturesPathBeforeShinkansenExpansion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("予期しないエラーが発生しました: %v", err)
 	}
-	if want := []int{1, 2, 3, 4, 5, 6, 7}; !reflect.DeepEqual(corrected, want) {
+	if want := []int{1, 7}; !reflect.DeepEqual(corrected, want) {
 		t.Fatalf("補正後の経路 = %v, 期待値 %v", corrected, want)
 	}
 	if want := []int{1, 7}; !reflect.DeepEqual(before, want) {
@@ -376,5 +377,41 @@ func TestNormalStillAppliesRule43_2(t *testing.T) {
 	got, err := CorrectPathForMode(path, g, corrector, "normal")
 	if err != nil || !reflect.DeepEqual(got, want) {
 		t.Fatalf("CorrectPathForMode(通常) = %v, %v; 期待値 %v", got, err, want)
+	}
+}
+
+func TestOverlapExpandsOnlyAffectedEdges(t *testing.T) {
+	names := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "X"}
+	g := &mockGraphCorrector{names: map[int]string{}}
+	for i, name := range names {
+		g.names[i] = name
+	}
+	ids := func(names ...string) []int {
+		var p []int
+		for _, name := range names {
+			id, _ := g.GetID(name)
+			p = append(p, id)
+		}
+		return p
+	}
+	c := &ShinkansenOverlapCorrector{
+		mappings:          [][]string{{"A", "B", "C"}, {"D", "E", "F"}, {"G", "X", "H"}, {"H", "I", "J", "K"}, {"L", "N", "M"}},
+		overlapDeductions: [][]string{{"E", "F", "E"}, {"J", "K", "J"}},
+	}
+	for _, reverse := range []bool{false, true} {
+		path := ids("A", "C", "D", "F", "E", "G", "H", "K", "J", "L", "M")
+		want := ids("A", "C", "D", "E", "G", "H", "I", "J", "L", "M")
+		if reverse {
+			slices.Reverse(path)
+			slices.Reverse(want)
+		}
+		original := slices.Clone(path)
+		got, err := c.Correct(path, g)
+		if err != nil || !slices.Equal(got, want) {
+			t.Fatalf("逆方向=%v: 補正結果=%v、期待値=%v、エラー=%v", reverse, got, want, err)
+		}
+		if !slices.Equal(path, original) {
+			t.Fatal("入力を書き換えた")
+		}
 	}
 }

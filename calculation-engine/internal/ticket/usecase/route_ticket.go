@@ -71,7 +71,7 @@ func (c *RouteTicketCalculator) calculate(path []int, steps []ViaStep, mode stri
 	evaluationMode := NormalizeFareEvaluationMode(mode)
 	var err error
 	if mode == "cheapest" {
-		corrected, suburban, err = SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(farePath, c.graph, c.corrector, c.extensions, c.zones, func(candidate []int) (int, error) {
+		corrected, suburban, err = SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(farePath, c.graph, cheapestPathCorrector(c.corrector), c.extensions, c.zones, func(candidate []int) (int, error) {
 			res, _, err := c.evaluator.ExecuteWithMode(candidate, 0, "normal")
 			if err != nil {
 				return 0, err
