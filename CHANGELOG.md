@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.5.1...kippu-navi-v5.5.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* 常磐線から上野経由の新幹線への折り返し特例を修正する ([#957](https://github.com/tojoryohei/kippu-navi/issues/957)) ([db1b2a4](https://github.com/tojoryohei/kippu-navi/commit/db1b2a4206e10af70700e7f502d4fdfbfd7140f4))
+
 ## [5.5.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.5.0...kippu-navi-v5.5.1) (2026-10-29)
 
 
