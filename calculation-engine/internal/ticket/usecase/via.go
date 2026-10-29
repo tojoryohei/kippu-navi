@@ -646,6 +646,8 @@ type overlapViaRule struct {
 	branch                []string
 	shinkansenNeighbor    string
 	conventionalNeighbors []string
+	// 控除区間の路線を省略しても、実際の新幹線乗換駅を印字する。
+	printConnection bool
 }
 
 var overlapViaBranches = []overlapViaRule{
@@ -661,7 +663,7 @@ var overlapViaBranches = []overlapViaRule{
 	{branch: []string{"倉敷", "中庄", "庭瀬", "北長瀬", "岡山"}, shinkansenNeighbor: "新倉敷", conventionalNeighbors: []string{"清音"}},
 	{branch: []string{"浦上", "長崎"}, shinkansenNeighbor: "諫早", conventionalNeighbors: []string{"西浦上"}},
 	{branch: []string{"宇土", "富合", "川尻", "西熊本", "熊本"}, shinkansenNeighbor: "新八代", conventionalNeighbors: []string{"緑川"}},
-	{branch: []string{"日暮里", "鶯谷", "上野"}, shinkansenNeighbor: "大宮", conventionalNeighbors: []string{"三河島"}},
+	{branch: []string{"日暮里", "鶯谷", "上野"}, shinkansenNeighbor: "大宮", conventionalNeighbors: []string{"三河島"}, printConnection: true},
 	{branch: []string{"吉塚", "博多"}, shinkansenNeighbor: "小倉", conventionalNeighbors: []string{"柚須"}},
 	{branch: []string{"西小倉", "小倉"}, shinkansenNeighbor: "博多", conventionalNeighbors: []string{"南小倉"}},
 }
@@ -709,6 +711,12 @@ func removeOverlapViaWithSuppression(path []ViaStep) ([]ViaStep, map[string]bool
 			if forward && path[last+1].StationName == rule.shinkansenNeighbor && containsStation(rule.conventionalNeighbors, path[i-1].StationName) && !shinkansenLines[path[i-1].LineName] && shinkansenLines[path[last].LineName] &&
 				path[i-1].StationName != branch[1] && path[last+1].StationName != branch[len(branch)-2] &&
 				path[i-1].StationName != path[last+1].StationName {
+				if rule.printConnection {
+					for j := i; j < last; j++ {
+						removed[j] = true
+					}
+					break
+				}
 				// 分岐駅から折り返し駅までの在来線を除き、新幹線のコードを分岐駅へ移す。
 				result[i].LineName = path[last].LineName
 				suppressedStations[path[i].StationName] = true
@@ -720,6 +728,13 @@ func removeOverlapViaWithSuppression(path []ViaStep) ([]ViaStep, map[string]bool
 			if backward && path[i-1].StationName == rule.shinkansenNeighbor && containsStation(rule.conventionalNeighbors, path[last+1].StationName) && shinkansenLines[path[i-1].LineName] && !shinkansenLines[path[last].LineName] &&
 				path[i-1].StationName != branch[len(branch)-2] && path[last+1].StationName != branch[1] &&
 				path[i-1].StationName != path[last+1].StationName {
+				if rule.printConnection {
+					result[i].LineName = path[last].LineName
+					for j := i + 1; j <= last; j++ {
+						removed[j] = true
+					}
+					break
+				}
 				// 新幹線の終端駅から分岐駅までの折り返し区間を除く。
 				suppressedStations[path[last].StationName] = true
 				for j := i; j < last; j++ {
