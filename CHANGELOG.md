@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.5.0...kippu-navi-v5.5.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* 山形新幹線の折り返し特例と分割禁止駅の候補に対応する ([#955](https://github.com/tojoryohei/kippu-navi/issues/955)) ([3769239](https://github.com/tojoryohei/kippu-navi/commit/3769239a01af53199d3a03ca5315084a3895ccda))
+
 ## [5.5.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.4.1...kippu-navi-v5.5.0) (2026-10-28)
 
 
