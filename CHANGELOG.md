@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.5.2...kippu-navi-v5.5.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* 折り返し特例の経由印字で第70条を優先する ([#959](https://github.com/tojoryohei/kippu-navi/issues/959)) ([eb7971a](https://github.com/tojoryohei/kippu-navi/commit/eb7971ad9a05cc0bc3bf209f124791bd7fb78490))
+
 ## [5.5.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.5.1...kippu-navi-v5.5.2) (2026-10-29)
 
 
