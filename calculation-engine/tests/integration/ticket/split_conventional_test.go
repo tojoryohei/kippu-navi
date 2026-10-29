@@ -20,6 +20,9 @@ func TestSplitConventionalCorridors(t *testing.T) {
 		input              []string
 		includes, excludes string
 	}{
+		{"カタシ", []string{"（北）福島", "米沢"}, "庭坂", ""},
+		{"カタシ", []string{"山形", "天童"}, "羽前千歳", ""},
+		{"カタシ", []string{"大石田", "新庄"}, "舟形", ""},
 		{"シンカ", []string{"三島", "（東）新富士", "静岡"}, "富士", "（東）新富士"},
 		{"シンカ", []string{"名古屋", "岐阜羽島", "米原"}, "岐阜", "岐阜羽島"},
 		{"シンカ", []string{"新大阪", "新神戸", "西明石"}, "神戸", "新神戸"},
