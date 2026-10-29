@@ -24,14 +24,15 @@ func (u *Article70Corrector) correctWithSource(path, source []int, g graph.Graph
 		return path, nil
 	}
 
+	// 太線区間の境界が新幹線エッジの途中にある場合も判定する。
+	original := path
+	path, origins := NewShinkansenOverlapCorrector().expand(path, g)
 	segments := article70Segments(path, g)
 	if len(segments) == 0 {
-		return path, nil
+		return original, nil
 	}
 
-	// 経路置換のために新しいスライスを作成（後ろから処理するとインデックスが狂いにくい）
-	newPath := make([]int, len(path))
-	copy(newPath, path)
+	var edits []pathEdit
 	correctedEndpoint := false
 
 	for i := len(segments) - 1; i >= 0; i-- {
@@ -71,18 +72,13 @@ func (u *Article70Corrector) correctWithSource(path, source []int, g graph.Graph
 				if routeIDs[len(routeIDs)-1] != path[seg.end] {
 					routeIDs = append(routeIDs, path[seg.end])
 				}
-				head := newPath[:seg.start]
-				tail := newPath[seg.end+1:]
-				merged := make([]int, 0, len(head)+len(routeIDs)+len(tail))
-				merged = append(merged, head...)
-				merged = append(merged, routeIDs...)
-				merged = append(merged, tail...)
-				newPath = merged
+				edits = append(edits, pathEdit{seg.start, seg.end, routeIDs})
 				correctedEndpoint = correctedEndpoint || mode != "passing"
 			}
 		}
 	}
 
+	newPath := applyProjectedEdits(original, path, origins, edits)
 	// 第160条のう回乗車と要求区間の整合を確認する。東京〜上野だけを
 	// 新幹線で利用する場合に限定し、上野〜大宮も新幹線なら対象外とする。
 	// 判定は第70条補正直後に行い、最安モードの経路延長より前に返す。

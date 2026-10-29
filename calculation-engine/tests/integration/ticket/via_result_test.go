@@ -208,7 +208,10 @@ func TestArticle88ShinkansenCorrectionRespectsMode(t *testing.T) {
 			if mode == "uncorrect" {
 				wantKilo = 955
 			}
-			want = append(want[:len(want)-1], "（陽）大久保", "魚住", "土山", "東加古川", "加古川", "宝殿", "曽根", "ひめじ別所", "御着", "東姫路", "姫路")
+			// 通常・補正禁止は折り返しのない西明石―姫路の新幹線を保持する。
+			if mode == "cheapest" {
+				want = append(want[:len(want)-1], "（陽）大久保", "魚住", "土山", "東加古川", "加古川", "宝殿", "曽根", "ひめじ別所", "御着", "東姫路", "姫路")
+			}
 			if reverse {
 				slices.Reverse(names)
 				slices.Reverse(want)
