@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.9.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.8.1...kippu-navi-v5.9.0) (2026-10-30)
+
+
+### Features
+
+* 乗車券の発着別単駅指定オプションを追加 ([#972](https://github.com/tojoryohei/kippu-navi/issues/972)) ([0ee2c30](https://github.com/tojoryohei/kippu-navi/commit/0ee2c301bcda95b4ce9ad947f2e564a54a3bdfab))
+
 ## [5.8.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.8.0...kippu-navi-v5.8.1) (2026-10-30)
 
 
