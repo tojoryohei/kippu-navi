@@ -7,7 +7,7 @@ import CalculatorResources from "@/components/CalculatorResources.astro";
 const metadata = {
   title: "分割定期券計算（経路自動検索）",
   description:
-    "JR在来線の通勤定期券を分割購入した場合の最安パターンを自動計算。1箇月・3箇月・6箇月に対応。発駅と着駅を入力するだけで、定期代の節約額がわかります。",
+    "JR在来線の通勤定期券を分割購入した場合の最安パターンを自動計算。1箇月・3箇月・6箇月に対応。乗車駅と降車駅を入力するだけで、定期代の節約額がわかります。",
   alternates: {
     canonical: "/split/auto/pass",
   },
@@ -60,7 +60,7 @@ import Calculator from "@/app/split/components/FormWithSearchParams";
           <div class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
             <p>
               {
-                "計算したい区間の発着駅と期間を入力・選択してください。JR在来線の候補経路から、条件内で安い分割パターンを比較します。"
+                "計算したい区間の乗車駅・降車駅と期間を入力・選択してください。JR在来線の候補経路から、条件内で安い分割パターンを比較します。"
               }
             </p>
           </div>

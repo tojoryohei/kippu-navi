@@ -24,9 +24,9 @@ const sources = [{ title: "モバイルSuica：アプリで購入できない定
 <ArticleLayout slug="how-to-buy-split-pass" sources={sources}>
 <p>モバイルSuicaで分割定期券を申し込む例を、フォームとアプリの画像に沿って説明します。東京―小山を南浦和で2区間に分け、申請した内容をアプリで確認して購入する流れです。磁気定期券・カード型IC定期券との違いや、購入条件は後半で整理します。</p>
 <h2>申請例：東京―小山を南浦和で分ける</h2>
-<p>以下の画像は、東京―小山の定期券を「東京―南浦和」と「南浦和―小山」の2区間に分けて申し込む例です。全区間を1区間として入力するのではなく、南浦和を第1区間の着駅と第2区間の発駅にして、希望する分割位置を伝えます。</p>
-<div class="overflow-x-auto"><table><thead><tr><th>入力欄</th><th>第1区間</th><th>第2区間</th></tr></thead><tbody><tr><td>発駅</td><td>東京</td><td>南浦和</td></tr><tr><td>利用会社線・線区</td><td>東北</td><td>東北</td></tr><tr><td>着駅</td><td>南浦和</td><td>小山</td></tr></tbody></table></div>
-<p>画像では種別に「通勤定期券」を選び、上記の発着駅と線区を入力しています。要望・特記事項には「東京[東北]小山を南浦和で分割した2区間の定期券を購入したいです。」と記入し、区間欄と文章の両方で希望を伝えています。</p>
+<p>以下の画像は、東京―小山の定期券を「東京―南浦和」と「南浦和―小山」の2区間に分けて申し込む例です。全区間を1区間として入力するのではなく、南浦和を第1区間の降車駅と第2区間の乗車駅にして、希望する分割位置を伝えます。</p>
+<div class="overflow-x-auto"><table><thead><tr><th>入力欄</th><th>第1区間</th><th>第2区間</th></tr></thead><tbody><tr><td>乗車駅</td><td>東京</td><td>南浦和</td></tr><tr><td>利用会社線・線区</td><td>東北</td><td>東北</td></tr><tr><td>降車駅</td><td>南浦和</td><td>小山</td></tr></tbody></table></div>
+<p>画像では種別に「通勤定期券」を選び、上記の乗車駅・降車駅と線区を入力しています。要望・特記事項には「東京[東北]小山を南浦和で分割した2区間の定期券を購入したいです。」と記入し、区間欄と文章の両方で希望を伝えています。</p>
 <div class="grid gap-6 sm:grid-cols-2">{formExamples.map(({src, caption, alt}) => <figure><Image src={src} alt={alt} loading="lazy" class="mx-auto max-h-[32rem] w-auto max-w-full object-contain" /><figcaption class="mt-2 text-sm">{caption}</figcaption></figure>)}</div>
 <h2>アプリで予約定期券を購入する</h2>
 <p>申請後、定期券情報が作成された旨の案内を受け取ったら、アプリの定期券メニューを開き、「予約定期券あり」の表示から購入に進みます。申請フォームを送る段階と、アプリで代金を支払う段階は別です。</p>

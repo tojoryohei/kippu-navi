@@ -7,7 +7,7 @@ import CalculatorResources from "@/components/CalculatorResources.astro";
 const metadata = {
   title: "JR乗車券運賃計算機",
   description:
-    "JR全線の大人・小児の普通乗車券の運賃と営業キロを計算。学割などの割引に対応。発着駅と経由路線を入力して、特定区間運賃や大都市近郊区間の最安経路補正に対応して計算します。",
+    "JR全線の大人・小児の普通乗車券の運賃と営業キロを計算。学割などの割引に対応。乗車駅・降車駅と経由路線を入力して、特定区間運賃や大都市近郊区間の最安経路補正に対応して計算します。",
   alternates: {
     canonical: "/fare/ticket",
   },
@@ -60,7 +60,7 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
 
           <div class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
             <p>
-              {"発着駅および経由路線を入力してください。"}
+              {"乗車駅・降車駅および経由路線を入力してください。"}
             </p>
             <p>
               {"指定した経路の乗車券運賃を計算します。"}

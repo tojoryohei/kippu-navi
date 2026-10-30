@@ -118,7 +118,7 @@ for (const width of [320, 1280]) {
   });
 }
 
-test("発着駅を一覧と検索候補から除外", async ({ page }) => {
+test("乗車駅・降車駅を一覧と検索候補から除外", async ({ page }) => {
   await page.goto("/split/auto/ticket?from=新茂原&to=茂原&noSplitStation=新茂原&noSplitStation=東京");
   await expect(page.locator("#selected-no-split-stations li")).toHaveCount(1);
   await page.locator("form summary").click();

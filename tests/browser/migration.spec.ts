@@ -180,9 +180,9 @@ test("空の運賃フォームで種別・期間を切り替えてもバリデ�
   await page.goto("/fare/ticket");
 
   const requiredMessages = [
-    "発駅を入力してください",
+    "乗車駅を入力してください",
     "経由路線を選択してください",
-    "着駅を入力してください",
+    "降車駅を入力してください",
   ];
   const expectNoRequiredMessages = async () => {
     for (const message of requiredMessages) {

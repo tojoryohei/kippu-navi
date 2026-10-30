@@ -7,7 +7,7 @@ import CalculatorResources from "@/components/CalculatorResources.astro";
 const metadata = {
   title: "分割IC定期券検索（経路自動検索）",
   description:
-    "Kitaca・Suica・ICOCAエリアのIC定期券を分割購入した場合の最安パターンを自動計算。1箇月・3箇月・6箇月に対応。発駅と着駅を入力するだけで定期代の節約額がわかります。",
+    "Kitaca・Suica・ICOCAエリアのIC定期券を分割購入した場合の最安パターンを自動計算。1箇月・3箇月・6箇月に対応。乗車駅と降車駅を入力するだけで定期代の節約額がわかります。",
   alternates: {
     canonical: "/split/auto/ic-pass",
   },
@@ -60,7 +60,7 @@ import Calculator from "@/app/split/components/FormWithSearchParams";
           <div class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
             <p>
               {
-                "計算したい区間の発着駅と期間を入力・選択してください。Kitaca・Suica・ICOCAエリアから、2区間までの分割を比較します。発売可否は購入先で確認してください。"
+                "計算したい区間の乗車駅・降車駅と期間を入力・選択してください。Kitaca・Suica・ICOCAエリアから、2区間までの分割を比較します。発売可否は購入先で確認してください。"
               }
             </p>
           </div>

@@ -7,7 +7,7 @@ import CalculatorResources from "@/components/CalculatorResources.astro";
 const metadata = {
   title: "分割乗車券計算（経路自動検索）",
   description:
-    "JR在来線の分割乗車券を自動計算。発駅と着駅を入力するだけで、最も安くなる分割パターンと節約額を表示します。独自の経路探索アルゴリズムにより、収録データと探索条件の範囲で比較します。",
+    "JR在来線の分割乗車券を自動計算。乗車駅と降車駅を入力するだけで、最も安くなる分割パターンと節約額を表示します。独自の経路探索アルゴリズムにより、収録データと探索条件の範囲で比較します。",
   alternates: {
     canonical: "/split/auto/ticket",
   },
@@ -18,7 +18,7 @@ const jsonLd = {
   "@type": "WebApplication",
   name: "分割乗車券計算（経路自動検索）",
   description:
-    "JR在来線の分割乗車券を自動計算。発駅と着駅を入力するだけで、最も安くなる分割パターンと節約額を表示します。",
+    "JR在来線の分割乗車券を自動計算。乗車駅と降車駅を入力するだけで、最も安くなる分割パターンと節約額を表示します。",
   url: "https://kippu-navi.com/split/auto/ticket",
   applicationCategory: "UtilityApplication",
   operatingSystem: "All",
@@ -59,7 +59,7 @@ import Calculator from "@/app/split/components/FormWithSearchParams";
           </h1>
           <div class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
             <p>
-              {"計算したい区間の発着駅を入力してください。"}
+              {"計算したい区間の乗車駅・降車駅を入力してください。"}
             </p>
             <p>
               {"JR在来線の候補経路から、条件内で安い分割パターンを比較します。"}
@@ -90,7 +90,7 @@ import Calculator from "@/app/split/components/FormWithSearchParams";
             {
               href: "/guide#how-to-search",
               title: "使い方",
-              description: "発着駅の入力から結果確認までを案内します。",
+              description: "乗車駅・降車駅の入力から結果確認までを案内します。",
             },
             {
               href: "/guide#how-to-buy",

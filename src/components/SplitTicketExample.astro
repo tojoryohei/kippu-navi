@@ -23,5 +23,5 @@ const displayedPatterns = [
     <details><summary>計算経路の全駅を見る</summary>{pattern.segments.map(s => <p>{s.path.join(' → ')}</p>)}</details>
   </div>)}
   <p class="text-sm">照合資料：{example.sources.map((source,index) => <span>{index > 0 ? " ／ " : ""}<a href={source.url}>{source.title}</a></span>)}。確認日：{example.verifiedAt}。</p>
-  <p><a href={url}>この発着駅を計算機に入力する</a>（分割上限なし・分割禁止駅なしで再計算）。掲載値は{data.verifiedAt}の計算エンジンで確認した記録です。改定やデータ更新により再計算値は変わります。</p>
+  <p><a href={url}>この乗車駅・降車駅を計算機に入力する</a>（分割上限なし・分割禁止駅なしで再計算）。掲載値は{data.verifiedAt}の計算エンジンで確認した記録です。改定やデータ更新により再計算値は変わります。</p>
 </section>

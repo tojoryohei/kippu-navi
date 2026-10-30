@@ -7,7 +7,7 @@ import CalculatorResources from "@/components/CalculatorResources.astro";
 const metadata = {
   title: "分割定期券計算（経路入力検索）",
   description:
-    "発着駅と経由路線を指定して、1・3・6箇月の分割定期券を計算。通常・最安・補正禁止の3モードで、分割前の定期代と最安パターン・節約額を比較できます。",
+    "乗車駅・降車駅と経由路線を指定して、1・3・6箇月の分割定期券を計算。通常・最安・補正禁止の3モードで、分割前の定期代と最安パターン・節約額を比較できます。",
   alternates: {
     canonical: "/split/route/pass",
   },
@@ -60,7 +60,7 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
 
           <div class="text-sm sm:text-base text-slate-600 leading-relaxed mb-5">
             <p>
-              {"発着駅および経由路線を入力してください。"}
+              {"乗車駅・降車駅および経由路線を入力してください。"}
             </p>
             <p>
               {"入力経路の分割定期券と分割前の運賃を比較します。"}
@@ -117,7 +117,7 @@ import Calculator from "@/app/fare/components/FormWithSearchParams";
               href: "/split/auto/pass",
               title: "経路自動検索",
               description:
-                "発着駅と期間から、安くなる経路と分割パターンを探します。",
+                "乗車駅・降車駅と期間から、安くなる経路と分割パターンを探します。",
             },
             {
               href: "/guide#route-split",

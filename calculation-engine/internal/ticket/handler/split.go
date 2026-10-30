@@ -74,7 +74,7 @@ func (h *Split) HandleCalculate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if startID == endID {
-		writeErrorResponse(w, http.StatusBadRequest, "出発駅と到着駅が同じです")
+		writeErrorResponse(w, http.StatusBadRequest, "乗車駅と降車駅が同じです")
 		return
 	}
 
