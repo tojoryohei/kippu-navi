@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.7.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.6.0...kippu-navi-v5.7.0) (2026-10-30)
+
+
+### Features
+
+* 運賃計算ページに小児運賃と各種割引を追加する ([#966](https://github.com/tojoryohei/kippu-navi/issues/966)) ([624a752](https://github.com/tojoryohei/kippu-navi/commit/624a752be12eea6652fd84ce4de5602f06f4042e))
+
 ## [5.6.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.5.3...kippu-navi-v5.6.0) (2026-10-30)
 
 
