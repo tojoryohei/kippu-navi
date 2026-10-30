@@ -108,7 +108,7 @@ test('最安で100キロを超える学割乗車券を採用し、金額と距�
     await expect(page.getByText('[学割]', { exact: true })).toBeVisible();
     await expect(page.getByText('片浜', { exact: true })).toBeVisible();
     const input = page.getByRole('table', { name: '入力経路の営業キロ・換算キロ（km）' });
-    const corrected = page.getByRole('table', { name: '補正後の経路の営業キロ・換算キロ（km）' });
+    const corrected = page.getByRole('table', { name: '計算結果の営業キロ・換算キロ（km）' });
     await expect(input.getByRole('row').filter({ hasText: '営業キロ' }).getByRole('cell').last()).toHaveText('97.4');
     await expect(corrected.getByRole('row').filter({ hasText: '営業キロ' }).getByRole('cell').last()).toHaveText('101.5');
 });

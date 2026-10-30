@@ -8,6 +8,7 @@ import type { SplitFareResult } from "@/app/types";
 import { useForm, Controller, type SubmitHandler, useFieldArray, useWatch } from "react-hook-form";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { RiArrowDownSLine, RiArrowUpDownLine } from "react-icons/ri";
+import { ImArrowRight } from "react-icons/im";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
 import { buildSearchUrl } from "@/lib/analytics-events";
 import { isRetryableEngineError, SearchOperationError } from "@/lib/search-errors";
@@ -211,7 +212,7 @@ export default function Form({
         }
 
         const calcMode = getValues("calculationMode") || initialCalculationMode || "normal";
-        newParams.set("mode", calcMode);
+        if (calcMode !== "normal") newParams.set("mode", calcMode);
 
         if (nextPath === "/fare/ticket") {
             const pricing = normalizeTicketPricing(getValues("passengerType"), getValues("discountId"));
@@ -1175,7 +1176,7 @@ export default function Form({
                                 </div>
                             </div>
 
-                            <div className="text-2xl shrink-0 text-center text-slate-400">→</div>
+                            <ImArrowRight aria-hidden="true" className="text-sm shrink-0 text-black" />
 
                             <div className="flex-1 text-left text-wrap">
                                 <div className={`font-bold flex justify-around flex-wrap ${result.arrivalStation.length > 6 ? 'text-lg sm:text-xl' : 'text-2xl'}`}>
@@ -1199,7 +1200,7 @@ export default function Form({
                             </div>
                         </div>
                         <RouteDistanceTable title="入力経路" distances={result.inputDistances} />
-                        <RouteDistanceTable title="補正後の経路" distances={result.correctedDistances} />
+                        <RouteDistanceTable title="計算結果" distances={result.correctedDistances} />
                     </div>
                 )}
 

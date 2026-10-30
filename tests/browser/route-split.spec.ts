@@ -108,7 +108,7 @@ test("経路入力検索分割: 本物のWASMで計算し運賃ページと比�
   await page.getByRole("button", { name: "経路を逆転", exact: true }).click();
   await expect(page.getByRole("combobox").first()).toHaveValue("茂原");
   await page.getByRole("button", { name: "乗車券を計算", exact: true }).click();
-  await expect(page).toHaveURL(/route=.*mode=normal/);
+  await expect(page).toHaveURL(url => url.searchParams.has("route") && !url.searchParams.has("mode"));
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
   expect(new URL(page.url()).searchParams.get("route")).toBe("茂原[外房]新茂原");
   await page.getByRole("radio", { name: /^最安 / }).check();
@@ -231,7 +231,7 @@ test("不正な計算モードは通常モードに戻す", async ({ page }) => 
   await page.goto(`/split/route/ticket?${new URLSearchParams({ route: "新茂原[外房]茂原", mode: "unknown" })}`);
   await lastResult(page, "success_route_split_ticket");
   await expect(page.getByRole("radio", { name: /^通常 / })).toBeChecked();
-  expect(new URL(page.url()).searchParams.get("mode")).toBe("normal");
+  expect(new URL(page.url()).searchParams.get("mode")).toBeNull();
   expect(apiCalls).toEqual([]);
 });
 
