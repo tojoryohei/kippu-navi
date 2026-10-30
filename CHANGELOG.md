@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.6.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.5.3...kippu-navi-v5.6.0) (2026-10-30)
+
+
+### Features
+
+* 運賃計算結果を会社別の営業キロ・換算キロ表に変更 ([#964](https://github.com/tojoryohei/kippu-navi/issues/964)) ([13d8646](https://github.com/tojoryohei/kippu-navi/commit/13d8646c838e1f5c648402c47ee13765dcd346ea))
+
 ## [5.5.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.5.2...kippu-navi-v5.5.3) (2026-10-29)
 
 
