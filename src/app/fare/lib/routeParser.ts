@@ -88,7 +88,7 @@ export function parseRoute(
             if (candidates.length === 1) {
                 matchedLine = candidates[0];
             } else if (candidates.length > 1) {
-                // 優先度1: `_` 以降が出発駅名と一致するもの（山手線 外_東京、環状線 外_天王寺 等の起点駅指定）
+                // 優先度1: `_` 以降が乗車駅名と一致するもの（山手線 外_東京、環状線 外_天王寺 等の起点駅指定）
                 const suffixMatch = candidates.find(l => {
                     const suffix = l.name.includes('_') ? l.name.split('_').slice(1).join('_') : null;
                     return suffix !== null && suffix === currentStationName;
@@ -97,7 +97,7 @@ export function parseRoute(
                 if (suffixMatch) {
                     matchedLine = suffixMatch;
                 } else {
-                    // 優先度2: 出発駅・到着駅の両方が路線内に含まれている（横須賀線 vs 横須賀線_品鶴線 の分岐等）
+                    // 優先度2: 乗車駅・降車駅の両方が路線内に含まれている（横須賀線 vs 横須賀線_品鶴線 の分岐等）
                     const bothIncluded = candidates.find(l =>
                         l.stations?.includes(currentStationName) &&
                         (destStationName ? l.stations?.includes(destStationName) : true)
@@ -106,7 +106,7 @@ export function parseRoute(
                     if (bothIncluded) {
                         matchedLine = bothIncluded;
                     } else {
-                        // 優先度3: 出発駅の lines フィールドに含まれている路線
+                        // 優先度3: 乗車駅の lines フィールドに含まれている路線
                         const prevStationObj = stationMap.get(currentStationName);
                         const prevLines = prevStationObj?.lines || [];
                         const exactStationLine = candidates.find(l => prevLines.includes(l.name));
@@ -114,7 +114,7 @@ export function parseRoute(
                         if (exactStationLine) {
                             matchedLine = exactStationLine;
                         } else {
-                            // 優先度4: 出発駅が路線内に含まれている
+                            // 優先度4: 乗車駅が路線内に含まれている
                             const prevIncluded = candidates.find(l => l.stations?.includes(currentStationName));
                             // 優先度5: 表示名と完全一致（アンダーバーなし）
                             matchedLine = prevIncluded ||

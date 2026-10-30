@@ -33,7 +33,7 @@ const jsonError = (description: string) => ({
 const operation = (operationId: string, summary: string, pass: boolean, ic: boolean) => ({
   operationId, summary,
   description: `${ic ? "IC定期券は最大2区間（1分割）で固定。maxSplitsを送っても無視されます。" : ""}分割境界の駅名を返します。金額・節約額・全経由駅は返しません。`,
-  parameters: [stationParameter("from", "出発駅"), stationParameter("to", "到着駅"),
+  parameters: [stationParameter("from", "乗車駅"), stationParameter("to", "降車駅"),
     ...(pass ? [months] : []), ...(ic ? [] : [maxSplits]), noSplitStation],
   responses: {
     "200": {
@@ -91,8 +91,8 @@ export const openapi = {
     SplitResult: {
       type: "object", required: ["normal", "results"],
       properties: {
-        normal: { type: "array", minItems: 2, maxItems: 2, items: { type: "string" }, description: "指定した発着駅。全経由駅ではありません。" },
-        results: { type: "array", items: { type: "array", minItems: 2, items: { type: "string" } }, description: "発駅・分割境界駅・着駅の順。各配列が1つの候補。" },
+        normal: { type: "array", minItems: 2, maxItems: 2, items: { type: "string" }, description: "指定した乗車駅・降車駅。全経由駅ではありません。" },
+        results: { type: "array", items: { type: "array", minItems: 2, items: { type: "string" } }, description: "乗車駅・分割境界駅・降車駅の順。各配列が1つの候補。" },
       },
     },
     Error: { type: "object", required: ["error"], properties: { error: { type: "string" } } },

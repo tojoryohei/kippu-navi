@@ -639,7 +639,7 @@ export default function SplitForm({
         const startVal = getValues("startStation");
         const endVal = getValues("endStation");
         if (startVal?.name && endVal?.name && startVal.name === endVal.name) {
-            return "発駅と着駅には異なる駅を指定してください";
+            return "乗車駅と降車駅には異なる駅を指定してください";
         }
 
         // IC定期券の時のエリアバリデーション
@@ -842,7 +842,7 @@ export default function SplitForm({
 
                     <div className="flex flex-col w-full">
                         <div className="flex items-center gap-5 w-full">
-                            <label htmlFor="start-station-split" className="w-12 shrink-0 whitespace-nowrap">発駅</label>
+                            <label htmlFor="start-station-split" className="w-12 shrink-0 whitespace-nowrap">乗車駅</label>
                             <div className="flex-1 w-full min-w-0">
                                 <Controller
                                     name="startStation"
@@ -873,7 +873,7 @@ export default function SplitForm({
                             onClick={handleSwapStations}
                             disabled={!canSwap || isPending}
                             className="p-2 bg-white border border-gray-300 rounded-full shadow-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                            aria-label="発駅と着駅を入れ替える"
+                            aria-label="乗車駅と降車駅を入れ替える"
                             title="駅を入れ替える"
                         >
                             <RiArrowUpDownLine className="text-xl" />
@@ -882,7 +882,7 @@ export default function SplitForm({
 
                     <div className="flex flex-col w-full">
                         <div className="flex items-center gap-5 w-full">
-                            <label htmlFor="end-station-split" className="w-12 shrink-0 whitespace-nowrap">着駅</label>
+                            <label htmlFor="end-station-split" className="w-12 shrink-0 whitespace-nowrap">降車駅</label>
                             <div className="flex-1 w-full min-w-0">
                                 <Controller
                                     name="endStation"
@@ -956,11 +956,11 @@ export default function SplitForm({
                 <h2 className="font-bold text-gray-600 mb-2">💡 当システムについて</h2>
                 <p className="mb-4 leading-relaxed">
                     {isIcPass ? (
-                        "出発駅と到着駅を入力するだけで、分割IC定期券の最安解を自動計算するツールです。経路は自動探索します。IC定期券（Kitaca・Suica・ICOCAエリア）に対応しています。1枚のICカードに情報を書き込めるように最大分割数は1回に制限しています。"
+                        "乗車駅と降車駅を入力するだけで、分割IC定期券の最安解を自動計算するツールです。経路は自動探索します。IC定期券（Kitaca・Suica・ICOCAエリア）に対応しています。1枚のICカードに情報を書き込めるように最大分割数は1回に制限しています。"
                     ) : isPass ? (
-                        "出発駅と到着駅を入力するだけで、分割定期券の最安解を自動計算するツールです。経路は自動探索します。"
+                        "乗車駅と降車駅を入力するだけで、分割定期券の最安解を自動計算するツールです。経路は自動探索します。"
                     ) : (
-                        "出発駅と到着駅を入力するだけで、分割乗車券の最安解を自動計算するツールです。経路は自動探索します。"
+                        "乗車駅と降車駅を入力するだけで、分割乗車券の最安解を自動計算するツールです。経路は自動探索します。"
                     )}
                 </p>
 
@@ -976,7 +976,7 @@ export default function SplitForm({
                             "「乗車券」タブにて、運賃の計算が可能です。"
                         )}
                     </li>
-                    <li><strong>駅の入力:</strong> 「発駅」と「着駅」に駅名を入力し、候補から選択します。</li>
+                    <li><strong>駅の入力:</strong> 「乗車駅」と「降車駅」に駅名を入力し、候補から選択します。</li>
                     <li><strong>駅の入れ替え:</strong> 検索フォームの入力を逆にしたい場合は ⇅ ボタンを押すことで切り替わります。</li>
                     <li><strong>最安分割運賃の計算:</strong> 計算ボタンを押すと、自動で最安分割運賃とそれぞれのきっぷ情報が出力されます。</li>
                 </ol>

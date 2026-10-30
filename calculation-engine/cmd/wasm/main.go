@@ -1614,7 +1614,7 @@ func calculateOptimalSplitPass(this js.Value, args []js.Value) interface{} {
 		return fail("存在しない駅名が含まれています")
 	}
 	if start == end {
-		return fail("出発駅と到着駅が同じです")
+		return fail("乗車駅と降車駅が同じです")
 	}
 	if g.GetGroupID(start) == 0 || g.GetGroupID(start) != g.GetGroupID(end) {
 		return fail(domain.DisconnectedRouteErrorMessage)

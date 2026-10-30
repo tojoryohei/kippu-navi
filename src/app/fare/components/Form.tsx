@@ -862,14 +862,14 @@ export default function Form({
             <form onSubmit={handleSubmit(onSubmit)} className="w-full">
                 <div className="flex flex-col w-full">
 
-                    {/* 発駅 */}
+                    {/* 乗車駅 */}
                     <Controller
                         name="startStation"
                         control={control}
                         rules={{
-                            required: "発駅を入力してください",
+                            required: "乗車駅を入力してください",
                             validate: (selected) => {
-                                if (!selected || !selected.name || selected.name.trim() === "") return "発駅を入力してください";
+                                if (!selected || !selected.name || selected.name.trim() === "") return "乗車駅を入力してください";
                                 const exists = stationData.some(s => s.name === selected.name);
                                 if (!exists) return "該当する駅が存在しません";
                                 return true;
@@ -878,7 +878,7 @@ export default function Form({
                         render={({ field, fieldState }) => (
                             <div className="flex flex-col w-full">
                                 <div className="flex items-center gap-5 w-full whitespace-nowrap">
-                                    <label htmlFor="station-start-station-input" className="w-12 shrink-0">発駅</label>
+                                    <label htmlFor="station-start-station-input" className="w-12 shrink-0">乗車駅</label>
                                     <div className="flex-1 w-full min-w-0">
                                         <SelectStation
                                             instanceId="start-station"
@@ -899,7 +899,7 @@ export default function Form({
                         )}
                     />
 
-                    {/* 経由路線と着駅 */}
+                    {/* 経由路線と降車駅 */}
                     {fields.map((item, index) => {
                         const previousStation = index === 0
                             ? formValues.startStation
@@ -928,7 +928,7 @@ export default function Form({
                             : availableLines;
 
                         const isLastStation = index === fields.length - 1;
-                        const stationLabel = isLastStation ? "着駅" : "経由";
+                        const stationLabel = isLastStation ? "降車駅" : "経由駅";
 
                         return (
                             <div key={item.id} className="flex flex-col w-full">
@@ -1036,7 +1036,7 @@ export default function Form({
                             onClick={handleReverseRoute}
                             disabled={!canReverse}
                             className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded hover:bg-slate-50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
-                            title="入力フォームの発着駅と経路を逆転させます"
+                            title="入力フォームの乗車駅・降車駅と経路を逆転させます"
                         >
                             <RiArrowUpDownLine className="w-5 h-5" />
                             {"経路を逆転"}
@@ -1267,12 +1267,12 @@ export default function Form({
             <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
                 <h2 className="font-bold text-gray-600 mb-2">💡 当システムについて</h2>
                 <p className="mb-4 leading-relaxed">
-                    {"出発駅と到着駅、および経由する路線を入力するだけで、JRの運賃を計算するプログラムです。一筆書ききっぷの計算に最適です。"}
+                    {"乗車駅と降車駅、および経由する路線を入力するだけで、JRの運賃を計算するプログラムです。一筆書ききっぷの計算に最適です。"}
                 </p>
 
                 <h2 className="font-bold text-gray-600 mb-2">ご利用手順</h2>
                 <ol className="list-decimal list-inside space-y-1 ml-1">
-                    <li><strong>駅・路線の入力:</strong> 発駅から着駅までの経路を入力してください。</li>
+                    <li><strong>駅・路線の入力:</strong> 乗車駅から降車駅までの経路を入力してください。</li>
                     <li><strong>経路の追加:</strong> 「経由路線を追加」ボタンで複数の路線を乗り継ぐことができます。</li>
                     <li><strong>経路の逆転:</strong> 経路を逆にしたい場合は「⇅ 経路を逆転」ボタンを押してください。</li>
                     <li><strong>{isRouteSplit ? "分割の計算:" : "運賃の計算:"}</strong> 「{calculateButtonLabel}」ボタンを押すと、{isRouteSplit ? "最安の分割パターンと運賃が算出されます。" : "営業キロと運賃が算出されます。"}</li>

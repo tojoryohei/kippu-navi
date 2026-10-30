@@ -9,20 +9,20 @@ import ss4 from "@/app/articles/how-to-buy-split-ticket/ss4.png";
 import edmondson from "@/app/articles/how-to-buy-split-ticket/edmondson.jpeg";
 import mars from "@/app/articles/how-to-buy-split-ticket/mars.jpeg";
 const purchaseSteps = [
-  { src: ss1, caption: "1. 発着駅・乗車日・人数を入力する", alt: "えきねっとの列車検索画面。乗車駅に東京、降車駅に蒲田を入力した例。" },
+  { src: ss1, caption: "1. 乗車駅・降車駅・乗車日・人数を入力する", alt: "えきねっとの列車検索画面。乗車駅に東京、降車駅に蒲田を入力した例。" },
   { src: ss2, caption: "2. 検索オプションで「乗車券のみ購入」を選ぶ", alt: "えきねっとの検索オプションで「乗車券のみ購入」にチェックを入れた画面。" },
   { src: ss3, caption: "3. 検索結果の区間・経路・運賃を確認する", alt: "東京から蒲田の経路と運賃260円が表示された検索結果。" },
   { src: ss4, caption: "4. 紙の乗車券の申込みを選ぶ", alt: "えきねっとで「乗車券（紙のきっぷ）を申込む」を選択した画面。" },
 ];
 const ticketExamples = [
   { src: edmondson, caption: "金額式のきっぷの例", alt: "東京から260円区間と印字された乗車券。" },
-  { src: mars, caption: "着駅名が記載されたきっぷの例", alt: "東京から蒲田と区間が印字された乗車券。" },
+  { src: mars, caption: "降車駅名が記載されたきっぷの例", alt: "東京から蒲田と区間が印字された乗車券。" },
 ];
 const sources = [{"title": "えきねっと：きっぷのお受取りについて", "url": "https://www.eki-net.com/top/jrticket/guide/uketori/"}, {"title": "JR東日本：きっぷのルール（適用会社・基準日の案内）", "url": "https://www.jreast.co.jp/kippu/"}, {"title": "JR東日本：きっぷの払いもどし", "url": "https://www.jreast.co.jp/kippu/22.html"}];
 ---
 <ArticleLayout slug="how-to-buy-split-ticket" sources={sources}>
 <h2>購入より先に、経路と受取場所を確認する</h2>
-<p>きっぷナビは乗車券の販売・予約を行いません。計算結果に出た各区間について、発駅・着駅・経由路線を控え、発売箇所に購入可否を確認します。分割駅名だけで注文すると、意図した経路と違う券になるおそれがあります。</p>
+<p>きっぷナビは乗車券の販売・予約を行いません。計算結果に出た各区間について、乗車駅・降車駅・経由路線を控え、発売箇所に購入可否を確認します。分割駅名だけで注文すると、意図した経路と違う券になるおそれがあります。</p>
 <p>えきねっとは全国どの駅でも受け取れるサービスではありません。JR東日本、JR北海道、JR東海の指定された設備、JR西日本北陸エリアの対象駅などで、受け取れる予約や設備の条件が異なります。JR西日本のその他のエリア、JR四国、JR九州などでは原則受け取れません。出発地の近くに受取可能な駅があるかを最初に確認してください。</p>
 <h2>乗車券だけを申し込むときの流れ</h2>
 <ol><li>きっぷナビで結果を確認し、必要な各券の区間・経由路線を書き出す。</li><li>えきねっとで利用日と区間を指定する。乗車券のみの申込みができる検索・購入条件かを画面上で確認する。</li><li>表示された経路・金額・有効期間を確認し、1区間ごとに必要な券を手配する。候補が出ない場合は、別の経路で代用せず発売箇所に相談する。</li><li>予約詳細の案内に従って受け取り、全券の区間が連続しているかを確認する。</li></ol>

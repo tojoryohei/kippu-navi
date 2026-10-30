@@ -60,9 +60,9 @@ test("保存した全計算例の合計と接続が整合する", () => {
   }
 });
 
-test('計算例のリンクから発着駅を復元する', async ({ page }) => {
+test('計算例のリンクから乗車駅・降車駅を復元する', async ({ page }) => {
   await page.goto('/articles/split-ticket-case-study');
-  await page.getByRole('link',{name:'この発着駅を計算機に入力する'}).last().click();
+  await page.getByRole('link',{name:'この乗車駅・降車駅を計算機に入力する'}).last().click();
   await expect(page).toHaveURL(/from=.*&to=/);
   await expect(page.getByRole('combobox').first()).toHaveValue('東京');
   await expect(page.getByRole('combobox').nth(1)).toHaveValue('品川');
