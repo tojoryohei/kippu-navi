@@ -1,9 +1,6 @@
 name: Deploy staging
 
 on:
-  workflow_run:
-    workflows: [Staging request]
-    types: [completed]
   workflow_dispatch:
     inputs:
       branch:
@@ -20,12 +17,7 @@ permissions: {}
 
 jobs:
   resolve:
-    if: >-
-      github.ref == 'refs/heads/main' &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.event.workflow_run.conclusion == 'success' &&
-        (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'pull_request') &&
-        github.event.workflow_run.head_repository.full_name == github.repository))
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -34,7 +26,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -46,10 +37,6 @@ jobs:
           script: |
             const { resolveTarget } = await import('${{ github.workspace }}/scripts/staging/checks.mjs');
             const target = await resolveTarget(github, context);
-            if (!target) {
-              core.notice('同一リポジトリの非mainブランチからの公開要求ではないため、公開を省略します。');
-              return;
-            }
             core.setOutput('sha', target.sha);
             core.setOutput('branch', target.branch);
 
