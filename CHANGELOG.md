@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.8.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.8.0...kippu-navi-v5.8.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* 通常モードのURLと計算画面の表示を整える ([#970](https://github.com/tojoryohei/kippu-navi/issues/970)) ([dc3aa7e](https://github.com/tojoryohei/kippu-navi/commit/dc3aa7ea33ef1af1e0ec61bbb40b5cf760fc35eb))
+
 ## [5.8.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.7.0...kippu-navi-v5.8.0) (2026-10-30)
 
 
