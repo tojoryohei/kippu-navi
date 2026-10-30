@@ -62,5 +62,6 @@ body {
 .station-select__option--is-focused, .line-select__option--is-focused,
 .station-select__option:hover, .line-select__option:hover { background: #deebff; }
 .station-select__option--is-selected, .line-select__option--is-selected { background: #2684ff; color: #fff; }
+.station-select__option--is-selected:hover, .line-select__option--is-selected:hover { background: #2684ff; color: #fff; }
 .station-virtual-space { position: relative; width: 100%; }
 .station-virtual-row { position: absolute; top: 0; left: 0; width: 100%; }
