@@ -1283,7 +1283,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 	if err != nil {
 		return routeTicketError(err)
 	}
-	fare, _, err := calculator.Calculate(pathIDs, req.ViaSteps(), req.CalculationMode)
+	fare, err := calculator.CalculateWithDistances(pathIDs, req.ViaSteps(), req.CalculationMode)
 	if err != nil {
 		return routeTicketError(err)
 	}
@@ -1294,8 +1294,8 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 	}
 
 	resp := struct {
-		Data ticketusecase.RouteTicketFare `json:"data"`
-		Time float64                       `json:"time"`
+		Data ticketusecase.RouteTicketFareWithDistances `json:"data"`
+		Time float64                                    `json:"time"`
 	}{fare, elapsed}
 
 	respBytes, err := json.Marshal(resp)

@@ -9,7 +9,22 @@ import (
 	"fmt"
 )
 
+type CompanyDistance struct {
+	EigyoKilo  domain.DeciKilo `json:"eigyoKilo"`
+	GiseiKilo domain.DeciKilo `json:"giseiKilo"`
+}
+
+type RouteDistances [domain.CompanyCount]CompanyDistance
+
+func (s *routeSummary) distances() (result RouteDistances) {
+	for i, stats := range s.statsByCompany {
+		result[i] = CompanyDistance{stats.eigyo, stats.gisei}
+	}
+	return
+}
+
 type CalculationResult struct {
+	Distances          RouteDistances `json:"-"`
 	Fare               int
 	BarrierFreeFee     int
 	TotalEigyoKilo     domain.DeciKilo // 中心駅の距離控除を反映したJRの合計（表示・閾値判定用）
@@ -280,6 +295,8 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 	}
 
 	return &CalculationResult{
+		// 補正後の表は北新地置換を含む運賃計算経路の距離を使う。
+		Distances:          summary.distances(),
 		Fare:               totalFare,
 		BarrierFreeFee:     barrierFreeFee,
 		TotalEigyoKilo:     physicalSummary.totalEigyo,

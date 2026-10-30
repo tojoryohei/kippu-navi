@@ -44,7 +44,14 @@ interface FareCalculationSummary {
     printedViaLines: string[];
 }
 
+export interface CompanyDistance {
+    eigyoKilo: number;
+    giseiKilo: number;
+}
+
 export interface TicketFareResult extends FareCalculationSummary {
+    inputDistances: CompanyDistance[];
+    correctedDistances: CompanyDistance[];
     departureStation: string;
     arrivalStation: string;
     fare: number;

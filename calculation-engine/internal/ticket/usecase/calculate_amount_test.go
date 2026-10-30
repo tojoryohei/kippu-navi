@@ -86,6 +86,9 @@ func TestCalculateAmount_Execute(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Execute() エラー = %v", err)
 		}
+		if got := res.Distances[domain.JRCentral]; got.EigyoKilo != 77 || got.GiseiKilo != 77 {
+			t.Errorf("北新地ルール適用後の距離は77を期待しましたが、実際は%+vでした", got)
+		}
 		if res.TotalEigyoKilo != 89 {
 			t.Errorf("JR実経路の営業キロ合計は89を期待しましたが、実際は%dでした", res.TotalEigyoKilo)
 		}

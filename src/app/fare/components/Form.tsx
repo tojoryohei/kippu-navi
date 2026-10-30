@@ -1,3 +1,4 @@
+import RouteDistanceTable from "./RouteDistanceTable";
 import CalculationProgress, { type RouteCalculationProgress } from "@/app/split/components/CalculationProgress";
 import RouteSplitOptions from "@/app/split/components/RouteSplitOptions";
 import SplitResults from "@/app/split/components/SplitResults";
@@ -1083,8 +1084,7 @@ export default function Form({
                 )}
                 {!isLoading && result && (
                     <div>
-                        <h2 className="py-5 text-2xl border-t">計算結果</h2>
-                        <div>営業キロ: {(result.totalEigyoKilo / 10).toFixed(1)} km</div>
+                        <h2 className="pt-5 text-2xl border-t">計算結果</h2>
                         <div className="flex justify-between items-center my-3 gap-2">
                             <div className="flex-1 text-right">
                                 <div className={`font-bold flex justify-around flex-wrap ${result.departureStation.length > 6 ? 'text-lg sm:text-xl' : 'text-2xl'}`}>
@@ -1112,6 +1112,8 @@ export default function Form({
                             </div>
                             <span className="text-xl shrink-0">¥{result.fare > 0 ? result.fare.toLocaleString() : "***"}</span>
                         </div>
+                        <RouteDistanceTable title="入力経路" distances={result.inputDistances} />
+                        <RouteDistanceTable title="補正後の経路" distances={result.correctedDistances} />
                     </div>
                 )}
 
