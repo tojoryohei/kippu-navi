@@ -211,7 +211,7 @@ export default function Form({
         }
 
         const calcMode = getValues("calculationMode") || initialCalculationMode || "normal";
-        newParams.set("mode", calcMode);
+        if (calcMode !== "normal") newParams.set("mode", calcMode);
 
         if (nextPath === "/fare/ticket") {
             const pricing = normalizeTicketPricing(getValues("passengerType"), getValues("discountId"));

@@ -195,7 +195,7 @@ test("空の運賃フォームで種別・期間を切り替えてもバリデ�
   await expectNoRequiredMessages();
 
   await page.getByRole("button", { name: "乗車券", exact: true }).click();
-  await expect(page).toHaveURL(/\/fare\/ticket\?/);
+  await expect(page).toHaveURL(/\/fare\/ticket$/);
   await expectNoRequiredMessages();
 
   await page.getByRole("button", { name: "定期券", exact: true }).click();
