@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.8.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.7.0...kippu-navi-v5.8.0) (2026-10-30)
+
+
+### Features
+
+* 最安運賃計算で割引の距離条件を満たす延長乗車券を比較する ([#968](https://github.com/tojoryohei/kippu-navi/issues/968)) ([3d9a0a9](https://github.com/tojoryohei/kippu-navi/commit/3d9a0a97e7008b6351c880437ab7a5a57f4ef292))
+
 ## [5.7.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.6.0...kippu-navi-v5.7.0) (2026-10-30)
 
 
