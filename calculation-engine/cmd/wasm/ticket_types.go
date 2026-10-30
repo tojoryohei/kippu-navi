@@ -12,6 +12,7 @@ type PathStep struct {
 
 type RouteRequest struct {
 	ticketusecase.TicketPricingOptions
+	ticketusecase.SingleStationOptions
 	FullPath        []PathStep `json:"fullPath"`
 	CalculationMode string     `json:"calculationMode"`
 }

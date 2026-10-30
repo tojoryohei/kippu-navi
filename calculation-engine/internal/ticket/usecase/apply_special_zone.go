@@ -50,11 +50,12 @@ func (s *SpecialZoneApplier) ApplyUncorrect(path []int, originZone, destZone *ti
 // 最短擬制キロ経路を使った片側の特例ゾーンを適用します。
 // 通常モードの境界判定（大阪市内の市外通過特例と東京山手線内の第70条駅）を
 // そのまま利用し、変換後の経路には境界駅を残します。
-func (s *SpecialZoneApplier) applySuburban(path []int, areaID domain.SuburbanAreaID) (*AppliedZoneInfo, bool) {
+func (s *SpecialZoneApplier) applySuburban(path []int, areaID domain.SuburbanAreaID, options ...SingleStationOptions) (*AppliedZoneInfo, bool) {
 	if len(path) < 2 || s.graph == nil || s.zoneRegistry == nil || areaID == domain.SuburbanAreaNone {
 		return nil, false
 	}
 
+	opts := singleStationOptions(options)
 	startName := s.graph.GetName(path[0])
 	endName := s.graph.GetName(path[len(path)-1])
 
@@ -62,7 +63,7 @@ func (s *SpecialZoneApplier) applySuburban(path []int, areaID domain.SuburbanAre
 	if yamanote := s.zoneRegistry.FindZoneByName("東京山手線内"); yamanote != nil {
 		centerID, centerOK := s.graph.GetID("東京")
 		stationsInYamanote := ticketdomain.IsYamanoteStation
-		if centerOK && !stationsInYamanote(startName) && stationsInYamanote(endName) {
+		if !opts.ArrivalSingleStation && centerOK && !stationsInYamanote(startName) && stationsInYamanote(endName) {
 			if shortest, ok := s.findShortestGiseiSuburban(path[0], centerID, areaID); ok &&
 				shortest.EigyoKilo > yamanote.MinDistanceDeciKilo && shortest.EigyoKilo <= yamanote.MaxDistanceDeciKilo {
 				if info, applied := s.applyDestinationZone(shortest.StationIDs, yamanote, s.osakaZoneChanges); applied {
@@ -70,7 +71,7 @@ func (s *SpecialZoneApplier) applySuburban(path []int, areaID domain.SuburbanAre
 				}
 			}
 		}
-		if centerOK && stationsInYamanote(startName) && !stationsInYamanote(endName) {
+		if !opts.DepartureSingleStation && centerOK && stationsInYamanote(startName) && !stationsInYamanote(endName) {
 			if shortest, ok := s.findShortestGiseiSuburban(centerID, path[len(path)-1], areaID); ok &&
 				shortest.EigyoKilo > yamanote.MinDistanceDeciKilo && shortest.EigyoKilo <= yamanote.MaxDistanceDeciKilo {
 				if info, applied := s.applyOriginZone(shortest.StationIDs, yamanote, s.osakaZoneChanges); applied {
@@ -95,14 +96,14 @@ func (s *SpecialZoneApplier) applySuburban(path []int, areaID domain.SuburbanAre
 			continue
 		}
 		stationsInZone := func(name string) bool { return isStationInSet(name, zone.Stations) }
-		if !stationsInZone(startName) && stationsInZone(endName) {
+		if !opts.ArrivalSingleStation && !stationsInZone(startName) && stationsInZone(endName) {
 			if shortest, found := s.findShortestGiseiSuburban(path[0], centerID, areaID); found && shortest.EigyoKilo > zone.MinDistanceDeciKilo {
 				if info, applied := s.applyDestinationZone(shortest.StationIDs, zone, s.osakaZoneChanges); applied {
 					return info, true
 				}
 			}
 		}
-		if stationsInZone(startName) && !stationsInZone(endName) {
+		if !opts.DepartureSingleStation && stationsInZone(startName) && !stationsInZone(endName) {
 			if shortest, found := s.findShortestGiseiSuburban(centerID, path[len(path)-1], areaID); found && shortest.EigyoKilo > zone.MinDistanceDeciKilo {
 				if info, applied := s.applyOriginZone(shortest.StationIDs, zone, s.osakaZoneChanges); applied {
 					return info, true

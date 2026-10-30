@@ -58,6 +58,10 @@ func TestPricingComparesExistingExtensionsAfterDiscount(t *testing.T) {
 		if err != nil || got.ArrivalStation != tc.wantEnd || got.Fare != tc.wantFare || got.DiscountApplied != tc.applied {
 			t.Fatalf("利用者=%s、割引=%s: 結果=%+v、エラー=%v", tc.passenger, tc.discount, got, err)
 		}
+		single, err := calc.CalculateWithPricing(path, steps, "cheapest", TicketPricingOptions{tc.passenger, tc.discount}, SingleStationOptions{DepartureSingleStation: true, ArrivalSingleStation: true})
+		if err != nil || single.ArrivalStation != got.ArrivalStation || single.Fare != got.Fare {
+			t.Fatalf("特例対象外では単駅指定でも延長・運賃を維持する: %+v、%v", single, err)
+		}
 		wantDistance := domain.DeciKilo(950)
 		if tc.wantEnd == "C" {
 			wantDistance += 60

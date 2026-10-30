@@ -29,6 +29,8 @@ import type { Station, Line, TicketFareResult, PassFareResult, TicketFareRespons
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 
 interface FormValues extends IFormInput {
+    departureSingleStation: boolean;
+    arrivalSingleStation: boolean;
     passengerType: PassengerType;
     discountId: DiscountId;
     maxSplits: number;
@@ -38,6 +40,8 @@ interface FormValues extends IFormInput {
 }
 
 interface FormProps {
+    initialDepartureSingleStation?: boolean;
+    initialArrivalSingleStation?: boolean;
     initialPassengerType?: PassengerType;
     initialDiscountId?: DiscountId;
     isPreview?: boolean;
@@ -126,6 +130,8 @@ const createApiRequestBody = (data: FormValues) => {
 export default function Form({
     isPreview = false,
     initialPassengerType = "adult",
+    initialDepartureSingleStation = false,
+    initialArrivalSingleStation = false,
     initialDiscountId = "none",
     initialRoute,
     initialMaxSplits = 0,
@@ -146,6 +152,8 @@ export default function Form({
         mode: 'onChange',
         defaultValues: {
             ...normalizeTicketPricing(initialPassengerType, initialDiscountId),
+            departureSingleStation: initialDepartureSingleStation,
+            arrivalSingleStation: initialArrivalSingleStation,
             maxSplits: initialMaxSplits,
             noSplitStations: initialNoSplitStations,
             startStation: null,
@@ -218,6 +226,8 @@ export default function Form({
             const pricing = normalizeTicketPricing(getValues("passengerType"), getValues("discountId"));
             if (pricing.passengerType !== "adult") newParams.set("passengerType", pricing.passengerType);
             if (pricing.discountId !== "none") newParams.set("discountId", pricing.discountId);
+            if (getValues("departureSingleStation")) newParams.set("departureSingleStation", "true");
+            if (getValues("arrivalSingleStation")) newParams.set("arrivalSingleStation", "true");
         }
 
         if (nextSearchType !== "ticket") {
@@ -248,10 +258,7 @@ export default function Form({
         return () => { mountedRef.current = false; };
     }, []);
 
-    const changePricing = (passenger: string, discount: string) => {
-        const pricing = normalizeTicketPricing(passenger, discount);
-        setValue("passengerType", pricing.passengerType);
-        setValue("discountId", pricing.discountId);
+    const clearTicketResult = () => {
         ++latestCalcIdRef.current;
         if (isLoading) workerRef.current?.restart();
         setIsLoading(false);
@@ -260,6 +267,13 @@ export default function Form({
         setServerTime(null);
         setError(null);
         updateUrlAndState(pathname, "ticket");
+    };
+
+    const changePricing = (passenger: string, discount: string) => {
+        const pricing = normalizeTicketPricing(passenger, discount);
+        setValue("passengerType", pricing.passengerType);
+        setValue("discountId", pricing.discountId);
+        clearTicketResult();
     };
 
     const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
@@ -376,7 +390,11 @@ export default function Form({
                 type: isRouteSplit ? "calculateRouteSplitTicket" : "calculateRouteTicket",
                 payload: {
                     fullPath: apiRequestBody.fullPath,
-                    ...(pathname === "/fare/ticket" ? normalizeTicketPricing(data.passengerType, data.discountId) : {}),
+                    ...(pathname === "/fare/ticket" ? {
+                        ...normalizeTicketPricing(data.passengerType, data.discountId),
+                        departureSingleStation: data.departureSingleStation,
+                        arrivalSingleStation: data.arrivalSingleStation,
+                    } : {}),
                     calculationMode: data.calculationMode,
                     maxSplits: data.maxSplits,
                     noSplitStations: data.noSplitStations || [],
@@ -1084,7 +1102,6 @@ export default function Form({
                         </summary>
                         <div className="border-t border-slate-200 px-4 py-3">
                             <fieldset className="min-w-0">
-                                <legend className="mb-3 text-sm font-semibold text-slate-800">利用者・割引種別</legend>
                                 <div className="flex items-center gap-6" role="radiogroup" aria-label="年齢区分">
                                     {(["adult", "child"] as const).map(value => <label
                                         key={value}
@@ -1112,6 +1129,18 @@ export default function Form({
                                     isOptionDisabled={discount => formValues.passengerType === "child" && !discount.allowChild}
                                     onChange={discount => changePricing(formValues.passengerType, discount.id)}
                                 />
+                            </fieldset>
+                            <fieldset className="mt-5 min-w-0">
+                                <div className="flex flex-wrap gap-4">
+                                    <label className="flex cursor-pointer items-center gap-2 text-slate-800">
+                                        <input type="checkbox" className="size-4 accent-blue-600" checked={formValues.departureSingleStation} onChange={event => { setValue("departureSingleStation", event.target.checked); clearTicketResult(); }} />
+                                        乗車駅単駅指定
+                                    </label>
+                                    <label className="flex cursor-pointer items-center gap-2 text-slate-800">
+                                        <input type="checkbox" className="size-4 accent-blue-600" checked={formValues.arrivalSingleStation} onChange={event => { setValue("arrivalSingleStation", event.target.checked); clearTicketResult(); }} />
+                                        降車駅単駅指定
+                                    </label>
+                                </div>
                             </fieldset>
                         </div>
                     </details>}

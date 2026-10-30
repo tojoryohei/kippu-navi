@@ -31,3 +31,29 @@ test('WASMの互換性、適用フラグ、未知値と小児不可割引', () =
     assert.match(calculate(stations, { discountId: 'unknown' }).error, /不明な割引/);
     assert.match(calculate(stations, { passengerType: 'unknown' }).error, /不明な年齢区分/);
 });
+
+for (const mode of ['normal', 'cheapest', 'uncorrect']) {
+    for (const [stations, originZone, destZone] of [
+        [['東京', '品川', '新横浜', '小田原', '熱海'], '東京山手線内', null],
+        [['東京', '品川', '新横浜', '小田原', '熱海', '三島', '（東）新富士', '静岡', '掛川', '浜松', '豊橋', '三河安城', '名古屋'], '東京都区内', '名古屋市内'],
+        [['新大阪', '新神戸', '西明石', '姫路'], '大阪・新大阪', null],
+    ]) {
+        test(`単駅指定の発着別制御: ${stations[0]}→${stations.at(-1)} / ${mode}`, () => {
+            for (const reverse of [false, true]) {
+                const path = reverse ? [...stations].reverse() : stations;
+                const zones = reverse ? [destZone, originZone] : [originZone, destZone];
+                for (const departureSingleStation of [false, true]) {
+                    for (const arrivalSingleStation of [false, true]) {
+                        const result = calculate(path, { calculationMode: mode, departureSingleStation, arrivalSingleStation });
+                        assert.equal(result.error, undefined);
+                        const expected = [departureSingleStation ? path[0] : zones[0] ?? path[0], arrivalSingleStation ? path.at(-1) : zones[1] ?? path.at(-1)];
+                        assert.deepEqual([result.data.departureStation, result.data.arrivalStation], expected);
+                    }
+                }
+                // 同じ共有計算器への次のリクエストに指定を残さない。
+                const baseline = calculate(path, { calculationMode: mode });
+                assert.deepEqual([baseline.data.departureStation, baseline.data.arrivalStation], [zones[0] ?? path[0], zones[1] ?? path.at(-1)]);
+            }
+        });
+    }
+}

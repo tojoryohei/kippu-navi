@@ -112,3 +112,45 @@ test('最安で100キロを超える学割乗車券を採用し、金額と距�
     await expect(input.getByRole('row').filter({ hasText: '営業キロ' }).getByRole('cell').last()).toHaveText('97.4');
     await expect(corrected.getByRole('row').filter({ hasText: '営業キロ' }).getByRole('cell').last()).toHaveText('101.5');
 });
+
+test('単駅指定は発着別に計算・URL復元でき、解除時にパラメータを削除する', async ({ page }) => {
+    await page.goto(`/fare/ticket?${new URLSearchParams({ route: '東京[新幹線]名古屋', departureSingleStation: 'true', arrivalSingleStation: 'true' })}`);
+    const result = page.getByRole('heading', { name: '計算結果', exact: true });
+    await expect(result).toBeVisible();
+    await page.getByText('詳細オプション', { exact: true }).click();
+    const departure = page.getByRole('checkbox', { name: '乗車駅単駅指定', exact: true });
+    const arrival = page.getByRole('checkbox', { name: '降車駅単駅指定', exact: true });
+    await expect(departure).toBeChecked();
+    await expect(arrival).toBeChecked();
+    await departure.uncheck();
+    await expect(result).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.has('departureSingleStation')).toBe(false);
+    expect(new URL(page.url()).searchParams.get('arrivalSingleStation')).toBe('true');
+    await page.getByRole('button', { name: '運賃計算をする', exact: true }).click();
+    await expect(result).toBeVisible();
+    await expect(page.getByText('東京都区内', { exact: true })).toBeVisible();
+    await expect(page.getByText('名古屋市内', { exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(result).toBeVisible();
+    await page.getByText('詳細オプション', { exact: true }).click();
+    await expect(departure).not.toBeChecked();
+    await expect(arrival).toBeChecked();
+    await arrival.uncheck();
+    expect(new URL(page.url()).searchParams.has('arrivalSingleStation')).toBe(false);
+    await page.getByRole('button', { name: '運賃計算をする', exact: true }).click();
+    await expect(result).toBeVisible();
+    await expect(page.getByText('名古屋市内', { exact: true })).toBeVisible();
+    const restoredUrl = page.url();
+    await page.goto(`${restoredUrl}&departureSingleStation=true&arrivalSingleStation=true`);
+    await expect(result).toBeVisible();
+    await page.goBack();
+    await expect(result).toBeVisible();
+    await page.getByText('詳細オプション', { exact: true }).click();
+    await expect(departure).not.toBeChecked();
+    await expect(arrival).not.toBeChecked();
+    for (const path of ['/fare/pass', '/split/route/ticket']) {
+        await page.goto(`${path}?departureSingleStation=true&arrivalSingleStation=true`);
+        await expect(departure).toHaveCount(0);
+        await expect(arrival).toHaveCount(0);
+    }
+});

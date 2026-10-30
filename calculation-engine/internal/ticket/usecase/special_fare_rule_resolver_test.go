@@ -167,6 +167,19 @@ func TestSpecialFareRuleResolverUsesOneSideZoneForPureJRSuburbanPath(t *testing.
 	if candidates[0].CheckThreshold {
 		t.Fatal("中心駅までの距離を事前判定した候補で閾値再判定が有効です")
 	}
+	for _, opts := range []SingleStationOptions{{DepartureSingleStation: true}, {ArrivalSingleStation: true}, {DepartureSingleStation: true, ArrivalSingleStation: true}} {
+		got, err := resolver.Resolve([]int{1, 2}, "normal", opts)
+		if err != nil || len(got) == 0 {
+			t.Fatalf("候補解決: %v %v", got, err)
+		}
+		want := []int{1, 3, 4}
+		if opts.ArrivalSingleStation {
+			want = []int{1, 2}
+		}
+		if !reflect.DeepEqual(got[0].Path, want) {
+			t.Fatalf("単駅指定%+v: %v, want %v", opts, got[0].Path, want)
+		}
+	}
 }
 
 func TestSpecialFareRuleResolverSkipsOneSideZoneForMixedPath(t *testing.T) {

@@ -23,7 +23,7 @@ type pricedRouteCandidate struct {
 
 // CalculateWithPricing は延長前の入力を保持し、延長した各候補全体に通常の
 // 補正・特例を適用する。候補比較時の券面と金額をそのまま返す。
-func (c *RouteTicketCalculator) CalculateWithPricing(path []int, steps []ViaStep, mode string, options TicketPricingOptions) (PricedRouteTicketFare, error) {
+func (c *RouteTicketCalculator) CalculateWithPricing(path []int, steps []ViaStep, mode string, options TicketPricingOptions, singleStation ...SingleStationOptions) (PricedRouteTicketFare, error) {
 	options, err := options.Normalize()
 	if err != nil {
 		return PricedRouteTicketFare{}, err
@@ -34,7 +34,7 @@ func (c *RouteTicketCalculator) CalculateWithPricing(path []int, steps []ViaStep
 	}
 	local := *c
 	local.corrector = pricingCorrector(c.corrector, func(p []int) (int, error) {
-		base, _, e := c.evaluator.ExecuteWithMode(p, 0, "normal")
+		base, _, e := c.evaluator.ExecuteWithOptions(p, 0, "normal", singleStationOptions(singleStation))
 		if e != nil {
 			return 0, e
 		}
@@ -54,7 +54,7 @@ func (c *RouteTicketCalculator) CalculateWithPricing(path []int, steps []ViaStep
 		if value, ok := cache[key]; ok {
 			return value, nil
 		}
-		fare, base, err := local.calculatePresented(p, steps, evalMode, mode, false)
+		fare, base, err := local.calculatePresented(p, steps, evalMode, mode, false, singleStation...)
 		if err != nil {
 			failures[key] = err
 			return nil, err
