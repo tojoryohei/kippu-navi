@@ -14,7 +14,19 @@ type privateFareSection struct {
 // calculatePrivateFare は連続する会社線を会社ごとに通算する。
 // 呼び出しごとに1枚の乗車券を評価するため、特定運賃を分割券間に適用しない。
 func (u *CalculateAmount) calculatePrivateFare(edges []*ticketdomain.TicketEdge) (int, error) {
+	amounts, err := u.calculatePrivateFareAmounts(edges)
+	if err != nil {
+		return 0, err
+	}
 	total := 0
+	for _, amount := range amounts {
+		total += amount
+	}
+	return total, nil
+}
+
+func (u *CalculateAmount) calculatePrivateFareAmounts(edges []*ticketdomain.TicketEdge) ([]int, error) {
+	var amounts []int
 	for i := 0; i < len(edges); {
 		if edges[i].Company != domain.Other {
 			i++
@@ -26,7 +38,7 @@ func (u *CalculateAmount) calculatePrivateFare(edges []*ticketdomain.TicketEdge)
 			edge := edges[i]
 			company := privateCompany(edge.Line)
 			if company == "" {
-				return 0, fmt.Errorf("私鉄の会社が未登録です: %s (%s - %s)", edge.Line, u.graph.GetName(edge.FromID), u.graph.GetName(edge.ToID))
+				return nil, fmt.Errorf("私鉄の会社が未登録です: %s (%s - %s)", edge.Line, u.graph.GetName(edge.FromID), u.graph.GetName(edge.ToID))
 			}
 			start := u.graph.GetName(edge.FromID)
 			end := u.graph.GetName(edge.ToID)
@@ -37,12 +49,13 @@ func (u *CalculateAmount) calculatePrivateFare(edges []*ticketdomain.TicketEdge)
 			}
 			i++
 		}
+		startAmount := len(amounts)
 		for _, section := range sections {
 			f, ok := u.privateFareReg.GetFare(section.company, section.start, section.end)
 			if !ok {
-				return 0, fmt.Errorf("運賃が未登録です: %s: %s - %s", section.company, section.start, section.end)
+				return nil, fmt.Errorf("運賃が未登録です: %s: %s - %s", section.company, section.start, section.end)
 			}
-			total += f
+			amounts = append(amounts, f)
 		}
 		// 根拠: https://www.ishikawa-railway.jp/station/tsubata/
 		// 津幡―高岡の特定運賃。発着区間と会社境界が一致する場合だけ90円を控除。
@@ -53,9 +66,10 @@ func (u *CalculateAmount) calculatePrivateFare(edges []*ticketdomain.TicketEdge)
 				a, b = privateFareSection{b.company, b.end, b.start}, privateFareSection{a.company, a.end, a.start}
 			}
 			if a == (privateFareSection{"いしかわ", "津幡", "倶利伽羅"}) && b == (privateFareSection{"とやま鉄道", "倶利伽羅", "高岡"}) {
-				total -= 90
+				combined := amounts[startAmount] + amounts[startAmount+1] - 90
+				amounts = append(amounts[:startAmount], combined)
 			}
 		}
 	}
-	return total, nil
+	return amounts, nil
 }

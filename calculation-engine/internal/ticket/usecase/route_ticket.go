@@ -55,6 +55,11 @@ func (c *RouteTicketCalculator) Calculate(path []int, steps []ViaStep, mode stri
 }
 
 func (c *RouteTicketCalculator) calculate(path []int, steps []ViaStep, mode string, logKanaCodes bool) (RouteTicketFare, *CalculationResult, error) {
+	return c.calculatePresented(path, steps, mode, mode, logKanaCodes)
+}
+
+// 候補比較は通常の補正を使い、券面表示は最安モードの規則を保持する。
+func (c *RouteTicketCalculator) calculatePresented(path []int, steps []ViaStep, mode, presentationMode string, logKanaCodes bool) (RouteTicketFare, *CalculationResult, error) {
 	var fare RouteTicketFare
 	if len(path) < 2 {
 		return fare, nil, domain.ErrInvalidPath
@@ -82,12 +87,16 @@ func (c *RouteTicketCalculator) calculate(path []int, steps []ViaStep, mode stri
 			return res.TotalAmount(), nil
 		})
 	} else {
-		corrected, evaluationMode, suburban, err = CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(farePath, c.graph, c.corrector, c.extensions, mode)
+		corrector := c.corrector
+		if presentationMode == "cheapest" {
+			corrector = cheapestPathCorrector(corrector)
+		}
+		corrected, evaluationMode, suburban, err = CorrectPathForModeWithRouteExtensionsAndPreShinkansenPath(farePath, c.graph, corrector, c.extensions, mode)
 	}
 	if err != nil {
 		return fare, nil, &RouteCorrectionError{Err: err}
 	}
-	if mode == "cheapest" {
+	if presentationMode == "cheapest" {
 		// 最安の券面で在来線へ置換する区間は、入力時の新幹線ではなく採用経路で判定する。
 		suburban = cheapestSuburbanPath(corrected, c.graph)
 	}
@@ -98,9 +107,9 @@ func (c *RouteTicketCalculator) calculate(path []int, steps []ViaStep, mode stri
 	if res == nil || len(res.FinalPath) < 2 {
 		return fare, nil, fmt.Errorf("乗車券運賃計算結果の経路が不正です")
 	}
-	via := GetCalculatedFareVia(mode, steps, path, transformed, res.FinalPath, c.graph, c.zones)
+	via := GetCalculatedFareVia(presentationMode, steps, path, transformed, res.FinalPath, c.graph, c.zones)
 	if logKanaCodes {
-		logCalculatedFareViaKanas(mode, steps, path, transformed, c.graph)
+		logCalculatedFareViaKanas(presentationMode, steps, path, transformed, c.graph)
 	}
 	if via == nil {
 		via = []string{}

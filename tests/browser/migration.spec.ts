@@ -84,7 +84,7 @@ test("乗車券・定期券・IC定期券の遷移と履歴でWorkerを再生成
   expect(workers).toBe(1);
 });
 
-test("運賃計算と分割計算で同じWorkerを使い、モードに応じた結果を表示する", async ({
+test("乗車券運賃は専用Workerを使い、定期券・分割ではWorkerを共有する", async ({
   page,
 }) => {
   await isolateServices(page);
@@ -96,13 +96,19 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
     });
   });
   let workers = 0;
-  page.on("worker", () => workers++);
+  let closedWorkers = 0;
+  page.on("worker", worker => {
+    workers++;
+    worker.on("close", () => closedWorkers++);
+  });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(
     `/fare/ticket?${new URLSearchParams({ route: "新茂原[外房]茂原" })}`,
   );
   await expect(page.getByText("¥160", { exact: true }).first()).toBeVisible();
+  expect(workers).toBe(1);
+  expect(closedWorkers).toBe(0);
   // 説明欄の高さに依存せず、種別ボタンが固定ヘッダーに隠れない位置に置く。
   await page.getByRole("button", { name: "定期券", exact: true }).evaluate(button => {
     window.scrollTo({ top: button.getBoundingClientRect().top + window.scrollY - 200, behavior: "instant" });
@@ -128,7 +134,8 @@ test("運賃計算と分割計算で同じWorkerを使い、モードに応じ�
   await page.goBack();
   await expect(page).toHaveURL(/\/fare\/pass\?/);
   await expect(page.getByText("計算結果", { exact: true })).toBeVisible();
-  expect(workers).toBe(1);
+  expect(workers).toBe(2);
+  await expect.poll(() => closedWorkers).toBe(1);
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => (window as unknown as { cspViolations: string[] }).cspViolations)).toEqual([]);
 });
