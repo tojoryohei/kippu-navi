@@ -1,11 +1,13 @@
 import RouteDistanceTable from "./RouteDistanceTable";
+import ChoiceSelect from "@/components/ChoiceSelect";
+import { ticketDiscounts, normalizeTicketPricing, type PassengerType, type DiscountId } from "@/app/fare/lib/ticketPricing";
 import CalculationProgress, { type RouteCalculationProgress } from "@/app/split/components/CalculationProgress";
 import RouteSplitOptions from "@/app/split/components/RouteSplitOptions";
 import SplitResults from "@/app/split/components/SplitResults";
 import type { SplitFareResult } from "@/app/types";
 import { useForm, Controller, type SubmitHandler, useFieldArray, useWatch } from "react-hook-form";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { RiArrowUpDownLine } from "react-icons/ri";
+import { RiArrowDownSLine, RiArrowUpDownLine } from "react-icons/ri";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
 import { buildSearchUrl } from "@/lib/analytics-events";
 import { isRetryableEngineError, SearchOperationError } from "@/lib/search-errors";
@@ -26,6 +28,8 @@ import type { Station, Line, TicketFareResult, PassFareResult, TicketFareRespons
 const stationMap = new Map(stationData.map(s => [s.name, s]));
 
 interface FormValues extends IFormInput {
+    passengerType: PassengerType;
+    discountId: DiscountId;
     maxSplits: number;
     noSplitStations: string[];
     calculationMode: CalculationMode;
@@ -33,6 +37,8 @@ interface FormValues extends IFormInput {
 }
 
 interface FormProps {
+    initialPassengerType?: PassengerType;
+    initialDiscountId?: DiscountId;
     isPreview?: boolean;
     initialMaxSplits?: number;
     initialNoSplitStations?: string[];
@@ -118,6 +124,8 @@ const createApiRequestBody = (data: FormValues) => {
 
 export default function Form({
     isPreview = false,
+    initialPassengerType = "adult",
+    initialDiscountId = "none",
     initialRoute,
     initialMaxSplits = 0,
     initialNoSplitStations = [],
@@ -136,6 +144,7 @@ export default function Form({
     const { register, handleSubmit, control, setValue, getValues, trigger, clearErrors, formState: { isValid } } = useForm<FormValues>({
         mode: 'onChange',
         defaultValues: {
+            ...normalizeTicketPricing(initialPassengerType, initialDiscountId),
             maxSplits: initialMaxSplits,
             noSplitStations: initialNoSplitStations,
             startStation: null,
@@ -153,6 +162,7 @@ export default function Form({
     const [result, setResult] = useState<TicketFareResult | null>(null);
     const [serverTime, setServerTime] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const calculationBusyRef = useRef(false);
     const [progress, setProgress] = useState<RouteCalculationProgress>({ phase: "preparing", completed: 0, total: 0 });
     const [error, setError] = useState<string | null>(null);
     const [isEngineRetryable, setIsEngineRetryable] = useState(false);
@@ -203,6 +213,12 @@ export default function Form({
         const calcMode = getValues("calculationMode") || initialCalculationMode || "normal";
         newParams.set("mode", calcMode);
 
+        if (nextPath === "/fare/ticket") {
+            const pricing = normalizeTicketPricing(getValues("passengerType"), getValues("discountId"));
+            if (pricing.passengerType !== "adult") newParams.set("passengerType", pricing.passengerType);
+            if (pricing.discountId !== "none") newParams.set("discountId", pricing.discountId);
+        }
+
         if (nextSearchType !== "ticket") {
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
             const mVal = monthsMap[nextSearchType] || "6";
@@ -231,13 +247,28 @@ export default function Form({
         return () => { mountedRef.current = false; };
     }, []);
 
+    const changePricing = (passenger: string, discount: string) => {
+        const pricing = normalizeTicketPricing(passenger, discount);
+        setValue("passengerType", pricing.passengerType);
+        setValue("discountId", pricing.discountId);
+        ++latestCalcIdRef.current;
+        if (isLoading) workerRef.current?.restart();
+        setIsLoading(false);
+        calculationBusyRef.current = false;
+        setResult(null);
+        setServerTime(null);
+        setError(null);
+        updateUrlAndState(pathname, "ticket");
+    };
+
     const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
         if (!mountedRef.current) return;
         const calcId = ++latestCalcIdRef.current;
         setResultSearchId(calcId);
-        const shouldRestartEngine = isRetryableEngineError(pendingErrorRef.current);
+        const shouldRestartEngine = calculationBusyRef.current || isRetryableEngineError(pendingErrorRef.current);
         pendingErrorRef.current = null;
         setProgress({ phase: "preparing", completed: 0, total: 0 });
+        calculationBusyRef.current = true;
         setIsLoading(true);
         setError(null);
         setIsEngineRetryable(false);
@@ -286,6 +317,7 @@ export default function Form({
             pendingErrorRef.current = operationError;
             setError(operationError.message);
             setIsLoading(false);
+            calculationBusyRef.current = false;
             return;
         }
 
@@ -294,6 +326,7 @@ export default function Form({
             pendingErrorRef.current = operationError;
             setError(operationError.message);
             setIsLoading(false);
+            calculationBusyRef.current = false;
             return;
         }
 
@@ -304,10 +337,12 @@ export default function Form({
             searchContext.readiness = readiness;
             captureEngineRecovery(readiness, searchContext);
         } catch (readinessError) {
+            if (!mountedRef.current || calcId !== latestCalcIdRef.current) return;
             pendingErrorRef.current = readinessError;
             setIsEngineRetryable(isRetryableEngineError(readinessError));
             setError(readinessError instanceof Error ? readinessError.message : String(readinessError));
             setIsLoading(false);
+            calculationBusyRef.current = false;
             return;
         }
 
@@ -340,6 +375,7 @@ export default function Form({
                 type: isRouteSplit ? "calculateRouteSplitTicket" : "calculateRouteTicket",
                 payload: {
                     fullPath: apiRequestBody.fullPath,
+                    ...(pathname === "/fare/ticket" ? normalizeTicketPricing(data.passengerType, data.discountId) : {}),
                     calculationMode: data.calculationMode,
                     maxSplits: data.maxSplits,
                     noSplitStations: data.noSplitStations || [],
@@ -361,7 +397,7 @@ export default function Form({
             setIsWasmReady(false);
             isWasmReadyRef.current = false;
 
-            const worker = createEngineClient();
+            const worker = createEngineClient({ isolated: pathname === "/fare/ticket" });
             workerRef.current = worker;
 
             worker.onmessage = (e) => {
@@ -381,11 +417,13 @@ export default function Form({
                         }
                     }
                     setIsLoading(false);
+                    calculationBusyRef.current = false;
 
                 } else if ((type === "success_route_split_ticket" || type === "success_route_split_pass")) {
                     setSplitResult(wResult.data as SplitFareResult);
                     setServerTime(wResult.time);
                     setIsLoading(false);
+                    calculationBusyRef.current = false;
                 } else if (type === "success_route_ticket") {
                     if (requestId === latestCalcIdRef.current) {
                         const ticketResult = wResult as TicketFareResponse;
@@ -393,11 +431,13 @@ export default function Form({
                         setServerTime(ticketResult.time);
                     }
                     setIsLoading(false);
+                    calculationBusyRef.current = false;
 
                 } else if (type === "error") {
                     pendingErrorRef.current = details ? new SearchOperationError(details) : new Error(wError);
                     setError(wError);
                     setIsLoading(false);
+                    calculationBusyRef.current = false;
                 }
             };
         };
@@ -411,7 +451,7 @@ export default function Form({
             }
             isWasmReadyRef.current = false;
         };
-    }, [isPreview]);
+    }, [isPreview, pathname]);
 
     const initialAutoExecutedRef = useRef(false);
 
@@ -1034,6 +1074,47 @@ export default function Form({
                         </div>
                     </div>
 
+                    {pathname === "/fare/ticket" && <details className="group w-full min-w-0 rounded border border-slate-200 bg-slate-50">
+                        <summary className="cursor-pointer list-none rounded-xl px-4 py-3 text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 [&::-webkit-details-marker]:hidden">
+                            <span className="flex items-center justify-between gap-3">
+                                <span className="text-base font-semibold">詳細オプション</span>
+                                <RiArrowDownSLine aria-hidden="true" className="size-5 shrink-0 text-slate-500 transition-transform group-open:rotate-180" />
+                            </span>
+                        </summary>
+                        <div className="border-t border-slate-200 px-4 py-3">
+                            <fieldset className="min-w-0">
+                                <legend className="mb-3 text-sm font-semibold text-slate-800">利用者・割引種別</legend>
+                                <div className="flex items-center gap-6" role="radiogroup" aria-label="年齢区分">
+                                    {(["adult", "child"] as const).map(value => <label
+                                        key={value}
+                                        className="flex cursor-pointer items-center gap-2 text-slate-800"
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="passengerType"
+                                            value={value}
+                                            checked={formValues.passengerType === value}
+                                            onChange={() => changePricing(value, formValues.discountId)}
+                                            className="size-4 accent-blue-600"
+                                        />
+                                        {value === "adult" ? "大人" : "小児"}
+                                    </label>)}
+                                </div>
+                                <label htmlFor="ticket-discount" className="sr-only">割引</label>
+                                <ChoiceSelect
+                                    inputId="ticket-discount"
+                                    className="station-select split-options-search split-count-select mt-4 min-w-0"
+                                    options={[...ticketDiscounts]}
+                                    value={ticketDiscounts.find(discount => discount.id === formValues.discountId) ?? null}
+                                    getLabel={discount => discount.label}
+                                    getKey={discount => discount.id}
+                                    isOptionDisabled={discount => formValues.passengerType === "child" && !discount.allowChild}
+                                    onChange={discount => changePricing(formValues.passengerType, discount.id)}
+                                />
+                            </fieldset>
+                        </div>
+                    </details>}
+
                     {isRouteSplit && <>
                         <RouteSplitOptions
                             path={completeSplitRoute}
@@ -1110,7 +1191,12 @@ export default function Form({
                                 <div>{result.validDays + " 日間有効"}</div>
                                 {result.stopoverRestriction && <div className="ml-3 shrink-0">{result.stopoverRestriction}</div>}
                             </div>
-                            <span className="text-xl shrink-0">¥{result.fare > 0 ? result.fare.toLocaleString() : "***"}</span>
+                            <div className="shrink-0 text-right">
+                                <div className="text-xl">¥{result.fare > 0 ? result.fare.toLocaleString() : "***"}</div>
+                                {result.discountApplied && (
+                                    <div>{ticketDiscounts.find(discount => discount.id === formValues.discountId)?.resultLabel}</div>
+                                )}
+                            </div>
                         </div>
                         <RouteDistanceTable title="入力経路" distances={result.inputDistances} />
                         <RouteDistanceTable title="補正後の経路" distances={result.correctedDistances} />

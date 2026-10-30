@@ -1,3 +1,4 @@
+import { normalizeTicketPricing } from "@/app/fare/lib/ticketPricing";
 import CalculatorHydration from "@/components/CalculatorHydration";
 import Form from "@/app/fare/components/Form";
 import CalculatorErrorBoundary from "@/components/CalculatorErrorBoundary";
@@ -22,6 +23,8 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
         <CalculatorErrorBoundary key={location}>
             <CalculatorHydration hydrated={location !== null}>
             <Form
+                initialPassengerType={activePathname === "/fare/ticket" ? normalizeTicketPricing(searchParams.get("passengerType"), searchParams.get("discountId")).passengerType : "adult"}
+                initialDiscountId={activePathname === "/fare/ticket" ? normalizeTicketPricing(searchParams.get("passengerType"), searchParams.get("discountId")).discountId : "none"}
                 isPreview={location === null}
                 pathname={activePathname}
                 initialMaxSplits={/^(?:[0-9]|10)$/.test(searchParams.get("maxSplits") ?? "") ? Number(searchParams.get("maxSplits")) : 0}

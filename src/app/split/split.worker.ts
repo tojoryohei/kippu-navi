@@ -397,6 +397,7 @@ onmessage = async (e: MessageEvent) => {
     try {
       const reqJsonStr = JSON.stringify({
         fullPath,
+        ...(type === "calculateRouteTicket" ? { passengerType: payload.passengerType, discountId: payload.discountId } : {}),
         maxSplits: payload.maxSplits, noSplitStations: payload.noSplitStations,
         calculationMode: calculationMode || "normal"
       });

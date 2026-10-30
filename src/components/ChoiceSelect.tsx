@@ -15,6 +15,7 @@ interface Props<T> {
   renderOption?: (option: T) => ReactNode;
   onChange: (option: T) => void;
   disabled?: boolean;
+  isOptionDisabled?: (option: T) => boolean;
   placeholder?: string;
   inputValue?: string;
   onInput?: (value: string) => void;
@@ -23,8 +24,8 @@ interface Props<T> {
   filter?: (option: T, input: string) => boolean;
 }
 
-/** 駅検索・路線・分割回数で共有する、外部CSSだけで装飾する単一選択UI。 */
-export default function ChoiceSelect<T>({ inputId, label, describedBy, className = "", prefix = "station-select", options, value, getLabel, getKey = getLabel, renderOption, onChange, disabled, placeholder, inputValue, onInput, onBlur, filter, hideMenuWhenEmpty = true }: Props<T>) {
+/** 駅検索・路線・分割回数・割引で共有する、外部CSSだけで装飾する単一選択UI。 */
+export default function ChoiceSelect<T>({ inputId, label, describedBy, className = "", prefix = "station-select", options, value, getLabel, getKey = getLabel, renderOption, onChange, disabled, isOptionDisabled, placeholder, inputValue, onInput, onBlur, filter, hideMenuWhenEmpty = true }: Props<T>) {
   const generatedId = useId();
   const id = inputId ?? generatedId;
   const input = useRef<HTMLInputElement>(null);
@@ -41,6 +42,7 @@ export default function ChoiceSelect<T>({ inputId, label, describedBy, className
   const selectedIndex = value ? filtered.findIndex(option => getKey(option) === getKey(value)) : -1;
   const activeIndex = Math.min(active, filtered.length - 1);
   const select = (option: T) => {
+    if (isOptionDisabled?.(option)) return;
     onChange(option);
     setOpen(false);
     input.current?.focus({ preventScroll: true });
@@ -86,11 +88,11 @@ export default function ChoiceSelect<T>({ inputId, label, describedBy, className
       </div>
     </div>
     <span className="choice-announcement" aria-live="polite" aria-atomic="true">{shown ? `${filtered.length}件の候補${activeIndex >= 0 ? `、${getLabel(filtered[activeIndex])}、${activeIndex + 1}番目` : ""}` : ""}</span>
-    {shown && <ChoiceMenu key={text} id={id} prefix={prefix} options={filtered} active={activeIndex} navigation={navigation} onHover={setActive} value={value} getLabel={getLabel} getKey={getKey} renderOption={renderOption} select={select} />}
+    {shown && <ChoiceMenu key={text} id={id} prefix={prefix} options={filtered} active={activeIndex} navigation={navigation} onHover={setActive} value={value} getLabel={getLabel} getKey={getKey} renderOption={renderOption} isOptionDisabled={isOptionDisabled} select={select} />}
   </div>;
 }
 
-function ChoiceMenu<T>({ id, prefix, options, active, navigation, onHover, value, getLabel, getKey, renderOption, select }: { id: string; prefix: string; options: T[]; active: number; navigation: { index: number }; onHover: (index: number) => void; value: T | null; getLabel: (option: T) => string; getKey: (option: T) => string; renderOption?: (option: T) => ReactNode; select: (option: T) => void }) {
+function ChoiceMenu<T>({ id, prefix, options, active, navigation, onHover, value, getLabel, getKey, renderOption, isOptionDisabled, select }: { id: string; prefix: string; options: T[]; active: number; navigation: { index: number }; onHover: (index: number) => void; value: T | null; getLabel: (option: T) => string; getKey: (option: T) => string; renderOption?: (option: T) => ReactNode; isOptionDisabled?: (option: T) => boolean; select: (option: T) => void }) {
   "use no memo";
   const scroll = useRef<HTMLDivElement>(null);
   const space = useRef<HTMLDivElement>(null);
@@ -117,8 +119,9 @@ function ChoiceMenu<T>({ id, prefix, options, active, navigation, onHover, value
     else document.getElementById(`${id}-option-${index}`)?.scrollIntoView({ block: "nearest" });
   }, [navigation, virtual, virtualizer, id]);
   const option = (item: T, index: number) => <div id={`${id}-option-${index}`} role="option" tabIndex={-1} aria-selected={value !== null && getKey(item) === getKey(value)}
+    aria-disabled={isOptionDisabled?.(item) || undefined}
     aria-setsize={options.length} aria-posinset={index + 1}
-    className={`${prefix}__option${index === active ? ` ${prefix}__option--is-focused` : ""}${value !== null && getKey(item) === getKey(value) ? ` ${prefix}__option--is-selected` : ""}`}
+    className={`${isOptionDisabled?.(item) ? "cursor-not-allowed opacity-40 " : ""}${prefix}__option${index === active ? ` ${prefix}__option--is-focused` : ""}${value !== null && getKey(item) === getKey(value) ? ` ${prefix}__option--is-selected` : ""}`}
     onPointerMove={event => {
       // ホイールやタッチによる移動で候補フォーカスを変えず、スクロールを引き戻さない。
       if (event.pointerType === "mouse" && (event.movementX || event.movementY)) onHover(index);

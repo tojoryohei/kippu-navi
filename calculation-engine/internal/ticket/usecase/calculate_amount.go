@@ -24,7 +24,11 @@ func (s *routeSummary) distances() (result RouteDistances) {
 }
 
 type CalculationResult struct {
-	Distances          RouteDistances `json:"-"`
+	Distances          RouteDistances     `json:"-"`
+	JRFare             int                `json:"-"`
+	PrivateFareAmounts []int              `json:"-"`
+	JRCompanies        []domain.CompanyID `json:"-"`
+	DiscountApplied    bool               `json:"-"`
 	Fare               int
 	BarrierFreeFee     int
 	TotalEigyoKilo     domain.DeciKilo // 中心駅の距離控除を反映したJRの合計（表示・閾値判定用）
@@ -286,17 +290,29 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 		}
 	}
 
+	jrFare := totalFare
+	var privateAmounts []int
 	if u.privateFareReg != nil {
-		privateFare, err := u.calculatePrivateFare(summary.edges)
+		var err error
+		privateAmounts, err = u.calculatePrivateFareAmounts(summary.edges)
 		if err != nil {
 			return nil, err
 		}
-		totalFare += privateFare
+		for _, amount := range privateAmounts {
+			totalFare += amount
+		}
 	}
 
+	var companies []domain.CompanyID
+	for i := 1; i < int(domain.CompanyCount); i++ {
+		if physicalSummary.statsByCompany[i].used {
+			companies = append(companies, domain.CompanyID(i))
+		}
+	}
 	return &CalculationResult{
 		// 補正後の表は北新地置換を含む運賃計算経路の距離を使う。
-		Distances:          summary.distances(),
+		Distances: summary.distances(),
+		JRFare:    jrFare, PrivateFareAmounts: privateAmounts, JRCompanies: companies,
 		Fare:               totalFare,
 		BarrierFreeFee:     barrierFreeFee,
 		TotalEigyoKilo:     physicalSummary.totalEigyo,

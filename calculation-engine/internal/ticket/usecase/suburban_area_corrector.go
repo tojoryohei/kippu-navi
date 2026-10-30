@@ -9,7 +9,8 @@ import (
 // SuburbanAreaCorrector は大都市近郊区間内完結の場合に、最安経路へ補正する機能を提供します。
 // fareEval には、特例適用後の運賃を返す評価関数を指定します。
 type SuburbanAreaCorrector struct {
-	fareEval func(path []int) (int, error)
+	evaluateWholeRoute bool
+	fareEval           func(path []int) (int, error)
 }
 
 type suburbanJRSegment struct {
@@ -40,6 +41,34 @@ func (s *SuburbanAreaCorrector) Correct(path []int, g graph.Graph) ([]int, error
 		segmentCandidates = append(segmentCandidates, s.segmentCandidates(path, segment, jrArea, g))
 	}
 
+	// 会社限定・距離条件の割引はJR区間ごとの評価では判定できない。
+	// 割引対応の呼び出しでは、私鉄を挟んだ全経路を組み合わせて比較する。
+	if s.evaluateWholeRoute && s.fareEval != nil && len(segments) > 1 {
+		selected := firstCandidates(segmentCandidates)
+		var best []int
+		bestFare := 0
+		var visit func(int)
+		visit = func(index int) {
+			if index == len(segmentCandidates) {
+				combined := combineSuburbanCandidates(path, segments, selected)
+				amount, err := s.fareEval(combined)
+				if err == nil && (best == nil || amount < bestFare) {
+					best = combined
+					bestFare = amount
+				}
+				return
+			}
+			for _, candidate := range segmentCandidates[index] {
+				selected[index] = candidate
+				visit(index + 1)
+			}
+		}
+		visit(0)
+		if best != nil {
+			return best, nil
+		}
+		return nil, domain.ErrInvalidPath
+	}
 	selectedCandidates := firstCandidates(segmentCandidates)
 	if s.fareEval != nil {
 		for i, candidates := range segmentCandidates {

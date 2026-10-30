@@ -52,6 +52,7 @@ export interface CompanyDistance {
 export interface TicketFareResult extends FareCalculationSummary {
     inputDistances: CompanyDistance[];
     correctedDistances: CompanyDistance[];
+    discountApplied: boolean;
     departureStation: string;
     arrivalStation: string;
     fare: number;
