@@ -96,3 +96,19 @@ test('名古屋から新大阪の新幹線は通常モードで海優を適用�
     const adult = Number((await amount.textContent())!.replace(/[^\d]/g, ''));
     expect(discounted).toBe(Math.floor(adult * 80 / 1000) * 10);
 });
+
+test('最安で100キロを超える学割乗車券を採用し、金額と距離表を更新する', async ({ page }) => {
+    await page.goto(`/fare/ticket?${new URLSearchParams({ route: '新横浜[新幹線]熱海[東海道]沼津', mode: 'normal', discountId: 'student' })}`);
+    const amount = page.getByText(/^¥[\d,]+$/, { exact: true });
+    await expect(amount).toHaveText('¥1,690');
+    await expect(page.getByText('[学割]', { exact: true })).toHaveCount(0);
+    await page.getByRole('radio', { name: /^最安 / }).check();
+    await page.getByRole('button', { name: '運賃計算をする', exact: true }).click();
+    await expect(amount).toHaveText('¥1,580');
+    await expect(page.getByText('[学割]', { exact: true })).toBeVisible();
+    await expect(page.getByText('片浜', { exact: true })).toBeVisible();
+    const input = page.getByRole('table', { name: '入力経路の営業キロ・換算キロ（km）' });
+    const corrected = page.getByRole('table', { name: '補正後の経路の営業キロ・換算キロ（km）' });
+    await expect(input.getByRole('row').filter({ hasText: '営業キロ' }).getByRole('cell').last()).toHaveText('97.4');
+    await expect(corrected.getByRole('row').filter({ hasText: '営業キロ' }).getByRole('cell').last()).toHaveText('101.5');
+});
