@@ -110,6 +110,44 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
   const recovered = workerModule.firstAssetError('ticket');
   assert.ok(recovered.diagnostics.resources.some(resource => resource.fallbackFrom === oldUrl && resource.outcome === 'success'));
 
+  // HTTP 200でも本文の通信が途中で切れた場合は、資材全体を再取得する。
+  let bodyCalls = 0;
+  const bodyUrl = 'https://example.test/engine/body.wasm';
+  globalThis.fetch = async () => {
+    bodyCalls++;
+    return bodyCalls === 1
+      ? new Response(new ReadableStream({ start(controller) { controller.error(new TypeError('Load failed')); } }))
+      : new Response('complete');
+  };
+  const bodyFetched = await workerModule.fetchAsset(bodyUrl, 'wasm_fetch');
+  assert.equal(bodyFetched.retryCount, 1);
+  assert.equal(new TextDecoder().decode(bodyFetched.buffer), 'complete');
+  assert.ok(workerModule.firstAssetError('ticket').diagnostics.resources.some(resource => resource.url === bodyUrl && resource.phase === 'wasm_body_read' && resource.outcome === 'failure'));
+
+  // ヘッダーだけ届いて本文が停止しても、8秒後に中断して次の取得へ進む。
+  const stalledUrl = 'https://example.test/engine/stalled.bin';
+  let stalledCalls = 0;
+  let aborted = false;
+  globalThis.fetch = async (_url, { signal }) => {
+    if (++stalledCalls > 1) return new Response('graph');
+    return new Response(new ReadableStream({ start(controller) {
+      signal.addEventListener('abort', () => { aborted = true; controller.error(new DOMException('中断', 'AbortError')); }, { once: true });
+    } }));
+  };
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    const stalled = workerModule.fetchAsset(stalledUrl, 'ticket_graph_fetch');
+    await new Promise(resolve => setImmediate(resolve));
+    t.mock.timers.tick(8_000);
+    await new Promise(resolve => setImmediate(resolve));
+    t.mock.timers.tick(150);
+    const fetchedAfterTimeout = await stalled;
+    assert.equal(aborted, true);
+    assert.equal(fetchedAfterTimeout.retryCount, 1);
+    assert.equal(new TextDecoder().decode(fetchedAfterTimeout.buffer), 'graph');
+    assert.ok(workerModule.firstAssetError('ticket').diagnostics.resources.some(resource => resource.url === stalledUrl && resource.phase === 'ticket_graph_body_read' && resource.timedOut === true));
+  } finally { t.mock.timers.reset(); }
+
   globalThis.document = testDocument;
   initializeBrowserDiagnostics();
   initializeBrowserDiagnostics();

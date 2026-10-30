@@ -39,7 +39,7 @@ function firstAssetError(capability: 'ticket' | 'pass'): SearchErrorDetails | un
   const resources = resourceDiagnostics.snapshot().resources || [];
   const failure = resources.find(resource => resource.outcome === 'failure' && !resource.url.includes(capability === 'ticket' ? 'pass_graph' : 'ticket_graph'));
   if (!failure) return undefined;
-  const stage = failure.phase.startsWith('ticket_') ? 'ticket_graph_fetch' : failure.phase.startsWith('pass_') ? 'pass_graph_fetch' : failure.phase === 'wasm_fetch' ? 'wasm_fetch' : 'worker_bootstrap';
+  const stage = failure.phase.startsWith('ticket_') ? 'ticket_graph_fetch' : failure.phase.startsWith('pass_') ? 'pass_graph_fetch' : (failure.phase === 'wasm_fetch' || failure.phase === 'wasm_body_read') ? 'wasm_fetch' : 'worker_bootstrap';
   return { message: failure.exception?.message || 'エンジン資材の取得を再試行しました。', code: 'engine_asset_fetch_failed', source: 'worker', stage, capability, exceptionName: failure.exception?.name, httpStatus: failure.status, retryable: true, retryCount: failure.attempt - 1, workerRestartCount: 0, diagnostics: { ...workerDiagnostics(), exception: failure.exception } };
 }
 const sentryDsn = import.meta.env.PUBLIC_SENTRY_DSN;
@@ -185,7 +185,10 @@ async function fetchAssetWithRetry(url: string, phase: string, fallbackFrom?: st
         if (!response.ok) throw Object.assign(new Error(`${url}: ${response.status} ${response.statusText}`), { httpStatus: response.status, retryCount: attempt });
         return response;
       }, { status: () => status, timedOut: () => timedOut, fallbackFrom });
-      return { response, retryCount: attempt, url };
+      // ヘッダー受信後も本文を読み切るまで取得タイマーと再試行を有効にする。
+      const buffer = await resourceDiagnostics.measure(url, phase.replace(/_fetch$/, '_body_read'), attempt + 1,
+        () => response.arrayBuffer(), { status: () => status, timedOut: () => timedOut, fallbackFrom });
+      return { buffer, retryCount: attempt, url };
 
     } catch (error) {
       lastError = error;
@@ -289,9 +292,8 @@ async function initWasm() {
       postMessage(initFailure(error, 'wasm_fetch', Number((error as { retryCount?: number } | null)?.retryCount || 0)));
       return;
     }
-    const wasmResponse = wasmFetch.response;
     wasmRetryCount = wasmFetch.retryCount;
-    const wasmArrayBuffer = await resourceDiagnostics.measure(wasmFetch.url, 'wasm_body_read', 1, () => wasmResponse.arrayBuffer());
+    const wasmArrayBuffer = wasmFetch.buffer;
     let result: WebAssembly.WebAssemblyInstantiatedSource;
     try {
       resourceDiagnostics.phase('wasm', 'wasm_instantiate', 'started');
@@ -316,7 +318,7 @@ async function initWasm() {
 async function initializeTicketGraph() {
   try {
     const fetched = await fetchAsset(TICKET_GRAPH_URL, 'ticket_graph_fetch');
-    const buffer = await resourceDiagnostics.measure(fetched.url, 'ticket_graph_body_read', 1, () => fetched.response.arrayBuffer());
+    const buffer = fetched.buffer;
     resourceDiagnostics.phase('ticket', 'ticket_graph_initialize', 'started');
     const ptr = workerSelf.prepareTicketGraphBuffer(buffer.byteLength);
     const memory = new Uint8Array((wasmInstance!.exports.mem as WebAssembly.Memory).buffer);
@@ -334,7 +336,7 @@ async function initializeTicketGraph() {
 async function initializePassGraph() {
   try {
     const fetched = await fetchAsset(PASS_GRAPH_URL, 'pass_graph_fetch');
-    const buffer = await resourceDiagnostics.measure(fetched.url, 'pass_graph_body_read', 1, () => fetched.response.arrayBuffer());
+    const buffer = fetched.buffer;
     resourceDiagnostics.phase('pass', 'pass_graph_initialize', 'started');
     const ptr = workerSelf.preparePassGraphBuffer(buffer.byteLength);
     const memory = new Uint8Array((wasmInstance!.exports.mem as WebAssembly.Memory).buffer);
