@@ -59,7 +59,7 @@ func (c *RouteTicketCalculator) calculate(path []int, steps []ViaStep, mode stri
 }
 
 // 候補比較は通常の補正を使い、券面表示は最安モードの規則を保持する。
-func (c *RouteTicketCalculator) calculatePresented(path []int, steps []ViaStep, mode, presentationMode string, logKanaCodes bool) (RouteTicketFare, *CalculationResult, error) {
+func (c *RouteTicketCalculator) calculatePresented(path []int, steps []ViaStep, mode, presentationMode string, logKanaCodes bool, options ...SingleStationOptions) (RouteTicketFare, *CalculationResult, error) {
 	var fare RouteTicketFare
 	if len(path) < 2 {
 		return fare, nil, domain.ErrInvalidPath
@@ -77,7 +77,7 @@ func (c *RouteTicketCalculator) calculatePresented(path []int, steps []ViaStep, 
 	var err error
 	if mode == "cheapest" {
 		corrected, suburban, err = SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(farePath, c.graph, cheapestPathCorrector(c.corrector), c.extensions, c.zones, func(candidate []int) (int, error) {
-			res, _, err := c.evaluator.ExecuteWithMode(candidate, 0, "normal")
+			res, _, err := c.evaluator.ExecuteWithOptions(candidate, 0, "normal", singleStationOptions(options))
 			if err != nil {
 				return 0, err
 			}
@@ -100,7 +100,7 @@ func (c *RouteTicketCalculator) calculatePresented(path []int, steps []ViaStep, 
 		// 最安の券面で在来線へ置換する区間は、入力時の新幹線ではなく採用経路で判定する。
 		suburban = cheapestSuburbanPath(corrected, c.graph)
 	}
-	res, transformed, err := c.evaluator.ExecuteWithMode(corrected, 0, evaluationMode)
+	res, transformed, err := c.evaluator.ExecuteWithOptions(corrected, 0, evaluationMode, singleStationOptions(options))
 	if err != nil {
 		return fare, nil, err
 	}

@@ -32,14 +32,14 @@ func (u *TicketCalculationUseCase) Execute(path []int, months int) (*Calculation
 	return u.ExecuteWithMode(path, months, "normal")
 }
 
-func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode string) (*CalculationResult, []int, error) {
+func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode string, options ...SingleStationOptions) (*CalculationResult, []int, error) {
 	// cheapest は物理経路補正側だけで使い、運賃評価は通常モードで行います。
 	// 既存の呼び出し元との互換性のため、ここでも防御的に正規化します。
 	mode = NormalizeFareEvaluationMode(mode)
 	// 入力の物理経路と、特例を適用する運賃計算用経路を分離する。
 	// 近郊区間の候補比較でも呼ばれるため、評価対象を書き換えない。
 	farePath := append([]int(nil), path...)
-	candidates, err := u.resolver.Resolve(farePath, mode)
+	candidates, err := u.resolver.Resolve(farePath, mode, options...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -115,7 +115,11 @@ func (e *TicketSegmentEvaluator) ExecuteForSplit(path []int, months int) (*Calcu
 // ExecuteWithMode は通常または補正禁止の運賃評価モードで経路を評価します。
 // 経路補正用のcheapestはNormalizeFareEvaluationModeでnormalへ変換されます。
 func (e *TicketSegmentEvaluator) ExecuteWithMode(path []int, months int, mode string) (*CalculationResult, []int, error) {
-	return e.calculation.ExecuteWithMode(path, months, mode)
+	return e.ExecuteWithOptions(path, months, mode, SingleStationOptions{})
+}
+
+func (e *TicketSegmentEvaluator) ExecuteWithOptions(path []int, months int, mode string, options SingleStationOptions) (*CalculationResult, []int, error) {
+	return e.calculation.ExecuteWithMode(path, months, mode, options)
 }
 
 // NormalizeFareEvaluationMode は、経路補正モードを運賃評価モードへ変換します。

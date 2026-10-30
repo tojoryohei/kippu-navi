@@ -1283,7 +1283,7 @@ func calculateRouteTicket(this js.Value, args []js.Value) interface{} {
 	if err != nil {
 		return routeTicketError(err)
 	}
-	fare, err := calculator.CalculateWithPricing(pathIDs, req.ViaSteps(), req.CalculationMode, req.TicketPricingOptions)
+	fare, err := calculator.CalculateWithPricing(pathIDs, req.ViaSteps(), req.CalculationMode, req.TicketPricingOptions, req.SingleStationOptions)
 	if err != nil {
 		return routeTicketError(err)
 	}

@@ -15,7 +15,7 @@ func isHimejiBeyondStation(name string) bool {
 
 // ApplyOsakaShinOsakaException は旅客営業規則第88条（大阪・新大阪と姫路以遠間の特例）を適用します。
 // 経路内に「姫路」が含まれており、かつ発着駅が「大阪」または「新大阪」の場合、仮想駅「大阪・新大阪」に置換します。
-func ApplyOsakaShinOsakaException(path []int, g graph.Graph) (*AppliedZoneInfo, bool) {
+func ApplyOsakaShinOsakaException(path []int, g graph.Graph, options ...SingleStationOptions) (*AppliedZoneInfo, bool) {
 	if len(path) < 2 {
 		return nil, false
 	}
@@ -45,6 +45,10 @@ func ApplyOsakaShinOsakaException(path []int, g graph.Graph) (*AppliedZoneInfo, 
 		return nil, false
 	}
 
+	opts := singleStationOptions(options)
+	if (originMatch && opts.DepartureSingleStation) || (destMatch && opts.ArrivalSingleStation) {
+		return nil, false
+	}
 	validDirection := false
 	if originMatch {
 		if himejiIdx == len(path)-1 {
