@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.10.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.9.0...kippu-navi-v5.10.0) (2026-10-31)
+
+
+### Features
+
+* 経路入力の分割計算に小児運賃と割引を対応 ([#975](https://github.com/tojoryohei/kippu-navi/issues/975)) ([0284120](https://github.com/tojoryohei/kippu-navi/commit/0284120b0873099f19849881d274319e7bbb6a07))
+
 ## [5.9.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.8.1...kippu-navi-v5.9.0) (2026-10-30)
 
 
