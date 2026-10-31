@@ -73,6 +73,7 @@ export interface TicketFareResponse {
 }
 
 export interface SplitFareSummary extends FareCalculationSummary {
+    discountApplied?: boolean;
     departureStation: string;
     arrivalStation: string;
     fare: number;

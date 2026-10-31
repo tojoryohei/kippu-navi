@@ -262,8 +262,8 @@ func TestPricingNoExtensionWithinSuburbanArea(t *testing.T) {
 	}
 }
 
-func TestPricingThresholdAt100UsesExistingExtensionsOnly(t *testing.T) {
-	for _, distance := range []domain.DeciKilo{1000, 1001} {
+func TestPricingThresholdIncludes100(t *testing.T) {
+	for _, distance := range []domain.DeciKilo{999, 1000, 1001} {
 		g := graph.NewGraph(3)
 		addFareExtensionEdge(g, "A", "B", distance, domain.JREast)
 		addFareExtensionEdge(g, "B", "C", 60, domain.JREast)
@@ -271,8 +271,12 @@ func TestPricingThresholdAt100UsesExistingExtensionsOnly(t *testing.T) {
 		input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
 		steps := []ViaStep{{StationName: "A"}, {StationName: "B"}}
 		got, err := calc.CalculateWithPricing(input, steps, "cheapest", TicketPricingOptions{DiscountID: "student"})
-		if err != nil || got.ArrivalStation != "B" {
-			t.Fatalf("%+v %v", got, err)
+		wantEnd := "B"
+		if distance <= 1000 {
+			wantEnd = "C"
+		}
+		if err != nil || got.ArrivalStation != wantEnd {
+			t.Fatalf("distance=%d: %+v %v", distance, got, err)
 		}
 		calc.extensions, err = NewRouteExtensionMatcher([]ticketdomain.RouteExtension{{InputPath: []string{"A", "B"}, OutputPath: []string{"A", "B", "C"}}}, g)
 		if err != nil {
@@ -281,6 +285,32 @@ func TestPricingThresholdAt100UsesExistingExtensionsOnly(t *testing.T) {
 		got, err = calc.CalculateWithPricing(input, steps, "cheapest", TicketPricingOptions{DiscountID: "student"})
 		if err != nil || got.ArrivalStation != "C" || got.Fare != 400 {
 			t.Fatalf("既存延長: %+v %v", got, err)
+		}
+	}
+}
+
+func TestSplitPricingChoosesDiscountedPartition(t *testing.T) {
+	g := graph.NewGraph(3)
+	addFareExtensionEdge(g, "A", "B", 600, domain.JREast)
+	addFareExtensionEdge(g, "B", "C", 600, domain.JREast)
+	calc := pricingTestCalculator(t, g, map[string]int{"A B": 450, "B C": 450, "A B C": 1000})
+	steps := []ViaStep{{StationName: "A"}, {StationName: "B"}, {StationName: "C"}}
+	for _, tc := range []struct {
+		pricing        TicketPricingOptions
+		total, tickets int
+		applied        bool
+	}{
+		{TicketPricingOptions{}, 900, 2, false},
+		{TicketPricingOptions{DiscountID: "student"}, 800, 1, true},
+		{TicketPricingOptions{PassengerType: "child"}, 440, 2, false},
+	} {
+		got, err := calc.SplitWithPricing(steps, "normal", tc.pricing)
+		if err != nil {
+			t.Fatal(err)
+		}
+		plan := got.Results[0]
+		if plan.TotalFare != tc.total || len(plan.Segments) != tc.tickets || plan.Segments[0].Fare.DiscountApplied != tc.applied {
+			t.Fatalf("%+v: %+v", tc.pricing, got)
 		}
 	}
 }

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import ChoiceSelect from "@/components/ChoiceSelect";
 import { RiArrowDownSLine, RiCloseFill } from "react-icons/ri";
 import type { Station } from "@/app/types";
@@ -10,6 +10,7 @@ const splitOptions = Array.from({ length: 11 }, (_, value) => ({
 }));
 
 interface AdvancedOptionsProps {
+  pricingOptions?: ReactNode;
   isIcPass: boolean;
   stationSelection?: "search" | "checkbox";
   stationStatus?: string;
@@ -21,7 +22,7 @@ interface AdvancedOptionsProps {
   onStationsChange: (value: Station[]) => void;
 }
 
-export default function AdvancedOptions({ stationSelection = "search", stationStatus, stationsDisabled, isIcPass, maxSplits, onMaxSplitsChange, stations, options, onStationsChange }: AdvancedOptionsProps) {
+export default function AdvancedOptions({ pricingOptions, stationSelection = "search", stationStatus, stationsDisabled, isIcPass, maxSplits, onMaxSplitsChange, stations, options, onStationsChange }: AdvancedOptionsProps) {
   const searchContainer = useRef<HTMLDivElement>(null);
   const fieldClass = "min-h-[38px] w-full rounded border border-gray-300 bg-white px-2 py-1 text-base";
 
@@ -39,6 +40,7 @@ export default function AdvancedOptions({ stationSelection = "search", stationSt
         </span>
       </summary>
       <div className="border-t border-slate-200 px-4">
+        {pricingOptions && <div className="border-b border-slate-200 py-3">{pricingOptions}</div>}
         <div className="space-y-2 py-3">
           {isIcPass ? (
             <>

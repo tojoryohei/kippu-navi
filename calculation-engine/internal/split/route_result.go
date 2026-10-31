@@ -1,6 +1,7 @@
 package split
 
 type RouteFare struct {
+	DiscountApplied     bool     `json:"discountApplied"`
 	TotalEigyoKilo      int      `json:"totalEigyoKilo"`
 	DepartureStation    string   `json:"departureStation"`
 	ArrivalStation      string   `json:"arrivalStation"`

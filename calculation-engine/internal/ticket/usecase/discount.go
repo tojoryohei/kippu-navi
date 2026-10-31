@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// TicketPricingOptions は運賃計算ページだけで指定する年齢区分と割引。
+// TicketPricingOptions は乗車券の運賃・経路指定分割計算で使用する年齢区分と割引。
 // 未指定の既存呼び出しは大人・割引なしとなる。
 type TicketPricingOptions struct {
 	PassengerType string `json:"passengerType"`
