@@ -130,11 +130,40 @@ type RouteSplitSegment = split.RouteSplitSegment
 type RouteSplitResult = split.RouteSplitResult
 
 func (c *RouteTicketCalculator) Split(steps []ViaStep, mode string, options ...split.RouteSplitOptions) (*RouteSplitResult, error) {
+	return c.SplitWithPricing(steps, mode, TicketPricingOptions{}, options...)
+}
+
+// SplitWithPricing は各券の年齢区分・割引適用後の運賃で分割位置を選ぶ。
+func (c *RouteTicketCalculator) SplitWithPricing(steps []ViaStep, mode string, pricing TicketPricingOptions, options ...split.RouteSplitOptions) (*RouteSplitResult, error) {
+	pricing, err := pricing.Normalize()
+	if err != nil {
+		return nil, err
+	}
+	cache := map[string]RouteTicketFare{}
+	evaluate := func(path []int, via []ViaStep) (RouteTicketFare, error) {
+		key := fmt.Sprint(path, via)
+		if fare, ok := cache[key]; ok {
+			return fare, nil
+		}
+		if pricing.PassengerType == "adult" && pricing.DiscountID == "none" {
+			fare, _, err := c.calculate(path, via, mode, false)
+			if err == nil {
+				cache[key] = fare
+			}
+			return fare, err
+		}
+		fare, err := c.CalculateWithPricing(path, via, mode, pricing)
+		fare.RouteTicketFare.DiscountApplied = fare.DiscountApplied
+		if err == nil {
+			cache[key] = fare.RouteTicketFare
+		}
+		return fare.RouteTicketFare, err
+	}
 	path, err := c.ResolvePath(steps)
 	if err != nil {
 		return nil, err
 	}
-	normal, _, err := c.calculate(path, steps, mode, false)
+	normal, err := evaluate(path, steps)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +191,7 @@ func (c *RouteTicketCalculator) Split(steps []ViaStep, mode string, options ...s
 			via = append([]ViaStep(nil), steps[i:j+1]...)
 			via[len(via)-1].LineName = ""
 		}
-		fare, _, err := c.calculate(target[i:j+1], via, mode, false)
+		fare, err := evaluate(target[i:j+1], via)
 		return RouteSplitSegment{DepartureStation: c.graph.GetName(target[i]), ArrivalStation: c.graph.GetName(target[j]), Fare: fare}, err
 	}, opts.Progress, opts.MaxSplits)
 	if err != nil {

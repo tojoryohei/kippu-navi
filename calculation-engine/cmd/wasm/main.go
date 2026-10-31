@@ -1557,7 +1557,7 @@ func calculateRouteSplitTicket(this js.Value, args []js.Value) interface{} {
 			callback.Invoke(progress.Phase, progress.Completed, progress.Total)
 		}
 	}
-	result, err := calculator.Split(req.ViaSteps(), req.CalculationMode, req.RouteSplitOptions)
+	result, err := calculator.SplitWithPricing(req.ViaSteps(), req.CalculationMode, req.TicketPricingOptions, req.RouteSplitOptions)
 	if err != nil {
 		return routeTicketError(err)
 	}

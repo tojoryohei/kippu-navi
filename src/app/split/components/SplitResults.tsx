@@ -2,9 +2,9 @@ import { useId, useRef, useState } from "react";
 import { HiChevronDown, HiChevronUp } from "react-icons/hi";
 import type { SplitFareResult } from "@/app/types";
 
-export default function SplitResults({ result, searchedTypeLabel = "乗車券", beforeLabel, incomplete = false, onRetry }: {
+export default function SplitResults({ result, searchedTypeLabel = "乗車券", beforeLabel, discountLabel, incomplete = false, onRetry }: {
     result: SplitFareResult; searchedTypeLabel?: string; beforeLabel?: string;
-    incomplete?: boolean; onRetry?: () => void;
+    incomplete?: boolean; onRetry?: () => void; discountLabel?: string;
 }) {
     const [showAllPatterns, setShowAllPatterns] = useState(false);
     const additionalPatternsId = useId();
@@ -40,8 +40,9 @@ export default function SplitResults({ result, searchedTypeLabel = "乗車券", 
                                         経由：{segment.fare.printedViaLines.length === 0 ? "---" : segment.fare.printedViaLines.join("・")}
                                     </div>
                                 </div>
-                                <div className="font-bold text-xl ml-4">
-                                    ¥{segment.fare.fare.toLocaleString()}
+                                <div className="ml-4 shrink-0 text-right">
+                                    <div className="font-bold text-xl">¥{segment.fare.fare.toLocaleString()}</div>
+                                    {segment.fare.discountApplied && discountLabel && <div>{discountLabel}</div>}
                                 </div>
                             </div>
                         </div>
@@ -72,8 +73,9 @@ export default function SplitResults({ result, searchedTypeLabel = "乗車券", 
                             経由：{result.normal.printedViaLines.join("・") || "---"}
                         </div>
                     </div>
-                    <div className="text-3xl font-bold text-gray-800">
-                        ¥{result.normal.fare.toLocaleString()}
+                    <div className="shrink-0 text-right">
+                        <div className="text-3xl font-bold text-gray-800">¥{result.normal.fare.toLocaleString()}</div>
+                        {result.normal.discountApplied && discountLabel && <div>{discountLabel}</div>}
                     </div>
                 </div>
             </section>

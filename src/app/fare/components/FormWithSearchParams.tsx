@@ -25,8 +25,8 @@ export default function FormWithSearchParams({ pathname }: { pathname: string })
             <Form
                 initialDepartureSingleStation={activePathname === "/fare/ticket" && searchParams.get("departureSingleStation") === "true"}
                 initialArrivalSingleStation={activePathname === "/fare/ticket" && searchParams.get("arrivalSingleStation") === "true"}
-                initialPassengerType={activePathname === "/fare/ticket" ? normalizeTicketPricing(searchParams.get("passengerType"), searchParams.get("discountId")).passengerType : "adult"}
-                initialDiscountId={activePathname === "/fare/ticket" ? normalizeTicketPricing(searchParams.get("passengerType"), searchParams.get("discountId")).discountId : "none"}
+                initialPassengerType={(activePathname === "/fare/ticket" || activePathname === "/split/route/ticket") ? normalizeTicketPricing(searchParams.get("passengerType"), searchParams.get("discountId")).passengerType : "adult"}
+                initialDiscountId={(activePathname === "/fare/ticket" || activePathname === "/split/route/ticket") ? normalizeTicketPricing(searchParams.get("passengerType"), searchParams.get("discountId")).discountId : "none"}
                 isPreview={location === null}
                 pathname={activePathname}
                 initialMaxSplits={/^(?:[0-9]|10)$/.test(searchParams.get("maxSplits") ?? "") ? Number(searchParams.get("maxSplits")) : 0}

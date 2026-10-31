@@ -1,5 +1,5 @@
+import TicketPricingOptions from "@/app/fare/components/TicketPricingOptions";
 import RouteDistanceTable from "./RouteDistanceTable";
-import ChoiceSelect from "@/components/ChoiceSelect";
 import { ticketDiscounts, normalizeTicketPricing, type PassengerType, type DiscountId } from "@/app/fare/lib/ticketPricing";
 import CalculationProgress, { type RouteCalculationProgress } from "@/app/split/components/CalculationProgress";
 import RouteSplitOptions from "@/app/split/components/RouteSplitOptions";
@@ -222,10 +222,12 @@ export default function Form({
         const calcMode = getValues("calculationMode") || initialCalculationMode || "normal";
         if (calcMode !== "normal") newParams.set("mode", calcMode);
 
-        if (nextPath === "/fare/ticket") {
+        if (nextPath === "/fare/ticket" || nextPath === "/split/route/ticket") {
             const pricing = normalizeTicketPricing(getValues("passengerType"), getValues("discountId"));
             if (pricing.passengerType !== "adult") newParams.set("passengerType", pricing.passengerType);
             if (pricing.discountId !== "none") newParams.set("discountId", pricing.discountId);
+        }
+        if (nextPath === "/fare/ticket") {
             if (getValues("departureSingleStation")) newParams.set("departureSingleStation", "true");
             if (getValues("arrivalSingleStation")) newParams.set("arrivalSingleStation", "true");
         }
@@ -264,6 +266,7 @@ export default function Form({
         setIsLoading(false);
         calculationBusyRef.current = false;
         setResult(null);
+        setSplitResult(null);
         setServerTime(null);
         setError(null);
         updateUrlAndState(pathname, "ticket");
@@ -390,8 +393,8 @@ export default function Form({
                 type: isRouteSplit ? "calculateRouteSplitTicket" : "calculateRouteTicket",
                 payload: {
                     fullPath: apiRequestBody.fullPath,
+                    ...normalizeTicketPricing(data.passengerType, data.discountId),
                     ...(pathname === "/fare/ticket" ? {
-                        ...normalizeTicketPricing(data.passengerType, data.discountId),
                         departureSingleStation: data.departureSingleStation,
                         arrivalSingleStation: data.arrivalSingleStation,
                     } : {}),
@@ -1101,35 +1104,7 @@ export default function Form({
                             </span>
                         </summary>
                         <div className="border-t border-slate-200 px-4 py-3">
-                            <fieldset className="min-w-0">
-                                <div className="flex items-center gap-6" role="radiogroup" aria-label="年齢区分">
-                                    {(["adult", "child"] as const).map(value => <label
-                                        key={value}
-                                        className="flex cursor-pointer items-center gap-2 text-slate-800"
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="passengerType"
-                                            value={value}
-                                            checked={formValues.passengerType === value}
-                                            onChange={() => changePricing(value, formValues.discountId)}
-                                            className="size-4 accent-blue-600"
-                                        />
-                                        {value === "adult" ? "大人" : "小児"}
-                                    </label>)}
-                                </div>
-                                <label htmlFor="ticket-discount" className="sr-only">割引</label>
-                                <ChoiceSelect
-                                    inputId="ticket-discount"
-                                    className="station-select split-options-search split-count-select mt-4 min-w-0"
-                                    options={[...ticketDiscounts]}
-                                    value={ticketDiscounts.find(discount => discount.id === formValues.discountId) ?? null}
-                                    getLabel={discount => discount.label}
-                                    getKey={discount => discount.id}
-                                    isOptionDisabled={discount => formValues.passengerType === "child" && !discount.allowChild}
-                                    onChange={discount => changePricing(formValues.passengerType, discount.id)}
-                                />
-                            </fieldset>
+                            <TicketPricingOptions passengerType={formValues.passengerType} discountId={formValues.discountId} onChange={changePricing} />
                             <fieldset className="mt-5 min-w-0">
                                 <div className="flex flex-wrap gap-4">
                                     <label className="flex cursor-pointer items-center gap-2 text-slate-800">
@@ -1147,6 +1122,7 @@ export default function Form({
 
                     {isRouteSplit && <>
                         <RouteSplitOptions
+                            pricingOptions={!isPassPage ? <TicketPricingOptions passengerType={formValues.passengerType} discountId={formValues.discountId} onChange={changePricing} /> : undefined}
                             path={completeSplitRoute}
                             mode={formValues.calculationMode}
                             isPass={isPassPage}
@@ -1187,6 +1163,7 @@ export default function Form({
 
                 {!isLoading && splitResult && (
                     <SplitResults
+                        discountLabel={ticketDiscounts.find(discount => discount.id === formValues.discountId)?.resultLabel}
                         key={resultSearchId}
                         result={splitResult}
                         beforeLabel={isPassPage ? `分割前の${({ ticket: "乗車券", pass1: "定期券１箇月", pass3: "定期券３箇月", pass6: "定期券６箇月" } satisfies Record<SearchType, string>)[currentType]}` : "分割前の乗車券"}

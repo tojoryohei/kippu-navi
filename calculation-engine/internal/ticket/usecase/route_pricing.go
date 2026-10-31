@@ -8,7 +8,7 @@ import (
 	"slices"
 )
 
-// PricedRouteTicketFare は運賃ページ専用。分割計算のレスポンスは変更しない。
+// PricedRouteTicketFare は年齢・割引適用済みの運賃と距離情報。
 type PricedRouteTicketFare struct {
 	RouteTicketFare
 	DiscountApplied    bool           `json:"discountApplied"`
@@ -91,7 +91,7 @@ func (c *RouteTicketCalculator) CalculateWithPricing(path []int, steps []ViaStep
 		}
 	}
 	discount := options.discount()
-	if discount != nil && discount.MinEigyoKilo == 1000 && best.result.TotalEigyoKilo < 1000 {
+	if discount != nil && discount.MinEigyoKilo == 1000 && best.result.TotalEigyoKilo <= 1000 {
 		// 両側とも元の入力経路を基準にする。着側の採用経路をさらに発側へ延ばさない。
 		for _, direction := range []extensionDirection{extendDestination, extendOrigin} {
 			candidate, err := firstPricingExtension(path, c.graph, direction, discount.MinEigyoKilo, local.canRepairExtensionDuplicate, evaluate)

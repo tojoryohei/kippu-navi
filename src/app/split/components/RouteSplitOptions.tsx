@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import AdvancedOptions from "@/app/split/components/AdvancedOptions";
 import { createEngineClient } from "@/lib/engine-client";
 import type { PathStep, Station } from "@/app/types";
 
 interface Props {
+  pricingOptions?: ReactNode;
   path: PathStep[] | null;
   mode: string;
   isPass: boolean;
@@ -14,7 +15,7 @@ interface Props {
 }
 const asStation = (name: string): Station => ({ name, kana: "", lines: [] });
 
-export default function RouteSplitOptions({ path, mode, isPass, maxSplits, names, onMaxSplitsChange, onNamesChange }: Props) {
+export default function RouteSplitOptions({ pricingOptions, path, mode, isPass, maxSplits, names, onMaxSplitsChange, onNamesChange }: Props) {
   const key = JSON.stringify({ fullPath: path, stationNames: path?.map(step => step.stationName), calculationMode: mode, isPass });
   const [candidates, setCandidates] = useState<{ key: string; names: string[]; error?: string } | null>(null);
   const hasPath = Boolean(path && path.length >= 2);
@@ -41,7 +42,7 @@ export default function RouteSplitOptions({ path, mode, isPass, maxSplits, names
     if (kept.length !== names.length) onNamesChange(kept);
   }, [ready, candidates, names, onNamesChange]);
   return <>
-    <AdvancedOptions isIcPass={false} stationSelection="checkbox" maxSplits={maxSplits} onMaxSplitsChange={onMaxSplitsChange}
+    <AdvancedOptions pricingOptions={pricingOptions} isIcPass={false} stationSelection="checkbox" maxSplits={maxSplits} onMaxSplitsChange={onMaxSplitsChange}
     stations={names.map(asStation)} options={ready ? candidates!.names.map(asStation) : []}
     stationsDisabled={!ready} stationStatus={!path ? "経路を入力すると途中駅を選択できます。" : candidates?.key === key && candidates.error ? `駅一覧を取得できませんでした：${candidates.error}` : !ready ? "経路上の駅を確認しています…" : undefined}
     onStationsChange={stations => onNamesChange(stations.map(station => station.name))} />

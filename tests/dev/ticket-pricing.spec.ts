@@ -49,7 +49,7 @@ test('小児と割引の選択・無効化・URL復元を実WASMで確認する'
     await expect(page.getByText("[東優4割53]", { exact: true })).toBeVisible();
 });
 
-test('不適用の学割は通常運賃、分割・定期券には選択欄を出さない', async ({ page }) => {
+test('不適用の学割は通常運賃、駅間分割・定期券には選択欄を出さない', async ({ page }) => {
     await page.goto(`/fare/ticket?${new URLSearchParams({ route: '東京[東海道]品川', discountId: 'student' })}`);
     await expect(page.getByRole('radio', { name: '小児', exact: true })).toBeHidden();
     await page.getByText('詳細オプション', { exact: true }).click();
@@ -63,7 +63,7 @@ test('不適用の学割は通常運賃、分割・定期券には選択欄を�
     await page.getByRole('button', { name: '運賃計算をする', exact: true }).click();
     await expect(page.getByRole('heading', { name: '計算結果', exact: true })).toBeVisible();
     await expect(amount).toHaveText(normal!);
-    for (const path of ['/split/route/ticket', '/fare/pass', '/split/auto/ticket']) {
+    for (const path of ['/split/route/pass', '/fare/pass', '/split/auto/ticket']) {
         await page.goto(`${path}?passengerType=child&discountId=east40`);
         await expect(page.getByLabel('割引', { exact: true })).toHaveCount(0);
     }
@@ -153,4 +153,48 @@ test('単駅指定は発着別に計算・URL復元でき、解除時にパラ�
         await expect(departure).toHaveCount(0);
         await expect(arrival).toHaveCount(0);
     }
+});
+
+test('経路分割の小児・割引をWASMへ渡し、変更時に結果を消してURLから復元する', async ({ page }) => {
+    await page.addInitScript(() => {
+        const OriginalWorker = window.Worker;
+        const replies: unknown[] = [];
+        Object.assign(window, { pricingReplies: replies });
+        window.Worker = class extends OriginalWorker {
+            constructor(url: string | URL, options?: WorkerOptions) {
+                super(url, options);
+                this.addEventListener('message', event => {
+                    if (event.data.type === 'success_route_split_ticket') replies.push(event.data.result.data);
+                });
+            }
+        };
+    });
+    await page.goto(`/split/route/ticket?${new URLSearchParams({ route: '東京[東海道]品川', mode: 'normal' })}`);
+    const result = page.getByRole('heading', { name: '計算結果', exact: true });
+    await expect(result).toBeVisible();
+    const latest = () => page.evaluate(() => (window as unknown as { pricingReplies: { normal: { fare: number; discountApplied: boolean }; results: { totalFare: number; segments: { fare: { discountApplied: boolean } }[] }[] }[] }).pricingReplies.at(-1)!);
+    const adult = (await latest()).normal.fare;
+    await expect(page.getByText("[東優4割53]", { exact: true })).toHaveCount(0);
+    await page.getByText('詳細オプション', { exact: true }).click();
+    await page.getByRole('radio', { name: '小児', exact: true }).check();
+    await expect(result).toHaveCount(0);
+    await page.getByLabel('割引', { exact: true }).press('Enter');
+    await expect(page.getByRole('option', { name: '学割', exact: true })).toHaveAttribute('aria-disabled', 'true');
+    await page.getByRole('option', { name: '東優4割', exact: true }).click();
+    await page.getByRole('button', { name: '乗車券を計算', exact: true }).click();
+    await expect(result).toBeVisible();
+    const expected = Math.floor(Math.floor(adult / 20) * 10 * 60 / 1000) * 10;
+    const discounted = await latest();
+    expect(discounted.normal.fare).toBe(expected);
+    expect(discounted.normal.discountApplied).toBe(true);
+    await expect(page.getByText("[東優4割53]", { exact: true })).toHaveCount(1 + discounted.results[0].segments.filter(segment => segment.fare.discountApplied).length);
+    expect(discounted.results[0].totalFare).toBeLessThanOrEqual(expected);
+    expect(new URL(page.url()).searchParams.get('passengerType')).toBe('child');
+    expect(new URL(page.url()).searchParams.get('discountId')).toBe('east40');
+    await page.reload();
+    await expect(result).toBeVisible();
+    await page.getByText('詳細オプション', { exact: true }).click();
+    await expect(page.getByRole('radio', { name: '小児', exact: true })).toBeChecked();
+    await expect(page.getByLabel('割引', { exact: true })).toHaveValue('東優4割');
+    expect((await latest()).normal.fare).toBe(expected);
 });
