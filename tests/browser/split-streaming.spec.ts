@@ -33,7 +33,7 @@ for (const mode of ['online', 'offline']) {
     const plan = (id: number) => ({ totalAmount:150,segments:[{start:`候補${id}`,end:'茂原',path:[`候補${id}`,'茂原'],via:['外房'],totalEigyoKilo:29,result:{Fare:150}}] });
     await send({type:'partial_result',result:{normal,results:[plan(1)]}});
     await expect(page.getByRole('heading',{name:'計算結果',exact:true})).toBeVisible();
-    await expect(page.getByRole('button',{name:'計算中...',exact:true})).toBeDisabled();
+    await expect(page.getByRole('button',{name:'計算中',exact:true})).toBeDisabled();
     await send({type:'partial_result',result:{results:[plan(2)]}});
     await page.getByRole('button',{name:'他の1パターンを表示'}).click();
     await send({type:'partial_result',result:{results:[plan(3)]}});

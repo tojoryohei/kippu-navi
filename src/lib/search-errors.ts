@@ -68,12 +68,16 @@ export interface ResourceAttempt {
   elapsedMs: number;
   status?: number;
   timedOut?: boolean;
+  receivedBytes?: number;
+  abortReason?: "network_idle";
   outcome: "success" | "failure";
   exception?: ExceptionDiagnostics;
   fallbackFrom?: string;
 }
 
 export interface SearchDiagnostics {
+  receivedBytes?: number;
+  resourceUrl?: string;
   exception?: ExceptionDiagnostics;
   workerUrl?: string;
   workerLocation?: string;
@@ -135,4 +139,18 @@ export function isRetryableEngineError(error: unknown): error is SearchOperation
   return error instanceof SearchOperationError
     && error.details.retryable
     && ENGINE_RECOVERY_STAGES.has(error.details.stage);
+}
+
+/** 通信関連の読み込み失敗には、利用者が取れる操作を案内する。 */
+export function formatEngineError(error: unknown): string {
+  if (!(error instanceof SearchOperationError)) return error instanceof Error ? error.message : String(error);
+  const details = error.details;
+  if (details.diagnostics?.resources?.some(resource => resource.abortReason === "network_idle")) {
+    return "通信環境を確認して、もう一度計算してください。";
+  }
+  if (details.code === "engine_asset_fetch_failed" || details.code === "worker_runtime_failed") {
+    return "通信環境を確認して、もう一度計算してください。";
+  }
+  if (isRetryableEngineError(error)) return "計算エンジンを準備できませんでした。もう一度計算してください。";
+  return details.message;
 }

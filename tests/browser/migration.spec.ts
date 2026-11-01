@@ -231,7 +231,7 @@ test("WASMのロード失敗を表示する", async ({ page }) => {
     route.fulfill({ status: 404, body: "missing" }),
   );
   await page.goto(`/split/auto/ticket?${query}`);
-  await expect(page.getByText(/main\.wasm.*404/)).toBeVisible();
+  await expect(page.getByText("通信環境を確認して、もう一度計算してください。", { exact: true })).toBeVisible();
 });
 
 test("エンジン初期化失敗後もメインの計算ボタンから再試行できる", async ({ page }) => {
@@ -244,7 +244,7 @@ test("エンジン初期化失敗後もメインの計算ボタンから再試�
   );
 
   await page.goto(`/split/auto/ticket?${query}`);
-  const retryCalculationButton = page.getByRole("button", { name: "計算を再試行", exact: true });
+  const retryCalculationButton = page.getByRole("button", { name: "乗車券を計算", exact: true });
   await expect(retryCalculationButton).toBeVisible();
   await expect(page.getByRole("button", { name: "再試行", exact: true })).toHaveCount(0);
 
@@ -263,54 +263,13 @@ test("運賃計算もメインの計算ボタンからエンジンを再試行�
   );
 
   await page.goto(`/fare/ticket?route=${encodeURIComponent("新茂原[外房]茂原")}`);
-  const retryCalculationButton = page.getByRole("button", { name: "計算を再試行", exact: true });
+  const retryCalculationButton = page.getByRole("button", { name: "運賃計算をする", exact: true });
   await expect(retryCalculationButton).toBeVisible();
   await expect(page.getByRole("button", { name: "再試行", exact: true })).toHaveCount(0);
 
   allowWasm = true;
   await retryCalculationButton.click();
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
-});
-
-for (const staleStatus of [403, 404]) test(`古いエンジンURLの${staleStatus}時に現行資材へフォールバックして検索を継続する`, async ({ page }) => {
-  await isolateServices(page);
-  const fallbackEngineBasePath = `/engine/${"f".repeat(64)}`;
-  let staleEngineBasePath: string | undefined;
-  let staleWasmRuntimeFailures = 0;
-  let staleTicketGraphFailures = 0;
-
-  await page.route("**/deployment.json", route =>
-    route.fulfill({ json: { enginePath: fallbackEngineBasePath } }),
-  );
-  await page.route("**/engine/**", async route => {
-    const url = new URL(route.request().url());
-    const match = url.pathname.match(/^\/engine\/([a-f0-9]{64})(\/[^/]+)$/);
-    if (!match) return route.continue();
-
-    staleEngineBasePath ??= `/engine/${match[1]}`;
-    const assetPath = match[2];
-    if (assetPath === "/wasm_exec.js" && !url.pathname.startsWith(fallbackEngineBasePath) && staleWasmRuntimeFailures === 0) {
-      staleWasmRuntimeFailures++;
-      return route.fulfill({ status: staleStatus, body: "stale engine runtime" });
-    }
-    if (assetPath === "/ticket_graph_data.bin" && !url.pathname.startsWith(fallbackEngineBasePath) && staleTicketGraphFailures === 0) {
-      staleTicketGraphFailures++;
-      return route.fulfill({ status: staleStatus, body: "stale engine asset" });
-    }
-
-    if (url.pathname.startsWith(fallbackEngineBasePath) && staleEngineBasePath) {
-      const rewritten = new URL(url);
-      rewritten.pathname = `${staleEngineBasePath}${assetPath}`;
-      return route.continue({ url: rewritten.toString() });
-    }
-
-    return route.continue();
-  });
-
-  await page.goto(`/split/auto/ticket?${query}`);
-  await expectTicket(page);
-  expect(staleWasmRuntimeFailures).toBe(1);
-  expect(staleTicketGraphFailures).toBe(1);
 });
 
 test("経路APIの一時的なネットワーク失敗を再試行して検索を継続する", async ({ page }) => {
@@ -345,18 +304,6 @@ test("APIのタイムアウトで端末内計算へ切り替える", async ({ pa
   await expect(page.getByRole("button", { name: "計算中...", exact: true })).toHaveCount(0);
 });
 
-test("WASMの一時的な503を再試行して検索を継続する", async ({ page }) => {
-  await isolateServices(page);
-  let attempts = 0;
-  await page.route("**/main.wasm", async route => {
-    attempts++;
-    if (attempts <= 2) return route.fulfill({ status: 503, body: "temporary" });
-    return route.continue();
-  });
-  await page.goto(`/split/auto/ticket?${query}`);
-  await expectTicket(page);
-  expect(attempts).toBe(3);
-});
 
 test("定期券グラフの障害中も乗車券検索を継続する", async ({ page }) => {
   await isolateServices(page);
@@ -400,7 +347,7 @@ test("初期化中も入力画面が表示され、完了後に計算できる",
   });
   await page.goto(`/split/auto/ticket?${query}`);
   await expect(page.getByRole("combobox").first()).toHaveValue("新茂原");
-  await expect(page.getByText("計算中です...", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "計算エンジンを準備中", exact: true })).toBeDisabled();
   release();
   await expectTicket(page);
 });

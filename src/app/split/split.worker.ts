@@ -1,3 +1,4 @@
+import { readEngineAsset } from "@/lib/read-engine-asset";
 import { createSplitResultStream } from "@/lib/split-result-stream";
 /// <reference lib="webworker" />
 import * as Sentry from "@sentry/browser";
@@ -60,37 +61,6 @@ if (sentryDsn) {
 // CI embeds the content hash used to package all four engine files.
 const wasmVersion = __WASM_VERSION__;
 const engineBaseUrl = `${baseOrigin}/engine${wasmVersion ? `/${wasmVersion}` : ''}`;
-let currentEngineBaseUrl: string | null | undefined;
-let currentEngineBaseUrlPromise: Promise<string | null> | undefined;
-
-async function getCurrentEngineBaseUrl() {
-  if (currentEngineBaseUrl !== undefined) return currentEngineBaseUrl;
-  if (currentEngineBaseUrlPromise) return currentEngineBaseUrlPromise;
-
-  const origin = baseOrigin || (self.location.origin !== 'null' ? self.location.origin : '');
-  if (!origin) {
-    currentEngineBaseUrl = null;
-    return currentEngineBaseUrl;
-  }
-
-  const manifestUrl = `${origin}/deployment.json`;
-  let status: number | undefined;
-  currentEngineBaseUrlPromise = resourceDiagnostics.measure(manifestUrl, 'deployment_manifest', 1, async () => {
-    const response = await fetch(manifestUrl, { cache: 'no-store' });
-    status = response.status;
-    if (!response.ok) throw new Error(`配信情報の取得に失敗しました (${status})`);
-    const deployment = await response.json() as { enginePath?: unknown };
-    if (typeof deployment.enginePath !== 'string') throw new Error('配信情報のenginePathが不正です。');
-    const engineUrl = new URL(deployment.enginePath, manifestUrl);
-    if (engineUrl.origin !== origin || !/^\/engine\/[a-f0-9]{64}$/.test(engineUrl.pathname)) throw new Error('配信情報のenginePathが不正です。');
-    return engineUrl.href.replace(/\/$/, '');
-  }, { status: () => status }).catch(() => null);
-
-  currentEngineBaseUrl = await currentEngineBaseUrlPromise;
-  currentEngineBaseUrlPromise = undefined;
-  return currentEngineBaseUrl;
-}
-
 interface GoInstance {
   importObject: WebAssembly.Imports;
   run(instance: WebAssembly.Instance): Promise<void>;
@@ -134,7 +104,6 @@ let wasmRetryCount = 0;
 const WASM_URL = `${engineBaseUrl}/main.wasm`;
 const PASS_GRAPH_URL = `${engineBaseUrl}/pass_graph_data.bin`;
 const TICKET_GRAPH_URL = `${engineBaseUrl}/ticket_graph_data.bin`;
-const ASSET_REQUEST_TIMEOUT_MS = 8_000;
 
 type InitStage = 'worker_bootstrap' | 'wasm_fetch' | 'wasm_instantiate' |
   'pass_graph_fetch' | 'pass_graph_initialize' | 'ticket_graph_fetch' | 'ticket_graph_initialize';
@@ -152,7 +121,6 @@ interface InitFailure {
   diagnostics?: SearchDiagnostics;
 }
 
-const RETRY_DELAYS_MS = [150, 500];
 
 function isRetryableStatus(status: number) {
   return status === 408 || status === 429 || status >= 500;
@@ -160,77 +128,26 @@ function isRetryableStatus(status: number) {
 
 async function loadWasmRuntime() {
   const runtimeUrl = `${engineBaseUrl}/wasm_exec.js`;
-  try {
-    await resourceDiagnostics.measure(runtimeUrl, 'runtime_import', 1, () => import(/* @vite-ignore */ runtimeUrl));
-    return;
-  } catch (error) {
-    const currentBaseUrl = await getCurrentEngineBaseUrl();
-    const fallbackUrl = currentBaseUrl ? `${currentBaseUrl}/wasm_exec.js` : null;
-    if (!fallbackUrl || fallbackUrl === runtimeUrl) throw error;
-    await resourceDiagnostics.measure(fallbackUrl, 'runtime_import', 1, () => import(/* @vite-ignore */ fallbackUrl), { fallbackFrom: runtimeUrl });
-  }
-}
-
-async function fetchAssetWithRetry(url: string, phase: string, fallbackFrom?: string) {
-  let lastError: unknown;
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
-    const controller = new AbortController();
-    let timedOut = false;
-    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, ASSET_REQUEST_TIMEOUT_MS);
-    try {
-      let status: number | undefined;
-      const response = await resourceDiagnostics.measure(url, phase, attempt + 1, async () => {
-        const response = await fetch(url, { signal: controller.signal });
-        status = response.status;
-        if (!response.ok) throw Object.assign(new Error(`${url}: ${response.status} ${response.statusText}`), { httpStatus: response.status, retryCount: attempt });
-        return response;
-      }, { status: () => status, timedOut: () => timedOut, fallbackFrom });
-      // ヘッダー受信後も本文を読み切るまで取得タイマーと再試行を有効にする。
-      const buffer = await resourceDiagnostics.measure(url, phase.replace(/_fetch$/, '_body_read'), attempt + 1,
-        () => response.arrayBuffer(), { status: () => status, timedOut: () => timedOut, fallbackFrom });
-      return { buffer, retryCount: attempt, url };
-
-    } catch (error) {
-      lastError = error;
-      const status = (error as { httpStatus?: number } | null)?.httpStatus;
-      if ((status !== undefined && !isRetryableStatus(status)) || attempt === RETRY_DELAYS_MS.length) {
-        if (error && typeof error === 'object') Object.assign(error, { retryCount: attempt, assetFetch: true });
-        throw error;
-      }
-    } finally {
-      clearTimeout(timeout);
-    }
-    await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
-  }
-  throw lastError;
+  await resourceDiagnostics.measure(runtimeUrl, 'runtime_import', 1, () => import(/* @vite-ignore */ runtimeUrl));
 }
 
 async function fetchAsset(url: string, phase: string) {
   try {
-    return await fetchAssetWithRetry(url, phase);
+    let status: number | undefined;
+    let receivedBytes = 0;
+    const result = await resourceDiagnostics.measure(url, phase, 1, async () => {
+      const result = await readEngineAsset(url, bytes => {
+        receivedBytes = bytes;
+        postMessage({ type: 'initialization_progress', diagnostics: { ...workerDiagnostics(), receivedBytes, resourceUrl: url } });
+      });
+      status = result.status;
+      receivedBytes = result.buffer.byteLength;
+      return result;
+    }, { status: () => status, receivedBytes: () => receivedBytes });
+    return { buffer: result.buffer, retryCount: 0, url };
   } catch (error) {
-    const status = (error as { httpStatus?: number } | null)?.httpStatus;
-    const assetMatch = url.match(/\/engine\/[a-f0-9]{64}\/([^/?#]+)$/);
-    if ((status !== 403 && status !== 404) || !assetMatch) throw error;
-
-    const currentBaseUrl = await getCurrentEngineBaseUrl();
-    if (!currentBaseUrl) throw error;
-
-    const fallbackUrl = `${currentBaseUrl}/${assetMatch[1]}`;
-    if (fallbackUrl === url) throw error;
-
-    try {
-      // A stale HTML/Worker bundle can retain an engine hash from a previous
-      // deployment. Use the current deployment manifest when that version was
-      // removed from the active static-assets manifest.
-      const fallback = await fetchAssetWithRetry(fallbackUrl, phase, url);
-      return { ...fallback, retryCount: fallback.retryCount + 1 };
-    } catch (fallbackError) {
-      if (fallbackError && typeof fallbackError === 'object') {
-        Object.assign(fallbackError, { originalUrl: url, fallbackUrl });
-      }
-      throw fallbackError;
-    }
+    if (error && typeof error === 'object') Object.assign(error, { retryCount: 0, assetFetch: true });
+    throw error;
   }
 }
 
