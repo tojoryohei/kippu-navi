@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.10.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.10.0...kippu-navi-v5.10.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* 計算エンジンの準備表示と低速回線の読み込みを改善 ([#977](https://github.com/tojoryohei/kippu-navi/issues/977)) ([16d1f19](https://github.com/tojoryohei/kippu-navi/commit/16d1f1915d5083f8a053c60f03b9c0a54b4e9c0f))
+
 ## [5.10.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.9.0...kippu-navi-v5.10.0) (2026-10-31)
 
 
