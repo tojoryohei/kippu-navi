@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 const paths = ["/split/auto/ticket", "/split/auto/pass", "/split/auto/ic-pass", "/fare/ticket", "/fare/pass", "/split/route/ticket", "/split/route/pass"];
 
-test("Workerの初回読込失敗から一度だけ復旧し実WASMで計算する", async ({ page, context }) => {
+test("Workerの初回読込失敗後に通常の計算ボタンから実WASMで計算する", async ({ page, context }) => {
   let loads = 0;
   await context.route("**/*", route => {
     const url = new URL(route.request().url());
@@ -25,6 +25,10 @@ test("Workerの初回読込失敗から一度だけ復旧し実WASMで計算す�
     };
   });
   await page.goto("/fare/ticket?" + new URLSearchParams({ route: "東京[東海道]品川", mode: "normal" }));
+  const calculate = page.locator('button[type="submit"]');
+  await expect(calculate).toBeEnabled();
+  await expect(calculate).not.toHaveText('計算を再試行');
+  await calculate.click();
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
   const info = await page.evaluate(() => (window as unknown as { engineDiagnostics: { urls: string[]; locations: string[] } }).engineDiagnostics);
   expect(info.urls).toHaveLength(2);

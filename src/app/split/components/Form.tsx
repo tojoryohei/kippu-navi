@@ -1,3 +1,4 @@
+import { useEngineState } from "@/lib/use-engine-state";
 import { createResourceDiagnostics } from "@/lib/resource-diagnostics";
 import { exceptionDiagnostics } from "@/lib/error-diagnostics";
 import { appendSplitResults } from "@/lib/append-split-results";
@@ -10,7 +11,7 @@ import { navigatePreservingScroll } from "@/lib/navigation";
 import { createEngineClient, type EngineClient } from "@/lib/engine-client";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
 import { buildSearchUrl } from "@/lib/analytics-events";
-import { classifyCalculationError, isRetryableEngineError, SearchOperationError } from "@/lib/search-errors";
+import { formatEngineError, classifyCalculationError, isRetryableEngineError, SearchOperationError } from "@/lib/search-errors";
 
 import stationDatas from "@/app/split/data/stationDatas.json";
 import SelectStation from "@/app/split/components/SelectStation";
@@ -151,7 +152,6 @@ export default function SplitForm({
 
     // ローカルでの計算結果・エラー・計測時間および検索タイプの管理State
     const [isCalculating, setIsCalculating] = useState(false);
-    const [isEngineRetryable, setIsEngineRetryable] = useState(false);
     const [result, setResult] = useState<SplitFareResult | null>(initialResult || null);
     const [error, setError] = useState<string | null>(initialError || null);
     const [serverTime, setServerTime] = useState<number | null>(initialServerTime || null);
@@ -172,6 +172,10 @@ export default function SplitForm({
     const pendingErrorRef = useRef<unknown>(null);
 
     const workerRef = useRef<EngineClient | null>(null);
+    const [engineClient, setEngineClient] = useState<EngineClient | null>(null);
+    const { status: engineState, error: engineError } = useEngineState(engineClient, selectedPeriod === "ticket" ? "ticket" : "pass");
+    const [isLocalPreparing, setIsLocalPreparing] = useState(false);
+
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
     const latestCalcIdRef = useRef<number>(0);
     const [resultSearchId, setResultSearchId] = useState(0);
@@ -218,10 +222,13 @@ export default function SplitForm({
 
     const onSubmit: SubmitHandler<ExtendedSplitFormInput> = useCallback(async (data) => {
         if (!mountedRef.current) return;
+        const state = workerRef.current?.getState(data.searchType === "ticket" ? "ticket" : "pass");
+        if (!state || state.status === "preparing" || (state.status === "failed" && !isRetryableEngineError(new SearchOperationError(state.error)))) return;
+
         const calcId = ++latestCalcIdRef.current;
         setResultSearchId(calcId);
         if (!data.startStation?.name || !data.endStation?.name) return;
-        const shouldRestartEngine = isRetryableEngineError(pendingErrorRef.current);
+        const shouldRestartEngine = state.status === "failed" || isRetryableEngineError(pendingErrorRef.current);
 
         apiAbortRef.current?.abort("superseded");
         const abort = new AbortController();
@@ -238,7 +245,9 @@ export default function SplitForm({
         setResult(null);
         setServerTime(null);
         setIsCalculating(true);
-        setIsEngineRetryable(false);
+
+        setIsLocalPreparing(false);
+        if (shouldRestartEngine) workerRef.current?.restart();
 
         const newParams = new URLSearchParams();
         if (data.startStation.name) {
@@ -310,8 +319,10 @@ export default function SplitForm({
                     if (localWorkerRef.current === localWorker) localWorkerRef.current = null;
                 }
             };
+            setIsLocalPreparing(true);
             const readiness = await localWorker.ensureReady(capability);
             if (abort.signal.aborted || calcId !== latestCalcIdRef.current) return;
+            setIsLocalPreparing(false);
             searchContext.readiness = readiness;
             localWorker.postMessage({
                 type: capability === "ticket" ? "calculateOptimalSplitTicket" : "calculateOptimalSplitPass",
@@ -384,7 +395,6 @@ export default function SplitForm({
                 setIsCalculating(false);
             } else {
                 if (!workerRef.current) return;
-                if (shouldRestartEngine) workerRef.current.restart();
                 const readiness = await workerRef.current.ensureReady(capability);
                 searchContext.readiness = readiness;
                 captureEngineRecovery(readiness, searchContext);
@@ -413,8 +423,10 @@ export default function SplitForm({
             if (err instanceof SearchOperationError && err.details.source === "api") {
                 const fetches = snapshot.resources?.filter(resource => resource.phase === "api_fetch") || [];
                 err.details.retryCount = Math.max(0, fetches.length - 1);
-                err.details.diagnostics = { ...snapshot, exception: snapshot.resources?.slice().reverse().find(resource => resource.exception)?.exception || exceptionDiagnostics(err),
-                    abortReason: apiTimeout.didTimeout() ? "timeout" : abort.signal.aborted ? (abort.signal.reason === "disposed" ? "disposed" : "superseded") : undefined };
+                err.details.diagnostics = {
+                    ...snapshot, exception: snapshot.resources?.slice().reverse().find(resource => resource.exception)?.exception || exceptionDiagnostics(err),
+                    abortReason: apiTimeout.didTimeout() ? "timeout" : abort.signal.aborted ? (abort.signal.reason === "disposed" ? "disposed" : "superseded") : undefined
+                };
             }
             apiTimeout.dispose();
             if (abort.signal.aborted) return;
@@ -430,10 +442,10 @@ export default function SplitForm({
             }
             if (abort.signal.aborted) return;
             stopLocalWorker();
-            const errorInstance = err instanceof Error ? err : new Error(String(err));
             pendingErrorRef.current = err;
-            setIsEngineRetryable(isRetryableEngineError(err));
-            setError(errorInstance.message);
+            setIsLocalPreparing(false);
+
+            setError(formatEngineError(err));
             setIsCalculating(false);
         }
     }, [pathname, isIcPass]);
@@ -449,6 +461,7 @@ export default function SplitForm({
 
             const worker = createEngineClient();
             workerRef.current = worker;
+            setEngineClient(worker);
 
             worker.onmessage = (e) => {
                 const { type, result, error, requestId, details } = e.data;
@@ -482,6 +495,7 @@ export default function SplitForm({
     }, [isPreview]);
 
     const initialAutoExecutedRef = useRef(false);
+    const autoSearchCancelledRef = useRef(false);
     const initialForbiddenStationsKey = initialForbiddenStations?.join("\u0000") ?? "";
 
     useEffect(() => {
@@ -522,13 +536,17 @@ export default function SplitForm({
             setTimeout(() => {
                 trigger(["startStation", "endStation"]).then((valid) => {
                     if (valid) {
-                        onSubmit({
-                            startStation,
-                            endStation,
-                            forbiddenStations,
-                            maxSplits: selectedMaxSplits,
-                            searchType: currentSearchType,
-                        });
+                        const snapshot = JSON.stringify(getValues());
+                        void workerRef.current?.ensureReady(currentSearchType === "ticket" ? "ticket" : "pass").then(() => {
+                            if (!mountedRef.current || autoSearchCancelledRef.current || JSON.stringify(getValues()) !== snapshot) return;
+                            return onSubmit({
+                                startStation,
+                                endStation,
+                                forbiddenStations,
+                                maxSplits: selectedMaxSplits,
+                                searchType: currentSearchType,
+                            });
+                        }).catch(() => { /* 準備失敗は状態購読で表示する。 */ });
                     }
                 });
             }, 50);
@@ -537,7 +555,7 @@ export default function SplitForm({
                 trigger(["startStation", "endStation"]);
             }, 0);
         }
-    }, [initialFrom, initialTo, initialSearchType, initialForbiddenStationsKey, initialMaxSplits, isIcPass, isPass, setValue, trigger, onSubmit]);
+    }, [initialFrom, initialTo, initialSearchType, initialForbiddenStationsKey, initialMaxSplits, isIcPass, isPass, setValue, trigger, onSubmit, getValues]);
 
     // 検索完了の匿名集計と障害通知（計算結果またはエラーが返ってきたタイミングで実行）
     useEffect(() => {
@@ -836,8 +854,14 @@ export default function SplitForm({
                 </div>
             </div>
 
-            {/* eslint-disable-next-line react-hooks/refs */}
-            <form onSubmit={handleSubmit(onSubmit)} className="w-full">
+            <form
+                onChangeCapture={() => { autoSearchCancelledRef.current = true; }}
+                onClickCapture={event => {
+                    if ((event.target as HTMLElement).closest('button[type="button"]')) autoSearchCancelledRef.current = true;
+                }}
+                onSubmit={event => { void handleSubmit(onSubmit)(event); }}
+                className="w-full"
+            >
                 <div className="flex flex-col gap-3 w-full">
 
                     <div className="flex flex-col w-full">
@@ -924,12 +948,12 @@ export default function SplitForm({
                         <button
                             type="submit"
                             className="w-full px-6 py-3 bg-blue-500 text-white rounded disabled:bg-gray-400 hover:bg-blue-600 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                            disabled={!isValid || isCalculating}
+                            disabled={!isValid || isCalculating || engineState === "preparing" || engineState === "failed"}
                         >
-                            {isCalculating
-                                ? "計算中..."
-                                : isEngineRetryable
-                                    ? "計算を再試行"
+                            {engineState === "preparing" || isLocalPreparing
+                                ? "計算エンジンを準備中"
+                                : isCalculating
+                                    ? "計算中"
                                     : `${isIcPass ? "IC" : ""}${SEARCH_TYPE_OPTIONS.find(o => o.value === currentType)?.label || "運賃"}を計算`
                             }
                         </button>
@@ -942,9 +966,9 @@ export default function SplitForm({
                     {serverTime != null ? `計算時間: ${serverTime}ms` : null}
                 </p>
                 {isCalculating && !result && <p className="py-5 border-t text-center text-gray-500">計算中です...</p>}
-                {!isCalculating && error && (
+                {!isCalculating && (error || engineError) && (
                     <div className="py-5 border-t text-center text-red-500">
-                        <p>{isEngineRetryable ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
+                        <p>{error || (engineError && formatEngineError(new SearchOperationError(engineError)))}</p>
                     </div>
                 )}
 

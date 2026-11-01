@@ -71,60 +71,41 @@ function setup(t, shared = false) {
   return { workers, client };
 }
 
-test('同時待機は能力をまたいで1回の再起動を共有し、終了した画面だけを取り除く', async t => {
+test('失敗を共有し、自動再起動せず通常の計算操作から再開できる', async t => {
   const { workers, client } = setup(t, true);
   const a = client(), b = client(), c = client();
-  const pendingA = a.ensureReady('ticket'), pendingB = b.ensureReady('pass'), pendingC = c.ensureReady('ticket');
-  const cancelled = assert.rejects(pendingC, { name: 'AbortError' });
-  workers[0].reply(failure());
-  assert.equal(workers.length, 2);
-  c.terminate();
-  workers[1].reply({ type: 'ready', capability: 'ticket', retryCount: 0 });
-  workers[1].reply({ type: 'ready', capability: 'pass', retryCount: 0 });
-  for (const info of await Promise.all([pendingA, pendingB])) {
-    assert.equal(info.workerRestartCount, 1);
-    assert.equal(info.recovered, true);
-    assert.equal(info.initialError.diagnostics.exception.stack, 'original-stack');
-    assert.equal(info.initialError.diagnostics.workerUrl, workers[0].url);
-  }
-  await cancelled;
-});
-
-test('連続失敗は両試行を保持し、手動再試行まで再起動しない', async t => {
-  const { workers, client } = setup(t);
-  const a = client();
-  const result = assert.rejects(a.ensureReady('ticket'), error => {
-    assert.equal(error.details.workerRestartCount, 1);
-    assert.equal(error.details.diagnostics.attempts.length, 2);
-    assert.equal(error.details.diagnostics.attempts[0].diagnostics.resources[0].url, '/engine/main.wasm?version=old');
+  const pendingA = assert.rejects(a.ensureReady('ticket'), error => {
+    assert.equal(error.details.workerRestartCount, 0);
+    assert.equal(error.details.diagnostics.exception.stack, 'original-stack');
     return true;
   });
+  const pendingB = assert.rejects(b.ensureReady('pass'));
+  const cancelled = assert.rejects(c.ensureReady('ticket'), { name: 'AbortError' });
+  c.terminate();
   workers[0].reply(failure());
-  workers[1].reply(failure({ error: 'second failure' }));
-  await result;
+  await Promise.all([pendingA, pendingB, cancelled]);
   await assert.rejects(a.ensureReady('ticket'));
-  assert.equal(workers.length, 2);
+  assert.equal(workers.length, 1);
+  assert.equal(a.getState('ticket').status, 'failed');
   a.restart();
-  const retried = a.ensureReady('ticket');
-  workers[2].reply({ type: 'ready', capability: 'ticket' });
-  assert.equal((await retried).recovered, false);
+  const pending = a.ensureReady('ticket');
+  workers[1].reply({ type: 'ready', capability: 'ticket' });
+  assert.equal((await pending).recovered, false);
 });
 
-test('初期化タイムアウトは各試行30秒で打ち切り、最後の段階を保持する', async t => {
+test('進捗のない初期化は各試行60秒で打ち切り、最後の段階を保持する', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { workers, client } = setup(t);
   const a = client();
   const result = assert.rejects(a.ensureReady('pass'), error => {
-    assert.equal(error.details.diagnostics.attempts.length, 2);
-    assert.equal(error.details.diagnostics.attempts[0].diagnostics.phases.wasm.phase, 'wasm_fetch');
+    assert.equal(error.details.diagnostics.phases.wasm.phase, 'wasm_fetch');
     return true;
   });
   workers[0].reply({ type: 'initialization_progress', diagnostics: { phases: { wasm: { phase: 'wasm_fetch', state: 'started', elapsedMs: 3 } } } });
-  t.mock.timers.tick(29_000);
+  t.mock.timers.tick(59_000);
   assert.equal(workers.length, 1);
   t.mock.timers.tick(1_001);
-  assert.equal(workers.length, 2);
-  t.mock.timers.tick(30_001);
+  assert.equal(workers.length, 1);
   await result;
 });
 
@@ -144,15 +125,19 @@ test('実行中要求がある場合は再起動せず計算を再送しない',
   assert.equal(globalThis.workerErrors[0].details.diagnostics.exception.line, 4);
 });
 
-test('古いWorkerの遅延通知を無視し、成功後の追加送信を増やさない', async t => {
+test('手動再開後は古いWorkerの遅延通知を無視する', async t => {
   const { workers, client } = setup(t);
-  const a = client(), pending = a.ensureReady('ticket');
+  const a = client();
+  const failed = assert.rejects(a.ensureReady('ticket'));
   workers[0].fail({});
-  assert.equal(globalThis.workerErrors.length, 1);
+  await failed;
+  a.restart();
+  const pending = a.ensureReady('ticket');
   workers[0].reply({ type: 'ready', capability: 'ticket' });
   workers[0].fail({ message: 'late' });
+  assert.equal(a.getState('ticket').status, 'preparing');
   workers[1].reply({ type: 'ready', capability: 'ticket' });
-  assert.equal((await pending).workerRestartCount, 1);
+  assert.equal((await pending).workerRestartCount, 0);
   assert.equal(globalThis.workerErrors.length, 1);
 });
 
@@ -169,4 +154,31 @@ test('再試行不能・業務エラーと手動世代交代では自動復旧�
   const a = client(), result = assert.rejects(a.ensureReady('ticket'), { name: 'AbortError' });
   a.restart();
   await result;
+});
+
+test('進捗が続く限り準備を中断せず、能力別に状態を通知する', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const { workers, client } = setup(t);
+  const a = client();
+  const changes = [];
+  const unsubscribe = a.subscribe(() => changes.push(a.getState('ticket').status));
+  const pending = a.ensureReady('ticket');
+  for (let i = 0; i < 4; i++) {
+    t.mock.timers.tick(40_000);
+    workers[0].reply({ type: 'initialization_progress', diagnostics: { receivedBytes: i * 100 } });
+  }
+  assert.equal(workers.length, 1);
+  workers[0].reply({ type: 'ready', capability: 'pass' });
+  assert.equal(a.getState('ticket').status, 'preparing');
+  workers[0].reply({ type: 'ready', capability: 'ticket' });
+  await pending;
+  assert.equal(a.getState('ticket').status, 'ready');
+  a.restart();
+  assert.equal(a.getState('ticket').status, 'preparing');
+  workers[0].reply({ type: 'ready', capability: 'ticket' });
+  assert.equal(a.getState('ticket').status, 'preparing');
+  unsubscribe();
+  const count = changes.length;
+  workers[1].reply({ type: 'ready', capability: 'ticket' });
+  assert.equal(changes.length, count);
 });

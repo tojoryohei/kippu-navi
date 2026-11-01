@@ -72,8 +72,8 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
   try { await workerModule.fetchAsset('https://example.test/engine/main.wasm?version=1#asset', 'wasm_fetch'); }
   catch (error) { original = error; }
   const failure = workerModule.initFailure(original, 'wasm_fetch', original.retryCount, 'ticket');
-  assert.equal(failure.diagnostics.resources.length, 3);
-  assert.equal(failure.diagnostics.resources[2].attempt, 3);
+  assert.equal(failure.diagnostics.resources.length, 1);
+  assert.equal(failure.diagnostics.resources[0].attempt, 1);
   assert.equal(failure.diagnostics.exception.name, 'TypeError');
   assert.ok(notifications.some(item => item.diagnostics.phases));
   let transport;
@@ -92,7 +92,7 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
     assert.equal(event.contexts.engine_diagnostics.resources[0].url, 'https://example.test/engine/main.wasm?version=1#asset');
     assert.equal(event.contexts.engine_diagnostics.exception.message, 'Load failed');
     assert.ok(event.contexts.engine_diagnostics.exception.stack.includes('TypeError'));
-    assert.equal(event.contexts.engine_diagnostics.attempts.length, 2);
+    assert.equal(event.contexts.engine_diagnostics.attempts, undefined);
   }
   assert.deepEqual(events[events.length - 2].fingerprint, ['engine_asset_fetch_failed', 'wasm_fetch', 'ticket', 'none']);
   assert.equal(events[events.length - 1].fingerprint, undefined);
@@ -102,15 +102,19 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
   assert.equal(completed[completed.length - 1].properties.worker_restart_count, 1);
   client.terminate();
 
-  // 旧資材の403と新資材へのフォールバックの両方を保持する。
+  // 配信版の解決はCloudflareに任せ、ブラウザでは別URLを取得しない。
   const oldUrl = 'https://example.test/engine/' + 'a'.repeat(64) + '/main.wasm';
-  globalThis.fetch = async url => url === oldUrl ? new Response('', { status: 403 }) : url.endsWith('/deployment.json') ? Response.json({ enginePath: '/engine/' + 'b'.repeat(64) }) : new Response('wasm');
-  const fetched = await workerModule.fetchAsset(oldUrl, 'wasm_fetch');
-  assert.equal(fetched.retryCount, 1);
-  const recovered = workerModule.firstAssetError('ticket');
-  assert.ok(recovered.diagnostics.resources.some(resource => resource.fallbackFrom === oldUrl && resource.outcome === 'success'));
+  for (const status of [403, 404]) {
+    const requests = [];
+    globalThis.fetch = async url => {
+      requests.push(url);
+      return url === oldUrl ? new Response('', { status }) : Response.json({ enginePath: '/engine/' + 'b'.repeat(64) });
+    };
+    await assert.rejects(workerModule.fetchAsset(oldUrl, 'wasm_fetch'), error => error.httpStatus === status);
+    assert.deepEqual(requests, [oldUrl]);
+  }
 
-  // HTTP 200でも本文の通信が途中で切れた場合は、資材全体を再取得する。
+  // HTTP 200でも本文の通信が途中で切れた場合は、自動再取得しない。
   let bodyCalls = 0;
   const bodyUrl = 'https://example.test/engine/body.wasm';
   globalThis.fetch = async () => {
@@ -119,12 +123,11 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
       ? new Response(new ReadableStream({ start(controller) { controller.error(new TypeError('Load failed')); } }))
       : new Response('complete');
   };
-  const bodyFetched = await workerModule.fetchAsset(bodyUrl, 'wasm_fetch');
-  assert.equal(bodyFetched.retryCount, 1);
-  assert.equal(new TextDecoder().decode(bodyFetched.buffer), 'complete');
-  assert.ok(workerModule.firstAssetError('ticket').diagnostics.resources.some(resource => resource.url === bodyUrl && resource.phase === 'wasm_body_read' && resource.outcome === 'failure'));
+  await assert.rejects(workerModule.fetchAsset(bodyUrl, 'wasm_fetch'));
+  assert.equal(bodyCalls, 1);
+  assert.ok(workerModule.firstAssetError('ticket').diagnostics.resources.some(resource => resource.url === bodyUrl && resource.phase === 'wasm_fetch' && resource.outcome === 'failure'));
 
-  // ヘッダーだけ届いて本文が停止しても、8秒後に中断して次の取得へ進む。
+  // ヘッダーだけ届いて本文が停止しても、30秒後に中断して失敗を通知する。
   const stalledUrl = 'https://example.test/engine/stalled.bin';
   let stalledCalls = 0;
   let aborted = false;
@@ -136,16 +139,14 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
   };
   t.mock.timers.enable({ apis: ['setTimeout'] });
   try {
-    const stalled = workerModule.fetchAsset(stalledUrl, 'ticket_graph_fetch');
+    const stalled = assert.rejects(workerModule.fetchAsset(stalledUrl, 'ticket_graph_fetch'));
     await new Promise(resolve => setImmediate(resolve));
-    t.mock.timers.tick(8_000);
+    t.mock.timers.tick(30_000);
     await new Promise(resolve => setImmediate(resolve));
-    t.mock.timers.tick(150);
-    const fetchedAfterTimeout = await stalled;
+    await stalled;
     assert.equal(aborted, true);
-    assert.equal(fetchedAfterTimeout.retryCount, 1);
-    assert.equal(new TextDecoder().decode(fetchedAfterTimeout.buffer), 'graph');
-    assert.ok(workerModule.firstAssetError('ticket').diagnostics.resources.some(resource => resource.url === stalledUrl && resource.phase === 'ticket_graph_body_read' && resource.timedOut === true));
+    assert.equal(stalledCalls, 1);
+    assert.ok(workerModule.firstAssetError('ticket').diagnostics.resources.some(resource => resource.url === stalledUrl && resource.phase === 'ticket_graph_fetch' && resource.timedOut === true));
   } finally { t.mock.timers.reset(); }
 
   globalThis.document = testDocument;

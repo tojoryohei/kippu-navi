@@ -1,3 +1,4 @@
+import { useEngineState } from "@/lib/use-engine-state";
 import TicketPricingOptions from "@/app/fare/components/TicketPricingOptions";
 import RouteDistanceTable from "./RouteDistanceTable";
 import { ticketDiscounts, normalizeTicketPricing, type PassengerType, type DiscountId } from "@/app/fare/lib/ticketPricing";
@@ -11,7 +12,7 @@ import { RiArrowDownSLine, RiArrowUpDownLine } from "react-icons/ri";
 import { ImArrowRight } from "react-icons/im";
 import { captureEngineRecovery, captureSearchError, captureSuccessfulSearch, createSearchId, type SearchEventContext } from "@/lib/analytics";
 import { buildSearchUrl } from "@/lib/analytics-events";
-import { isRetryableEngineError, SearchOperationError } from "@/lib/search-errors";
+import { formatEngineError, isRetryableEngineError, SearchOperationError } from "@/lib/search-errors";
 
 import stationData from "@/app/fare/data/stations.json";
 import lineData from "@/app/fare/data/lines.json";
@@ -174,11 +175,11 @@ export default function Form({
     const calculationBusyRef = useRef(false);
     const [progress, setProgress] = useState<RouteCalculationProgress>({ phase: "preparing", completed: 0, total: 0 });
     const [error, setError] = useState<string | null>(null);
-    const [isEngineRetryable, setIsEngineRetryable] = useState(false);
 
     const workerRef = useRef<EngineClient | null>(null);
-    const [isWasmReady, setIsWasmReady] = useState(false);
-    const isWasmReadyRef = useRef<boolean>(false);
+    const [engineClient, setEngineClient] = useState<EngineClient | null>(null);
+    const { status: engineState, error: engineError } = useEngineState(engineClient, formValues.searchType === "ticket" ? "ticket" : "pass");
+
     const latestCalcIdRef = useRef<number>(0);
     const [resultSearchId, setResultSearchId] = useState(0);
     const isPassPage = (pathname === "/fare/pass" || pathname === "/split/route/pass");
@@ -281,15 +282,18 @@ export default function Form({
 
     const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
         if (!mountedRef.current) return;
+        const state = workerRef.current?.getState(data.searchType === "ticket" ? "ticket" : "pass");
+        if (!state || state.status === "preparing" || (state.status === "failed" && !isRetryableEngineError(new SearchOperationError(state.error)))) return;
+
         const calcId = ++latestCalcIdRef.current;
         setResultSearchId(calcId);
-        const shouldRestartEngine = calculationBusyRef.current || isRetryableEngineError(pendingErrorRef.current);
+        const shouldRestartEngine = state.status === "failed" || calculationBusyRef.current || isRetryableEngineError(pendingErrorRef.current);
         pendingErrorRef.current = null;
         setProgress({ phase: "preparing", completed: 0, total: 0 });
         calculationBusyRef.current = true;
         setIsLoading(true);
         setError(null);
-        setIsEngineRetryable(false);
+
         setResult(null);
         setSplitResult(null);
         setResultPass(null);
@@ -357,8 +361,8 @@ export default function Form({
         } catch (readinessError) {
             if (!mountedRef.current || calcId !== latestCalcIdRef.current) return;
             pendingErrorRef.current = readinessError;
-            setIsEngineRetryable(isRetryableEngineError(readinessError));
-            setError(readinessError instanceof Error ? readinessError.message : String(readinessError));
+
+            setError(formatEngineError(readinessError));
             setIsLoading(false);
             calculationBusyRef.current = false;
             return;
@@ -416,20 +420,17 @@ export default function Form({
                 workerRef.current.terminate();
                 workerRef.current = null;
             }
-            setIsWasmReady(false);
-            isWasmReadyRef.current = false;
 
             const worker = createEngineClient({ isolated: pathname === "/fare/ticket" });
             workerRef.current = worker;
+            setEngineClient(worker);
 
             worker.onmessage = (e) => {
                 const { type, result: wResult, error: wError, requestId, details } = e.data;
                 if (requestId !== undefined && requestId !== latestCalcIdRef.current) return;
                 if (type === "progress") {
                     if (requestId === latestCalcIdRef.current) setProgress(e.data as RouteCalculationProgress);
-                } else if (type === "ready") {
-                    setIsWasmReady(true);
-                    isWasmReadyRef.current = true;
+
                 } else if (type === "success_route_pass") {
                     if (requestId === latestCalcIdRef.current) {
                         setResultPass(wResult as PassFareResult);
@@ -471,11 +472,11 @@ export default function Form({
                 workerRef.current.terminate();
                 workerRef.current = null;
             }
-            isWasmReadyRef.current = false;
         };
     }, [isPreview, pathname]);
 
     const initialAutoExecutedRef = useRef(false);
+    const autoSearchCancelledRef = useRef(false);
 
     // 初期ルート/パラメータによるフォーム状態の復元
     // エンジン起動時には再実行しない。操作開始後の入力を初期値で上書きしないため。
@@ -549,26 +550,13 @@ export default function Form({
         if (startStation && initialSegments[0].destinationStation) {
             if (!initialAutoExecutedRef.current) {
                 initialAutoExecutedRef.current = true;
-                if (currentSearchType === "ticket" || isWasmReadyRef.current) {
-                    setTimeout(() => {
-                        handleSubmit(onSubmit)();
-                    }, 150);
-                }
+                const snapshot = JSON.stringify(getValues());
+                void workerRef.current?.ensureReady(currentSearchType === "ticket" ? "ticket" : "pass").then(() => {
+                    if (mountedRef.current && !autoSearchCancelledRef.current && JSON.stringify(getValues()) === snapshot) void handleSubmit(onSubmit)();
+                }).catch(() => { /* 準備失敗は状態購読で表示する。 */ });
             }
         }
-    }, [pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, onSubmit]);
-
-    // WASMが後から初期化完了(isWasmReady=true)したタイミングで、初期アクセス時自動計算をフォールバック実行
-    useEffect(() => {
-        if (isWasmReady && initialAutoExecutedRef.current) {
-            const startVal = getValues("startStation");
-            const segs = getValues("segments");
-            const type = getValues("searchType");
-            if (startVal && segs?.[0]?.destinationStation && type !== "ticket" && !resultPass && !splitResult && !isLoading && !error) {
-                handleSubmit(onSubmit)();
-            }
-        }
-    }, [isWasmReady, getValues, resultPass, splitResult, isLoading, error, handleSubmit, onSubmit]);
+    }, [pathname, isPassPage, initialRoute, initialFrom, initialTo, initialSearchType, initialCalculationMode, replace, setValue, trigger, handleSubmit, onSubmit, getValues]);
 
     // 検索完了の匿名集計と障害通知（計算結果またはエラーが返ってきたタイミングで実行）
     useEffect(() => {
@@ -686,6 +674,12 @@ export default function Form({
         setCorrectedEndPass("");
         setError(null);
         setServerTime(null);
+        // 準備済みの期間切り替えは、従来どおり選択した期間で再計算する。
+        const values = getValues();
+        if (values.startStation && values.segments?.[0]?.destinationStation
+            && workerRef.current?.getState("pass").status === "ready") {
+            void handleSubmit(onSubmit)();
+        }
     };
 
     const changeForbiddenStations = useCallback((names: string[]) => {
@@ -861,8 +855,14 @@ export default function Form({
                 </div>
             </div>
 
-            {/* eslint-disable-next-line react-hooks/refs */}
-            <form onSubmit={handleSubmit(onSubmit)} className="w-full">
+            <form
+                onChangeCapture={() => { autoSearchCancelledRef.current = true; }}
+                onClickCapture={event => {
+                    if ((event.target as HTMLElement).closest('button[type="button"]')) autoSearchCancelledRef.current = true;
+                }}
+                onSubmit={event => { void handleSubmit(onSubmit)(event); }}
+                className="w-full"
+            >
                 <div className="flex flex-col w-full">
 
                     {/* 乗車駅 */}
@@ -1137,12 +1137,12 @@ export default function Form({
                     <button
                         type="submit"
                         className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:text-white transition-colors mt-2 cursor-pointer disabled:cursor-not-allowed"
-                        disabled={!isValid || isLoading}
+                        disabled={!isValid || isLoading || engineState === "preparing" || engineState === "failed"}
                     >
-                        {isLoading
-                            ? "計算中..."
-                            : isEngineRetryable
-                                ? "計算を再試行"
+                        {engineState === "preparing"
+                            ? "計算エンジンを準備中"
+                            : isLoading
+                                ? "計算中"
                                 : calculateButtonLabel
                         }
                     </button>
@@ -1155,9 +1155,9 @@ export default function Form({
                 </p>
                 {isLoading && (isRouteSplit ? <CalculationProgress progress={progress} /> : <p className="py-5 border-t text-center text-gray-500">計算中...</p>)}
 
-                {!isLoading && error && (
+                {!isLoading && (error || engineError) && (
                     <div className="py-5 border-t text-center text-red-500">
-                        <p>{isEngineRetryable ? "計算エンジンの準備に失敗しました。もう一度お試しください。" : error}</p>
+                        <p>{error || (engineError && formatEngineError(new SearchOperationError(engineError)))}</p>
                     </div>
                 )}
 
