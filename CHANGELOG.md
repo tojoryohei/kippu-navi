@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.10.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.10.1...kippu-navi-v5.10.2) (2026-11-02)
+
+
+### Bug Fixes
+
+* 北新地ルール適用後の営業キロを実経路から表示する ([#980](https://github.com/tojoryohei/kippu-navi/issues/980)) ([78c4c37](https://github.com/tojoryohei/kippu-navi/commit/78c4c37fd855ec654bcda0995bd788b2ba83e314))
+
 ## [5.10.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.10.0...kippu-navi-v5.10.1) (2026-11-01)
 
 
