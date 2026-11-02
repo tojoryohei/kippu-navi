@@ -47,3 +47,11 @@ test('Actionsは各bundleを直接転送し、公開資格情報の付与前にm
     assert.ok(privileged > check);
   }
 });
+
+test('本番とステージングの公開は手動実行だけで起動する', () => {
+  for (const environment of ['production', 'staging']) {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- 固定した二つの公開入口だけを読む。
+    const workflow = parse(readFileSync(new URL(`../../.github/workflows/deploy-${environment}.yml`, import.meta.url), 'utf8'));
+    assert.deepEqual(Object.keys(workflow.on), ['workflow_dispatch']);
+  }
+});

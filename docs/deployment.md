@@ -2,9 +2,21 @@
 
 ## デプロイ構成
 
-本番は`deploy-production.yml`、ステージングはmainから手動実行する`deploy-staging.yml`が入口です。両方とも`deploy-release.yml`の環境別排他制御を通り、既存のフロントエンド・APIワークフローを再利用します。子ワークフローの直接起動はできません。
+本番は`deploy-production.yml`、ステージングは`deploy-staging.yml`を、どちらもActionsからmainを選んで手動実行します。pushやPRのマージではデプロイしません。両方とも`deploy-release.yml`の環境別排他制御を通り、既存のフロントエンド・APIワークフローを再利用します。子ワークフローの直接起動はできません。
 
 [デプロイ後検証・初期設定・受入・復旧手順](deployment-verification.md)を参照してください。通常公開は開始時のmain先頭を固定し、両サービス更新時はフロントエンド→API→Cloud Run直接検証の順に実行します。初回受入と本番有効化は完了しており、導入時だけの本番ゲートは撤去します。公開サイトへのHTTP・ブラウザー検証はデプロイ処理に含めず、フロントエンドのみの更新では公開後の動作確認を行いません。
+
+## 手動デプロイ
+
+1. 必要な変更をマージし、`Deploy staging`をmainから実行して、検証対象の非mainブランチを`branch`に指定します。
+2. 動作確認とrelease-pleaseのリリースPRのマージを終えたら、`Deploy production`をmainから実行します。
+3. ワークフローの最終結果と対象SHAを確認します。
+
+両環境とも`components`は`all`が既定です。必要に応じて`frontend`・`api`・差分判定の`auto`を選べます。本番の通常公開は`mode=normal`でmain先頭のSHAを取得し、ステージングは指定ブランチの先頭SHAを取得します。待機中に先端が変わった場合は公開を拒否するため、最新の対象で再実行してください。
+
+本番の復旧は`mode=restore`に切り替え、過去の検証済み完全SHAを`target_sha`、理由を`reason`に指定します。復旧時は`components`の選択にかかわらず両サービスを更新します。通常公開では復旧用のSHAと理由は空欄にしてください。
+
+release-pleaseによるバージョン更新・CHANGELOG・GitHub Releaseの作成は引き続き自動処理します。GitHub Releaseの作成だけでは本番に反映されません。本番公開までにmainへ追加でマージした変更も公開対象になるため、実行時の対象SHAを確認してください。
 
 ## セキュリティヘッダー
 

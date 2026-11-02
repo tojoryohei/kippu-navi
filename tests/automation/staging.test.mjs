@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { config } from '../../scripts/verification/config.mjs';
-import { assertCurrentTarget, resolveTarget } from '../../scripts/staging/checks.mjs';
+import { assertCurrentTarget } from '../../scripts/staging/checks.mjs';
+import { resolveTarget } from '../../scripts/deploy/target.mjs';
 
 const sha = 'a'.repeat(40);
 const other = 'b'.repeat(40);
@@ -27,13 +28,13 @@ test('branch and PR must still point to the verified SHA', async () => {
 });
 
 test('手動公開はPRのない非mainブランチも受け付け、自動イベントは拒否する', async () => {
-  const context = { repo, eventName: 'workflow_dispatch', payload: { inputs: { branch: target.branch } } };
-  assert.deepEqual(await resolveTarget(fakeGitHub(), context), target);
-  assert.deepEqual(await resolveTarget(fakeGitHub({ pulls: [] }), context), target);
+  const context = { repo, ref: 'refs/heads/main', eventName: 'workflow_dispatch', payload: { inputs: { branch: target.branch } } };
+  assert.deepEqual(await resolveTarget(fakeGitHub(), context, 'staging'), target);
+  assert.deepEqual(await resolveTarget(fakeGitHub({ pulls: [] }), context, 'staging'), target);
   for (const eventName of ['push', 'pull_request', 'pull_request_target', 'workflow_run']) {
-    await assert.rejects(resolveTarget(fakeGitHub(), { ...context, eventName }), /Unsupported deployment event/);
+    await assert.rejects(resolveTarget(fakeGitHub(), { ...context, eventName }, 'staging'), /mainから手動/);
   }
-  await assert.rejects(resolveTarget(fakeGitHub(), { ...context, payload: { inputs: { branch: 'main' } } }), /Select a non-main branch/);
+  await assert.rejects(resolveTarget(fakeGitHub(), { ...context, payload: { inputs: { branch: 'main' } } }, 'staging'), /Select a non-main branch/);
 });
 
 test('ビルドと公開でWranglerの配信先・bindingsを一致させる', () => {
@@ -55,4 +56,26 @@ test('ビルドと公開でWranglerの配信先・bindingsを一致させる', (
     );
     assert.deepEqual(settings.secrets, expected.secrets);
   }
+});
+
+test('本番は起動時のSHAではなく、対象確定時のmain先頭を使用する', async () => {
+  const context = { repo, ref: 'refs/heads/main', eventName: 'workflow_dispatch', sha: other, payload: { inputs: { mode: 'normal' } } };
+  const resolved = await resolveTarget(fakeGitHub(), context, 'production');
+  assert.deepEqual(resolved, { sha, branch: 'main' });
+  for (const environment of ['production', 'staging']) {
+    await assert.rejects(resolveTarget(fakeGitHub(), { ...context, ref: 'refs/heads/feature' }, environment), /mainから手動/);
+  }
+});
+
+test('復旧入力の混入や不完全な指定を拒否し、復旧SHAをmain先頭で上書きしない', async () => {
+  const context = { repo, ref: 'refs/heads/main', eventName: 'workflow_dispatch' };
+  const resolve = inputs => resolveTarget(fakeGitHub(), { ...context, payload: { inputs } }, 'production');
+  assert.deepEqual(await resolve({ mode: 'restore', target_sha: other, reason: '障害復旧' }), { sha: other, branch: 'main' });
+  for (const inputs of [
+    { mode: 'normal', target_sha: other },
+    { mode: 'normal', reason: '復旧理由' },
+    { mode: 'restore', target_sha: other },
+    { mode: 'restore', target_sha: 'short', reason: '障害復旧' },
+    { mode: 'unknown' },
+  ]) await assert.rejects(resolve(inputs));
 });

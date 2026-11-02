@@ -1,16 +1,15 @@
-name: deploy-production
+name: Deploy production
+
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       components:
-        description: 更新対象
+        description: 更新対象（通常はall）
         type: choice
-        options: [auto, all, frontend, api]
-        default: auto
+        options: [all, frontend, api, auto]
+        default: all
       mode:
-        description: 通常公開／過去の検証済みSHAへの明示的復旧
+        description: 通常公開／過去の検証済みSHAへの復旧
         type: choice
         options: [normal, restore]
         default: normal
@@ -21,9 +20,34 @@ on:
         description: 復旧理由（restore時に必須）
         type: string
 permissions: {}
+
 jobs:
+  resolve:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
+      branch: ${{ steps.target.outputs.branch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        id: target
+        with:
+          script: |
+            const { resolveTarget } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/deploy/target.mjs`);
+            const target = await resolveTarget(github, context, 'production');
+            core.setOutput('sha', target.sha);
+            core.setOutput('branch', target.branch);
+
   release:
-    if: github.ref == 'refs/heads/main'
+    needs: resolve
     permissions:
       contents: read
       actions: read
@@ -32,8 +56,10 @@ jobs:
       id-token: write
     uses: ./.github/workflows/deploy-release.yml
     with:
-      target_sha: ${{ inputs.target_sha || (inputs.mode == 'restore' && 'missing-restore-sha') || github.sha }}
-      components: ${{ inputs.mode == 'restore' && 'all' || inputs.components || 'auto' }}
-      mode: ${{ inputs.mode || 'normal' }}
-      reason: ${{ inputs.reason || '' }}
+      staging: false
+      target_sha: ${{ needs.resolve.outputs.sha }}
+      target_branch: ${{ needs.resolve.outputs.branch }}
+      components: ${{ inputs.mode == 'restore' && 'all' || inputs.components }}
+      mode: ${{ inputs.mode }}
+      reason: ${{ inputs.reason }}
     secrets: inherit

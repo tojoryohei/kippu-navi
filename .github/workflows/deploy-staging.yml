@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: '手動デプロイする同一リポジトリのブランチ名（最新SHAを使用）'
+        description: デプロイする同一リポジトリの非mainブランチ（最新SHAを使用）
         required: true
         type: string
       components:
@@ -12,7 +12,6 @@ on:
         type: choice
         options: [all, frontend, api, auto]
         default: all
-
 permissions: {}
 
 jobs:
@@ -20,12 +19,12 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    outputs:
-      sha: ${{ steps.target.outputs.sha }}
-      branch: ${{ steps.target.outputs.branch }}
     permissions:
       contents: read
       pull-requests: read
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
+      branch: ${{ steps.target.outputs.branch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -35,24 +34,23 @@ jobs:
         id: target
         with:
           script: |
-            const { resolveTarget } = await import('${{ github.workspace }}/scripts/staging/checks.mjs');
-            const target = await resolveTarget(github, context);
+            const { resolveTarget } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/deploy/target.mjs`);
+            const target = await resolveTarget(github, context, 'staging');
             core.setOutput('sha', target.sha);
             core.setOutput('branch', target.branch);
 
   release:
     needs: resolve
-    if: needs.resolve.outputs.sha != ''
     permissions:
       contents: read
       actions: read
-      deployments: write
       pull-requests: read
+      deployments: write
       id-token: write
     uses: ./.github/workflows/deploy-release.yml
     with:
       staging: true
       target_sha: ${{ needs.resolve.outputs.sha }}
       target_branch: ${{ needs.resolve.outputs.branch }}
-      components: ${{ inputs.components || 'all' }}
+      components: ${{ inputs.components }}
     secrets: inherit
