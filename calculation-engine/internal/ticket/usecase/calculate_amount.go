@@ -10,7 +10,7 @@ import (
 )
 
 type CompanyDistance struct {
-	EigyoKilo  domain.DeciKilo `json:"eigyoKilo"`
+	EigyoKilo domain.DeciKilo `json:"eigyoKilo"`
 	GiseiKilo domain.DeciKilo `json:"giseiKilo"`
 }
 
@@ -309,9 +309,13 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 			companies = append(companies, domain.CompanyID(i))
 		}
 	}
+	// 営業キロは物理経路、換算キロは北新地置換後の運賃計算経路を使う。
+	distances := summary.distances()
+	for i := range distances {
+		distances[i].EigyoKilo = physicalSummary.statsByCompany[i].eigyo
+	}
 	return &CalculationResult{
-		// 補正後の表は北新地置換を含む運賃計算経路の距離を使う。
-		Distances: summary.distances(),
+		Distances: distances,
 		JRFare:    jrFare, PrivateFareAmounts: privateAmounts, JRCompanies: companies,
 		Fare:               totalFare,
 		BarrierFreeFee:     barrierFreeFee,
