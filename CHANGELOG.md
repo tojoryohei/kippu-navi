@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.10.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.10.2...kippu-navi-v5.10.3) (2026-11-02)
+
+
+### Bug Fixes
+
+* 障害者割引の距離判定に社線を含め、定期券の説明を明確化 ([#981](https://github.com/tojoryohei/kippu-navi/issues/981)) ([f226964](https://github.com/tojoryohei/kippu-navi/commit/f226964527d50e3107be5ebfa1efbf06fe3c0978))
+
 ## [5.10.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.10.1...kippu-navi-v5.10.2) (2026-11-02)
 
 
