@@ -100,7 +100,7 @@ func (o TicketPricingOptions) price(base *CalculationResult) *CalculationResult 
 		}
 		private += amount
 	}
-	if d := o.discount(); d != nil && d.allows(base.JRCompanies) && (d.MinEigyoKilo == 0 || base.TotalEigyoKilo > d.MinEigyoKilo) {
+	if d := o.discount(); d != nil && d.allows(base.JRCompanies) && (d.MinEigyoKilo == 0 || o.discountEligibilityKilo(base) > d.MinEigyoKilo) {
 		jr = jr * (100 - d.Percent) / 1000 * 10
 		res.DiscountApplied = true
 	}
@@ -108,4 +108,12 @@ func (o TicketPricingOptions) price(base *CalculationResult) *CalculationResult 
 	// 料金は上記で合算・端数整理済み。TotalAmountで二重加算しない。
 	res.BarrierFreeFee = 0
 	return &res
+}
+
+// discountEligibilityKilo は割引の距離条件に用いる営業キロを返す。
+func (o TicketPricingOptions) discountEligibilityKilo(base *CalculationResult) domain.DeciKilo {
+	if o.DiscountID == "disability" {
+		return base.TotalPathEigyoKilo
+	}
+	return base.TotalEigyoKilo
 }
