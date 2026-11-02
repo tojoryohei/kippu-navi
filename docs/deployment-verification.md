@@ -14,7 +14,7 @@
 
 ## 公開制御とAPI更新判定
 
-本番は`deploy-production.yml`、ステージングは`deploy-staging.yml`を入口にする。ステージングはActionsの`Deploy staging`をmainから手動起動し、同一リポジトリの非mainブランチを指定する。PRのないブランチも対象とし、pushやPR作成では自動公開しない。両入口は`deploy-release.yml`へ統合し、通常公開・復旧・stagingとも環境別の`deployment-production`／`deployment-staging`で排他制御する。stagingでは排他取得後にもブランチ先端SHAを照合する。子ワークフローは再利用専用。資格情報なしのビルド、control_sha固定の制御コード、artifact ID・ハッシュ照合を維持する。
+本番は`deploy-production.yml`、ステージングは`deploy-staging.yml`を入口とし、両方ともmainからの`workflow_dispatch`だけで起動する。pushやリリースPRのマージでは公開しない。本番はmain先頭、ステージングは指定ブランチ先頭のSHAを確定して共通処理へ渡す。ステージングはActionsの`Deploy staging`をmainから手動起動し、同一リポジトリの非mainブランチを指定する。PRのないブランチも対象とし、pushやPR作成では自動公開しない。両入口は`deploy-release.yml`へ統合し、通常公開・復旧・stagingとも環境別の`deployment-production`／`deployment-staging`で排他制御する。stagingでは排他取得後にもブランチ先端SHAを照合する。子ワークフローは再利用専用。資格情報なしのビルド、control_sha固定の制御コード、artifact ID・ハッシュ照合を維持する。
 
 成果物は`upload-artifact`／`download-artifact`でディレクトリとして受け渡し、独自のtar圧縮・解析は行わない。`scripts/deploy/artifact.mjs`はNode.js標準機能だけでmanifestを生成・検証する。ビルドジョブの出力に固定したmanifestのSHA-256と、対象SHA・control SHA・環境・生成run/attempt・releaseを照合し、全ファイルの一覧・SHA-256・許可パス・必須ファイル・容量上限を確認する。リンク・特殊ファイルを拒否し、全検証後に新規の公開用ディレクトリへ通常ファイルだけを配置する。公開資格情報は検証後のステップだけに渡す。フロントエンドは検証済みの`static/.well-known`も転送するため`include-hidden-files: true`を指定する。Dockerイメージの`image.tar`は`docker save`／`docker load`用に維持する。
 
