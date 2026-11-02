@@ -126,7 +126,7 @@ func TestPricingFirstExtensionBeyondTenStations(t *testing.T) {
 		addFareExtensionEdge(g, fmt.Sprint(i), fmt.Sprint(i+1), 10, domain.JREast)
 	}
 	input := []int{g.GetOrAddID("0"), g.GetOrAddID("1")}
-	got, err := firstPricingExtension(input, g, extendDestination, 120, nil, func(p []int) (*pricedRouteCandidate, error) {
+	got, err := firstPricingExtension(input, g, extendDestination, 120, (TicketPricingOptions{}).discountEligibilityKilo, nil, func(p []int) (*pricedRouteCandidate, error) {
 		return &pricedRouteCandidate{result: &CalculationResult{TotalEigyoKilo: domain.DeciKilo((len(p) - 1) * 10)}}, nil
 	})
 	if err != nil || got == nil || got.result.TotalEigyoKilo != 130 {

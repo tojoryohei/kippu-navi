@@ -91,10 +91,10 @@ func (c *RouteTicketCalculator) CalculateWithPricing(path []int, steps []ViaStep
 		}
 	}
 	discount := options.discount()
-	if discount != nil && discount.MinEigyoKilo == 1000 && best.result.TotalEigyoKilo <= 1000 {
+	if discount != nil && discount.MinEigyoKilo == 1000 && options.discountEligibilityKilo(best.result) <= 1000 {
 		// 両側とも元の入力経路を基準にする。着側の採用経路をさらに発側へ延ばさない。
 		for _, direction := range []extensionDirection{extendDestination, extendOrigin} {
-			candidate, err := firstPricingExtension(path, c.graph, direction, discount.MinEigyoKilo, local.canRepairExtensionDuplicate, evaluate)
+			candidate, err := firstPricingExtension(path, c.graph, direction, discount.MinEigyoKilo, options.discountEligibilityKilo, local.canRepairExtensionDuplicate, evaluate)
 			if err != nil {
 				return PricedRouteTicketFare{}, err
 			}
@@ -143,7 +143,7 @@ const maxPricingExtensionStates = 100000
 
 // firstPricingExtension は片側だけを延長し、補正後に閾値を初めて超えた
 // 発売可能な1候補を返す。駅ID順の幅優先で同じ入力に対する結果を固定する。
-func firstPricingExtension(input []int, g graph.Graph, direction extensionDirection, threshold domain.DeciKilo, canRepair func([]int) bool, evaluate func([]int) (*pricedRouteCandidate, error)) (*pricedRouteCandidate, error) {
+func firstPricingExtension(input []int, g graph.Graph, direction extensionDirection, threshold domain.DeciKilo, eligibilityKilo func(*CalculationResult) domain.DeciKilo, canRepair func([]int) bool, evaluate func([]int) (*pricedRouteCandidate, error)) (*pricedRouteCandidate, error) {
 	physical := physicalGraphForExtensions(g)
 	queue := [][]int{slices.Clone(input)}
 	seen := map[string]struct{}{}
@@ -160,7 +160,7 @@ func firstPricingExtension(input []int, g graph.Graph, direction extensionDirect
 		seen[key] = struct{}{}
 		if len(path) > len(input) {
 			candidate, err := evaluate(path)
-			if err == nil && candidate != nil && candidate.result.TotalEigyoKilo > threshold {
+			if err == nil && candidate != nil && eligibilityKilo(candidate.result) > threshold {
 				return candidate, nil
 			}
 			if errors.Is(err, domain.ErrDuplicateRoute) && (canRepair == nil || !canRepair(path)) {
