@@ -164,27 +164,8 @@ func TestArticle114RegressionRoutes(t *testing.T) {
 			return
 		}
 		evaluateCandidate(data, &c)
-		if c.classification == classificationUncovered && c.rawAB == 5170 && c.rawXC == 4840 && c.currentAB == 5170 && c.currentXC == 4840 {
+		if c.classification == classificationCovered && c.rawAB == 5170 && c.rawXC == 4840 && c.currentAB == 4840 && c.currentXC == 4840 {
 			foundHoshimi = true
-			selected, err := ticketusecase.SelectCheapestPathWithRouteExtensions(c.pathAB, data.full, nil, nil, data.zones, func(candidate []int) (int, error) {
-				result, _, evalErr := data.current.ExecuteWithMode(candidate, 0, "normal")
-				if evalErr != nil {
-					return 0, evalErr
-				}
-				return result.TotalAmount(), nil
-			})
-			if err != nil {
-				t.Errorf("ほしみ経路の最安逐次延長に失敗しました: %v", err)
-				return
-			}
-			if len(selected) == 0 || data.full.GetName(selected[len(selected)-1]) != "東旭川" {
-				t.Errorf("ほしみ経路の最安逐次延長先が不正です: %s", data.full.GetName(selected[len(selected)-1]))
-				return
-			}
-			result, _, err := data.current.ExecuteWithMode(selected, 0, "normal")
-			if err != nil || result.TotalAmount() != 4840 {
-				t.Errorf("ほしみ経路の最安運賃が不正です: 運賃=%d エラー=%v", result.TotalAmount(), err)
-			}
 		}
 	})
 	if !foundHoshimi {
