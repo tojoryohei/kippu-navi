@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.10.3...kippu-navi-v5.11.0) (2026-11-05)
+
+
+### Features
+
+* 定期券の会社別距離表を整備 ([#985](https://github.com/tojoryohei/kippu-navi/issues/985)) ([d6a883a](https://github.com/tojoryohei/kippu-navi/commit/d6a883af15f12a752224870154e3e908b29b86d2))
+
 ## [5.10.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.10.2...kippu-navi-v5.10.3) (2026-11-02)
 
 
