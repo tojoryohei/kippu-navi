@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.0...kippu-navi-v5.11.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* 第114条適用可能区間の調整運賃を追加 ([#987](https://github.com/tojoryohei/kippu-navi/issues/987)) ([00ac338](https://github.com/tojoryohei/kippu-navi/commit/00ac33820e6362dfc5a23f5a4cdc4c7f899b7ab3))
+
 ## [5.11.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.10.3...kippu-navi-v5.11.0) (2026-11-05)
 
 
