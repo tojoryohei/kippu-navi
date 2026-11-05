@@ -66,13 +66,20 @@ func TestRoutePassCorrectionAndExtensionBoundaries(t *testing.T) {
 		if candidateErr != nil || len(extendedCandidates) != 0 {
 			t.Fatalf("延長後の候補駅: %v %v", extendedCandidates, candidateErr)
 		}
-		result, err := calculator.Calculate([]int{a, x, d}, 1, mode)
+		result, err := calculator.CalculateWithDistances([]int{a, x, d}, 1, mode)
 		if err != nil {
 			t.Fatal(err)
 		}
 		want := []string{"A", "B", "C", "D"}
 		if mode == "uncorrect" {
 			want = []string{"A", "X", "D"}
+		}
+		wantDistance := domain.DeciKilo(30)
+		if mode == "uncorrect" {
+			wantDistance = 20
+		}
+		if result.InputDistances[domain.JREast] != (CompanyDistance{20, 20}) || result.CorrectedDistances[domain.JREast] != (CompanyDistance{wantDistance, wantDistance}) {
+			t.Fatalf("モード=%s 補正前後の距離が不正です: %+v", mode, result)
 		}
 		if !reflect.DeepEqual(result.CorrectedPath, want) {
 			t.Fatalf("モード=%s 経路=%v", mode, result.CorrectedPath)

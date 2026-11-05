@@ -10,7 +10,7 @@ export default function RouteDistanceTable({ title, distances }: { title: string
             <table className="w-full border-collapse text-sm text-center whitespace-nowrap">
                 <caption className="mb-2 text-left font-bold">{title}の営業キロ・換算キロ（km）</caption>
                 <thead><tr>
-                    <th scope="col" className="border p-2">距離</th>
+                    <th scope="col" className="border p-2">区分</th>
                     {companies.map(company => <th scope="col" className="border p-2" key={company}>{company}</th>)}
                     <th scope="col" className="border p-2">合計</th>
                 </tr></thead>

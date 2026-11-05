@@ -788,7 +788,7 @@ func calculateRoutePass(this js.Value, args []js.Value) interface{} {
 	if err != nil {
 		return routeTicketError(err)
 	}
-	result, err := calculator.Calculate(path, args[1].Int(), args[3].String())
+	result, err := calculator.CalculateWithDistances(path, args[1].Int(), args[3].String())
 	if err != nil {
 		return routeTicketError(err)
 	}

@@ -1212,8 +1212,7 @@ export default function Form({
 
                 {!isLoading && resultPass && (
                     <div>
-                        <h2 className="py-5 text-2xl border-t">計算結果</h2>
-                        <div>営業キロ: {(resultPass.totalEigyoKilo / 10).toFixed(1)} km</div>
+                        <h2 className="pt-5 text-2xl border-t">計算結果</h2>
                         <div className="flex justify-between items-center my-3 gap-2">
                             <div className="flex-1 text-right">
                                 <div className={`font-bold flex justify-around flex-wrap ${correctedStartPass.length > 6 ? 'text-lg sm:text-xl' : 'text-2xl'}`}>
@@ -1238,6 +1237,8 @@ export default function Form({
                             <span>{(({ pass1: 1, pass3: 3, pass6: 6 } as Record<string, number>)[formValues.searchType] || 1) + " 箇月有効"}</span>
                             <span className="text-xl">¥{(resultPass.fare + resultPass.barrierFreeFee + resultPass.charge).toLocaleString()}</span>
                         </span>
+                        <RouteDistanceTable title="入力経路" distances={resultPass.inputDistances} />
+                        <RouteDistanceTable title="計算結果" distances={resultPass.correctedDistances} />
                     </div>
                 )}
             </div>
