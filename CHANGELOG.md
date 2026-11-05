@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.1...kippu-navi-v5.11.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* 経路入力の駅と路線の登録不備を修正 ([#989](https://github.com/tojoryohei/kippu-navi/issues/989)) ([57f77d0](https://github.com/tojoryohei/kippu-navi/commit/57f77d06c7d690b41ada822af289d725907b7f97))
+
 ## [5.11.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.0...kippu-navi-v5.11.1) (2026-11-05)
 
 
