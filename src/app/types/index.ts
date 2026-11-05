@@ -61,6 +61,8 @@ export interface TicketFareResult extends FareCalculationSummary {
 }
 
 export interface PassFareResult extends FareCalculationSummary {
+    inputDistances: CompanyDistance[];
+    correctedDistances: CompanyDistance[];
     fare: number;
     barrierFreeFee: number;
     charge: number;
