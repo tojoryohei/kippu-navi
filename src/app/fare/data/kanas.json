@@ -1279,7 +1279,7 @@
     {"line": "大村線", "kana": "オオム", "station0": "諏訪", "station1": "大村"},
     {"line": "大村線", "kana": "オオム", "station0": "大村", "station1": "岩松"},
     {"line": "大村線", "kana": "オオム", "station0": "岩松", "station1": "諫早"},
-    {"line": "男鹿線", "kana": "オカ", "station0": "追分", "station1": "出戸浜"},
+    {"line": "男鹿線", "kana": "オカ", "station0": "（奥）追分", "station1": "出戸浜"},
     {"line": "男鹿線", "kana": "オカ", "station0": "出戸浜", "station1": "上二田"},
     {"line": "男鹿線", "kana": "オカ", "station0": "上二田", "station1": "二田"},
     {"line": "男鹿線", "kana": "オカ", "station0": "二田", "station1": "天王"},
