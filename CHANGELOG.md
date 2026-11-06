@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.2...kippu-navi-v5.11.3) (2026-11-06)
+
+
+### Bug Fixes
+
+* 市内特例の延長判定をJRの営業キロに統一 ([#992](https://github.com/tojoryohei/kippu-navi/issues/992)) ([fc3a1d8](https://github.com/tojoryohei/kippu-navi/commit/fc3a1d8f959e7bc638186ac9b71cbd83c9c8d6b7))
+
 ## [5.11.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.1...kippu-navi-v5.11.2) (2026-11-05)
 
 
