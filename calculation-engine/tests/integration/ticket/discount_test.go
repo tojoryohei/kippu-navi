@@ -33,7 +33,6 @@ func TestPricedRealRoutes(t *testing.T) {
 		{"通常連絡運賃の小児", []string{"金沢", "津幡", "倶利伽羅", "高岡"}, "child", "none", 430, false},
 		{"私鉄に割引しない", []string{"津幡", "倶利伽羅", "高岡"}, "adult", "west50", 640, false},
 		{"実際の在来線を含む他社判定", []string{"名古屋", "岐阜羽島", "米原", "京都", "山科", "大津京"}, "adult", "central20", -1, false},
-		{"大阪市内の他社判定", []string{"東京", "品川", "新横浜", "小田原", "熱海", "三島", "（東）新富士", "静岡", "掛川", "浜松", "豊橋", "三河安城", "名古屋", "岐阜羽島", "米原", "京都", "新大阪"}, "adult", "central20", -1, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			steps := make([]usecase.ViaStep, len(tc.stations))
@@ -54,6 +53,50 @@ func TestPricedRealRoutes(t *testing.T) {
 				if err != nil || base.Fare != got.Fare {
 					t.Fatalf("基準=%+v、結果=%+v、エラー=%v", base, got, err)
 				}
+			}
+		})
+	}
+}
+
+func TestShinkansenDiscountWithSingleStationOptions(t *testing.T) {
+	calculator, g := setupPricedRoute(t)
+	stations := []string{"東京", "品川", "新横浜", "小田原", "熱海", "三島", "（東）新富士", "静岡", "掛川", "浜松", "豊橋", "三河安城", "名古屋", "岐阜羽島", "米原", "京都", "新大阪"}
+	path := make([]int, len(stations))
+	steps := make([]usecase.ViaStep, len(stations))
+	for i, name := range stations {
+		id, ok := g.GetID(name)
+		if !ok {
+			t.Fatalf("駅が見つかりません: %s", name)
+		}
+		path[i] = id
+		steps[i] = usecase.ViaStep{StationName: name, LineName: "シンカ"}
+	}
+	for _, tc := range []struct {
+		name               string
+		options            usecase.SingleStationOptions
+		departure, arrival string
+		applied            bool
+	}{
+		{"通常指定", usecase.SingleStationOptions{}, "東京都区内", "大阪市内", false},
+		{"出発のみ単駅指定", usecase.SingleStationOptions{DepartureSingleStation: true}, "東京", "大阪市内", false},
+		{"到着のみ単駅指定", usecase.SingleStationOptions{ArrivalSingleStation: true}, "東京都区内", "新大阪", false},
+		{"両端を単駅指定", usecase.SingleStationOptions{DepartureSingleStation: true, ArrivalSingleStation: true}, "東京", "新大阪", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			base, err := calculator.CalculateWithPricing(path, steps, "normal", usecase.TicketPricingOptions{}, tc.options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := calculator.CalculateWithPricing(path, steps, "normal", usecase.TicketPricingOptions{DiscountID: "central20"}, tc.options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantFare := base.Fare
+			if tc.applied {
+				wantFare = base.Fare * 80 / 1000 * 10
+			}
+			if got.DepartureStation != tc.departure || got.ArrivalStation != tc.arrival || got.DiscountApplied != tc.applied || got.Fare != wantFare {
+				t.Fatalf("結果=%+v、期待する運賃=%d", got, wantFare)
 			}
 		})
 	}

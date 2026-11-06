@@ -16,6 +16,21 @@ type CompanyDistance struct {
 
 type RouteDistances [domain.CompanyCount]CompanyDistance
 
+var specialZoneCompanies = map[string]domain.CompanyID{
+	"札幌市内":   domain.JRHokkaido,
+	"仙台市内":   domain.JREast,
+	"東京都区内":  domain.JREast,
+	"東京山手線内": domain.JREast,
+	"横浜市内":   domain.JREast,
+	"名古屋市内":  domain.JRCentral,
+	"京都市内":   domain.JRWest,
+	"大阪市内":   domain.JRWest,
+	"神戸市内":   domain.JRWest,
+	"広島市内":   domain.JRWest,
+	"北九州市内":  domain.JRKyushu,
+	"福岡市内":   domain.JRKyushu,
+}
+
 func (s *routeSummary) distances() (result RouteDistances) {
 	for i, stats := range s.statsByCompany {
 		result[i] = CompanyDistance{stats.eigyo, stats.gisei}
@@ -303,10 +318,13 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 		}
 	}
 
+	// 割引の会社条件には、物理経路に加えて券面の発着ゾーンの会社も含める。
+	departureCompany := specialZoneCompanies[u.graph.GetName(path[0])]
+	arrivalCompany := specialZoneCompanies[u.graph.GetName(path[len(path)-1])]
 	var companies []domain.CompanyID
-	for i := 1; i < int(domain.CompanyCount); i++ {
-		if physicalSummary.statsByCompany[i].used {
-			companies = append(companies, domain.CompanyID(i))
+	for company := domain.JRHokkaido; company < domain.CompanyCount; company++ {
+		if physicalSummary.statsByCompany[company].used || company == departureCompany || company == arrivalCompany {
+			companies = append(companies, company)
 		}
 	}
 	// 営業キロは物理経路、換算キロは北新地置換後の運賃計算経路を使う。
