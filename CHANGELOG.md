@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.3...kippu-navi-v5.11.4) (2026-11-06)
+
+
+### Bug Fixes
+
+* 乗車券の割引判定に発着ゾーンのJR会社を含める ([#995](https://github.com/tojoryohei/kippu-navi/issues/995)) ([9686b72](https://github.com/tojoryohei/kippu-navi/commit/9686b7275f59a5f69af3c7e864b4afb7d6723cd7))
+
 ## [5.11.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.2...kippu-navi-v5.11.3) (2026-11-06)
 
 
