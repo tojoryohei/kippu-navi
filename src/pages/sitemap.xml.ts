@@ -16,7 +16,7 @@ export function GET() {
             priority: 0.7,
         },
         {
-            url: baseUrl,
+            url: `${baseUrl}/`,
             changeFrequency: 'monthly',
             priority: 1.0,
         },

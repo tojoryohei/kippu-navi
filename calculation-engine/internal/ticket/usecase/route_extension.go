@@ -357,7 +357,7 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 	if spec.direction == extendOrigin {
 		endpoint = path[0]
 	}
-	initialDistance, ok := centerDistanceOnPathOrShortestWithFallback(path, centerID, endpoint, physical, g)
+	initialDistance, ok := centerJREigyoKiloOnPathOrShortest(path, centerID, endpoint, physical, g)
 	if !ok || initialDistance > spec.zone.MinDistanceDeciKilo {
 		return nil
 	}
@@ -371,7 +371,7 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 		if spec.direction == extendOrigin {
 			currentEndpoint = state.path[0]
 		}
-		distance, ok := centerDistanceOnPathOrShortestWithFallback(state.path, centerID, currentEndpoint, physical, g)
+		distance, ok := centerJREigyoKiloOnPathOrShortest(state.path, centerID, currentEndpoint, physical, g)
 		if !ok {
 			continue
 		}
@@ -401,7 +401,8 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 	return result
 }
 
-func centerDistanceOnPathOrShortestWithFallback(path []int, centerID, endpointID int, pathGraph, fallbackGraph graph.Graph) (domain.DeciKilo, bool) {
+// 市内特例の適用判定と同じく、連絡乗車券の私鉄区間は営業キロに含めない。
+func centerJREigyoKiloOnPathOrShortest(path []int, centerID, endpointID int, pathGraph, fallbackGraph graph.Graph) (domain.DeciKilo, bool) {
 	if centerID == endpointID {
 		return 0, true
 	}
@@ -424,17 +425,17 @@ func centerDistanceOnPathOrShortestWithFallback(path []int, centerID, endpointID
 		// まず物理エッジで距離を計算し、物理経路だけでは解決できない
 		// 既存の仮想区間がある場合だけフルグラフへフォールバックします。
 		segment := path[start : end+1]
-		if distance, ok := pathEigyoKiloStrict(pathGraph, segment); ok {
+		if distance, ok := pathJREigyoKiloStrict(pathGraph, segment); ok {
 			return distance, true
 		}
 		if fallbackGraph != nil {
-			if distance, ok := pathEigyoKiloStrict(fallbackGraph, segment); ok {
+			if distance, ok := pathJREigyoKiloStrict(fallbackGraph, segment); ok {
 				return distance, true
 			}
 		}
 		// 既存の一時駅など、隣接駅間を物理ショートカットで表す入力は
 		// 従来の距離解決へ戻します。
-		if distance, ok := pathEigyoKilo(pathGraph, segment); ok {
+		if distance, ok := pathJREigyoKilo(pathGraph, segment); ok {
 			return distance, true
 		}
 		return 0, false
@@ -444,10 +445,10 @@ func centerDistanceOnPathOrShortestWithFallback(path []int, centerID, endpointID
 	if err != nil || shortest == nil || len(shortest.StationIDs) == 0 {
 		return 0, false
 	}
-	return pathEigyoKilo(pathGraph, shortest.StationIDs)
+	return pathJREigyoKilo(pathGraph, shortest.StationIDs)
 }
 
-func pathEigyoKilo(g graph.TopologyProvider, path []int) (domain.DeciKilo, bool) {
+func pathJREigyoKilo(g graph.TopologyProvider, path []int) (domain.DeciKilo, bool) {
 	var total domain.DeciKilo
 	for i := 0; i+1 < len(path); {
 		found := false
@@ -459,7 +460,9 @@ func pathEigyoKilo(g graph.TopologyProvider, path []int) (domain.DeciKilo, bool)
 				if edge.ToID != path[j] {
 					continue
 				}
-				total += edge.EigyoKilo
+				if edge.Company != domain.Other {
+					total += edge.EigyoKilo
+				}
 				i = j
 				found = true
 				break
@@ -475,13 +478,15 @@ func pathEigyoKilo(g graph.TopologyProvider, path []int) (domain.DeciKilo, bool)
 	return total, true
 }
 
-func pathEigyoKiloStrict(g graph.TopologyProvider, path []int) (domain.DeciKilo, bool) {
+func pathJREigyoKiloStrict(g graph.TopologyProvider, path []int) (domain.DeciKilo, bool) {
 	var total domain.DeciKilo
 	for i := 0; i+1 < len(path); i++ {
 		found := false
 		for _, edge := range g.GetEdges(path[i]) {
 			if edge.ToID == path[i+1] {
-				total += edge.EigyoKilo
+				if edge.Company != domain.Other {
+					total += edge.EigyoKilo
+				}
 				found = true
 				break
 			}

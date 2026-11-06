@@ -517,7 +517,7 @@ test("全ページのHTML・canonical・sitemap・404を確認する", async ({
   const sitemap = await (await request.get("/sitemap.xml")).text();
   for (const route of routes)
     expect(sitemap).toContain(
-      `<loc>https://kippu-navi.com${route === "/" ? "" : route}</loc>`,
+      `<loc>https://kippu-navi.com${route}</loc>`,
     );
   expect((await request.get("/robots.txt")).status()).toBe(200);
   expect((await request.get("/favicon.ico")).status()).toBe(200);
