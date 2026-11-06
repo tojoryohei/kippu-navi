@@ -282,17 +282,19 @@ func TestSelectCheapestPathWithRouteExtensionsSkipsSequentialExtensionsOnReverse
 	}
 }
 
-func TestSequentialRouteExtensionsAcceptsPrivateEdges(t *testing.T) {
+func TestSequentialRouteExtensionsCountsOnlyJREigyoKilo(t *testing.T) {
 	g := graph.NewGraph(8)
 	addFareExtensionEdge(g, "東京", "A", 1000, domain.JREast)
 	addFareExtensionEdge(g, "A", "B", 900, domain.JREast)
 	addFareExtensionEdge(g, "B", "C", 200, domain.Other)
+	addFareExtensionEdge(g, "C", "D", 100, domain.JREast)
+	addFareExtensionEdge(g, "D", "E", 100, domain.JREast)
 	zones := extensionTestZones("A", 2000)
 	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
 	candidates := sequentialRouteExtensions(input, g, zones)
-	want := []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C")}
+	want := []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C"), g.GetOrAddID("D"), g.GetOrAddID("E")}
 	if len(candidates) != 1 || !reflect.DeepEqual(candidates[0], want) {
-		t.Fatalf("私鉄を含む逐次延長が生成されませんでした: 実際=%v 期待値=%v", candidates, want)
+		t.Fatalf("JR営業キロが閾値を超えるまで延長されませんでした: 実際=%v 期待値=%v", candidates, want)
 	}
 }
 
