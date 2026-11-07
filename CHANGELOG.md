@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.8...kippu-navi-v5.11.9) (2026-11-07)
+
+
+### Bug Fixes
+
+* 会社線の小児運賃を会社別に端数処理する ([#1015](https://github.com/tojoryohei/kippu-navi/issues/1015)) ([7832ad9](https://github.com/tojoryohei/kippu-navi/commit/7832ad934e64199a55c817e93fa679ebbe03b643))
+
 ## [5.11.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.7...kippu-navi-v5.11.8) (2026-11-07)
 
 
