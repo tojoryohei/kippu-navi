@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.4...kippu-navi-v5.11.5) (2026-11-07)
+
+
+### Bug Fixes
+
+* 他社線を含む近郊区間の経由印字を補正する ([#997](https://github.com/tojoryohei/kippu-navi/issues/997)) ([a2b6e9b](https://github.com/tojoryohei/kippu-navi/commit/a2b6e9bd31f23bdbc3fd7e42662e0192f9d464fd))
+
 ## [5.11.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.3...kippu-navi-v5.11.4) (2026-11-06)
 
 
