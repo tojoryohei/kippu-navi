@@ -35,7 +35,9 @@ function initialize() {
     posthog.init(posthogKey, {
       api_host: "/ingest",
       ui_host: "https://us.posthog.com",
-      persistence: "sessionStorage",
+      // タブを閉じた後の再訪も同じブラウザとして集計する。
+      persistence: "localStorage+cookie",
+      cookie_expiration: 365,
       person_profiles: "never",
       capture_pageview: false,
       disable_session_recording: true,
