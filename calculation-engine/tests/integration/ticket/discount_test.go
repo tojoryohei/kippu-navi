@@ -29,6 +29,7 @@ func TestPricedRealRoutes(t *testing.T) {
 		want                int
 		applied             bool
 	}{
+		{"愛知環状線の小児切上げ", []string{"岡崎", "高蔵寺"}, "child", "none", 500, false},
 		{"連絡特定運賃の小児", []string{"津幡", "倶利伽羅", "高岡"}, "child", "none", 320, false},
 		{"通常連絡運賃の小児", []string{"金沢", "津幡", "倶利伽羅", "高岡"}, "child", "none", 430, false},
 		{"私鉄に割引しない", []string{"津幡", "倶利伽羅", "高岡"}, "adult", "west50", 640, false},

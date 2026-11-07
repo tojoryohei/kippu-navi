@@ -7,6 +7,23 @@ import (
 	ticketdomain "calculation-engine/internal/ticket/domain"
 )
 
+// PrivateFareAmount は会社ごとの端数処理済みの大人・小児運賃。
+type PrivateFareAmount struct {
+	Adult int
+	Child int
+}
+
+// 旅客連絡運輸規則第51条: 会社線は原則切上げ。
+// IRいしかわは例外として切捨て。
+// https://railway.jr-central.co.jp/ticket-rule/carriage/_pdf/07.pdf
+func privateFareAmount(company string, adult int) PrivateFareAmount {
+	child := (adult + 19) / 20 * 10
+	if company == "いしかわ" {
+		child = adult / 20 * 10
+	}
+	return PrivateFareAmount{Adult: adult, Child: child}
+}
+
 type privateFareSection struct {
 	company, start, end string
 }
@@ -20,13 +37,13 @@ func (u *CalculateAmount) calculatePrivateFare(edges []*ticketdomain.TicketEdge)
 	}
 	total := 0
 	for _, amount := range amounts {
-		total += amount
+		total += amount.Adult
 	}
 	return total, nil
 }
 
-func (u *CalculateAmount) calculatePrivateFareAmounts(edges []*ticketdomain.TicketEdge) ([]int, error) {
-	var amounts []int
+func (u *CalculateAmount) calculatePrivateFareAmounts(edges []*ticketdomain.TicketEdge) ([]PrivateFareAmount, error) {
+	var amounts []PrivateFareAmount
 	for i := 0; i < len(edges); {
 		if edges[i].Company != domain.Other {
 			i++
@@ -55,7 +72,7 @@ func (u *CalculateAmount) calculatePrivateFareAmounts(edges []*ticketdomain.Tick
 			if !ok {
 				return nil, fmt.Errorf("運賃が未登録です: %s: %s - %s", section.company, section.start, section.end)
 			}
-			amounts = append(amounts, f)
+			amounts = append(amounts, privateFareAmount(section.company, f))
 		}
 		// 根拠: https://www.ishikawa-railway.jp/station/tsubata/
 		// 津幡―高岡の特定運賃。発着区間と会社境界が一致する場合だけ90円を控除。
@@ -66,7 +83,9 @@ func (u *CalculateAmount) calculatePrivateFareAmounts(edges []*ticketdomain.Tick
 				a, b = privateFareSection{b.company, b.end, b.start}, privateFareSection{a.company, a.end, a.start}
 			}
 			if a == (privateFareSection{"いしかわ", "津幡", "倶利伽羅"}) && b == (privateFareSection{"とやま鉄道", "倶利伽羅", "高岡"}) {
-				combined := amounts[startAmount] + amounts[startAmount+1] - 90
+				// 小児の特定運賃は従来どおり、合算後の特定運賃を折半して切捨てる。
+				adult := amounts[startAmount].Adult + amounts[startAmount+1].Adult - 90
+				combined := PrivateFareAmount{Adult: adult, Child: adult / 20 * 10}
 				amounts = append(amounts[:startAmount], combined)
 			}
 		}
