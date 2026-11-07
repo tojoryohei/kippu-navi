@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.5...kippu-navi-v5.11.6) (2026-11-07)
+
+
+### Bug Fixes
+
+* PostHogの識別子をブラウザの再訪時も保持する ([#999](https://github.com/tojoryohei/kippu-navi/issues/999)) ([3a17b59](https://github.com/tojoryohei/kippu-navi/commit/3a17b598e03bcb9276ec2362a31c1fd59ef3cf2c))
+
 ## [5.11.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.4...kippu-navi-v5.11.5) (2026-11-07)
 
 
