@@ -309,7 +309,7 @@ func TestGetFareViaShinkansenAndPrivateBoundary(t *testing.T) {
 func TestGetFareViaForResultOmitsAppliedZones(t *testing.T) {
 	zones := &graphio.SpecialZoneRegistry{Zones: []ticketdomain.SpecialZone{
 		{Name: "東京都区内", Stations: []string{"新宿", "上野", "品川"}},
-		{Name: "東京山手線内", Stations: []string{"新宿", "上野", "品川"}},
+		{Name: "東京山手線内", Stations: []string{"新宿", "池袋", "上野", "品川"}},
 		{Name: "大阪市内", Stations: []string{"大阪", "京橋", "新大阪"}},
 	}}
 	tests := []struct {
@@ -317,84 +317,112 @@ func TestGetFareViaForResultOmitsAppliedZones(t *testing.T) {
 		path      []ViaStep
 		finalPath []string
 		want      []string
+		article70 bool
 	}{
 		{
 			"特例不適用",
 			[]ViaStep{{"東京", "チユト"}, {"神田", ""}},
 			[]string{"東京", "神田"},
 			[]string{"中央東"},
+			false,
 		},
 		{
 			"発側の市内印字を除外して同一路線の市外部分を残す",
 			[]ViaStep{{"新宿", "チユト"}, {"上野", "トウホ"}, {"大宮", "トウホ"}, {"小山", ""}},
 			[]string{"東京都区内", "上野", "大宮", "小山"},
 			[]string{"東北"},
+			false,
 		},
 		{
 			"着側の市内印字を除外",
 			[]ViaStep{{"小山", "トウホ"}, {"大宮", "トウホ"}, {"上野", "チユト"}, {"新宿", ""}},
 			[]string{"小山", "大宮", "上野", "東京都区内"},
 			[]string{"東北"},
+			false,
 		},
 		{
 			"発着両側の市内印字を除外",
 			[]ViaStep{{"新宿", "チユト"}, {"上野", "トウホ"}, {"大宮", "トウホ"}, {"新大阪", "オオサ"}, {"京橋", ""}},
 			[]string{"東京都区内", "上野", "大宮", "新大阪", "大阪市内"},
 			[]string{"東北"},
+			false,
 		},
 		{
 			"東京山手線内も除外",
 			[]ViaStep{{"新宿", "チユト"}, {"上野", "トウホ"}, {"大宮", ""}},
 			[]string{"東京山手線内", "上野", "大宮"},
 			[]string{"東北"},
+			false,
 		},
 		{
 			"東京都区内発の新幹線では品川を印字しない",
 			[]ViaStep{{"東京", "トウカ"}, {"品川", "シンカ"}, {"新横浜", "シンカ"}, {"名古屋", ""}},
 			[]string{"東京都区内", "品川", "新横浜", "名古屋"},
 			[]string{"新幹線", "名古屋"},
+			false,
 		},
 		{
 			"東京山手線内着の新幹線では上野を印字しない",
 			[]ViaStep{{"大宮", "トホシ"}, {"上野", "トウホ"}, {"東京", ""}},
 			[]string{"大宮", "上野", "東京山手線内"},
 			[]string{"大宮", "新幹線"},
+			false,
 		},
 		{
 			"東京山手線内発の新幹線では上野を印字しない",
 			[]ViaStep{{"東京", "トウホ"}, {"上野", "トホシ"}, {"大宮", ""}},
 			[]string{"東京山手線内", "上野", "大宮"},
 			[]string{"新幹線", "大宮"},
+			false,
 		},
 		{
 			"東京都区内着の新幹線では品川を印字しない",
 			[]ViaStep{{"名古屋", "シンカ"}, {"新横浜", "シンカ"}, {"品川", "トウカ"}, {"東京", ""}},
 			[]string{"名古屋", "新横浜", "品川", "東京都区内"},
 			[]string{"名古屋", "新幹線"},
+			false,
 		},
 		{
 			"大阪駅を通らず新大阪から出る大阪市内",
 			[]ViaStep{{"京橋", "オオサ"}, {"新大阪", "シンカ"}, {"新神戸", ""}},
 			[]string{"大阪市内", "新大阪", "新神戸"},
 			[]string{"新大阪", "新幹線", "新神戸"},
+			false,
 		},
 		{
 			"大阪駅を通らず新大阪から入る大阪市内",
 			[]ViaStep{{"新神戸", "シンカ"}, {"新大阪", "オオサ"}, {"京橋", ""}},
 			[]string{"新神戸", "新大阪", "大阪市内"},
 			[]string{"新神戸", "新幹線", "新大阪"},
+			false,
 		},
 		{
 			"大阪市内発の大阪〜新大阪を省略",
 			[]ViaStep{{"大阪", "トウカ"}, {"新大阪", "シンカ"}, {"新神戸", ""}},
 			[]string{"大阪市内", "新大阪", "新神戸"},
 			[]string{"新大阪", "新幹線", "新神戸"},
+			false,
 		},
 		{
 			"大阪市内着の新大阪〜大阪を省略",
 			[]ViaStep{{"新神戸", "シンカ"}, {"新大阪", "トウカ"}, {"大阪", ""}},
 			[]string{"新神戸", "新大阪", "大阪市内"},
 			[]string{"新神戸", "新幹線", "新大阪"},
+			false,
+		},
+		{
+			"山手線内発の70条内印字を省略",
+			[]ViaStep{{"池袋", "アカハネ"}, {"板橋", "アカハネ"}, {"十条", "アカハネ"}, {"赤羽", "トウホ"}, {"大宮", "トホシ"}, {"那須塩原", ""}},
+			[]string{"東京山手線内", "赤羽", "大宮", "那須塩原"},
+			[]string{"東北", "大宮", "新幹線", "那須塩原"},
+			true,
+		},
+		{
+			"山手線内発の補正禁止では赤羽線を印字",
+			[]ViaStep{{"池袋", "アカハネ"}, {"板橋", "アカハネ"}, {"十条", "アカハネ"}, {"赤羽", "トウホ"}, {"大宮", "トホシ"}, {"那須塩原", ""}},
+			[]string{"東京山手線内", "池袋", "赤羽", "大宮", "那須塩原"},
+			[]string{"赤羽線", "東北", "大宮", "新幹線", "那須塩原"},
+			false,
 		},
 	}
 	for _, tt := range tests {
@@ -404,7 +432,11 @@ func TestGetFareViaForResultOmitsAppliedZones(t *testing.T) {
 			for i, name := range tt.finalPath {
 				finalPath[i] = g.GetOrAddID(name)
 			}
-			if got := GetFareViaForResult(tt.path, finalPath, g, zones); !reflect.DeepEqual(got, tt.want) {
+			got := GetFareViaForResult(tt.path, finalPath, g, zones)
+			if tt.article70 {
+				got = GetFareViaForResultWithSections(tt.path, finalPath, g, zones)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Fatalf("GetFareViaForResult() = %v, 期待値 %v", got, tt.want)
 			}
 		})
