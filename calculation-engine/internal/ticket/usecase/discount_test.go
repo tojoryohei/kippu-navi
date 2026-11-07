@@ -24,7 +24,7 @@ func TestTicketDiscountRules(t *testing.T) {
 		{"west50", domain.JRWest, 1350},
 	} {
 		t.Run(tc.id, func(t *testing.T) {
-			base := &CalculationResult{JRFare: 1230, BarrierFreeFee: 10, PrivateFareAmounts: []int{230, 500}, JRCompanies: []domain.CompanyID{tc.company}, TotalEigyoKilo: 1001, TotalPathEigyoKilo: 1500}
+			base := &CalculationResult{JRFare: 1230, BarrierFreeFee: 10, PrivateFareAmounts: []PrivateFareAmount{{Adult: 230, Child: 120}, {Adult: 500, Child: 250}}, JRCompanies: []domain.CompanyID{tc.company}, TotalEigyoKilo: 1001, TotalPathEigyoKilo: 1500}
 			got := (TicketPricingOptions{PassengerType: "adult", DiscountID: tc.id}).price(base)
 			if got.TotalAmount() != tc.want || !got.DiscountApplied {
 				t.Fatalf("結果=%+v、期待値=%d", got, tc.want)
@@ -41,14 +41,14 @@ func TestTicketDiscountCompanyAndRounding(t *testing.T) {
 		want    int
 		applied bool
 	}{
-		{"小児はJR料金込み・私鉄会社別に端数処理", CalculationResult{JRFare: 1230, BarrierFreeFee: 10, PrivateFareAmounts: []int{230, 500}, JRCompanies: []domain.CompanyID{domain.JREast}}, TicketPricingOptions{"child", "none"}, 980, false},
+		{"小児はJR料金込み・私鉄会社別に端数処理", CalculationResult{JRFare: 1230, BarrierFreeFee: 10, PrivateFareAmounts: []PrivateFareAmount{{Adult: 230, Child: 120}, {Adult: 500, Child: 250}}, JRCompanies: []domain.CompanyID{domain.JREast}}, TicketPricingOptions{"child", "none"}, 990, false},
 		{"小児端数処理後に身障", CalculationResult{JRFare: 1390, TotalEigyoKilo: 1001, TotalPathEigyoKilo: 1001, JRCompanies: []domain.CompanyID{domain.JREast}}, TicketPricingOptions{"child", "disability"}, 340, true},
-		{"身障は社線込み100kmちょうどで適用しない", CalculationResult{JRFare: 1400, PrivateFareAmounts: []int{500}, TotalEigyoKilo: 800, TotalPathEigyoKilo: 1000, JRCompanies: []domain.CompanyID{domain.JREast}}, TicketPricingOptions{"adult", "disability"}, 1900, false},
-		{"身障は社線込み100km超でJRのみ割引", CalculationResult{JRFare: 1400, PrivateFareAmounts: []int{500}, TotalEigyoKilo: 800, TotalPathEigyoKilo: 1001, JRCompanies: []domain.CompanyID{domain.JREast}}, TicketPricingOptions{"adult", "disability"}, 1200, true},
-		{"私鉄は学割距離に含めない", CalculationResult{JRFare: 1400, PrivateFareAmounts: []int{500}, TotalEigyoKilo: 1000, TotalPathEigyoKilo: 1500, JRCompanies: []domain.CompanyID{domain.JREast}}, TicketPricingOptions{"adult", "student"}, 1900, false},
-		{"西日本と私鉄", CalculationResult{JRFare: 1400, PrivateFareAmounts: []int{500}, JRCompanies: []domain.CompanyID{domain.JRWest}}, TicketPricingOptions{"adult", "west50"}, 1200, true},
+		{"身障は社線込み100kmちょうどで適用しない", CalculationResult{JRFare: 1400, PrivateFareAmounts: []PrivateFareAmount{{Adult: 500, Child: 250}}, TotalEigyoKilo: 800, TotalPathEigyoKilo: 1000, JRCompanies: []domain.CompanyID{domain.JREast}}, TicketPricingOptions{"adult", "disability"}, 1900, false},
+		{"身障は社線込み100km超でJRのみ割引", CalculationResult{JRFare: 1400, PrivateFareAmounts: []PrivateFareAmount{{Adult: 500, Child: 250}}, TotalEigyoKilo: 800, TotalPathEigyoKilo: 1001, JRCompanies: []domain.CompanyID{domain.JREast}}, TicketPricingOptions{"adult", "disability"}, 1200, true},
+		{"私鉄は学割距離に含めない", CalculationResult{JRFare: 1400, PrivateFareAmounts: []PrivateFareAmount{{Adult: 500, Child: 250}}, TotalEigyoKilo: 1000, TotalPathEigyoKilo: 1500, JRCompanies: []domain.CompanyID{domain.JREast}}, TicketPricingOptions{"adult", "student"}, 1900, false},
+		{"西日本と私鉄", CalculationResult{JRFare: 1400, PrivateFareAmounts: []PrivateFareAmount{{Adult: 500, Child: 250}}, JRCompanies: []domain.CompanyID{domain.JRWest}}, TicketPricingOptions{"adult", "west50"}, 1200, true},
 		{"対象外JR混在", CalculationResult{JRFare: 1400, JRCompanies: []domain.CompanyID{domain.JRWest, domain.JRCentral}}, TicketPricingOptions{"adult", "west50"}, 1400, false},
-		{"JRなし", CalculationResult{PrivateFareAmounts: []int{500}}, TicketPricingOptions{"child", "west50"}, 250, false},
+		{"JRなし", CalculationResult{PrivateFareAmounts: []PrivateFareAmount{{Adult: 500, Child: 250}}}, TicketPricingOptions{"child", "west50"}, 250, false},
 		{"北海道と東日本", CalculationResult{JRFare: 3000, TotalEigyoKilo: 1001, JRCompanies: []domain.CompanyID{domain.JRHokkaido, domain.JREast}}, TicketPricingOptions{"adult", "otona05"}, 2850, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

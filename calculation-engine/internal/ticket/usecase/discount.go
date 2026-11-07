@@ -96,9 +96,10 @@ func (o TicketPricingOptions) price(base *CalculationResult) *CalculationResult 
 	}
 	for _, amount := range base.PrivateFareAmounts {
 		if o.PassengerType == "child" {
-			amount = amount / 20 * 10
+			private += amount.Child
+		} else {
+			private += amount.Adult
 		}
-		private += amount
 	}
 	if d := o.discount(); d != nil && d.allows(base.JRCompanies) && (d.MinEigyoKilo == 0 || o.discountEligibilityKilo(base) > d.MinEigyoKilo) {
 		jr = jr * (100 - d.Percent) / 1000 * 10

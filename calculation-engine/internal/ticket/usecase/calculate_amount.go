@@ -39,11 +39,11 @@ func (s *routeSummary) distances() (result RouteDistances) {
 }
 
 type CalculationResult struct {
-	Distances          RouteDistances     `json:"-"`
-	JRFare             int                `json:"-"`
-	PrivateFareAmounts []int              `json:"-"`
-	JRCompanies        []domain.CompanyID `json:"-"`
-	DiscountApplied    bool               `json:"-"`
+	Distances          RouteDistances      `json:"-"`
+	JRFare             int                 `json:"-"`
+	PrivateFareAmounts []PrivateFareAmount `json:"-"`
+	JRCompanies        []domain.CompanyID  `json:"-"`
+	DiscountApplied    bool                `json:"-"`
 	Fare               int
 	BarrierFreeFee     int
 	TotalEigyoKilo     domain.DeciKilo // 中心駅の距離控除を反映したJRの合計（表示・閾値判定用）
@@ -306,7 +306,7 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 	}
 
 	jrFare := totalFare
-	var privateAmounts []int
+	var privateAmounts []PrivateFareAmount
 	if u.privateFareReg != nil {
 		var err error
 		privateAmounts, err = u.calculatePrivateFareAmounts(summary.edges)
@@ -314,7 +314,7 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 			return nil, err
 		}
 		for _, amount := range privateAmounts {
-			totalFare += amount
+			totalFare += amount.Adult
 		}
 	}
 
