@@ -789,10 +789,10 @@ func getFareViaForResult(path []ViaStep, finalPath []int, g graph.StationProvide
 	endBoundary := g.GetName(finalPath[len(finalPath)-2])
 	if zones != nil {
 		if zone := zones.FindZoneByName(startZoneName); zone != nil {
-			start = fareViaBoundary(path, zone.Stations, startBoundary, true)
+			start = fareViaBoundary(path, fareViaZoneStations(path, zone, sectionGraph != nil), startBoundary, true)
 		}
 		if zone := zones.FindZoneByName(endZoneName); zone != nil {
-			end = fareViaBoundary(path, zone.Stations, endBoundary, false)
+			end = fareViaBoundary(path, fareViaZoneStations(path, zone, sectionGraph != nil), endBoundary, false)
 		}
 	}
 	osakaStart, osakaEnd := osakaShinOsakaViaBounds(sourceNames, finalPath, g)
@@ -894,6 +894,21 @@ func fareViaBoundaryNames(names, stations []string, origin bool) int {
 
 func isTokyoZone(name string) bool {
 	return name == "東京都区内" || name == "東京山手線内"
+}
+
+// 第70条を適用する東京山手線内では、運賃計算と同じ太線エリアまで印字を省く。
+// 補正禁止では山手線内の駅だけを省略する。
+func fareViaZoneStations(path []ViaStep, zone *ticketdomain.SpecialZone, article70 bool) []string {
+	if zone.Name != "東京山手線内" || !article70 {
+		return zone.Stations
+	}
+	stations := append([]string(nil), zone.Stations...)
+	for _, step := range path {
+		if ticketdomain.IsArticle70Station(step.StationName) {
+			stations = append(stations, step.StationName)
+		}
+	}
+	return stations
 }
 
 // fareViaBoundary はゾーン側の境界駅の入力経路上の位置を返します。
