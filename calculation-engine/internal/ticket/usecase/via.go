@@ -48,6 +48,7 @@ var viaData struct {
 	article70Routes       *ticketdomain.Article70Routes
 	article70Kana         map[string]*string
 	zoneRoutes            ticketdomain.ZoneRoutes
+	zoneRegistry          *graphio.SpecialZoneRegistry
 	specialViaEdges       []map[string]bool
 }
 
@@ -126,6 +127,10 @@ func loadViaData() {
 			panic(err)
 		}
 		viaData.zoneRoutes, err = ticketdomain.LoadZoneRoutesFromBytes(zoneRoutesJSON)
+		if err != nil {
+			panic(err)
+		}
+		viaData.zoneRegistry, err = graphio.LoadSpecialZones()
 		if err != nil {
 			panic(err)
 		}
@@ -939,13 +944,14 @@ func logCalculatedFareViaKanas(mode string, input []ViaStep, sourcePath, printPa
 	if mode == "cheapest" {
 		LogAutomaticViaKanas(g, printPath)
 	} else if mode != "uncorrect" && IsSuburbanAreaComplete(sourcePath, g) {
-		logViaKanas(automaticViaKanasForSteps(cheapestViaSteps(g, printPath)))
+		logViaKanas(automaticViaKanasForSteps(cheapestViaSteps(g, suburbanPrivateZoneViaPath(g, printPath))))
 	} else {
 		LogInputViaKanas(input)
 	}
 }
 
 func automaticViaKanas(g graph.Graph, path []int) []string {
+	path = suburbanPrivateZoneViaPath(g, path)
 	return automaticViaKanasForSteps(conventionalThroughVia(cheapestViaSteps(g, path)))
 }
 
@@ -985,8 +991,86 @@ func GetCheapestFareViaForResult(g graph.Graph, printPath, finalPath []int) []st
 	return GetAutomaticFareViaForResult(g, printPath, finalPath)
 }
 
+// 他社線を含む場合も、発着ゾーンの中心駅から接続駅までのJR近郊区間を印字する。
+// 運賃用の仮想ゾーン辺に残った入力側の境界駅を、そのまま経由として使わない。
+func suburbanPrivateZoneViaPath(g graph.Graph, path []int) []int {
+	loadViaData()
+	if len(path) < 3 {
+		return path
+	}
+	start, end := 0, len(path)-1
+	origin := len(viaData.zoneRoutes[g.GetName(path[start])]) > 0
+	dest := len(viaData.zoneRoutes[g.GetName(path[end])]) > 0
+	if !origin && !dest {
+		return path
+	}
+	if origin {
+		start++
+	}
+	if dest {
+		end--
+	}
+	physical := path[start : end+1]
+	area, segments, ok := collectSuburbanJRSegments(physical, g)
+	if !ok || len(segments) == 0 {
+		return path
+	}
+	// JRだけの経路では既に中心駅から補正済み。
+	if len(segments) == 1 && segments[0].startIndex == 0 && segments[0].endIndex == len(physical)-1 {
+		return path
+	}
+	zones := viaData.zoneRegistry
+	applier := NewSpecialZoneApplier(g, zones)
+	result := append([]int(nil), path...)
+	// 後ろから置換し、先頭側の位置を保つ。
+	for _, fromOrigin := range []bool{false, true} {
+		segment := segments[len(segments)-1]
+		zoneIndex := len(path) - 1
+		if fromOrigin {
+			segment = segments[0]
+			zoneIndex = 0
+		}
+		if fromOrigin && (!origin || segment.startIndex != 0) || !fromOrigin && (!dest || segment.endIndex != len(physical)-1) {
+			continue
+		}
+		zone := zones.FindZoneByName(g.GetName(path[zoneIndex]))
+		if zone == nil {
+			continue
+		}
+		center, exists := g.GetID(graphio.ZoneCenterStations[zone.Name])
+		if !exists {
+			continue
+		}
+		a, b := physical[segment.startIndex], center
+		if fromOrigin {
+			a, b = center, physical[segment.endIndex]
+		}
+		shortest, found := applier.findShortestGiseiSuburban(a, b, area)
+		if !found {
+			continue
+		}
+		var info *AppliedZoneInfo
+		var applied bool
+		if fromOrigin {
+			info, applied = applier.applyOriginZone(shortest.StationIDs, zone, applier.osakaZoneChanges)
+		} else {
+			info, applied = applier.applyDestinationZone(shortest.StationIDs, zone, applier.osakaZoneChanges)
+		}
+		if !applied {
+			continue
+		}
+		if fromOrigin {
+			result = append(append([]int(nil), info.TransformedPath...), result[start+segment.endIndex+1:]...)
+		} else {
+			result = append(append([]int(nil), result[:start+segment.startIndex]...), info.TransformedPath...)
+		}
+	}
+	return result
+}
+
 // GetAutomaticFareViaForResult は計算済みの駅列だけから経路自動案内の印字を生成します。
 func GetAutomaticFareViaForResult(g graph.Graph, printPath, finalPath []int) []string {
+	printPath = suburbanPrivateZoneViaPath(g, printPath)
 	steps := conventionalThroughVia(cheapestViaSteps(g, printPath))
 	names := viaStepNames(steps)
 	start, end := osakaShinOsakaViaBounds(names, finalPath, g)
