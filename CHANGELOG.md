@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.6...kippu-navi-v5.11.7) (2026-11-07)
+
+
+### Bug Fixes
+
+* 換算キロの誤りを修正 ([#1011](https://github.com/tojoryohei/kippu-navi/issues/1011)) ([af90517](https://github.com/tojoryohei/kippu-navi/commit/af90517656471cab02c91cb2a71d50633c0c7b2b))
+
 ## [5.11.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.5...kippu-navi-v5.11.6) (2026-11-07)
 
 
