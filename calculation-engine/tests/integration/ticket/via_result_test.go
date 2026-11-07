@@ -393,3 +393,33 @@ func TestConsecutiveKyushuOverlap(t *testing.T) {
 		}
 	}
 }
+
+func TestSuburbanViaWithPrivateLine(t *testing.T) {
+	_, g := setupTicketAmount(t)
+	// 東京山手線内を適用した提示経路。JRと他社線の接続駅を維持して印字する。
+	names := []string{
+		"東京山手線内", "日暮里", "三河島", "南千住", "北千住", "綾瀬", "亀有", "金町", "松戸",
+		"北松戸", "馬橋", "新松戸", "北小金", "南柏", "柏", "北柏", "我孫子",
+		"東我孫子", "湖北", "新木", "布佐", "木下", "（成）小林", "安食", "下総松崎", "成田",
+		"久住", "滑河", "下総神崎", "大戸", "佐原", "香取", "十二橋", "潮来", "延方",
+		"鹿島神宮", "鹿島サッカースタジアム", "水戸",
+	}
+	path := make([]int, len(names))
+	for i, name := range names {
+		var ok bool
+		path[i], ok = g.GetID(name)
+		if !ok {
+			t.Fatalf("駅%sが見つかりません", name)
+		}
+	}
+	want := []string{"総武", "成田線", "鹿島", "鹿島サッカースタジアム"}
+	for _, direction := range []string{"往路", "復路"} {
+		t.Run(direction, func(t *testing.T) {
+			if got := usecase.GetAutomaticFareViaForResult(g, path, path); !slices.Equal(got, want) {
+				t.Fatalf("経由=%v, 期待値=%v", got, want)
+			}
+		})
+		slices.Reverse(path)
+		slices.Reverse(want)
+	}
+}
