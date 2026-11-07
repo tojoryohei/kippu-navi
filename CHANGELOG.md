@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.7...kippu-navi-v5.11.8) (2026-11-07)
+
+
+### Bug Fixes
+
+* 東京山手線内適用時の70条内の経由印字を省略 ([#1013](https://github.com/tojoryohei/kippu-navi/issues/1013)) ([bc75584](https://github.com/tojoryohei/kippu-navi/commit/bc75584d03d6b9a53068441d8a5789d979aaa3b5))
+
 ## [5.11.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.6...kippu-navi-v5.11.7) (2026-11-07)
 
 
