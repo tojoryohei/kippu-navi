@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from '../support/fixtures';
 
 // 時間経過は単体テストの仮想時計で検証し、ブラウザでは通信の解除を明示する。
 async function gateEngine(page: Page) {

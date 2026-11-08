@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../support/fixtures";
 import { readFileSync } from "node:fs";
 
 test("API文書・仕様・駅名一覧を取得できる", async ({ request, page }) => {

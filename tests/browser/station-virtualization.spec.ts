@@ -1,9 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../support/fixtures";
+import { blockExternalServices } from "../support/browser-helpers";
 
 for (const path of ["/fare/ticket", "/split/auto/ticket"]) {
   test(`駅候補を仮想化して末尾まで操作できる: ${path}`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.route("**/*", route => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
+    await blockExternalServices(page);
     await page.goto(path);
     await expect(page.locator('[data-calculator-ready="true"]')).toBeVisible();
     const input = page.getByRole("combobox").first();
@@ -65,11 +66,21 @@ for (const path of ["/fare/ticket", "/split/auto/ticket"]) {
     for (let step = 0; step < 100; step++) {
       for (const position of await page.getByRole("option").evaluateAll(nodes => nodes.map(node => Number(node.getAttribute("aria-posinset"))))) visited.add(position);
       if (visited.size === total) break;
-      await menu.evaluate(node => { node.scrollTop += 200; });
-      await page.waitForTimeout(30);
+      const targetOffset = await menu.evaluate(node => { node.scrollTop += 200; return node.scrollTop; });
+      // 仮想リストがスクロール先の表示領域の末尾まで描画するのを待つ。
+      // 時間や固定行高に依存せず、折り返した候補にも対応する。
+      await expect.poll(() => menu.evaluate((node, target) => {
+        if (node.scrollTop !== target) return false;
+        const bottom = node.getBoundingClientRect().top + node.clientTop + node.clientHeight - 1;
+        return [...node.querySelectorAll('[role="option"]')].some(option => {
+          const box = option.getBoundingClientRect();
+          return box.top <= bottom && box.bottom >= bottom;
+        });
+      }, targetOffset)).toBe(true);
     }
     expect(visited.size).toBe(total);
     const offset = await menu.evaluate(node => node.scrollTop);
+    // 描画待ちではなく、追加操作なしの100msでフォーカス位置へ戻らないことを観測する。
     await page.waitForTimeout(100);
     expect(await menu.evaluate(node => node.scrollTop)).toBe(offset);
     await page.locator(`[role=option][aria-posinset="${total}"]`).click();
@@ -111,7 +122,7 @@ test("除外駅の多数候補も仮想化し、変換中のEnterでは確定し
 
 test("読み上げ対象を画面外でも保持し、ホイール操作で戻さない", async ({ page }) => {
   // aria-activedescendantが参照する候補をスクロール後も保持する。
-  await page.route("**/*", route => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
+  await blockExternalServices(page);
   await page.goto("/fare/ticket");
   await expect(page.locator('[data-calculator-ready="true"]')).toBeVisible();
   const input = page.getByRole("combobox").first();

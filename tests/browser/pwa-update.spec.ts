@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../support/fixtures';
 import { createServer } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
 import { extname } from 'node:path';

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../support/fixtures";
 
 for (const [month, route] of [[1, "東京[東北]盛岡[いわて銀河]目時[青い森鉄道]青森"], [6, "河原田[伊勢鉄道線]津"]] as const) {
  {
