@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../support/fixtures';
 
 for (const [width, pwa] of [[390, false]] as const) {
   test(`広告は表示・取得せず、計算画面の遷移を維持する (${width}px, PWA=${pwa})`, async ({ page }) => {

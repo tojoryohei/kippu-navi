@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from '../support/fixtures';
 import { existsSync, readFileSync } from 'node:fs';
 
 test('旧URLは配信側で301転送し、生成物とPWA保存対象には含めない', async ({ request }) => {

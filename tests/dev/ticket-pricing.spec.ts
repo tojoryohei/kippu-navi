@@ -1,10 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../support/fixtures';
+import { blockExternalServices } from '../support/browser-helpers';
 
 test.beforeEach(async ({ page }) => {
-    await page.route('**/*', route => {
-        const url = new URL(route.request().url());
-        return ['127.0.0.1', 'localhost'].includes(url.hostname) && !/^\/(ingest|monitoring)(\/|$)/.test(url.pathname) ? route.continue() : route.abort();
-    });
+    await blockExternalServices(page);
 });
 
 test('小児と割引の選択・無効化・URL復元を実WASMで確認する', async ({ page }) => {
@@ -14,7 +12,9 @@ test('小児と割引の選択・無効化・URL復元を実WASMで確認する'
     const result = page.getByRole('heading', { name: '計算結果', exact: true });
     await expect(result).toBeVisible();
     const amount = page.getByText(/^¥[\d,]+$/, { exact: true });
-    await expect(amount).toBeVisible();
+    // 東京→品川（東海道在来線）6.8km。fare/east.goの7〜10km=210円、
+    // fare/east_test.goの幹線10kmケースと同じ運賃帯。新幹線の特定運賃170円とは別。
+    await expect(amount).toHaveText('¥210');
     const adult = Number((await amount.textContent())!.replace(/[^\d]/g, ''));
     expect(adult).toBeGreaterThan(0);
     await page.getByLabel('割引', { exact: true }).press('Enter');

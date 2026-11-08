@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../support/fixtures';
 
 // 実API・Go・WASMを使い、Worker通知を遅らせず描画フレームでUIを観測する。
 const scenarios: { name: string; path: string; query: Record<string, string> }[] = [

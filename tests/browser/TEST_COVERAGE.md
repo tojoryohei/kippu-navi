@@ -4,6 +4,74 @@ Goの統合テストは展開済みの駅・路線を入力する。URL解析、
 Worker/WASMの受け渡し、DOM表示は検証しない。したがって「計算条件の網羅」を
 Goに集約しても、実WASMを通した代表ケースはE2Eに残す。
 
+## 実物を通す境界と差し替える境界
+
+| テスト群 | 実物を通す境界 | 差し替える境界 | 検出する不具合・保証の限界 |
+| --- | --- | --- | --- |
+| `tests/dev/startup.spec.ts`、`public-api.spec.ts` | 入力・URL→ローカルGo API→Worker/WASM→結果表示（HTTPのみのケースも含む） | 広告・計測の外部通信を遮断。APIは事前計算なし | API契約、券種・期間、入力から画面への接続。Cloudflare本番配信の保証ではない |
+| `migration.spec.ts`、`route-split.spec.ts` の実計算 | URL解析・経路展開→実Worker/WASM・BIN→画面 | 自動検索APIは固定応答または明示的な障害。経路入力はAPI不要 | フロントと計算エンジンの結合。固定APIが返す経路の探索品質は保証しない |
+| `tests/dev/ticket-pricing.spec.ts` | 割引・単駅指定の操作→実WASM→画面・URL復元 | 広告・計測を遮断 | UI設定の受け渡し。金額の代表値は固定し、割引の全組み合わせはGo/WASMテストに委ねる |
+| `route-progress.spec.ts`、`split-streaming.spec.ts` | フォーム・進捗・結果表示 | 制御Worker（自動検索APIも固定・遮断） | 時系列・古い通知の拒否・復旧UI。計算精度や実Workerの動作を保証するE2Eとは区別する |
+| `engine-readiness.spec.ts`、`calculator-hydration.spec.ts` | hydration・実エンジン準備・再試行 | 資材の遅延・取得失敗を明示的に注入 | 準備中の操作制約と復旧。タイムアウトの境界値は下位テストで確認 |
+| `pwa.spec.ts`、`pwa-update.spec.ts` | ビルド済み資材・Service Worker・Cache Storage・複数タブ | オフライン、API障害、新版の資材・取得失敗 | 保存・更新・次回起動の結合。通常ページの通信fixtureとは分けて制御 |
+| 駅候補・ヘッダー・記事・詳細オプション | 実DOM・キーボード・画面幅・画面遷移 | 必要に応じAPI固定・外部通信遮断 | UIの操作性、表示、入力引き継ぎ。計算規則の網羅は目的にしない |
+
+代表の実APIテストは新茂原→茂原の2.9kmを使用する。乗車券160円、
+3箇月定期13,960円、6箇月IC定期26,620円をテスト内の固定値とし、
+実行時のAPI/Worker応答から期待値を算出しない。根拠は各テストのコメントを参照。
+乗車券は空フォームから候補を選んで検索する。URL直アクセス・再読み込みの保証は
+`migration.spec.ts` と定期券の起動テストに残す。
+
+## 状態遷移の代表保証
+
+| 遷移・拒否すべき操作 | 既存テスト | 実行方式 |
+| --- | --- | --- |
+| 準備中→計算可能、準備中のEnter拒否、入力変更で自動検索取消 | `engine-readiness.spec.ts` | 実WASM資材の取得を明示的に解除 |
+| 初期読込失敗→メインボタンから再試行→完了 | `calculator-hydration.spec.ts`、`migration.spec.ts` | 実Worker/WASMの通信障害を注入 |
+| 計算中→探索・割合・整理→失敗→再試行→完了 | `route-progress.spec.ts` | 制御Worker。旧進捗・成功・エラーが新しい状態を上書きしない |
+| 計算中→部分結果→追加表示→途中失敗→再計算→完了 | `split-streaming.spec.ts` | 制御Worker。online/offline両経路で旧部分結果・成功・エラーを拒否 |
+| 実計算→進捗→最終結果 | `route-split.spec.ts` | 実WASMの既存計算ケース内で検証 |
+| 新版保存失敗→再取得→待機→全旧画面終了→新版起動 | `pwa-update.spec.ts` | 実Service Workerと複数タブ |
+
+制御Workerの通知後は描画フレームを待ってから否定アサーションを行う。
+メッセージ順序を意図的に制御するテストと、実通信・実計算の結合テストの両方を維持する。
+
+## 診断と実行結果
+
+- browser/devの全specは `tests/support/fixtures.ts` のtest/expectを使う。fixtureは通信を差し替えず、
+  BrowserContext内のページ例外・通信失敗・HTTPエラーを収集し、失敗時だけ `browser-diagnostics` JSONを添付する。
+  HTTPエラーを一律に失敗判定へ変換しない。ログは最大500件、超過件数も記録する。
+- `blockExternalServices` は広告・計測などの遮断に理由を付ける。障害注入は
+  `diagnostics.expectFailure({ kind, url, status, reason })` で対象を明示できる。
+  登録は診断上の分類であり、成功判定や既存アサーションを変更しない。未分類は想定外と断定せず調査対象として扱う。
+- fixture外で作るBrowserContextは `diagnostics.observe(context)` を呼ぶ。
+  PWAの通信制御は専用実装を維持し、Service Worker経由の通信すべてをこのログだけで捕捉できるとはみなさない。
+- 成果物は `test-results/browser` と `test-results/dev`、HTML/JSONレポートは
+  `playwright-report/browser` と `playwright-report/dev` に分離する。CIは成否を問わず7日保存する。
+  browserが失敗してもdevは実行し、両方の結果を残す（キャンセル時は除く）。
+- 通常CIの全件実行、2 workers、リトライなしを維持する。変更した非同期ケースは
+  `--repeat-each=5 --retries=0` で別途検証し、速度比較には同じブラウザ・環境のJSONレポートを使う。
+
+### 改善時の検証記録（2026-11-08〜09）
+
+| スイート | 変更前 | 最新main統合後 |
+| --- | --- | --- |
+| browser | 成功97・失敗1、76.7秒 | 成功98・失敗0、77.6秒 |
+| dev | 成功17・性能テストのスキップ2、37.5秒 | 成功17・性能テストのスキップ2、35.9秒 |
+
+- 件数を増やさず既存ケースを強化した。変更前の失敗は詳細オプションのキーボード選択で、
+  hydration完了とメニュー・フォーカス状態の待機を追加した。検証対象のキー操作と期待値は維持している。
+- pull前に非同期ケースをリトライなしで5回反復し、browser 22ケース×5回=110件、
+  dev 11ケース×5回=55件が成功した。
+- 統合後の全件検証は `7d3b501` 上の作業差分に対して実施。macOSのChromeを
+  `PLAYWRIGHT_CHANNEL=chrome` で利用した。CIのChromiumでの実行結果とは区別する。
+  pullでNode.js 24.19.0→26.13.0とAstro等の依存関係が変わったため、上表は高速化の根拠にしない。
+- 一時的な失敗ケースをbrowser/devで実行し、trace・スクリーンショット・ページ例外と
+  注入した通信失敗の診断ログ・HTML/JSONレポートを確認した。両保存先の共存も確認し、一時ケースは削除した。
+- ESLint、型検査、Knip、automation/verificationの24件、actionlintが成功した。
+  actionlintはShellCheckを無効にして実行した（今回の変更にシェル処理の追加はない）。
+  型検査とビルドの同時実行ではAstroキャッシュが競合したため、最終の型検査は単独で実施した。
+
 ## route-split.spec.tsで減らした組合せと下位テスト
 
 Go側のパスは `calculation-engine/tests/integration/` を基準とする。

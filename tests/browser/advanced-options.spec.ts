@@ -1,17 +1,16 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../support/fixtures";
+import { blockExternalServices } from "../support/browser-helpers";
 
 test.beforeEach(async ({ page }) => {
-  await page.route("**/*", route => {
-    const url = new URL(route.request().url());
-    if (!["localhost", "127.0.0.1"].includes(url.hostname)) return route.abort();
-    if (url.pathname.startsWith("/ingest/")) return route.abort();
-    if (url.pathname.startsWith("/api/")) return route.fulfill({ json: { normal: ["新茂原", "茂原"], results: [["新茂原", "茂原"]] } });
-    return route.continue();
-  });
+  await blockExternalServices(page);
+  await page.route("**/api/**", route => route.fulfill({
+    json: { normal: ["新茂原", "茂原"], results: [["新茂原", "茂原"]] },
+  }));
 });
 
 test("見出し・キーボード追加・削除・空表示", async ({ page }) => {
   await page.goto("/split/auto/ticket?noSplitStation=東京&maxSplits=2");
+  await expect(page.locator('[data-calculator-ready="true"]')).toBeVisible();
   const details = page.locator("form details");
   await expect(details.locator("summary")).toHaveText("詳細オプション");
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("2回");
@@ -22,7 +21,10 @@ test("見出し・キーボード追加・削除・空表示", async ({ page }) 
   const splitCount = page.getByLabel("最大分割数", { exact: true });
   await splitCount.focus();
   await splitCount.press("ArrowDown");
+  await expect(splitCount).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('option', { name: '2回', exact: true })).toBeVisible();
   await splitCount.press("ArrowDown");
+  await expect(splitCount).toHaveAttribute('aria-activedescendant', (await page.getByRole('option', { name: '3回', exact: true }).getAttribute('id'))!);
   await splitCount.press("Enter");
   await expect(page.locator(".split-count-select .station-select__single-value")).toHaveText("3回");
   const search = page.getByLabel("分割禁止駅", { exact: true });

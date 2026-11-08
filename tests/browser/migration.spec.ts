@@ -1,23 +1,15 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "../support/fixtures";
+
+import { blockExternalServices } from "../support/browser-helpers";
 
 const query = new URLSearchParams({ from: "新茂原", to: "茂原" }).toString();
 
 async function isolateServices(page: Page) {
   // 本物のWASM/BINを使い、計測送信とAPIの探索結果だけを固定する。
-  await page.route("**/*", (route) => {
-    const url = new URL(route.request().url());
-    if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1")
-      return route.abort();
-    if (url.pathname.startsWith("/ingest/")) return route.abort();
-    if (url.pathname.startsWith("/api/"))
-      return route.fulfill({
-        json: {
-          normal: ["新茂原", "茂原"],
-          results: [["新茂原", "茂原"]],
-        },
-      });
-    return route.continue();
-  });
+  await blockExternalServices(page);
+  await page.route("**/api/**", route => route.fulfill({
+    json: { normal: ["新茂原", "茂原"], results: [["新茂原", "茂原"]] },
+  }));
 }
 
 async function expectTicket(page: Page) {
@@ -225,7 +217,8 @@ test("臨時駅を含む分割計算の期間変更でエラーにならない",
   await expect(page.locator("p.text-red-500")).toHaveCount(0);
 });
 
-test("WASMのロード失敗を表示する", async ({ page }) => {
+test("WASMのロード失敗を表示する", async ({ page, diagnostics }) => {
+  diagnostics.expectFailure({ kind: 'http-error', url: /\/main\.wasm$/, status: 404, reason: 'WASM取得失敗を注入' });
   await isolateServices(page);
   await page.route("**/main.wasm", (route) =>
     route.fulfill({ status: 404, body: "missing" }),
@@ -234,7 +227,8 @@ test("WASMのロード失敗を表示する", async ({ page }) => {
   await expect(page.getByText("通信環境を確認して、もう一度計算してください。", { exact: true })).toBeVisible();
 });
 
-test("エンジン初期化失敗後もメインの計算ボタンから再試行できる", async ({ page }) => {
+test("エンジン初期化失敗後もメインの計算ボタンから再試行できる", async ({ page, diagnostics }) => {
+  diagnostics.expectFailure({ kind: 'http-error', url: /\/main\.wasm$/, status: 503, reason: 'WASM取得失敗を注入' });
   await isolateServices(page);
   let allowWasm = false;
   await page.route("**/main.wasm", route =>
@@ -253,7 +247,8 @@ test("エンジン初期化失敗後もメインの計算ボタンから再試�
   await expectTicket(page);
 });
 
-test("運賃計算もメインの計算ボタンからエンジンを再試行できる", async ({ page }) => {
+test("運賃計算もメインの計算ボタンからエンジンを再試行できる", async ({ page, diagnostics }) => {
+  diagnostics.expectFailure({ kind: 'http-error', url: /\/main\.wasm$/, status: 503, reason: 'WASM取得失敗を注入' });
   await isolateServices(page);
   let allowWasm = false;
   await page.route("**/main.wasm", route =>
@@ -272,7 +267,8 @@ test("運賃計算もメインの計算ボタンからエンジンを再試行�
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
 });
 
-test("経路APIの一時的なネットワーク失敗を再試行して検索を継続する", async ({ page }) => {
+test("経路APIの一時的なネットワーク失敗を再試行して検索を継続する", async ({ page, diagnostics }) => {
+  diagnostics.expectFailure({ kind: 'requestfailed', url: /\/api\/split\/auto\/ticket/, reason: '最初のAPI要求を失敗させる' });
   await isolateServices(page);
   let attempts = 0;
   await page.route("**/api/split/auto/ticket**", async route => {

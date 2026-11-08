@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../support/fixtures";
 import { cases, queryFor, expectedJson } from "../../scripts/verification/config.mjs";
 
 test("llms.txtをUTF-8として配信する", async ({ request }) => {

@@ -1,15 +1,17 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../support/fixtures";
+import { blockExternalServices } from "../support/browser-helpers";
 import { articles } from "../../src/data/articles";
 import examples from "../../src/data/split-ticket-examples.json" with { type: "json" };
 
 test.beforeEach(async ({ page }) => {
-  await page.route("**/*", route => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
+  await blockExternalServices(page);
 });
 
-test("記事はJavaScriptなしでも本文・出典・日付を読め、canonicalと構造化データが一致する", async ({ browser }) => {
+test("記事はJavaScriptなしでも本文・出典・日付を読め、canonicalと構造化データが一致する", async ({ browser, diagnostics }) => {
   const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 375, height: 812 } });
+  diagnostics.observe(context);
   const page = await context.newPage();
-  await page.route("**/*", route => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
+  await blockExternalServices(page);
   const links = new Set<string>();
   for (const article of articles) {
     const path = `/articles/${article.slug}`;

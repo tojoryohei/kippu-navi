@@ -1,7 +1,8 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../support/fixtures";
+import { blockExternalServices } from "../support/browser-helpers";
 
 test.beforeEach(async ({ page }) => {
-  await page.route("**/*", (route) => new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort());
+  await blockExternalServices(page);
 });
 
 test("PCの順番・分割メニュー・リンク・キーボード操作", async ({ page }) => {
