@@ -27,7 +27,11 @@ import { stringifyRoute, parseRoute } from "@/app/fare/lib/routeParser";
 
 import type { Station, Line, TicketFareResult, PassFareResult, TicketFareResponse, IFormInput, PathStep, CalculationMode, SearchType } from "@/app/types";
 
-const stationMap = new Map(stationData.map(s => [s.name, s]));
+let stationMap: Map<string, Station> | undefined;
+
+function getStationMap(): Map<string, Station> {
+    return stationMap ??= new Map(stationData.map(station => [station.name, station]));
+}
 
 interface FormValues extends IFormInput {
     departureSingleStation: boolean;
@@ -501,11 +505,11 @@ export default function Form({
             }
         } else {
             if (fromParam) {
-                const matchedFrom = stationMap.get(fromParam) || stationData.find(s => s.name === fromParam);
+                const matchedFrom = getStationMap().get(fromParam);
                 if (matchedFrom) startStation = matchedFrom;
             }
             if (toParam) {
-                const matchedTo = stationMap.get(toParam) || stationData.find(s => s.name === toParam);
+                const matchedTo = getStationMap().get(toParam);
                 if (matchedTo) {
                     initialSegments = [{ viaLine: null, destinationStation: matchedTo }];
                 }
@@ -760,7 +764,7 @@ export default function Form({
                     const targetDirection = isOuter ? "内" : isInner ? "外" : null;
 
                     if (targetDirection) {
-                        const fullStation = stationMap.get(startStationOfSeg.name) || startStationOfSeg;
+                        const fullStation = getStationMap().get(startStationOfSeg.name) || startStationOfSeg;
                         const matchedLineName = fullStation.lines?.find(
                             l => l.includes(prefix) && l.includes(targetDirection)
                         );
@@ -922,7 +926,7 @@ export default function Form({
 
                         const stationsOnLine = selectedLine
                             ? (selectedLine.stations
-                                .map(name => stationMap.get(name))
+                                .map(name => getStationMap().get(name))
                                 .filter(station => station !== undefined) as Station[])
                             : [];
 

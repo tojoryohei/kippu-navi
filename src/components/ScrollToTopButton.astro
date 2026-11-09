@@ -25,8 +25,10 @@
       this.controller = new AbortController();
       const update = () => {
         cancelAnimationFrame(this.frame);
+        const shouldHide = window.scrollY <= 300;
+        if (this.hidden !== shouldHide) this.hidden = shouldHide;
+        if (shouldHide) return;
         this.frame = requestAnimationFrame(() => {
-          this.hidden = window.scrollY <= 300;
           const footer = document.querySelector("footer");
           const overlap = footer
             ? Math.max(0, innerHeight - footer.getBoundingClientRect().top)
