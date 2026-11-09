@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.9...kippu-navi-v5.11.10) (2026-11-09)
+
+
+### Performance Improvements
+
+* 画面初期化時のDOM操作とデータ処理を削減 ([#1033](https://github.com/tojoryohei/kippu-navi/issues/1033)) ([875d260](https://github.com/tojoryohei/kippu-navi/commit/875d2604e2772ab8466bd7e52f5f03ce4379cdfe))
+
 ## [5.11.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.8...kippu-navi-v5.11.9) (2026-11-07)
 
 
