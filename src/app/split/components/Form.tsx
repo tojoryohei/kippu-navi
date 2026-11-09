@@ -31,6 +31,12 @@ import type {
     SplitCalculationSegment,
 } from "@/app/types";
 
+let stationMap: Map<string, (typeof stationDatas)[number]> | undefined;
+
+function getStationMap() {
+    return stationMap ??= new Map(stationDatas.map(station => [station.name, station]));
+}
+
 interface ExtendedSplitFormInput {
     startStation: Station | null;
     endStation: Station | null;
@@ -502,8 +508,8 @@ export default function SplitForm({
         const fromVal = initialFrom ?? null;
         const toVal = initialTo ?? null;
 
-        const startStation = fromVal ? stationDatas.find(s => s.name === fromVal) || { name: fromVal, kana: "" } : null;
-        const endStation = toVal ? stationDatas.find(s => s.name === toVal) || { name: toVal, kana: "" } : null;
+        const startStation = fromVal ? getStationMap().get(fromVal) || { name: fromVal, kana: "" } : null;
+        const endStation = toVal ? getStationMap().get(toVal) || { name: toVal, kana: "" } : null;
 
         let currentSearchType: SearchType = (isIcPass || isPass ? "pass6" : "ticket");
         if (initialSearchType === "pass1" || initialSearchType === "pass3" || initialSearchType === "pass6") {
@@ -515,10 +521,9 @@ export default function SplitForm({
         const forbiddenNames = initialForbiddenStationsKey
             ? initialForbiddenStationsKey.split("\u0000")
             : [];
-        const stationList = stationDatas as Station[];
         const forbiddenStations = forbiddenNames
-            .map(name => stationList.find(s => s.name === name))
-            .filter((station): station is Station => Boolean(station));
+            .map(name => getStationMap().get(name))
+            .filter(station => station !== undefined);
         const selectedMaxSplits = initialMaxSplits ?? (isIcPass ? 1 : 0);
         setValue("forbiddenStations", forbiddenStations);
         setValue("maxSplits", selectedMaxSplits);
@@ -647,12 +652,11 @@ export default function SplitForm({
         setValue("endStation", currentStart, { shouldValidate: true });
     };
 
-    const stations = new Set((stationDatas as Station[]).map((s) => s.name));
-
     const validateStation = (value: Station | null, fieldName: "startStation" | "endStation") => {
         if (!value || !value.name) return false;
-        const exists = stations.has(value.name);
-        if (!exists) return "正しい駅名を選択または入力してください";
+        const stations = getStationMap();
+        const currentStationData = stations.get(value.name);
+        if (!currentStationData) return "正しい駅名を選択または入力してください";
 
         const startVal = getValues("startStation");
         const endVal = getValues("endStation");
@@ -662,21 +666,17 @@ export default function SplitForm({
 
         // IC定期券の時のエリアバリデーション
         if (isIcPass) {
-            const startVal = getValues("startStation");
-            const endVal = getValues("endStation");
-            const currentStationData = stationDatas.find(s => s.name === value.name);
-
-            if (!currentStationData?.icPassAreaName) {
+            if (!currentStationData.icPassAreaName) {
                 return "この駅はIC定期券エリア外のため、IC定期券の計算はできません";
             }
 
             if (fieldName === "startStation" && endVal?.name) {
-                const partnerStationData = stationDatas.find(s => s.name === endVal.name);
+                const partnerStationData = stations.get(endVal.name);
                 if (partnerStationData?.icPassAreaName && currentStationData.icPassAreaName !== partnerStationData.icPassAreaName) {
                     return `エリアを跨ぐ計算はできません（${currentStationData.name}駅は${currentStationData.icPassAreaName}です）`;
                 }
             } else if (fieldName === "endStation" && startVal?.name) {
-                const partnerStationData = stationDatas.find(s => s.name === startVal.name);
+                const partnerStationData = stations.get(startVal.name);
                 if (partnerStationData?.icPassAreaName && currentStationData.icPassAreaName !== partnerStationData.icPassAreaName) {
                     return `エリアを跨ぐ計算はできません（${currentStationData.name}駅は${currentStationData.icPassAreaName}です）`;
                 }

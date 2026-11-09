@@ -209,12 +209,13 @@ const splitMethods = [
 
       const routePaths = ["/fare/ticket", "/fare/pass", "/split/route/ticket", "/split/route/pass"];
       const routeLinks = Array.from(this.querySelectorAll<HTMLAnchorElement>("a"))
-        .map(link => ({ link, pathname: new URL(link.href).pathname }))
+        .map(link => ({ link, pathname: link.pathname }))
         .filter(({ pathname }) => pathname === "/fare/ticket" || pathname === "/split/route/ticket");
       const updateRouteLinks = () => {
         const search = routePaths.includes(window.location.pathname) ? window.location.search : "";
         routeLinks.forEach(({ link, pathname }) => {
-          link.href = pathname + search;
+          const href = pathname + search;
+          if (link.getAttribute("href") !== href) link.href = href;
         });
       };
 
@@ -231,7 +232,10 @@ const splitMethods = [
         "[data-split-trigger]",
       )!;
 
+      let isSplitOpen = false;
       const setSplitOpen = (open: boolean) => {
+        if (isSplitOpen === open) return;
+        isSplitOpen = open;
         group.toggleAttribute("data-split-open", open);
         trigger.setAttribute("aria-expanded", String(open));
       };
@@ -258,15 +262,18 @@ const splitMethods = [
 
       trigger.onclick = (event) => {
         event.stopPropagation();
-        setSplitOpen(!group.hasAttribute("data-split-open"));
+        setSplitOpen(!isSplitOpen);
       };
 
       const toggle = this.querySelector<HTMLButtonElement>("[data-toggle]")!;
       const overlay = this.querySelector<HTMLButtonElement>("[data-overlay]")!;
       const menu = this.querySelector("nav")!;
 
+      let isOpen = false;
       const setOpen = (open: boolean) => {
         setSplitOpen(false);
+        if (isOpen === open) return;
+        isOpen = open;
 
         toggle.setAttribute("aria-expanded", String(open));
         toggle.setAttribute(
@@ -282,7 +289,7 @@ const splitMethods = [
       };
 
       toggle.onclick = () => {
-        setOpen(toggle.getAttribute("aria-expanded") !== "true");
+        setOpen(!isOpen);
       };
 
       overlay.onclick = () => setOpen(false);
@@ -300,7 +307,7 @@ const splitMethods = [
           return;
         }
 
-        if (group.hasAttribute("data-split-open")) {
+        if (isSplitOpen) {
           setSplitOpen(false);
           trigger.focus();
         }
@@ -308,14 +315,14 @@ const splitMethods = [
 
       desktop.addEventListener("change", () => setOpen(false), { signal });
 
-      setOpen(false);
-
-      this.cleanup = () => controller.abort();
+      this.cleanup = () => {
+        controller.abort();
+        setOpen(false);
+      };
     }
 
     disconnectedCallback() {
       this.cleanup?.();
-      document.body.style.overflow = "";
     }
   }
 
