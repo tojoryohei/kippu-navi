@@ -25,6 +25,10 @@ export default defineConfig({
     // 別ビルドを配信する既存サーバーで誤って検証しない。
     reuseExistingServer: false,
     timeout: 180_000,
-    env: { ASTRO_TELEMETRY_DISABLED: "1", ASTRO_PREVIEW_BACKGROUND: "1" },
+    env: {
+      ASTRO_TELEMETRY_DISABLED: "1",
+      ASTRO_PREVIEW_BACKGROUND: "1",
+      PUBLIC_SENTRY_DSN: "https://playwright@sentry.invalid/1",
+    },
   },
 });

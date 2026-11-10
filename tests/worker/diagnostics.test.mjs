@@ -11,10 +11,10 @@ const testDocument = new EventTarget();
 const sentryMock = {
   init(options) { sentryOptions = options; },
   withScope(run) {
-    scope = { contexts: {}, setContext(name, value) { Object.assign(this.contexts, { [name]: value }); }, setTag() {}, setTags() {}, setExtra() {}, setFingerprint(value) { this.fingerprint = value; } };
+    scope = { contexts: {}, tags: {}, setContext(name, value) { Object.assign(this.contexts, { [name]: value }); }, setTag(name, value) { Object.assign(this.tags, { [name]: value }); }, setTags(tags) { Object.assign(this.tags, tags); }, setExtra() {}, setFingerprint(value) { this.fingerprint = value; } };
     run(scope);
   },
-  captureException(error) { events.push({ error, contexts: structuredClone(scope.contexts), fingerprint: scope.fingerprint }); },
+  captureException(error) { events.push({ error, contexts: structuredClone(scope.contexts), tags: scope.tags, fingerprint: scope.fingerprint }); },
 };
 globalThis.diagnosticsTest = { sentry: sentryMock, posthog: { init() {}, capture(name, properties) { completed.push({ name, properties }); } } };
 const hooks = registerHooks({
@@ -102,6 +102,20 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
   assert.equal(completed[completed.length - 1].properties.worker_restart_count, 1);
   client.terminate();
 
+  const bootstrapClient = createEngineClient({ isolated: true });
+  const bootstrapPending = bootstrapClient.ensureReady('ticket').catch(error => error);
+  transport.onerror({});
+  analytics.captureSearchError(await bootstrapPending, context);
+  for (const event of events.slice(-2)) {
+    assert.equal(event.tags.worker_phase, 'before_start');
+    assert.equal(event.contexts.engine_diagnostics.workerPhase, 'before_start');
+    assert.equal(event.contexts.engine_diagnostics.workerUrl, '/_astro/split.worker-test.js');
+    assert.ok(event.contexts.engine_diagnostics.workerElapsedMs >= 0);
+  }
+  assert.equal(events.at(-2).fingerprint, undefined);
+  assert.deepEqual(events.at(-1).fingerprint, ['worker_runtime_failed', 'worker_bootstrap', 'ticket', 'none']);
+  bootstrapClient.terminate();
+
   // 配信版の解決はCloudflareに任せ、ブラウザでは別URLを取得しない。
   const oldUrl = 'https://example.test/engine/' + 'a'.repeat(64) + '/main.wasm';
   for (const status of [403, 404]) {
@@ -163,5 +177,5 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
   const event = { exception: { values: [{ type: 'RangeError', value: 'Maximum call stack size exceeded.' }] } };
   const result = sentryOptions.beforeSend(event);
   assert.equal(result.contexts.browser_diagnostics.webAssemblySupported, true);
-  assert.equal(events.length, 2);
+  assert.equal(events.length, before + 4);
 });

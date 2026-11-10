@@ -269,6 +269,7 @@ async function initializePassGraph() {
 }
 
 // 起動時に初期化開始
+postMessage({ type: 'initialization_progress', diagnostics: workerDiagnostics() });
 initWasm();
 
 onmessage = async (e: MessageEvent) => {

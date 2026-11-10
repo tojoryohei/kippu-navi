@@ -76,6 +76,9 @@ export interface ResourceAttempt {
 }
 
 export interface SearchDiagnostics {
+  workerPhase?: "before_start" | "initializing" | "after_ready";
+  workerElapsedMs?: number;
+  workerReadyCapabilities?: EngineCapability[];
   receivedBytes?: number;
   resourceUrl?: string;
   exception?: ExceptionDiagnostics;

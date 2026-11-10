@@ -149,6 +149,7 @@ function attachErrorDiagnostics(scope: Sentry.Scope, details: SearchErrorDetails
   const { diagnostics, ...summary } = details;
   scope.setContext("search_error", { ...summary, message: summary.message.slice(0, 1_000) });
   if (diagnostics) scope.setContext("engine_diagnostics", { ...copyDiagnostics(diagnostics) });
+  if (diagnostics?.workerPhase) scope.setTag("worker_phase", diagnostics.workerPhase);
 }
 
 function completedSearchProperties(context: SearchEventContext, outcome: SearchOutcome, errorCode?: string, result?: SearchResultAnalytics) {
