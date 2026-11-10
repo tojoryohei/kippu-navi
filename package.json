@@ -57,9 +57,14 @@
     "typescript": "^6.0.3",
     "yaml": "2.9.1"
   },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.5"
+    }
+  },
   "allowScripts": {
     "@sentry/cli": true,
-    "core-js@3.50.0": true,
+    "core-js": false,
     "fsevents@2.3.3": true
   }
 }
