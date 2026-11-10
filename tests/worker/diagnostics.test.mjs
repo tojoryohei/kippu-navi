@@ -116,6 +116,11 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
   assert.deepEqual(events.at(-1).fingerprint, ['worker_runtime_failed', 'worker_bootstrap', 'ticket', 'none']);
   bootstrapClient.terminate();
 
+  analytics.captureSearchError(new Error('通信環境を確認して、もう一度計算してください。'), context);
+  assert.equal(events.length, before + 4);
+  assert.equal(completed.at(-1).properties.outcome, 'business_error');
+  assert.equal(completed.at(-1).properties.error_code, 'communication_retry_required');
+
   // 配信版の解決はCloudflareに任せ、ブラウザでは別URLを取得しない。
   const oldUrl = 'https://example.test/engine/' + 'a'.repeat(64) + '/main.wasm';
   for (const status of [403, 404]) {

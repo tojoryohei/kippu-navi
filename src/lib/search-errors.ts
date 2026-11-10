@@ -14,6 +14,7 @@ export type SearchErrorCode =
   | "api_response_invalid"
   | "path_invalid"
   | "calculation_failed"
+  | "communication_retry_required"
   | "duplicate_route"
   | "fare_unregistered"
   | "unknown";
@@ -23,6 +24,7 @@ const INVALID_REQUEST_INTERVAL_ERROR = "再考：要求区間誤り";
 const UNREGISTERED_FARE_ERROR = "運賃が未登録です:";
 const PATH_NOT_FOUND_ERROR = "経路が見つかりませんでした";
 const DISCONNECTED_ROUTE_ERROR = "指定された区間はJR在来線のみで繋がっていません。経路入力検索を利用してください。";
+const COMMUNICATION_RETRY_MESSAGE = "通信環境を確認して、もう一度計算してください。";
 
 export function normalizeCalculationError(message: string): string {
   return message === PATH_NOT_FOUND_ERROR ? DISCONNECTED_ROUTE_ERROR : message;
@@ -30,6 +32,7 @@ export function normalizeCalculationError(message: string): string {
 
 export function classifyCalculationError(message: string, httpStatus?: number): SearchErrorCode {
   if (httpStatus === 422) return "path_invalid";
+  if (message === COMMUNICATION_RETRY_MESSAGE) return "communication_retry_required";
   if (message === DUPLICATE_ROUTE_ERROR) return "duplicate_route";
   if (message === INVALID_REQUEST_INTERVAL_ERROR) return "path_invalid";
   if (message === PATH_NOT_FOUND_ERROR || message === DISCONNECTED_ROUTE_ERROR) return "path_invalid";
@@ -110,7 +113,7 @@ export interface SearchErrorDetails {
   diagnostics?: SearchDiagnostics;
 }
 
-const BUSINESS_ERROR_CODES = new Set<SearchErrorCode>(["duplicate_route", "path_invalid", "fare_unregistered"]);
+const BUSINESS_ERROR_CODES = new Set<SearchErrorCode>(["duplicate_route", "path_invalid", "fare_unregistered", "communication_retry_required"]);
 
 export function isBusinessSearchError(details: SearchErrorDetails): boolean {
   return BUSINESS_ERROR_CODES.has(details.code)
@@ -148,11 +151,9 @@ export function isRetryableEngineError(error: unknown): error is SearchOperation
 export function formatEngineError(error: unknown): string {
   if (!(error instanceof SearchOperationError)) return error instanceof Error ? error.message : String(error);
   const details = error.details;
-  if (details.diagnostics?.resources?.some(resource => resource.abortReason === "network_idle")) {
-    return "通信環境を確認して、もう一度計算してください。";
-  }
-  if (details.code === "engine_asset_fetch_failed" || details.code === "worker_runtime_failed") {
-    return "通信環境を確認して、もう一度計算してください。";
+  if (details.code === "engine_asset_fetch_failed" || details.code === "worker_runtime_failed"
+    || details.diagnostics?.resources?.some(resource => resource.abortReason === "network_idle")) {
+    return COMMUNICATION_RETRY_MESSAGE;
   }
   if (isRetryableEngineError(error)) return "計算エンジンを準備できませんでした。もう一度計算してください。";
   return details.message;
