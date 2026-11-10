@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.11](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.10...kippu-navi-v5.11.11) (2026-11-10)
+
+
+### Bug Fixes
+
+* 計算Workerの診断と再計算案内のエラー分類を改善する ([#1039](https://github.com/tojoryohei/kippu-navi/issues/1039)) ([d9d4838](https://github.com/tojoryohei/kippu-navi/commit/d9d4838e8e5188533b7bcf6c393e39c6309ed348))
+
 ## [5.11.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.9...kippu-navi-v5.11.10) (2026-11-09)
 
 
