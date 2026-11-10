@@ -627,8 +627,9 @@ export default function Form({
                 }
                 // 3. エラーが返ってきた場合
                 else if (error) {
+                    const searchError = pendingErrorRef.current || new Error(error);
                     const runTrackingError = () => {
-                        if (context) captureSearchError(pendingErrorRef.current || new Error(error), context);
+                        if (context) captureSearchError(searchError, context);
                     };
 
                     if (typeof window.requestIdleCallback === "function") {

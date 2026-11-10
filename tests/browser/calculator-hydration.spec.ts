@@ -2,17 +2,31 @@ import { test, expect } from "../support/fixtures";
 
 const paths = ["/split/auto/ticket", "/split/auto/pass", "/split/auto/ic-pass", "/fare/ticket", "/fare/pass", "/split/route/ticket", "/split/route/pass"];
 
-test("Workerの初回読込失敗後に通常の計算ボタンから実WASMで計算する", async ({ page, context }) => {
+test("Workerの読込失敗を元の検索に記録し、通常の計算ボタンから実WASMで復旧する", async ({ page, context }) => {
   let loads = 0;
+  const searchErrorCodes: string[] = [];
   await context.route("**/*", route => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return route.abort();
-    if (/\/split\.worker[^/]*\.js$/.test(url.pathname) && ++loads === 1) return route.abort();
+    if (url.pathname === "/monitoring") {
+      const payload = route.request().postData()?.split("\n")[2];
+      if (payload) {
+        const event = JSON.parse(payload);
+        if (event.fingerprint) searchErrorCodes.push(event.fingerprint[0]);
+      }
+      return route.fulfill({ status: 200, json: {} });
+    }
+    if (/\/split\.worker[^/]*\.js$/.test(url.pathname) && ++loads <= 2) return route.abort();
     return route.continue();
   });
   await page.addInitScript(() => {
-    const state = window as unknown as { engineDiagnostics: { urls: string[]; locations: string[] } };
-    state.engineDiagnostics = { urls: [], locations: [] };
+    const state = window as unknown as { engineDiagnostics: { urls: string[]; locations: string[]; tracking: IdleRequestCallback[] } };
+    state.engineDiagnostics = { urls: [], locations: [], tracking: [] };
+    const requestIdle = window.requestIdleCallback.bind(window);
+    window.requestIdleCallback = (callback, options) => {
+      if (options) return requestIdle(callback, options);
+      return state.engineDiagnostics.tracking.push(callback);
+    };
     const NativeWorker = window.Worker;
     window.Worker = class extends NativeWorker {
       constructor(url: string | URL, options?: WorkerOptions) {
@@ -29,12 +43,23 @@ test("Workerの初回読込失敗後に通常の計算ボタンから実WASMで�
   await expect(calculate).toBeEnabled();
   await expect(calculate).not.toHaveText('計算を再試行');
   await calculate.click();
+  await expect(page.getByText("通信環境を確認して、もう一度計算してください。", { exact: true })).toBeVisible();
+  await expect.poll(() => page.evaluate(() =>
+    (window as unknown as { engineDiagnostics: { tracking: IdleRequestCallback[] } }).engineDiagnostics.tracking.length
+  )).toBeGreaterThan(0);
+  await calculate.click();
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
-  const info = await page.evaluate(() => (window as unknown as { engineDiagnostics: { urls: string[]; locations: string[] } }).engineDiagnostics);
-  expect(info.urls).toHaveLength(2);
+  const info = await page.evaluate(() => {
+    const { urls, locations, tracking } = (window as unknown as { engineDiagnostics: { urls: string[]; locations: string[]; tracking: IdleRequestCallback[] } }).engineDiagnostics;
+    for (const callback of tracking.splice(0)) callback({ didTimeout: false, timeRemaining: () => 50 });
+    return { urls, locations };
+  });
+  await expect.poll(() => searchErrorCodes).toEqual(["worker_runtime_failed"]);
+  expect(info.urls).toHaveLength(3);
   expect(info.urls[0]).toMatch(/\/_astro\/split\.worker.+\.js$/);
   expect(info.urls[1]).toBe(info.urls[0]);
-  expect(info.locations.some(location => location.endsWith(info.urls[1]))).toBe(true);
+  expect(info.urls[2]).toBe(info.urls[0]);
+  expect(info.locations.some(location => location.endsWith(info.urls[2]))).toBe(true);
 });
 
 test("Reactの初期化途中に記事へ移動してもエラーにならない", async ({ page }) => {

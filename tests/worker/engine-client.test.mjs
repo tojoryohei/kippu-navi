@@ -114,8 +114,15 @@ test('実行中要求がある場合は再起動せず計算を再送しない',
   const a = client();
   a.restart();
   const b = client();
+  workers[0].reply({ type: 'ready', capability: 'ticket' });
   a.postMessage({ type: 'calculate', payload: { requestId: 'calculation' } });
-  const result = assert.rejects(b.ensureReady('pass'), error => error.details.diagnostics.recoverySuppressed === 'active_requests');
+  const result = assert.rejects(b.ensureReady('pass'), error => {
+    const { diagnostics } = error.details;
+    assert.equal(diagnostics.recoverySuppressed, 'active_requests');
+    assert.equal(diagnostics.workerPhase, 'after_ready');
+    assert.deepEqual(diagnostics.workerReadyCapabilities, ['ticket']);
+    return true;
+  });
   a.terminate();
   workers[0].fail({ message: '', error: new TypeError('original'), filename: '/worker.js', lineno: 4, colno: 2 });
   await result;
@@ -128,11 +135,18 @@ test('実行中要求がある場合は再起動せず計算を再送しない',
 test('手動再開後は古いWorkerの遅延通知を無視する', async t => {
   const { workers, client } = setup(t);
   const a = client();
-  const failed = assert.rejects(a.ensureReady('ticket'));
+  const failed = assert.rejects(a.ensureReady('ticket'), error => {
+    const { diagnostics } = error.details;
+    assert.equal(diagnostics.workerPhase, 'initializing');
+    assert.equal(diagnostics.phases.wasm.phase, 'wasm_fetch');
+    return true;
+  });
+  workers[0].reply({ type: 'initialization_progress', diagnostics: { phases: { wasm: { phase: 'wasm_fetch', state: 'started', elapsedMs: 5 } } } });
   workers[0].fail({});
   await failed;
   a.restart();
   const pending = a.ensureReady('ticket');
+  workers[0].reply({ type: 'initialization_progress' });
   workers[0].reply({ type: 'ready', capability: 'ticket' });
   workers[0].fail({ message: 'late' });
   assert.equal(a.getState('ticket').status, 'preparing');

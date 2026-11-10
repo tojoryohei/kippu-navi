@@ -108,6 +108,9 @@ function createEnginePool(isolated = false) {
   function initialize() {
     if (worker) return;
     const currentGeneration = ++generation;
+    const workerStartedAt = performance.now();
+    let workerReportedProgress = false;
+    const readyCapabilities = new Set<EngineCapability>();
     lastProgressAt = performance.now();
     if (!cycleStartedAt) cycleStartedAt = lastProgressAt;
     publish();
@@ -123,10 +126,12 @@ function createEnginePool(isolated = false) {
       if (currentGeneration !== generation) return;
       const { type, requestId, capability } = event.data;
       if (type === "initialization_progress") {
+        workerReportedProgress = true;
         runtimeDiagnostics = diagnostics(event.data.diagnostics);
         lastProgressAt = performance.now();
         for (const cap of CAPABILITIES) { clearTimer(cap); armTimeout(cap); }
       } else if (type === "ready") {
+        if (waiters.has(capability)) readyCapabilities.add(capability);
         settleReady(capability, Number(event.data.retryCount || 0), event.data.initialError, event.data.diagnostics);
         clients.forEach(client => notify(client, event.data));
       } else if (type === "initialization_error") {
@@ -139,7 +144,18 @@ function createEnginePool(isolated = false) {
     };
     worker.onerror = event => {
       if (currentGeneration !== generation) return;
-      const details = withDiagnostics({ message: event.message || "計算エンジンの読み込みに失敗しました。", code: "worker_runtime_failed", source: "worker", stage: "worker_bootstrap", exceptionName: "ErrorEvent", retryable: true, retryCount: 0, workerRestartCount, diagnostics: diagnostics({ exception: exceptionDiagnostics(event.error, event) }) });
+      const workerPhase = readyCapabilities.size > 0 ? "after_ready" : workerReportedProgress ? "initializing" : "before_start";
+      const details = withDiagnostics({
+        message: event.message || "計算エンジンの読み込みに失敗しました。",
+        code: "worker_runtime_failed", source: "worker", stage: "worker_bootstrap",
+        exceptionName: "ErrorEvent", retryable: true, retryCount: 0, workerRestartCount,
+        diagnostics: {
+          workerPhase,
+          workerElapsedMs: Math.round(performance.now() - workerStartedAt),
+          workerReadyCapabilities: [...readyCapabilities],
+          exception: exceptionDiagnostics(event.error, event),
+        },
+      });
       if (requests.size > 0) details.diagnostics.recoverySuppressed = "active_requests";
       captureUnhandledError(new SearchOperationError(details), "calculation_web_worker");
       for (const request of requests.values()) notify(request.client, { type: "error", requestId: request.requestId, error: details.message, details });
