@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.13](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.12...kippu-navi-v5.11.13) (2026-11-11)
+
+
+### Bug Fixes
+
+* 定期券の経由特例で終端駅を常に再評価 ([#1046](https://github.com/tojoryohei/kippu-navi/issues/1046)) ([7e17cf5](https://github.com/tojoryohei/kippu-navi/commit/7e17cf5ec964f48953d7aacc49bed4fc721f8ee5))
+
 ## [5.11.12](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.11...kippu-navi-v5.11.12) (2026-11-11)
 
 
