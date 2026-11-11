@@ -23,7 +23,7 @@ const DUPLICATE_ROUTE_ERROR = "経路が重複しています。";
 const INVALID_REQUEST_INTERVAL_ERROR = "再考：要求区間誤り";
 const UNREGISTERED_FARE_ERROR = "運賃が未登録です:";
 const PATH_NOT_FOUND_ERROR = "経路が見つかりませんでした";
-const DISCONNECTED_ROUTE_ERROR = "指定された区間はJR在来線のみで繋がっていません。経路入力検索を利用してください。";
+const DISCONNECTED_ROUTE_ERROR = "指定された駅間はJR在来線のみで繋がっていません。経路入力検索を利用してください。";
 const COMMUNICATION_RETRY_MESSAGE = "通信環境を確認して、もう一度計算してください。";
 
 export function normalizeCalculationError(message: string): string {
@@ -123,7 +123,7 @@ export function isBusinessSearchError(details: SearchErrorDetails): boolean {
 export class SearchOperationError extends Error {
   readonly details: SearchErrorDetails;
 
-  constructor(details: SearchErrorDetails) {
+  constructor (details: SearchErrorDetails) {
     super(details.message);
     this.name = details.exceptionName || "SearchOperationError";
     this.details = details;
