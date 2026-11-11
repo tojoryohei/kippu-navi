@@ -190,7 +190,7 @@ jobs:
       - name: Install Renovate validator
         # renovate: datasource=npm depName=renovate
         env:
-          RENOVATE_VALIDATOR_VERSION: 44.221.6
+          RENOVATE_VALIDATOR_VERSION: 44.222.4
         run: npm install --prefix "$RUNNER_TEMP/renovate-validator" --ignore-scripts --no-audit --no-fund "renovate@$RENOVATE_VALIDATOR_VERSION"
       - name: Validate Renovate config and schedule
         env:
