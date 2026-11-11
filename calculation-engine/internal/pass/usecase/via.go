@@ -6,9 +6,8 @@ import (
 
 // viaBypassRule は経由印字のための特例区間ルールを定義します。
 type viaBypassRule struct {
-	Pattern     []string // 特例としてマッチさせる駅の並び
-	Vias        []string // 追加する経由名
-	EvaluateEnd bool     // true: 終端駅を次のループで評価(第69条), false: 終端駅もスキップ(東京近郊)
+	Pattern []string // 特例としてマッチさせる駅の並び
+	Vias    []string // 追加する経由名
 
 	// 前の駅の条件
 	AnyPrev     bool     // trueなら前の駅を問わない
@@ -22,140 +21,119 @@ type viaBypassRule struct {
 // ドメイン知識（ルール）を宣言的に定義
 var viaRules = []viaBypassRule{
 	// ==========================================
-	// 第69条 経路特定区間 (EvaluateEnd = true)
+	// 第69条 経路特定区間
 	// ==========================================
 
 	// (2) 日暮里〜赤羽
 	{
-		Pattern: []string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"}, Vias: []string{"王子", "尾久"}, EvaluateEnd: true,
+		Pattern: []string{"日暮里", "西日暮里", "田端", "上中里", "王子", "東十条", "赤羽"}, Vias: []string{"王子", "尾久"},
 		PrevAllowed: []string{"鶯谷", "三河島"}, NextAllowed: []string{"川口", "北赤羽", "十条"},
 	},
 	{
-		Pattern: []string{"赤羽", "東十条", "王子", "上中里", "田端", "西日暮里", "日暮里"}, Vias: []string{"王子", "尾久"}, EvaluateEnd: true,
+		Pattern: []string{"赤羽", "東十条", "王子", "上中里", "田端", "西日暮里", "日暮里"}, Vias: []string{"王子", "尾久"},
 		PrevAllowed: []string{"川口", "北赤羽", "十条"}, NextAllowed: []string{"鶯谷", "三河島"},
 	},
 	// (3) 赤羽〜大宮
 	{
-		Pattern: []string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"}, Vias: []string{"川口", "北赤羽"}, EvaluateEnd: true,
+		Pattern: []string{"赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮"}, Vias: []string{"川口", "北赤羽"},
 		PrevAllowed: []string{"尾久", "東十条", "十条"}, NextAllowed: []string{"土呂", "宮原", "（川）日進"},
 	},
 	{
-		Pattern: []string{"大宮", "さいたま新都心", "与野", "北浦和", "浦和", "南浦和", "蕨", "西川口", "川口", "赤羽"}, Vias: []string{"川口", "北赤羽"}, EvaluateEnd: true,
+		Pattern: []string{"大宮", "さいたま新都心", "与野", "北浦和", "浦和", "南浦和", "蕨", "西川口", "川口", "赤羽"}, Vias: []string{"川口", "北赤羽"},
 		PrevAllowed: []string{"土呂", "宮原", "（川）日進"}, NextAllowed: []string{"尾久", "東十条", "十条"},
 	},
 	// (4) 品川〜鶴見
 	{
-		Pattern: []string{"品川", "大井町", "大森", "蒲田", "川崎", "鶴見"}, Vias: []string{"東海道線"}, EvaluateEnd: true,
+		Pattern: []string{"品川", "大井町", "大森", "蒲田", "川崎", "鶴見"}, Vias: []string{"東海道線"},
 		PrevAllowed: []string{"高輪ゲートウェイ", "大崎"}, NextAllowed: []string{"新子安", "国道", "羽沢横浜国大"},
 	},
 	{
-		Pattern: []string{"鶴見", "川崎", "蒲田", "大森", "大井町", "品川"}, Vias: []string{"東海道線"}, EvaluateEnd: true,
+		Pattern: []string{"鶴見", "川崎", "蒲田", "大森", "大井町", "品川"}, Vias: []string{"東海道線"},
 		PrevAllowed: []string{"新子安", "国道", "羽沢横浜国大"}, NextAllowed: []string{"高輪ゲートウェイ", "大崎"},
 	},
 
 	// ==========================================
-	// 東京ー秋葉原ー錦糸町　 (EvaluateEnd = true)
+	// 東京ー秋葉原ー錦糸町
 	// ==========================================
 	// (5)東京～秋葉原
 	{
-		Pattern: []string{"東京", "神田", "秋葉原"}, Vias: []string{"[近]東北"}, EvaluateEnd: true,
+		Pattern: []string{"東京", "神田", "秋葉原"}, Vias: []string{"[近]東北"},
 		PrevAllowed: []string{"有楽町", "八丁堀", "新日本橋"}, NextAllowed: []string{"神田", "御茶ノ水"},
 	},
 	{
-		Pattern: []string{"秋葉原", "神田", "東京"}, Vias: []string{"[近]東北"}, EvaluateEnd: true,
+		Pattern: []string{"秋葉原", "神田", "東京"}, Vias: []string{"[近]東北"},
 		PrevAllowed: []string{"有楽町", "八丁堀", "新日本橋"}, NextAllowed: []string{"馬喰町", "亀戸"},
 	},
 	// (6)秋葉原～錦糸町
 	{
-		Pattern: []string{"秋葉原", "浅草橋", "両国", "錦糸町"}, Vias: []string{"両国"}, EvaluateEnd: true,
+		Pattern: []string{"秋葉原", "浅草橋", "両国", "錦糸町"}, Vias: []string{"両国"},
 		PrevAllowed: []string{"神田", "御茶ノ水", "御徒町"}, NextAllowed: []string{"馬喰町", "亀戸"},
 	},
 	{
-		Pattern: []string{"錦糸町", "両国", "浅草橋", "秋葉原"}, Vias: []string{"両国"}, EvaluateEnd: true,
+		Pattern: []string{"錦糸町", "両国", "浅草橋", "秋葉原"}, Vias: []string{"両国"},
 		PrevAllowed: []string{"馬喰町", "亀戸"}, NextAllowed: []string{"神田", "御茶ノ水", "御徒町"},
 	},
 	// (7)錦糸町～東京
 	{
-		Pattern: []string{"錦糸町", "馬喰町", "新日本橋", "東京"}, Vias: []string{"馬喰町"}, EvaluateEnd: true,
+		Pattern: []string{"錦糸町", "馬喰町", "新日本橋", "東京"}, Vias: []string{"馬喰町"},
 		PrevAllowed: []string{"両国", "亀戸"}, NextAllowed: []string{"神田", "有楽町", "八丁堀"},
 	},
 	{
-		Pattern: []string{"東京", "新日本橋", "馬喰町", "錦糸町"}, Vias: []string{"馬喰町"}, EvaluateEnd: true,
+		Pattern: []string{"東京", "新日本橋", "馬喰町", "錦糸町"}, Vias: []string{"馬喰町"},
 		PrevAllowed: []string{"神田", "有楽町", "八丁堀"}, NextAllowed: []string{"両国", "亀戸"},
 	},
 	// (8)神田->東京
 	{
-		Pattern: []string{"神田", "東京"}, Vias: []string{}, EvaluateEnd: true,
+		Pattern: []string{"神田", "東京"}, Vias: []string{},
 		PrevAllowed: []string{"御茶ノ水", "秋葉原"}, NextAllowed: []string{"有楽町", "八丁堀", "新日本橋"},
 	},
 
 	// ==========================================
-	// 神田ー秋葉原ー御茶ノ水 (EvaluateEnd = false)
+	// 神田ー秋葉原ー御茶ノ水
 	// ==========================================
 	// (9) 東北 (東京〜秋葉原)
 	{
-		Pattern: []string{"東京", "神田", "秋葉原"}, Vias: []string{"[近]東北"}, EvaluateEnd: false,
+		Pattern: []string{"東京", "神田", "秋葉原"}, Vias: []string{"[近]東北"},
 		AnyPrev: true, NextAllowed: []string{"御徒町", "浅草橋"},
 	},
 	{
-		Pattern: []string{"神田", "秋葉原"}, Vias: []string{"[近]東北"}, EvaluateEnd: false,
+		Pattern: []string{"神田", "秋葉原"}, Vias: []string{"[近]東北"},
 		NextAllowed: []string{"御徒町", "浅草橋"}, // i=0 から開始する場合用
 	},
 	{
-		Pattern: []string{"秋葉原", "神田", "東京"}, Vias: []string{"[近]東北"}, EvaluateEnd: false,
+		Pattern: []string{"秋葉原", "神田", "東京"}, Vias: []string{"[近]東北"},
 		PrevAllowed: []string{"御徒町", "浅草橋"}, AnyNext: true,
 	},
 	{
-		Pattern: []string{"秋葉原", "神田"}, Vias: []string{"[近]東北"}, EvaluateEnd: false,
+		Pattern: []string{"秋葉原", "神田"}, Vias: []string{"[近]東北"},
 		PrevAllowed: []string{"御徒町", "浅草橋"}, // 終端で終わる場合用
 	},
 	// (10) [近]中央 (東京〜御茶ノ水)
 	{
-		Pattern: []string{"東京", "神田", "御茶ノ水"}, Vias: []string{"[近]中央"}, EvaluateEnd: false,
+		Pattern: []string{"東京", "神田", "御茶ノ水"}, Vias: []string{"[近]中央"},
 		AnyPrev: true, NextAllowed: []string{"水道橋"},
 	},
 	{
-		Pattern: []string{"神田", "御茶ノ水"}, Vias: []string{"[近]中央"}, EvaluateEnd: false,
+		Pattern: []string{"神田", "御茶ノ水"}, Vias: []string{"[近]中央"},
 		NextAllowed: []string{"水道橋"},
 	},
 	{
-		Pattern: []string{"御茶ノ水", "神田", "東京"}, Vias: []string{"[近]中央"}, EvaluateEnd: false,
+		Pattern: []string{"御茶ノ水", "神田", "東京"}, Vias: []string{"[近]中央"},
 		PrevAllowed: []string{"水道橋"}, AnyNext: true,
 	},
 	{
-		Pattern: []string{"御茶ノ水", "神田"}, Vias: []string{"[近]中央"}, EvaluateEnd: false,
+		Pattern: []string{"御茶ノ水", "神田"}, Vias: []string{"[近]中央"},
 		PrevAllowed: []string{"水道橋"},
 	},
-	// (11) [近]総武 (浅草橋〜水道橋)
+	// (11) [近]総武 (秋葉原〜御茶ノ水)
+	// 隣接する特例からも接続できるよう、分岐駅間を判定する。
 	{
-		Pattern: []string{"浅草橋", "秋葉原", "御茶ノ水", "水道橋"}, Vias: []string{"[近]総武"}, EvaluateEnd: false,
-		AnyPrev: true, AnyNext: true,
+		Pattern: []string{"秋葉原", "御茶ノ水"}, Vias: []string{"[近]総武"},
+		PrevAllowed: []string{"御徒町", "浅草橋"}, NextAllowed: []string{"水道橋"},
 	},
 	{
-		Pattern: []string{"秋葉原", "御茶ノ水", "水道橋"}, Vias: []string{"[近]総武"}, EvaluateEnd: false,
-		AnyNext: true,
-	},
-	{
-		Pattern: []string{"浅草橋", "秋葉原", "御茶ノ水"}, Vias: []string{"[近]総武"}, EvaluateEnd: false,
-		AnyPrev: true,
-	},
-	{
-		Pattern: []string{"秋葉原", "御茶ノ水"}, Vias: []string{"[近]総武"}, EvaluateEnd: false,
-	},
-	{
-		Pattern: []string{"水道橋", "御茶ノ水", "秋葉原", "浅草橋"}, Vias: []string{"[近]総武"}, EvaluateEnd: false,
-		AnyPrev: true, AnyNext: true,
-	},
-	{
-		Pattern: []string{"御茶ノ水", "秋葉原", "浅草橋"}, Vias: []string{"[近]総武"}, EvaluateEnd: false,
-		AnyNext: true,
-	},
-	{
-		Pattern: []string{"水道橋", "御茶ノ水", "秋葉原"}, Vias: []string{"[近]総武"}, EvaluateEnd: false,
-		AnyPrev: true,
-	},
-	{
-		Pattern: []string{"御茶ノ水", "秋葉原"}, Vias: []string{"[近]総武"}, EvaluateEnd: false,
+		Pattern: []string{"御茶ノ水", "秋葉原"}, Vias: []string{"[近]総武"},
+		PrevAllowed: []string{"水道橋"}, NextAllowed: []string{"浅草橋", "御徒町"},
 	},
 }
 
@@ -218,12 +196,8 @@ func GetVia(
 func evaluateBypassViaRules(path []string, i int) ([]string, int, bool) {
 	for _, rule := range viaRules {
 		if isViaRuleMatch(path, i, rule) {
-			skipCount := 0
-			if rule.EvaluateEnd {
-				skipCount = len(rule.Pattern) - 2
-			} else {
-				skipCount = len(rule.Pattern) - 1
-			}
+			// 終端駅を次のループで再評価し、後続の特例や分岐駅の印字を省略しない。
+			skipCount := len(rule.Pattern) - 2
 			if skipCount < 0 {
 				skipCount = 0
 			}
