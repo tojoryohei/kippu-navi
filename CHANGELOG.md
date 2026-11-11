@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.12](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.11...kippu-navi-v5.11.12) (2026-11-11)
+
+
+### Bug Fixes
+
+* 東京山手線内の対象駅を修正 ([#1043](https://github.com/tojoryohei/kippu-navi/issues/1043)) ([3280152](https://github.com/tojoryohei/kippu-navi/commit/32801527ad07549dd6b148831e7bc9a8c8674720))
+
 ## [5.11.11](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.10...kippu-navi-v5.11.11) (2026-11-10)
 
 
