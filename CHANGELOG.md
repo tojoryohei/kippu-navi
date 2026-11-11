@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.14](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.13...kippu-navi-v5.11.14) (2026-11-11)
+
+
+### Bug Fixes
+
+* 新幹線接続時の第69条の経由印字を修正 ([#1048](https://github.com/tojoryohei/kippu-navi/issues/1048)) ([af07e67](https://github.com/tojoryohei/kippu-navi/commit/af07e67aa789273a9aff4f9fcb1a7d7a775e06af))
+
 ## [5.11.13](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.12...kippu-navi-v5.11.13) (2026-11-11)
 
 
