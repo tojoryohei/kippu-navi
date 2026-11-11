@@ -345,131 +345,84 @@ func NewPostZoneCleanupCorrector() *SpecificSectionCorrector {
 	}
 }
 
-func (c *SpecificSectionCorrector) Correct(path []int, g graph.Graph) ([]int, error) {
-	if len(path) == 0 {
-		return path, nil
-	}
+// sectionMatch は判定用駅列で一致した規則と区間を表す。
+type sectionMatch struct {
+	index, start, end int
+	reverse           bool
+}
 
-	original := path
+// matchingPath は規則の判定に使う駅列と元の辺への対応を返す。
+func (c *SpecificSectionCorrector) matchingPath(path []int, g graph.Graph) ([]int, []int) {
+	if c.projectShinkansen {
+		return NewShinkansenOverlapCorrector().expand(path, g)
+	}
 	origins := make([]int, len(path))
 	for i := range origins {
 		origins[i] = i - 1
 	}
-	if c.projectShinkansen {
-		path, origins = NewShinkansenOverlapCorrector().expand(path, g)
+	return path, origins
+}
+
+func (c *SpecificSectionCorrector) matches(names []string) []sectionMatch {
+	var matches []sectionMatch
+	for i := 0; i < len(names); i++ {
+		for index, rule := range c.rules {
+			if i+len(rule.from) > len(names) {
+				continue
+			}
+			forward, reverse := true, true
+			for j, name := range rule.from {
+				forward = forward && names[i+j] == name
+				reverse = reverse && names[i+j] == rule.from[len(rule.from)-1-j]
+			}
+			if !forward && !reverse {
+				continue
+			}
+			before, after := rule.validBefore, rule.validAfter
+			if reverse && !forward {
+				before, after = after, before
+			}
+			if i > 0 && !containsStation(before, names[i-1]) || i+len(rule.from) < len(names) && !containsStation(after, names[i+len(rule.from)]) {
+				continue
+			}
+			matches = append(matches, sectionMatch{index, i, i + len(rule.from) - 1, reverse && !forward})
+			i += len(rule.from) - 1
+			break
+		}
 	}
+	return matches
+}
+
+// matchingSections は経路表現の展開と規則の判定を共通化する。
+func (c *SpecificSectionCorrector) matchingSections(path []int, g graph.Graph) ([]int, []int, []sectionMatch) {
+	projected, origins := c.matchingPath(path, g)
+	names := make([]string, len(projected))
+	for i, id := range projected {
+		names[i] = g.GetName(id)
+	}
+	return projected, origins, c.matches(names)
+}
+
+func (c *SpecificSectionCorrector) Correct(path []int, g graph.Graph) ([]int, error) {
+	if len(path) == 0 {
+		return path, nil
+	}
+	projected, origins, matches := c.matchingSections(path, g)
 	var edits []pathEdit
-
-	for i := 0; i < len(path); {
-		matched := false
-		for _, rule := range c.rules {
-			if i+len(rule.from) <= len(path) {
-				// 順方向マッチング
-				matchFwd := true
-				for j, name := range rule.from {
-					if g.GetName(path[i+j]) != name {
-						matchFwd = false
-						break
-					}
-				}
-
-				// 逆方向マッチング
-				matchRev := false
-				if !matchFwd {
-					matchRev = true
-					for j, name := range rule.from {
-						if g.GetName(path[i+(len(rule.from)-1-j)]) != name {
-							matchRev = false
-							break
-						}
-					}
-				}
-
-				if matchFwd || matchRev {
-					// 「以遠（〇〇方面）」の条件（外側に接続する駅の制限）をチェックする
-					validDirection := true
-
-					var requiredBefore, requiredAfter []string
-					if matchFwd {
-						requiredBefore = rule.validBefore
-						requiredAfter = rule.validAfter
-					} else {
-						requiredBefore = rule.validAfter
-						requiredAfter = rule.validBefore
-					}
-
-					// パス内に進入駅（from[0]の手前）が存在する場合、それが許可された駅かチェック
-					if i > 0 {
-						if len(requiredBefore) == 0 {
-							validDirection = false // 空なら外側に駅が存在してはいけない
-						} else {
-							beforeName := g.GetName(path[i-1])
-							found := false
-							for _, valid := range requiredBefore {
-								if beforeName == valid {
-									found = true
-									break
-								}
-							}
-							if !found {
-								validDirection = false
-							}
-						}
-					}
-
-					// パス内に退出駅（from[末尾]の次）が存在する場合、それが許可された駅かチェック
-					endIdx := i + len(rule.from)
-					if endIdx < len(path) {
-						if len(requiredAfter) == 0 {
-							validDirection = false // 空なら外側に駅が存在してはいけない
-						} else {
-							afterName := g.GetName(path[endIdx])
-							found := false
-							for _, valid := range requiredAfter {
-								if afterName == valid {
-									found = true
-									break
-								}
-							}
-							if !found {
-								validDirection = false
-							}
-						}
-					}
-
-					if !validDirection {
-						// 条件を満たさないのでこのルールの適用を見送る
-						continue
-					}
-
-					// 置換範囲を記録し、関係しない新幹線区間は保持する。
-					var replacement []int
-					if matchFwd {
-						for _, name := range rule.to {
-							if id, ok := g.GetID(name); ok {
-								replacement = append(replacement, id)
-							}
-						}
-					} else {
-						// 逆方向の場合は ToPath も逆順にする
-						for j := len(rule.to) - 1; j >= 0; j-- {
-							if id, ok := g.GetID(rule.to[j]); ok {
-								replacement = append(replacement, id)
-							}
-						}
-					}
-					edits = append(edits, pathEdit{i, i + len(rule.from) - 1, replacement})
-					i += len(rule.from)
-					matched = true
-					break
-				}
+	for _, match := range matches {
+		names := c.rules[match.index].to
+		if match.reverse {
+			names = reverseStrings(names)
+		}
+		var replacement []int
+		for _, name := range names {
+			if id, ok := g.GetID(name); ok {
+				replacement = append(replacement, id)
 			}
 		}
-		if !matched {
-			i++
-		}
+		edits = append(edits, pathEdit{match.start, match.end, replacement})
 	}
-	return applyProjectedEdits(original, path, origins, edits), nil
+	return applyProjectedEdits(path, projected, origins, edits), nil
 }
 
 // --- ShinkansenOverlapCorrector ---

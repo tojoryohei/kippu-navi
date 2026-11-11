@@ -1065,3 +1065,55 @@ var rule69ViaFixtures = map[string]struct{ from, to []string }{
 	"大阪": {[]string{"大阪", "（環）福島", "野田", "西九条", "弁天町", "大正", "芦原橋", "今宮", "新今宮", "天王寺"}, []string{"大阪", "天満", "桜ノ宮", "京橋", "大阪城公園", "森ノ宮", "玉造", "鶴橋", "桃谷", "寺田町", "天王寺"}},
 	"呉":  {[]string{"三原", "須波", "安芸幸崎", "忠海", "安芸長浜", "大乗", "竹原", "吉名", "安芸津", "風早", "安浦", "安登", "安芸川尻", "仁方", "広", "新広", "安芸阿賀", "呉", "川原石", "吉浦", "かるが浜", "天応", "呉ポートピア", "小屋浦", "水尻", "坂", "矢野", "海田市"}, []string{"三原", "本郷", "河内", "（陽）入野", "白市", "西高屋", "（陽）西条", "寺家", "八本松", "瀬野", "中野東", "安芸中野", "海田市"}},
 }
+
+func TestRule69ViaShinkansenDirection(t *testing.T) {
+	g, err := (&graphio.JSONLoader{}).Load(graphdata.GetEdgesReader())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, dest := range []struct {
+		names []string
+		line  string
+		end   string
+	}{
+		{[]string{"小山", "宇都宮"}, "トホシ", "宇都宮"},
+		{[]string{"熊谷"}, "シヨシ", "熊谷"},
+	} {
+		for _, reverse := range []bool{false, true} {
+			names := append([]string{"池袋", "板橋", "十条", "赤羽", "北赤羽", "浮間舟渡", "戸田公園", "（北）戸田", "北戸田", "武蔵浦和", "中浦和", "南与野", "与野本町", "北与野", "大宮"}, dest.names...)
+			lines := make([]string, len(names)-1)
+			for i := range lines {
+				lines[i] = "トウホ４"
+				if i < 3 {
+					lines[i] = "アカハネ"
+				}
+				if i >= 14 {
+					lines[i] = dest.line
+				}
+			}
+			want := []string{"赤羽線", "大宮", "新幹線", dest.end}
+			if reverse {
+				names = reverseStrings(names)
+				lines = reverseStrings(lines)
+				want = []string{dest.end, "新幹線", "大宮", "赤羽線"}
+			}
+			path := make([]int, len(names))
+			steps := make([]ViaStep, len(names))
+			for i, name := range names {
+				var ok bool
+				path[i], ok = g.GetID(name)
+				if !ok {
+					t.Fatalf("駅が存在しません: %s", name)
+				}
+				steps[i].StationName = name
+				if i < len(lines) {
+					steps[i].LineName = lines[i]
+				}
+			}
+			got := GetFareViaForResultWithSections(steps, path, g, nil)
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("%s 逆方向=%v: 経由=%v、期待値=%v", dest.end, reverse, got, want)
+			}
+		}
+	}
+}
