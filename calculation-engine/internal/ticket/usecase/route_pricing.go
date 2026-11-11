@@ -38,7 +38,7 @@ func (c *RouteTicketCalculator) CalculateWithPricing(path []int, steps []ViaStep
 		if e != nil {
 			return 0, e
 		}
-		return options.price(base).TotalAmount(), nil
+		return base.TotalAmount(), nil
 	})
 	evalMode := mode
 	if mode == "cheapest" {
@@ -121,8 +121,7 @@ func (c *RouteTicketCalculator) CalculateWithPricing(path []int, steps []ViaStep
 	return best.fare, nil
 }
 
-// pricingCorrector は共有パイプラインを変更せず、近郊区間の比較にも利用者の
-// 運賃を使う。その他の補正器は読み取り専用で共有できる。
+// pricingCorrector は共有パイプラインを変更せず、近郊区間の候補を無割引の大人運賃で比較する。その他の補正器は読み取り専用で共有できる。
 func pricingCorrector(corrector PathCorrector, evaluate func([]int) (int, error)) PathCorrector {
 	switch value := corrector.(type) {
 	case *PipelineCorrector:
@@ -132,7 +131,7 @@ func pricingCorrector(corrector PathCorrector, evaluate func([]int) (int, error)
 		}
 		return NewPipelineCorrector(children...)
 	case *SuburbanAreaCorrector:
-		return &SuburbanAreaCorrector{fareEval: evaluate, evaluateWholeRoute: true}
+		return NewSuburbanAreaCorrector(evaluate)
 	default:
 		return corrector
 	}

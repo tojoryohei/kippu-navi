@@ -76,7 +76,7 @@ func TestPricingComparesExistingExtensionsAfterDiscount(t *testing.T) {
 	}
 }
 
-func TestPricingSuburbanCompanyConditionIncludesBothJRSides(t *testing.T) {
+func TestPricingSuburbanComparesUndiscountedAdultFares(t *testing.T) {
 	g := graph.NewGraph(5)
 	addFareExtensionEdge(g, "A", "B", 80, domain.JRCentral)
 	addFareExtensionEdge(g, "A", "X", 50, domain.JREast)
@@ -96,12 +96,25 @@ func TestPricingSuburbanCompanyConditionIncludesBothJRSides(t *testing.T) {
 	}
 	calc := pricingTestCalculator(t, g, map[string]int{"A B": 500, "A X B": 700, "C D": 200, "A B C D": 1000, "A X B C D": 1100})
 	calc.corrector = NewSuburbanAreaCorrector(nil)
-	path := []int{g.GetOrAddID("A"), g.GetOrAddID("B"), g.GetOrAddID("C"), g.GetOrAddID("D")}
-	steps := []ViaStep{{StationName: "A"}, {StationName: "B"}, {StationName: "C"}, {StationName: "D"}}
-	got, err := calc.CalculateWithPricing(path, steps, "normal", TicketPricingOptions{DiscountID: "east40"})
-	// 東日本側だけを先に割引すると遠回りを選ぶが、私鉄の先に東海があるので全体では割引不可。
-	if err != nil || got.Fare != 1000 || got.DiscountApplied {
-		t.Fatalf("JR全体の会社条件で比較していない: %+v、%v", got, err)
+	for _, tc := range []struct {
+		names    []string
+		wantFare int
+	}{
+		{[]string{"A", "B"}, 500},
+		{[]string{"A", "B", "C", "D"}, 1000},
+	} {
+		var path []int
+		var steps []ViaStep
+		for _, name := range tc.names {
+			path = append(path, g.GetOrAddID(name))
+			steps = append(steps, ViaStep{StationName: name})
+		}
+		got, err := calc.CalculateWithPricing(path, steps, "normal", TicketPricingOptions{DiscountID: "east40"})
+		// 東日本経由は割引後なら安いが、無割引の大人運賃では東海経由を選ぶ。
+		// 私鉄を挟む場合も同じ基準で選び、割引条件は採用した経路全体で判定する。
+		if err != nil || got.Fare != tc.wantFare || got.DiscountApplied {
+			t.Fatalf("経路=%v: 結果=%+v、エラー=%v", tc.names, got, err)
+		}
 	}
 }
 
