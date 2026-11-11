@@ -87,9 +87,9 @@ async function generatePrivateKeyPem() {
 test('計算エラーは業務上のエラーとシステム障害を区別する', () => {
   assert.equal(classifyCalculationError('経路が重複しています。'), 'duplicate_route');
   assert.equal(classifyCalculationError('再考：要求区間誤り'), 'path_invalid');
-  assert.equal(classifyCalculationError('指定された区間はJR在来線のみで繋がっていません。', 422), 'path_invalid');
+  assert.equal(classifyCalculationError('指定された駅間はJR在来線のみで繋がっていません。', 422), 'path_invalid');
   assert.equal(classifyCalculationError('経路が見つかりませんでした'), 'path_invalid');
-  assert.equal(normalizeCalculationError('経路が見つかりませんでした'), '指定された区間はJR在来線のみで繋がっていません。経路入力検索を利用してください。');
+  assert.equal(normalizeCalculationError('経路が見つかりませんでした'), '指定された駅間はJR在来線のみで繋がっていません。経路入力検索を利用してください。');
   assert.equal(classifyCalculationError('unexpected failure'), 'calculation_failed');
 });
 
@@ -543,16 +543,20 @@ test('staging検索はCDNキャッシュを使わずAPIのビルドSHAを保持�
 
 test('HTMLとMarkdownはAcceptの優先度で切り替え、キャッシュを分離する', async () => {
   const { fetchNegotiatedPage } = await import('../../workers/frontend.mjs');
-  const assets = { fetch: async request => {
-    const path = new URL(request.url).pathname;
-    if (path === '/agent-markdown/index.txt') return new Response('# きっぷナビ\n');
-    if (path === '/openapi.json') return Response.json({ openapi: '3.1.0' });
-    assert.equal(request.headers.get('If-None-Match'), null);
-    return new Response('<h1>きっぷナビ</h1>', { headers: {
-      'Content-Type': 'text/html', Vary: 'Accept-Encoding', ETag: '"html"',
-      'X-Robots-Tag': 'noindex, nofollow',
-    } });
-  } };
+  const assets = {
+    fetch: async request => {
+      const path = new URL(request.url).pathname;
+      if (path === '/agent-markdown/index.txt') return new Response('# きっぷナビ\n');
+      if (path === '/openapi.json') return Response.json({ openapi: '3.1.0' });
+      assert.equal(request.headers.get('If-None-Match'), null);
+      return new Response('<h1>きっぷナビ</h1>', {
+        headers: {
+          'Content-Type': 'text/html', Vary: 'Accept-Encoding', ETag: '"html"',
+          'X-Robots-Tag': 'noindex, nofollow',
+        }
+      });
+    }
+  };
   for (const [accept, markdown] of [
     ['', false], ['text/html,*/*;q=0.8', false], ['text/markdown', true],
     ['text/markdown;q=0', false], ['text/markdown;q=0.5,text/html', false],

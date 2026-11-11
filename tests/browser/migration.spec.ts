@@ -291,7 +291,7 @@ test("APIのタイムアウトで端末内計算へ切り替える", async ({ pa
   await isolateServices(page);
   await page.clock.install();
   let requested = false;
-  await page.route("**/api/split/auto/ticket**", async () => { requested = true; return new Promise(() => {}); });
+  await page.route("**/api/split/auto/ticket**", async () => { requested = true; return new Promise(() => { }); });
   await page.goto(`/split/auto/ticket?${query}`);
   await expect.poll(() => requested).toBe(true);
   await page.clock.runFor(15_100);
@@ -317,18 +317,18 @@ test("2駅未満のAPI経路をWorkerへ渡さず拒否する", async ({ page })
 });
 
 for (const kind of ["ticket", "pass"] as const) {
-test(`${kind === "ticket" ? "乗車券" : "定期券"}で在来線でつながっていない区間の業務エラーを表示する`, async ({ page }) => {
-  await isolateServices(page);
-  const message = "指定された区間はJR在来線のみで繋がっていません。経路入力検索を利用してください。";
-  await page.route(`**/api/split/auto/${kind}**`, route => route.fulfill({
-    status: 422,
-    json: { normal: null, results: [], error: message },
-  }));
-  const month = kind === "pass" ? "&months=6" : "";
-  await page.goto(`/split/auto/${kind}?from=函館&to=新青森${month}`);
-  await expect(page.getByText(message, { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);
-});
+  test(`${kind === "ticket" ? "乗車券" : "定期券"}で在来線でつながっていない区間の業務エラーを表示する`, async ({ page }) => {
+    await isolateServices(page);
+    const message = "指定された駅間はJR在来線のみで繋がっていません。経路入力検索を利用してください。";
+    await page.route(`**/api/split/auto/${kind}**`, route => route.fulfill({
+      status: 422,
+      json: { normal: null, results: [], error: message },
+    }));
+    const month = kind === "pass" ? "&months=6" : "";
+    await page.goto(`/split/auto/${kind}?from=函館&to=新青森${month}`);
+    await expect(page.getByText(message, { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toHaveCount(0);
+  });
 }
 
 test("初期化中も入力画面が表示され、完了後に計算できる", async ({ page }) => {
