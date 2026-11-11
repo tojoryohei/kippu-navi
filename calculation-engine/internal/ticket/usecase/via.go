@@ -398,7 +398,7 @@ func getFareViaWithSections(path []ViaStep, printStartStation, printEndStation b
 			appendViaReplacement(&printer, codes)
 		}
 		omitted := sections.omitted[pair]
-		printer.addBoundaryStation(station, path[i].LineName, shinkansenViaStationKana(path, i), !omitted || sections.article70Entry[pair], (i > 0 || printStartStation) && !suppressedStations[station])
+		printer.addBoundaryStation(station, path[i].LineName, shinkansenViaStationKana(path, i), !omitted || sections.article70Entry[pair] || shinkansenLines[printer.previousLine] && !shinkansenLines[path[i].LineName], (i > 0 || printStartStation) && !suppressedStations[station])
 		if omitted {
 			printer.previousLine = sections.replacementLineByEdge[pair]
 			continue
@@ -484,36 +484,33 @@ func findRule157ViaSections(names []string) []ruleViaSection {
 	return findRuleViaSections(names, NewRule157Corrector(), rule157ViaCodes)
 }
 
+func findRule69ViaSectionsForPath(names []string, g graph.Graph) []ruleViaSection {
+	path := make([]int, len(names))
+	for i, name := range names {
+		var ok bool
+		path[i], ok = g.GetID(name)
+		if !ok {
+			return findRule69ViaSections(names)
+		}
+	}
+	projected, _, matches := NewRule69Corrector().matchingSections(path, g)
+	var sections []ruleViaSection
+	for _, match := range matches {
+		sections = append(sections, ruleViaSection{
+			start: g.GetName(projected[match.start]), end: g.GetName(projected[match.end]),
+			startIndex: match.start, endIndex: match.end, codes: rule69ViaCodes(match.index, match.reverse),
+		})
+	}
+	return sections
+}
+
 func findRuleViaSections(names []string, corrector *SpecificSectionCorrector, codes func(int, bool) []string) []ruleViaSection {
 	var sections []ruleViaSection
-	for i := 0; i < len(names); i++ {
-		for index, rule := range corrector.rules {
-			if i+len(rule.from) > len(names) {
-				continue
-			}
-			forward, reverse := true, true
-			for j, name := range rule.from {
-				forward = forward && names[i+j] == name
-				reverse = reverse && names[i+j] == rule.from[len(rule.from)-1-j]
-			}
-			if !forward && !reverse {
-				continue
-			}
-			before, after := rule.validBefore, rule.validAfter
-			if reverse && !forward {
-				before, after = after, before
-			}
-			if i > 0 && !containsStation(before, names[i-1]) || i+len(rule.from) < len(names) && !containsStation(after, names[i+len(rule.from)]) {
-				continue
-			}
-			sections = append(sections, ruleViaSection{
-				start: names[i], end: names[i+len(rule.from)-1],
-				startIndex: i, endIndex: i + len(rule.from) - 1,
-				codes: codes(index, reverse && !forward),
-			})
-			i += len(rule.from) - 1
-			break
-		}
+	for _, match := range corrector.matches(names) {
+		sections = append(sections, ruleViaSection{
+			start: names[match.start], end: names[match.end],
+			startIndex: match.start, endIndex: match.end, codes: codes(match.index, match.reverse),
+		})
 	}
 	return sections
 }
@@ -544,7 +541,7 @@ func applyRuleViaSections(sections *viaSections, printNames []string, rules []ru
 func sectionsForPath(sourceNames, printNames []string, g graph.Graph, selected map[string]string, rule157Sections []ruleViaSection) viaSections {
 	loadViaData()
 	sections := viaSections{omitted: make(map[string]bool), replacements: make(map[string][]string), replacementLineByEdge: make(map[string]string), article70Entry: make(map[string]bool), article70Omitted: make(map[string]bool)}
-	applyRuleViaSections(&sections, printNames, findRule69ViaSections(sourceNames))
+	applyRuleViaSections(&sections, printNames, findRule69ViaSectionsForPath(sourceNames, g))
 	applyRuleViaSections(&sections, printNames, rule157Sections)
 	for _, segment := range boldViaSegments(sourceNames, g) {
 		// 太線エリア内だけで完結する乗車は第70条の印字処理をしない。
