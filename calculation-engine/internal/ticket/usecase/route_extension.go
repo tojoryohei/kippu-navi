@@ -11,7 +11,8 @@ import (
 	"strconv"
 )
 
-const maxRouteExtensionDepth = 10
+// 延長区間の営業キロは、私鉄区間も含めて60km以下とする。
+const maxRouteExtensionEigyoKilo domain.DeciKilo = 600
 
 // RouteExtensionFareEvaluator は物理経路を運賃評価する関数です。
 // 最安モードの候補比較では、呼び出し側がnormalモードを指定します。
@@ -198,8 +199,8 @@ type extensionSearchSpec struct {
 }
 
 type extensionSearchState struct {
-	path  []int
-	depth int
+	path           []int
+	addedEigyoKilo domain.DeciKilo
 }
 
 // SelectCheapestPathWithRouteExtensions は、最安モードの物理経路候補を
@@ -362,7 +363,7 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 		return nil
 	}
 
-	queue := []extensionSearchState{{path: append([]int(nil), path...), depth: 0}}
+	queue := []extensionSearchState{{path: append([]int(nil), path...)}}
 	var result [][]int
 	for len(queue) > 0 {
 		state := queue[0]
@@ -375,15 +376,16 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 		if !ok {
 			continue
 		}
-		if state.depth > 0 && distance > spec.zone.MinDistanceDeciKilo {
+		if len(state.path) > len(path) && distance > spec.zone.MinDistanceDeciKilo {
 			result = append(result, append([]int(nil), state.path...))
-			continue
-		}
-		if state.depth >= maxRouteExtensionDepth {
 			continue
 		}
 
 		for _, edge := range physical.GetEdges(currentEndpoint) {
+			addedEigyoKilo := state.addedEigyoKilo + edge.EigyoKilo
+			if addedEigyoKilo > maxRouteExtensionEigyoKilo {
+				continue
+			}
 			var next []int
 			if spec.direction == extendOrigin {
 				next = make([]int, 0, len(state.path)+1)
@@ -395,7 +397,7 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 			if domain.HasDuplicateStation(next) {
 				continue
 			}
-			queue = append(queue, extensionSearchState{path: next, depth: state.depth + 1})
+			queue = append(queue, extensionSearchState{path: next, addedEigyoKilo: addedEigyoKilo})
 		}
 	}
 	return result
