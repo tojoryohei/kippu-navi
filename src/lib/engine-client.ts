@@ -13,11 +13,12 @@ export interface EngineReadiness {
   initialError?: SearchErrorDetails;
   diagnostics?: SearchDiagnostics;
 }
-type EngineState = { status: "preparing" | "ready" } | { status: "failed"; error: SearchErrorDetails };
+type EngineState = { status: "preparing" | "ready"; environmentSupported?: boolean } | { status: "failed"; error: SearchErrorDetails };
 export interface EngineClient {
   getState(capability: EngineCapability): EngineState;
   subscribe(listener: () => void): () => void;
   onmessage: ((event: MessageEvent) => void) | null;
+  ensureEnvironmentSupported(): Promise<void>;
   ensureReady(capability: EngineCapability): Promise<EngineReadiness>;
   postMessage(message: { type: string; payload: Record<string, unknown> }): void;
   restart(): void;
@@ -63,6 +64,8 @@ function createEnginePool(isolated = false) {
   const poolId = ++poolSequence;
   let failureSequence = 0;
   let worker: Worker | null = null;
+  let environmentSupported = false;
+  const environmentWaiters = new Set<{ client: EngineClient; resolve: () => void; reject: (reason: Error) => void }>();
   let sequence = 0, generation = 0, cycleStartedAt = 0, lastProgressAt = 0;
   let workerRestartCount = 0;
   let initialFailure: SearchErrorDetails | undefined;
@@ -130,6 +133,7 @@ function createEnginePool(isolated = false) {
     for (const capability of CAPABILITIES) clearTimer(capability);
     ready.clear();
     runtimeDiagnostics = {};
+    environmentSupported = false;
     workerFailurePending = false;
   }
   function settleFailure(details: SearchErrorDetails) {
@@ -140,6 +144,8 @@ function createEnginePool(isolated = false) {
       ready.delete(capability);
       failures.set(capability, { ...failure, capability });
     }
+    for (const waiter of environmentWaiters) waiter.reject(new SearchOperationError(failure));
+    environmentWaiters.clear();
     publish();
     rejectFailures();
   }
@@ -164,7 +170,12 @@ function createEnginePool(isolated = false) {
     worker.onmessage = event => {
       if (currentGeneration !== generation || workerFailed) return;
       const { type, requestId, capability } = event.data;
-      if (type === "initialization_progress") {
+      if (type === "environment_supported") {
+        environmentSupported = true;
+        for (const waiter of environmentWaiters) waiter.resolve();
+        environmentWaiters.clear();
+        publish();
+      } else if (type === "initialization_progress") {
         workerReportedProgress = true;
         runtimeDiagnostics = diagnostics(event.data.diagnostics);
         lastProgressAt = performance.now();
@@ -230,6 +241,10 @@ function createEnginePool(isolated = false) {
     }, Math.max(0, lastProgressAt + ENGINE_PROGRESS_TIMEOUT_MS - performance.now())));
   }
   function cancelWaiters(reason: string, client?: EngineClient) {
+    for (const waiter of environmentWaiters) if (!client || waiter.client === client) {
+      environmentWaiters.delete(waiter);
+      waiter.reject(new DOMException(reason, "AbortError"));
+    }
     for (const [capability, pending] of waiters) {
       for (const waiter of pending) if (!client || waiter.client === client) {
         pending.delete(waiter);
@@ -245,13 +260,20 @@ function createEnginePool(isolated = false) {
       onmessage: null,
       getState(capability) {
         const failure = failures.get(capability);
-        return failure ? { status: "failed", error: failure } : { status: ready.has(capability) ? "ready" : "preparing" };
+        return failure ? { status: "failed", error: failure } : { status: ready.has(capability) ? "ready" : "preparing", environmentSupported };
       },
       subscribe(listener) {
         if (!clients.has(client)) return () => {};
         const group = listeners.get(client)!;
         group.add(listener);
         return () => { group.delete(listener); };
+      },
+      ensureEnvironmentSupported() {
+        if (!clients.has(client)) return Promise.reject(new DOMException("Disposed", "AbortError"));
+        if (environmentSupported) return Promise.resolve();
+        const failure = failures.values().next().value;
+        if (failure) return Promise.reject(new SearchOperationError(failure));
+        return new Promise((resolve, reject) => environmentWaiters.add({ client, resolve, reject }));
       },
       ensureReady(capability) {
         if (!clients.has(client)) return Promise.reject(new DOMException("Disposed", "AbortError"));
@@ -273,7 +295,7 @@ function createEnginePool(isolated = false) {
         worker.postMessage({ ...message, payload: { ...message.payload, requestId } });
       },
       restart() {
-        if (!clients.has(client)) return;
+        if (!clients.has(client) || [...failures.values()].some(failure => failure.code === "unsupported_environment")) return;
         initialFailure = failures.values().next().value;
         cancelWaiters("Superseded");
         stopWorker();

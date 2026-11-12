@@ -287,11 +287,11 @@ export default function Form({
     const onSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
         if (!mountedRef.current) return;
         const state = workerRef.current?.getState(data.searchType === "ticket" ? "ticket" : "pass");
-        if (!state || state.status === "preparing" || (state.status === "failed" && !isRetryableEngineError(new SearchOperationError(state.error)))) return;
+        if (!state || state.status === "preparing" || (state.status === "failed" && state.error.code !== "unsupported_environment" && !isRetryableEngineError(new SearchOperationError(state.error)))) return;
 
         const calcId = ++latestCalcIdRef.current;
         setResultSearchId(calcId);
-        const shouldRestartEngine = state.status === "failed" || calculationBusyRef.current || isRetryableEngineError(pendingErrorRef.current);
+        const shouldRestartEngine = (state.status === "failed" && state.error.code !== "unsupported_environment") || calculationBusyRef.current || isRetryableEngineError(pendingErrorRef.current);
         pendingErrorRef.current = null;
         setProgress({ phase: "preparing", completed: 0, total: 0 });
         calculationBusyRef.current = true;
@@ -359,6 +359,8 @@ export default function Form({
         if (!workerRef.current) return;
         try {
             if (shouldRestartEngine) workerRef.current.restart();
+            await workerRef.current.ensureEnvironmentSupported();
+            if (!mountedRef.current || calcId !== latestCalcIdRef.current) return;
             const readiness = await workerRef.current.ensureReady(searchContext.capability);
             searchContext.readiness = readiness;
             captureEngineRecovery(readiness, searchContext);

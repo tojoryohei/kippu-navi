@@ -366,7 +366,10 @@ test("追加パターンの件数と再計算", async ({ page }) => {
     window.Worker = class {
       onmessage: ((event: MessageEvent) => void) | null = null;
       constructor() {
-        setTimeout(() => this.onmessage?.(new MessageEvent("message", { data: { type: "ready", capability: "ticket" } })), 0);
+        setTimeout(() => {
+          this.onmessage?.(new MessageEvent("message", { data: { type: "environment_supported" } }));
+          this.onmessage?.(new MessageEvent("message", { data: { type: "ready", capability: "ticket" } }));
+        }, 0);
       }
       postMessage(message: { type: string; payload: { requestId: number } }) {
         if (message.type !== "calculate") return;

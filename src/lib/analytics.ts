@@ -228,6 +228,7 @@ export function captureSuccessfulSearch(context: SearchEventContext, result: Sea
 }
 
 export function captureUnhandledError(error: unknown, component: string) {
+  if (error instanceof SearchOperationError && error.details.code === "unsupported_environment") return;
   initialize();
   if (!sentryDsn) return;
   if (error instanceof SearchOperationError && alreadyReported(error.details)) return;
