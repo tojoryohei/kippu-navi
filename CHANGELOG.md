@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.15](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.14...kippu-navi-v5.11.15) (2026-11-12)
+
+
+### Bug Fixes
+
+* 近郊区間の候補経路を無割引の大人運賃で比較 ([#1050](https://github.com/tojoryohei/kippu-navi/issues/1050)) ([e575be3](https://github.com/tojoryohei/kippu-navi/commit/e575be312b46be6e9adb4051fcbf9b7c67528a08))
+
 ## [5.11.14](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.13...kippu-navi-v5.11.14) (2026-11-11)
 
 
