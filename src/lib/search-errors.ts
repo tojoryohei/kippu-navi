@@ -79,6 +79,16 @@ export interface ResourceAttempt {
 }
 
 export interface SearchDiagnostics {
+  workerBootstrapStage?: "module_import" | "sentry_initialize" | "engine_initialize" | "module_ready";
+  serviceWorker?: { controller: string; version?: string; appVersion?: string; exception?: ExceptionDiagnostics };
+  workerScriptProbe?: {
+    status?: number;
+    contentType?: string;
+    contentLength?: number;
+    redirected?: boolean;
+    elapsedMs: number;
+    exception?: ExceptionDiagnostics;
+  };
   workerPhase?: "before_start" | "initializing" | "after_ready";
   workerElapsedMs?: number;
   workerReadyCapabilities?: EngineCapability[];
@@ -96,6 +106,7 @@ export interface SearchDiagnostics {
 }
 
 export interface SearchErrorDetails {
+  failureId?: string;
   message: string;
   code: SearchErrorCode;
   source: "client" | "worker" | "wasm" | "api";

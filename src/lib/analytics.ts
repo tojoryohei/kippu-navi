@@ -14,6 +14,16 @@ const googleAnalyticsId = import.meta.env.PUBLIC_GOOGLE_ANALYTICS_ID;
 const sentryDsn = import.meta.env.PUBLIC_SENTRY_DSN;
 const POSTHOG_TOOLBAR_STORAGE_KEY = "_postHogToolbarParams";
 let initialized = false;
+const reportedFailures = new Set<string>();
+
+function alreadyReported(details: SearchErrorDetails) {
+  return Boolean(details.failureId && reportedFailures.has(details.failureId));
+}
+function rememberFailure(details: SearchErrorDetails) {
+  if (!details.failureId) return;
+  reportedFailures.add(details.failureId);
+  if (reportedFailures.size > 100) reportedFailures.delete(reportedFailures.values().next().value!);
+}
 
 function releaseProperties() {
   return { engine_version: __WASM_VERSION__, app_version: __APP_VERSION__, deploy_commit: __DEPLOY_COMMIT__, environment: __DEPLOY_ENVIRONMENT__ };
@@ -75,7 +85,8 @@ function initialize() {
         return defaultIntegrations.filter(integration => integration.name !== "BrowserSession");
       },
       beforeSend(event) {
-        event.contexts = { ...event.contexts, browser_diagnostics: browserDiagnostics() };
+        const browser = browserDiagnostics();
+        event.contexts = { ...event.contexts, browser_diagnostics: browser };
         const exception = event.exception?.values?.[0];
         const frames = exception?.stacktrace?.frames || [];
         // Sentry's browser-extension inbound filter is enabled. These
@@ -150,6 +161,8 @@ function attachErrorDiagnostics(scope: Sentry.Scope, details: SearchErrorDetails
   scope.setContext("search_error", { ...summary, message: summary.message.slice(0, 1_000) });
   if (diagnostics) scope.setContext("engine_diagnostics", { ...copyDiagnostics(diagnostics) });
   if (diagnostics?.workerPhase) scope.setTag("worker_phase", diagnostics.workerPhase);
+  if (diagnostics?.workerBootstrapStage) scope.setTag("worker_bootstrap_stage", diagnostics.workerBootstrapStage);
+  if (details.failureId) scope.setTag("failure_id", details.failureId);
 }
 
 function completedSearchProperties(context: SearchEventContext, outcome: SearchOutcome, errorCode?: string, result?: SearchResultAnalytics) {
@@ -173,9 +186,14 @@ export function captureSearchError(error: unknown, context: SearchEventContext) 
   const normalized = normalizeSearchError(error, context.capability);
   const details = normalized.details;
   const businessError = isBusinessSearchError(details);
-  analytics.capture("search_completed", completedSearchProperties(context, businessError ? "business_error" : "system_error", details.code));
+  analytics.capture("search_completed", {
+    ...completedSearchProperties(context, businessError ? "business_error" : "system_error", details.code),
+    retry_count: Math.max(details.retryCount, context.readiness?.retryCount || 0),
+    worker_restart_count: Math.max(details.workerRestartCount, context.readiness?.workerRestartCount || 0),
+    ...(details.failureId ? { failure_id: details.failureId } : {}),
+  });
 
-  if (!businessError) {
+  if (!businessError && !alreadyReported(details)) {
     initialize();
     if (sentryDsn) {
       Sentry.withScope(scope => {
@@ -188,6 +206,7 @@ export function captureSearchError(error: unknown, context: SearchEventContext) 
         scope.setExtra("search_url", window.location.href);
         scope.setFingerprint([details.code, details.stage, details.capability || context.capability, String(details.httpStatus || "none")]);
         Sentry.captureException(normalized);
+        rememberFailure(details);
       });
     }
   }
@@ -206,12 +225,18 @@ export function captureSuccessfulSearch(context: SearchEventContext, result: Sea
 export function captureUnhandledError(error: unknown, component: string) {
   initialize();
   if (!sentryDsn) return;
+  if (error instanceof SearchOperationError && alreadyReported(error.details)) return;
   Sentry.withScope(scope => {
-    if (error instanceof SearchOperationError) attachErrorDiagnostics(scope, error.details);
+    if (error instanceof SearchOperationError) {
+      attachErrorDiagnostics(scope, error.details);
+      scope.setTags({ error_code: error.details.code, error_stage: error.details.stage,
+        capability: error.details.capability || "all", retry_count: String(error.details.retryCount), worker_restart_count: String(error.details.workerRestartCount) });
+    }
     else scope.setContext("exception_diagnostics", { ...exceptionDiagnostics(error) });
     scope.setTag("component", component);
     scope.setTags(releaseProperties());
     Sentry.captureException(error);
+    if (error instanceof SearchOperationError) rememberFailure(error.details);
   });
 }
 

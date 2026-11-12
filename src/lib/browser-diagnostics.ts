@@ -23,5 +23,6 @@ export function browserDiagnostics() {
     workerSupported: typeof Worker !== "undefined",
     webAssemblySupported: typeof WebAssembly !== "undefined",
     navigation: navigation && { ...navigation },
+    serviceWorkerController: typeof navigator === "undefined" ? undefined : navigator.serviceWorker?.controller?.scriptURL,
   };
 }

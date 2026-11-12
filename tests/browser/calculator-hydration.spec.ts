@@ -2,9 +2,9 @@ import { test, expect } from "../support/fixtures";
 
 const paths = ["/split/auto/ticket", "/split/auto/pass", "/split/auto/ic-pass", "/fare/ticket", "/fare/pass", "/split/route/ticket", "/split/route/pass"];
 
-test("Workerの読込失敗を元の検索に記録し、通常の計算ボタンから実WASMで復旧する", async ({ page, context }) => {
-  let loads = 0;
-  const searchErrorCodes: string[] = [];
+test("Worker本体の評価例外を元の診断に残し、再計算で復旧する", async ({ page, context }) => {
+  let blocked = true;
+  const failures: Array<{ contexts: { engine_diagnostics: { workerPhase: string; workerBootstrapStage: string; exception: { name: string; message: string } } } }> = [];
   await context.route("**/*", route => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return route.abort();
@@ -12,11 +12,47 @@ test("Workerの読込失敗を元の検索に記録し、通常の計算ボタ�
       const payload = route.request().postData()?.split("\n")[2];
       if (payload) {
         const event = JSON.parse(payload);
-        if (event.fingerprint) searchErrorCodes.push(event.fingerprint[0]);
+        if (event.tags?.error_code === "worker_runtime_failed") failures.push(event);
       }
       return route.fulfill({ status: 200, json: {} });
     }
-    if (/\/split\.worker[^/]*\.js$/.test(url.pathname) && ++loads <= 2) return route.abort();
+    if (blocked && /\/split-engine[^/]*\.js$/.test(url.pathname)) {
+      return route.fulfill({ status: 200, contentType: "application/javascript",
+        body: 'throw new SyntaxError("Worker本体の評価に失敗しました");' });
+    }
+    return route.continue();
+  });
+  await page.goto("/fare/ticket?" + new URLSearchParams({ route: "東京[東海道]品川", mode: "normal" }));
+  await expect.poll(() => failures.length).toBe(1);
+  const diagnostic = failures[0].contexts.engine_diagnostics;
+  expect(diagnostic.workerPhase).toBe("initializing");
+  expect(diagnostic.workerBootstrapStage).toBe("module_import");
+  expect(diagnostic.exception.name).toBe("SyntaxError");
+  expect(diagnostic.exception.message).toBe("Worker本体の評価に失敗しました");
+  blocked = false;
+  await page.locator('button[type="submit"]').click();
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
+  expect(failures).toHaveLength(1);
+});
+
+test("Workerの読込失敗を元の検索に記録し、通常の計算ボタンから実WASMで復旧する", async ({ page, context }) => {
+  let loads = 0;
+  const workerEvents: Array<{ tags: Record<string, string>; contexts: { engine_diagnostics: { workerPhase: string; workerScriptProbe?: { status: number }; workerBootstrapStage?: string; exception?: { message: string } } } }> = [];
+  await context.route("**/*", route => {
+    const url = new URL(route.request().url());
+    if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return route.abort();
+    if (url.pathname === "/monitoring") {
+      const payload = route.request().postData()?.split("\n")[2];
+      if (payload) {
+        const event = JSON.parse(payload);
+        if (event.tags?.error_code === "worker_runtime_failed") workerEvents.push(event);
+      }
+      return route.fulfill({ status: 200, json: {} });
+    }
+    if (/\/split\.worker[^/]*\.js$/.test(url.pathname)) {
+      if (route.request().resourceType() === "fetch") return route.fulfill({ status: 404, contentType: "text/html", body: "missing" });
+      if (++loads <= 2) return route.abort();
+    }
     return route.continue();
   });
   await page.addInitScript(() => {
@@ -54,7 +90,11 @@ test("Workerの読込失敗を元の検索に記録し、通常の計算ボタ�
     for (const callback of tracking.splice(0)) callback({ didTimeout: false, timeRemaining: () => 50 });
     return { urls, locations };
   });
-  await expect.poll(() => searchErrorCodes).toEqual(["worker_runtime_failed"]);
+  // 直接通知と遅延した検索計測をまとめる。連続する同じ例外はSDKも抑制する。
+  await expect.poll(() => workerEvents.length).toBe(1);
+  expect(workerEvents.every(event => event.contexts.engine_diagnostics.workerPhase === "before_start")).toBe(true);
+  expect(workerEvents.every(event => event.contexts.engine_diagnostics.workerScriptProbe?.status === 404)).toBe(true);
+  expect(workerEvents[0].tags.failure_id).toBeTruthy();
   expect(info.urls).toHaveLength(3);
   expect(info.urls[0]).toMatch(/\/_astro\/split\.worker.+\.js$/);
   expect(info.urls[1]).toBe(info.urls[0]);

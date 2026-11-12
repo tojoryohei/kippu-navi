@@ -20,6 +20,7 @@ export default defineConfig({
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   server: { host: "0.0.0.0", port: 3000 },
   vite: {
+    worker: { format: "es" },
     plugins: [
       tailwindcss(),
       pwaManifestPlugin(),
