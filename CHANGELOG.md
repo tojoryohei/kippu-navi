@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.1...kippu-navi-v5.12.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* 山形での経由印字の省略方向を修正 ([#1061](https://github.com/tojoryohei/kippu-navi/issues/1061)) ([834d42a](https://github.com/tojoryohei/kippu-navi/commit/834d42ac79d89133dbb582d5b728e4631b0336c3))
+
 ## [5.12.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.0...kippu-navi-v5.12.1) (2026-11-12)
 
 
