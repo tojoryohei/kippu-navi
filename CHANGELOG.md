@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.17](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.16...kippu-navi-v5.11.17) (2026-11-12)
+
+
+### Bug Fixes
+
+* 第114条の経路延長を営業キロ60km以内に変更 ([#1055](https://github.com/tojoryohei/kippu-navi/issues/1055)) ([785c388](https://github.com/tojoryohei/kippu-navi/commit/785c38811cd504f648dae2830d9193ec740a6cb3))
+
 ## [5.11.16](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.15...kippu-navi-v5.11.16) (2026-11-12)
 
 
