@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.16](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.15...kippu-navi-v5.11.16) (2026-11-12)
+
+
+### Bug Fixes
+
+* 計算Workerの起動診断と障害記録を改善する ([#1053](https://github.com/tojoryohei/kippu-navi/issues/1053)) ([b6f38da](https://github.com/tojoryohei/kippu-navi/commit/b6f38da43aeb2510c1ec94e1699e50c498667c5f))
+
 ## [5.11.15](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.14...kippu-navi-v5.11.15) (2026-11-12)
 
 
