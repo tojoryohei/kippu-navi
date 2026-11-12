@@ -204,4 +204,14 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   assert.equal(result.contexts.browser_diagnostics.webAssemblySupported, true);
   assert.equal(events.length, before + 2);
 
+  const hiddenTransition = { exception: { values: [{ type: 'Error', value: 'InvalidStateError: Transition was aborted because of invalid state. Document hidden' }] } };
+  Object.defineProperty(testDocument, 'visibilityState', { configurable: true, value: 'hidden' });
+  assert.equal(sentryOptions.beforeSend(structuredClone(hiddenTransition)), null);
+  testDocument.dispatchEvent(Object.assign(new Event('astro:before-preparation'), { from: new URL('https://example.test/a'), to: new URL('https://example.test/b') }));
+  assert.notEqual(sentryOptions.beforeSend(structuredClone(hiddenTransition)), null);
+  testDocument.dispatchEvent(new Event('astro:page-load'));
+  Object.defineProperty(testDocument, 'visibilityState', { configurable: true, value: 'visible' });
+  assert.notEqual(sentryOptions.beforeSend(structuredClone(hiddenTransition)), null);
+  Object.defineProperty(testDocument, 'visibilityState', { configurable: true, value: 'hidden' });
+  assert.notEqual(sentryOptions.beforeSend(structuredClone(event)), null);
 });

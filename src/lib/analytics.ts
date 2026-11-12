@@ -88,6 +88,9 @@ function initialize() {
         const browser = browserDiagnostics();
         event.contexts = { ...event.contexts, browser_diagnostics: browser };
         const exception = event.exception?.values?.[0];
+        const navigation = browser.navigation as { completed?: boolean } | undefined;
+        if (exception?.value === "InvalidStateError: Transition was aborted because of invalid state. Document hidden"
+          && browser.visibility === "hidden" && navigation?.completed === true) return null;
         const frames = exception?.stacktrace?.frames || [];
         // Sentry's browser-extension inbound filter is enabled. These
         // one-line inline-script events expose no extension URL in their frames.
