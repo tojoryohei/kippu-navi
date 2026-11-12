@@ -654,9 +654,11 @@ type overlapViaRule struct {
 	conventionalNeighbors []string
 }
 
+// 山形新幹線から山形経由で仙山線へ接続する経路は折り返しではないため、
+// 山形〜羽前千歳の奥羽線と山形駅の印字を省略しない。
 var overlapViaBranches = []overlapViaRule{
-	{branch: []string{"羽前千歳", "北山形", "山形"}, shinkansenNeighbor: "かみのやま温泉", conventionalNeighbors: []string{"楯山"}},
-	{branch: []string{"北山形", "山形"}, shinkansenNeighbor: "かみのやま温泉", conventionalNeighbors: []string{"東金井"}},
+	{branch: []string{"羽前千歳", "北山形", "山形"}, shinkansenNeighbor: "天童", conventionalNeighbors: []string{"楯山"}},
+	{branch: []string{"北山形", "山形"}, shinkansenNeighbor: "天童", conventionalNeighbors: []string{"東金井"}},
 	{branch: []string{"安積永盛", "（北）郡山"}, shinkansenNeighbor: "新白河", conventionalNeighbors: []string{"磐城守山"}},
 	{branch: []string{"宮内", "長岡"}, shinkansenNeighbor: "浦佐", conventionalNeighbors: []string{"前川", "越後滝谷"}},
 	{branch: []string{"宝積寺", "岡本", "宇都宮"}, shinkansenNeighbor: "那須塩原", conventionalNeighbors: []string{"下野花岡"}},
