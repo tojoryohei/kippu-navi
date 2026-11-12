@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.17...kippu-navi-v5.12.0) (2026-11-12)
+
+
+### Features
+
+* PostHogの自動PV・離脱・Web Vitals計測を有効化 ([#1057](https://github.com/tojoryohei/kippu-navi/issues/1057)) ([01a9301](https://github.com/tojoryohei/kippu-navi/commit/01a9301a64a52f1d6b482f83393733c503c53c0b))
+
 ## [5.11.17](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.16...kippu-navi-v5.11.17) (2026-11-12)
 
 
