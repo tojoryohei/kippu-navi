@@ -7,10 +7,10 @@ export function standalone() {
   return matchMedia('(display-mode: standalone)').matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
-export function workerRequest<T>(worker: ServiceWorker, type: string): Promise<T> {
+export function workerRequest<T>(worker: ServiceWorker, type: string, timeoutMs = 10000): Promise<T> {
   return new Promise((resolve, reject) => {
     const channel = new MessageChannel();
-    const timer = setTimeout(() => { channel.port1.close(); reject(new Error('更新処理の状態を確認できませんでした。応答がありません。')); }, 10000);
+    const timer = setTimeout(() => { channel.port1.close(); reject(new Error('更新処理の状態を確認できませんでした。応答がありません。')); }, timeoutMs);
     channel.port1.onmessage = event => {
       clearTimeout(timer);
       channel.port1.close();

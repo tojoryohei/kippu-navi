@@ -19,6 +19,7 @@ test('経路入力の進捗と経路自動の途中結果は終端まで通知�
     if (specifier === "@/lib/error-diagnostics") return { url: new URL('../../src/lib/error-diagnostics.ts', import.meta.url).href, shortCircuit: true };
     if (specifier === "@/lib/analytics") return { url: "data:text/javascript,export const captureUnhandledError = () => {}", shortCircuit: true };
     if (specifier === "@/lib/search-errors") return { url: new URL('../../src/lib/search-errors.ts', import.meta.url).href, shortCircuit: true };
+    if (specifier === "@/pwa/status") return { url: new URL('../../src/pwa/status.ts', import.meta.url).href, shortCircuit: true };
     return nextResolve(specifier, context);
   } });
   try {
@@ -63,7 +64,7 @@ function setup(t, shared = false) {
     postMessage(data) { this.sent.push(data); }
     terminate() { this.stopped = true; }
     reply(data) { this.onmessage({ data }); }
-    fail(data = {}) { this.onerror(data); }
+    fail(data = {}) { return this.onerror(data); }
   };
   const clients = [];
   function client() { const client = createEngineClient({ isolated: !shared }); clients.push(client); return client; }
@@ -90,7 +91,10 @@ test('失敗を共有し、自動再起動せず通常の計算操作から再�
   a.restart();
   const pending = a.ensureReady('ticket');
   workers[1].reply({ type: 'ready', capability: 'ticket' });
-  assert.equal((await pending).recovered, false);
+  const readiness = await pending;
+  assert.equal(readiness.recovered, true);
+  assert.equal(readiness.workerRestartCount, 1);
+  assert.equal(readiness.initialError.diagnostics.exception.stack, 'original-stack');
 });
 
 test('進捗のない初期化は各試行60秒で打ち切り、最後の段階を保持する', async t => {
@@ -107,6 +111,33 @@ test('進捗のない初期化は各試行60秒で打ち切り、最後の段階
   t.mock.timers.tick(1_001);
   assert.equal(workers.length, 1);
   await result;
+});
+
+test('起動前の後追い取得が停止しても2秒で元の失敗を一度だけ返す', async t => {
+  const originalWindow = globalThis.window, originalFetch = globalThis.fetch;
+  globalThis.window = { location: new URL('https://example.test/fare/ticket') };
+  t.after(() => { globalThis.window = originalWindow; globalThis.fetch = originalFetch; });
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const { workers, client } = setup(t);
+  const a = client();
+  let requests = 0;
+  globalThis.fetch = (_url, { signal }) => new Promise((_resolve, reject) => {
+    requests++;
+    signal.addEventListener('abort', () => reject(new DOMException('probe timeout', 'AbortError')), { once: true });
+  });
+  const pending = assert.rejects(a.ensureReady('ticket'), error => {
+    assert.equal(error.details.code, 'worker_runtime_failed');
+    assert.equal(error.details.diagnostics.workerScriptProbe.exception.name, 'AbortError');
+    return true;
+  });
+  const notification = workers[0].fail({});
+  const alsoPending = assert.rejects(a.ensureReady('pass'));
+  await workers[0].fail({});
+  t.mock.timers.tick(2_000);
+  await notification;
+  await Promise.all([pending, alsoPending]);
+  assert.equal(requests, 1);
+  assert.equal(globalThis.workerErrors.length, 1);
 });
 
 test('実行中要求がある場合は再起動せず計算を再送しない', async t => {
@@ -151,7 +182,7 @@ test('手動再開後は古いWorkerの遅延通知を無視する', async t => 
   workers[0].fail({ message: 'late' });
   assert.equal(a.getState('ticket').status, 'preparing');
   workers[1].reply({ type: 'ready', capability: 'ticket' });
-  assert.equal((await pending).workerRestartCount, 0);
+  assert.equal((await pending).workerRestartCount, 1);
   assert.equal(globalThis.workerErrors.length, 1);
 });
 

@@ -27,16 +27,16 @@ const hooks = registerHooks({
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
-    if (url.endsWith('/analytics.ts') || url.includes('/split.worker.ts?test')) {
+    if (url.endsWith('/analytics.ts') || url.includes('/split-engine.ts?test')) {
       // テスト対象として限定したローカルTSソースだけを読む。
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       let source = readFileSync(new URL(url), 'utf8')
-        .replaceAll('import.meta.env.PUBLIC_SENTRY_DSN', url.includes('split.worker') ? '""' : '"test-dsn"')
+        .replaceAll('import.meta.env.PUBLIC_SENTRY_DSN', url.includes('split-engine') ? '""' : '"test-dsn"')
         .replaceAll('import.meta.env.PUBLIC_POSTHOG_KEY', '"test-key"')
         .replaceAll('import.meta.env.PUBLIC_GOOGLE_ANALYTICS_ID', '""')
         .replaceAll('__APP_VERSION__', '"test"').replaceAll('__WASM_VERSION__', '"' + 'a'.repeat(64) + '"')
         .replaceAll('__DEPLOY_COMMIT__', '"test"').replaceAll('__DEPLOY_ENVIRONMENT__', '"test"');
-      if (url.includes('split.worker')) source = source.replace('\ninitWasm();', '\nexport { fetchAsset, initFailure, firstAssetError };');
+      if (url.includes('split-engine')) source = source.replace('\ninitWasm();', '\nexport { fetchAsset, initFailure, firstAssetError };');
       return { source: ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 } }).outputText, format: 'module', shortCircuit: true };
     }
     return nextLoad(url, context);
@@ -55,9 +55,10 @@ test('空の例外・取得不能な値でも診断でき、例外文とスタ�
   assert.equal(exceptionDiagnostics(undefined, {}).filename, undefined);
 });
 
-test('実際の資材失敗通知から検索・未処理の両Sentry経路へ元例外とURLが届く', async t => {
+test('元例外を保持して同一障害のSentry送信をまとめ、検索結果の記録は維持する', async t => {
   const originalFetch = globalThis.fetch, originalWorker = globalThis.Worker;
   const originalWindow = globalThis.window, originalDocument = globalThis.document, originalSelf = globalThis.self, originalPost = globalThis.postMessage;
+  const originalServiceWorker = Object.getOwnPropertyDescriptor(navigator, 'serviceWorker');
   const notifications = [];
   globalThis.window = { location: new URL('https://example.test/fare/ticket?route=A-B') };
   globalThis.document = testDocument;
@@ -65,8 +66,12 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
   globalThis.onmessage = null;
   globalThis.self = { location: new URL('https://example.test/_astro/worker.js') };
   globalThis.postMessage = value => notifications.push(structuredClone(value));
-  t.after(() => { globalThis.fetch = originalFetch; globalThis.Worker = originalWorker; globalThis.window = originalWindow; globalThis.document = originalDocument; globalThis.self = originalSelf; globalThis.postMessage = originalPost; globalThis.onmessage = originalOnMessage; });
-  const workerModule = await import('../../src/app/split/split.worker.ts?test');
+  t.after(() => {
+    globalThis.fetch = originalFetch; globalThis.Worker = originalWorker; globalThis.window = originalWindow; globalThis.document = originalDocument; globalThis.self = originalSelf; globalThis.postMessage = originalPost; globalThis.onmessage = originalOnMessage;
+    if (originalServiceWorker) Object.defineProperty(navigator, 'serviceWorker', originalServiceWorker);
+    else delete navigator.serviceWorker;
+  });
+  const workerModule = await import('../../src/app/split/split-engine.ts?test');
   globalThis.fetch = async () => { throw new TypeError('Load failed'); };
   let original;
   try { await workerModule.fetchAsset('https://example.test/engine/main.wasm?version=1#asset', 'wasm_fetch'); }
@@ -87,39 +92,54 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
   const before = events.length;
   analytics.captureSearchError(error, context);
   analytics.captureUnhandledError(error, 'calculation_web_worker');
-  assert.equal(events.length, before + 2);
-  for (const event of events.slice(-2)) {
+  const recordedSearches = completed.length;
+  analytics.captureSearchError(error, context);
+  assert.equal(completed.length, recordedSearches + 1);
+  assert.equal(completed.at(-1).properties.failure_id, error.details.failureId);
+  assert.equal(events.length, before + 1);
+  for (const event of events.slice(-1)) {
     assert.equal(event.contexts.engine_diagnostics.resources[0].url, 'https://example.test/engine/main.wasm?version=1#asset');
     assert.equal(event.contexts.engine_diagnostics.exception.message, 'Load failed');
     assert.ok(event.contexts.engine_diagnostics.exception.stack.includes('TypeError'));
     assert.equal(event.contexts.engine_diagnostics.attempts, undefined);
   }
-  assert.deepEqual(events[events.length - 2].fingerprint, ['engine_asset_fetch_failed', 'wasm_fetch', 'ticket', 'none']);
-  assert.equal(events[events.length - 1].fingerprint, undefined);
+  assert.deepEqual(events.at(-1).fingerprint, ['engine_asset_fetch_failed', 'wasm_fetch', 'ticket', 'none']);
+  assert.equal(events.at(-1).tags.failure_id, error.details.failureId);
   analytics.captureEngineRecovery({ recovered: true, workerRestartCount: 1 }, context);
   analytics.captureSuccessfulSearch(context, {});
-  assert.equal(events.length, before + 2);
+  assert.equal(events.length, before + 1);
   assert.equal(completed[completed.length - 1].properties.worker_restart_count, 1);
   client.terminate();
 
   const bootstrapClient = createEngineClient({ isolated: true });
   const bootstrapPending = bootstrapClient.ensureReady('ticket').catch(error => error);
-  transport.onerror({});
+  Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { controller: {
+    scriptURL: 'https://example.test/sw.js',
+    postMessage(message, [port]) {
+      assert.equal(message.type, 'PWA_STATUS');
+      port.postMessage({ version: 'cached-version', appVersion: 'old-release', complete: true });
+      port.close();
+    },
+  } } });
+  await transport.onerror({});
   analytics.captureSearchError(await bootstrapPending, context);
-  for (const event of events.slice(-2)) {
+  for (const event of events.slice(-1)) {
     assert.equal(event.tags.worker_phase, 'before_start');
     assert.equal(event.contexts.engine_diagnostics.workerPhase, 'before_start');
     assert.equal(event.contexts.engine_diagnostics.workerUrl, '/_astro/split.worker-test.js');
     assert.ok(event.contexts.engine_diagnostics.workerElapsedMs >= 0);
   }
-  assert.equal(events.at(-2).fingerprint, undefined);
-  assert.deepEqual(events.at(-1).fingerprint, ['worker_runtime_failed', 'worker_bootstrap', 'ticket', 'none']);
+  assert.equal(events.at(-1).fingerprint, undefined);
+  assert.equal(events.at(-1).tags.component, 'calculation_web_worker');
+  assert.ok(events.at(-1).contexts.engine_diagnostics.workerScriptProbe.exception);
+  assert.equal(events.at(-1).contexts.engine_diagnostics.serviceWorker.version, 'cached-version');
   bootstrapClient.terminate();
 
   analytics.captureSearchError(new Error('通信環境を確認して、もう一度計算してください。'), context);
-  assert.equal(events.length, before + 4);
+  assert.equal(events.length, before + 2);
   assert.equal(completed.at(-1).properties.outcome, 'business_error');
   assert.equal(completed.at(-1).properties.error_code, 'communication_retry_required');
+  assert.equal(completed.at(-1).properties.worker_restart_count, 1);
 
   // 配信版の解決はCloudflareに任せ、ブラウザでは別URLを取得しない。
   const oldUrl = 'https://example.test/engine/' + 'a'.repeat(64) + '/main.wasm';
@@ -182,5 +202,16 @@ test('実際の資材失敗通知から検索・未処理の両Sentry経路へ�
   const event = { exception: { values: [{ type: 'RangeError', value: 'Maximum call stack size exceeded.' }] } };
   const result = sentryOptions.beforeSend(event);
   assert.equal(result.contexts.browser_diagnostics.webAssemblySupported, true);
-  assert.equal(events.length, before + 4);
+  assert.equal(events.length, before + 2);
+
+  const hiddenTransition = { exception: { values: [{ type: 'Error', value: 'InvalidStateError: Transition was aborted because of invalid state. Document hidden' }] } };
+  Object.defineProperty(testDocument, 'visibilityState', { configurable: true, value: 'hidden' });
+  assert.equal(sentryOptions.beforeSend(structuredClone(hiddenTransition)), null);
+  testDocument.dispatchEvent(Object.assign(new Event('astro:before-preparation'), { from: new URL('https://example.test/a'), to: new URL('https://example.test/b') }));
+  assert.notEqual(sentryOptions.beforeSend(structuredClone(hiddenTransition)), null);
+  testDocument.dispatchEvent(new Event('astro:page-load'));
+  Object.defineProperty(testDocument, 'visibilityState', { configurable: true, value: 'visible' });
+  assert.notEqual(sentryOptions.beforeSend(structuredClone(hiddenTransition)), null);
+  Object.defineProperty(testDocument, 'visibilityState', { configurable: true, value: 'hidden' });
+  assert.notEqual(sentryOptions.beforeSend(structuredClone(event)), null);
 });

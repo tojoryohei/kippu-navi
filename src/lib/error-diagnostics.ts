@@ -32,6 +32,8 @@ export function copyDiagnostics(diagnostics?: SearchDiagnostics): SearchDiagnost
   return {
     ...diagnostics,
     exception: diagnostics.exception && exceptionDiagnostics(diagnostics.exception),
+    workerScriptProbe: diagnostics.workerScriptProbe && { ...diagnostics.workerScriptProbe, exception: diagnostics.workerScriptProbe.exception && exceptionDiagnostics(diagnostics.workerScriptProbe.exception) },
+    serviceWorker: diagnostics.serviceWorker && { ...diagnostics.serviceWorker, exception: diagnostics.serviceWorker.exception && exceptionDiagnostics(diagnostics.serviceWorker.exception) },
     resources: diagnostics.resources?.slice(-32).map(resource => ({ ...resource, exception: resource.exception && exceptionDiagnostics(resource.exception) })),
     // 再起動は1回まで。再帰的な履歴を作らず、各試行の診断を保存する。
     attempts: diagnostics.attempts?.slice(0, 2).map(attempt => ({ ...attempt, diagnostics: copyDiagnostics({ ...attempt.diagnostics, attempts: undefined }) })),
