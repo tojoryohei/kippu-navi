@@ -303,7 +303,7 @@ func TestSequentialRouteExtensionsMeasuresVirtualInputEdges(t *testing.T) {
 	addFareExtensionEdge(g, "A", "東京", 1000, domain.JREast)
 	addFareExtensionEdge(g, "東京", "B", 900, domain.JREast)
 	addFareExtensionEdge(g, "B", "X", 100, domain.JREast)
-	addFareExtensionEdge(g, "X", "Y", 1100, domain.JREast)
+	addFareExtensionEdge(g, "X", "Y", 600, domain.JREast)
 	// L is a virtual temporary station. B→X remains the physical edge used for
 	// measuring the input route, while B→L→X is present only in the full graph.
 	virtualFrom := g.GetOrAddID("B")
@@ -327,7 +327,7 @@ func TestSequentialRouteExtensionsMeasuresVirtualInputEdges(t *testing.T) {
 	g.PhysicalEdgeCounts[virtualStation] -= 2
 	g.PhysicalEdgeCounts[virtualTo]--
 
-	zones := extensionTestZones("A", 2000)
+	zones := extensionTestZones("A", 1500)
 	input := []int{g.GetOrAddID("A"), g.GetOrAddID("東京"), g.GetOrAddID("B"), virtualStation, virtualTo}
 	candidates := sequentialRouteExtensions(input, g, zones)
 	want := []int{g.GetOrAddID("A"), g.GetOrAddID("東京"), g.GetOrAddID("B"), virtualStation, virtualTo, g.GetOrAddID("Y")}
@@ -381,20 +381,43 @@ func TestSequentialRouteExtensionsTriesBothSidesWhenBothEndpointsAreInZones(t *t
 	}
 }
 
-func TestSequentialRouteExtensionsStopsAtTenAddedStations(t *testing.T) {
-	g := graph.NewGraph(20)
-	addFareExtensionEdge(g, "東京", "A", 500, domain.JREast)
-	addFareExtensionEdge(g, "A", "B", 400, domain.JREast)
-	previous := "B"
-	for i := 0; i < maxRouteExtensionDepth+1; i++ {
-		station := fmt.Sprintf("X%d", i)
-		addFareExtensionEdge(g, previous, station, 100, domain.JREast)
-		previous = station
-	}
-	zones := extensionTestZones("A", 2000)
-	input := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
-	if got := sequentialRouteExtensions(input, g, zones); len(got) != 0 {
-		t.Fatalf("11駅目で初めて閾値を超える分岐を候補にしました: %v", got)
+func TestSequentialRouteExtensionsLimitsAddedEigyoKilo(t *testing.T) {
+	for _, added := range []domain.DeciKilo{600, 601} {
+		for _, reverse := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%d/reverse=%t", added, reverse), func(t *testing.T) {
+				g := graph.NewGraph(16)
+				addFareExtensionEdge(g, "東京", "A", 1000, domain.JREast)
+				addFareExtensionEdge(g, "A", "B", 500, domain.JREast)
+				want := []int{g.GetOrAddID("A"), g.GetOrAddID("B")}
+				previous := "B"
+				// 11駅間の延長で、従来の駅数制限が残っていないことも確認する。
+				for i := 0; i < 11; i++ {
+					next := fmt.Sprintf("E%d", i)
+					distance := domain.DeciKilo(50)
+					if i == 10 {
+						distance = added - 500
+					}
+					addFareExtensionEdge(g, previous, next, distance, domain.JREast)
+					want = append(want, g.GetOrAddID(next))
+					previous = next
+				}
+				input := append([]int(nil), want[:2]...)
+				if reverse {
+					for i, j := 0, len(want)-1; i < j; i, j = i+1, j-1 {
+						want[i], want[j] = want[j], want[i]
+					}
+					input[0], input[1] = input[1], input[0]
+				}
+				candidates := sequentialRouteExtensions(input, g, extensionTestZones("A", 2000))
+				if added > 600 {
+					if len(candidates) != 0 {
+						t.Fatalf("60kmを超える延長候補: %v", candidates)
+					}
+				} else if len(candidates) != 1 || !reflect.DeepEqual(candidates[0], want) {
+					t.Fatalf("60km以下の延長候補: 実際=%v 期待値=%v", candidates, want)
+				}
+			})
+		}
 	}
 }
 
