@@ -49,12 +49,14 @@ function initialize() {
       persistence: "localStorage+cookie",
       cookie_expiration: 365,
       person_profiles: "never",
-      capture_pageview: false,
+      // パス変更と検索実行によるクエリ変更をPVとして自動計測する。
+      capture_pageview: { path: true, search: true },
+      capture_pageleave: true,
       disable_session_recording: true,
       // 手動イベント計測を維持し、利用していないアンケートの取得を停止する。
       disable_surveys: true,
       autocapture: false,
-      capture_performance: false,
+      capture_performance: true,
       // posthog-js has no public disable_toolbar option; omit only the Toolbar extension.
       __extensionClasses: { toolbar: undefined },
     });
@@ -243,9 +245,9 @@ export function captureUnhandledError(error: unknown, component: string) {
   });
 }
 
-// ClientRouterの初回表示・遷移完了ごとに一度呼ぶ。検索条件は送信しない。
+// ClientRouterの初回表示・遷移完了時にSDKを初期化し、GAのPVを送る。
+// PostHogのPVはSDKが自動送信する。
 export function trackPageView() {
   initialize();
-  analytics.capture("$pageview");
   trackGooglePageView(googleAnalyticsId, window, document);
 }
