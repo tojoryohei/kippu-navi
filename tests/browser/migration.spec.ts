@@ -331,13 +331,13 @@ for (const kind of ["ticket", "pass"] as const) {
   });
 }
 
-test("初期化中も入力画面が表示され、完了後に計算できる", async ({ page }) => {
+test("環境確認中も入力画面が表示され、完了後に計算できる", async ({ page }) => {
   await isolateServices(page);
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  await page.route("**/main.wasm", async (route) => {
+  await page.route("**/split.worker*.js", async (route) => {
     await gate;
     await route.continue();
   });

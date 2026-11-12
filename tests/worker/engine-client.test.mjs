@@ -101,6 +101,7 @@ test('進捗のない初期化は各試行60秒で打ち切り、最後の段階
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { workers, client } = setup(t);
   const a = client();
+  const environment = assert.rejects(a.ensureEnvironmentSupported(), error => error.details.code === 'engine_initialization_timeout');
   const result = assert.rejects(a.ensureReady('pass'), error => {
     assert.equal(error.details.diagnostics.phases.wasm.phase, 'wasm_fetch');
     return true;
@@ -110,7 +111,7 @@ test('進捗のない初期化は各試行60秒で打ち切り、最後の段階
   assert.equal(workers.length, 1);
   t.mock.timers.tick(1_001);
   assert.equal(workers.length, 1);
-  await result;
+  await Promise.all([result, environment]);
 });
 
 test('起動前の後追い取得が停止しても2秒で元の失敗を一度だけ返す', async t => {
@@ -226,4 +227,27 @@ test('進捗が続く限り準備を中断せず、能力別に状態を通知�
   const count = changes.length;
   workers[1].reply({ type: 'ready', capability: 'ticket' });
   assert.equal(changes.length, count);
+});
+
+test('環境確認だけで待機を解除し、準備完了とは分離して共有する', async t => {
+  const { workers, client } = setup(t, true);
+  const a = client(), b = client();
+  a.restart();
+  const pending = Promise.all([a.ensureEnvironmentSupported(), b.ensureEnvironmentSupported()]);
+  workers.at(-1).reply({ type: 'environment_supported' });
+  await pending;
+  assert.equal(a.getState('ticket').status, 'preparing');
+  assert.equal(a.getState('ticket').environmentSupported, true);
+  await b.ensureEnvironmentSupported();
+  a.restart();
+  const disposed = b.ensureEnvironmentSupported();
+  b.terminate();
+  await assert.rejects(disposed, { name: 'AbortError' });
+  const failed = a.ensureEnvironmentSupported();
+  workers.at(-1).reply(failure({ errorCode: 'unsupported_environment', retryable: false }));
+  await assert.rejects(failed, error => error.details.code === 'unsupported_environment');
+  const count = workers.length;
+  a.restart();
+  assert.equal(workers.length, count);
+  await assert.rejects(a.ensureEnvironmentSupported());
 });

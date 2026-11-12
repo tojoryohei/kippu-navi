@@ -18,7 +18,11 @@ test("準備・探索・割合と件数・整理・エラー・再計算の表�
   const bar = page.getByRole("progressbar", { name: "分割計算の進捗" });
   await expect(page.getByRole("button", { name: "計算エンジンを準備中", exact: true })).toBeDisabled();
   await expect(bar).toHaveCount(0);
-  await page.evaluate(() => (window as unknown as { progressHarness: Harness }).progressHarness.reply({ type: "ready", capability: "ticket" }));
+  await page.evaluate(() => {
+    const harness = (window as unknown as { progressHarness: Harness }).progressHarness;
+    harness.reply({ type: "environment_supported" });
+    harness.reply({ type: "ready", capability: "ticket" });
+  });
   await expect.poll(() => page.evaluate(() => (window as unknown as { progressHarness: Harness }).progressHarness.sent.some(e => e.type === "calculateRouteSplitTicket"))).toBe(true);
   const reply = async (data: Record<string, unknown>, old = false) => page.evaluate(async ({ data, old }) => {
     const h = (window as unknown as { progressHarness: Harness }).progressHarness;

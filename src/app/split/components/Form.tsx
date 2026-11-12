@@ -179,7 +179,7 @@ export default function SplitForm({
 
     const workerRef = useRef<EngineClient | null>(null);
     const [engineClient, setEngineClient] = useState<EngineClient | null>(null);
-    const { status: engineState, error: engineError } = useEngineState(engineClient, selectedPeriod === "ticket" ? "ticket" : "pass");
+    const { status: engineState, error: engineError } = useEngineState(engineClient, selectedPeriod === "ticket" ? "ticket" : "pass", true);
     const [isLocalPreparing, setIsLocalPreparing] = useState(false);
 
     // 最新の計算リクエストIDを追跡し、古い計算結果を破棄する
@@ -229,12 +229,12 @@ export default function SplitForm({
     const onSubmit: SubmitHandler<ExtendedSplitFormInput> = useCallback(async (data) => {
         if (!mountedRef.current) return;
         const state = workerRef.current?.getState(data.searchType === "ticket" ? "ticket" : "pass");
-        if (!state || state.status === "preparing" || (state.status === "failed" && !isRetryableEngineError(new SearchOperationError(state.error)))) return;
+        if (!state || (state.status === "preparing" && !state.environmentSupported) || (state.status === "failed" && state.error.code !== "unsupported_environment" && !isRetryableEngineError(new SearchOperationError(state.error)))) return;
 
         const calcId = ++latestCalcIdRef.current;
         setResultSearchId(calcId);
         if (!data.startStation?.name || !data.endStation?.name) return;
-        const shouldRestartEngine = state.status === "failed" || isRetryableEngineError(pendingErrorRef.current);
+        const shouldRestartEngine = (state.status === "failed" && state.error.code !== "unsupported_environment") || isRetryableEngineError(pendingErrorRef.current);
 
         apiAbortRef.current?.abort("superseded");
         const abort = new AbortController();
@@ -342,6 +342,8 @@ export default function SplitForm({
         const apiTimeout = createAbortTimeout(abort.signal);
         const apiDiagnostics = createResourceDiagnostics();
         try {
+            await workerRef.current?.ensureEnvironmentSupported();
+            if (abort.signal.aborted || calcId !== latestCalcIdRef.current) return;
             if (!navigator.onLine) { apiTimeout.dispose(); await runLocally(); return; }
             const monthsMap: Record<string, string> = { pass1: "1", pass3: "3", pass6: "6" };
             const query = new URLSearchParams({
@@ -542,7 +544,7 @@ export default function SplitForm({
                 trigger(["startStation", "endStation"]).then((valid) => {
                     if (valid) {
                         const snapshot = JSON.stringify(getValues());
-                        void workerRef.current?.ensureReady(currentSearchType === "ticket" ? "ticket" : "pass").then(() => {
+                        void workerRef.current?.ensureEnvironmentSupported().then(() => {
                             if (!mountedRef.current || autoSearchCancelledRef.current || JSON.stringify(getValues()) !== snapshot) return;
                             return onSubmit({
                                 startStation,

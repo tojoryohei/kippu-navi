@@ -50,7 +50,10 @@ for (const path of ['/fare/pass', '/split/auto/ticket']) {
     const engine = await gateEngine(page);
     await page.goto(path);
     const button = page.locator('button[type="submit"]');
-    await expect(button).toHaveText('計算エンジンを準備中');
+    if (path === '/split/auto/ticket') {
+      // WASM本体が未取得でも、軽量な環境確認が済めばAPI検索を開始できる。
+      await expect(button).not.toHaveText('計算エンジンを準備中');
+    } else await expect(button).toHaveText('計算エンジンを準備中');
     await expect(button).toBeDisabled();
     await expect(page.getByRole('combobox').first()).toBeEditable();
     await engine.releaseNext();

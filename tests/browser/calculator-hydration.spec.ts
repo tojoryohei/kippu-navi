@@ -174,3 +174,42 @@ for (const path of ["/split/auto/ticket", "/fare/ticket", "/split/route/ticket"]
     }
   });
 }
+
+for (const legacy of [true, false]) {
+  test(`WASMの実行拒否を${legacy ? "旧環境の案内" : "現行環境の障害"}として扱う`, async ({ page, context }) => {
+    const monitoring: string[] = [];
+    let apiRequests = 0, workerLoads = 0;
+    await context.route("**/*", async route => {
+      const url = new URL(route.request().url());
+      if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return route.abort();
+      if (url.pathname === "/monitoring") {
+        monitoring.push(route.request().postData() || "");
+        return route.fulfill({ status: 200, json: {} });
+      }
+      if (url.pathname.startsWith("/api/")) apiRequests++;
+      if (/\/split\.worker[^/]*\.js$/.test(url.pathname)) {
+        workerLoads++;
+        const response = await route.fetch();
+        const body = await response.text();
+        return route.fulfill({ response, body: legacy
+          ? 'Object.defineProperty(navigator,"userAgent",{value:"Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 YJApp-IOS"});\n' + body : body,
+          headers: { ...response.headers(), "content-security-policy": "script-src 'self'" } });
+      }
+      return route.continue();
+    });
+    await page.goto("/split/auto/ticket?from=東京&to=品川");
+    if (legacy) {
+      await expect(page.getByText("この端末で計算するにはiOS 16以降が必要です。iOSを更新してからご利用ください。", { exact: true })).toBeVisible();
+      await page.locator('button[type="submit"]').click();
+      await expect(page.locator('button[type="submit"]')).toBeEnabled();
+      await page.locator('button[type="submit"]').click();
+      await expect(page.locator('button[type="submit"]')).toBeEnabled();
+      expect(workerLoads).toBe(1);
+      expect(apiRequests).toBe(0);
+      expect(monitoring.some(body => body.includes('"error_code":"unsupported_environment"'))).toBe(false);
+    } else {
+      await expect.poll(() => monitoring.some(body => body.includes('"error_code":"wasm_instantiation_failed"'))).toBe(true);
+      expect(apiRequests).toBe(0);
+    }
+  });
+}

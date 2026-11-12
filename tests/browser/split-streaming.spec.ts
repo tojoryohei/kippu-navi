@@ -18,7 +18,10 @@ for (const mode of ['online', 'offline']) {
       Object.assign(window, { streamHarness: harness });
       window.Worker = class {
         onmessage: ((event: MessageEvent) => void) | null = null;
-        constructor() { setTimeout(() => this.onmessage?.(new MessageEvent('message', { data: { type: 'ready', capability: 'ticket' } })), 0); }
+        constructor() { setTimeout(() => {
+          this.onmessage?.(new MessageEvent('message', { data: { type: 'environment_supported' } }));
+          this.onmessage?.(new MessageEvent('message', { data: { type: 'ready', capability: 'ticket' } }));
+        }, 0); }
         postMessage(request: Request) {
           requests.push({ request, worker: this });
           harness.sent.push(request);

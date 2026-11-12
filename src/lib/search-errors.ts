@@ -17,6 +17,7 @@ export type SearchErrorCode =
   | "communication_retry_required"
   | "duplicate_route"
   | "fare_unregistered"
+  | "unsupported_environment"
   | "unknown";
 
 const DUPLICATE_ROUTE_ERROR = "経路が重複しています。";
@@ -124,7 +125,7 @@ export interface SearchErrorDetails {
   diagnostics?: SearchDiagnostics;
 }
 
-const BUSINESS_ERROR_CODES = new Set<SearchErrorCode>(["duplicate_route", "path_invalid", "fare_unregistered", "communication_retry_required"]);
+const BUSINESS_ERROR_CODES = new Set<SearchErrorCode>(["unsupported_environment", "duplicate_route", "path_invalid", "fare_unregistered", "communication_retry_required"]);
 
 export function isBusinessSearchError(details: SearchErrorDetails): boolean {
   return BUSINESS_ERROR_CODES.has(details.code)

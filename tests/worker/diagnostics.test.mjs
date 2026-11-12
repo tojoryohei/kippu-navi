@@ -141,6 +141,18 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   assert.equal(completed.at(-1).properties.error_code, 'communication_retry_required');
   assert.equal(completed.at(-1).properties.worker_restart_count, 1);
 
+  const unsupportedClient = createEngineClient({ isolated: true });
+  const unsupportedPending = unsupportedClient.ensureEnvironmentSupported().catch(error => error);
+  const unsupportedBefore = events.length;
+  transport.onmessage({ data: { type: 'initialization_error', error: '更新してください', errorCode: 'unsupported_environment', errorStage: 'worker_bootstrap', retryable: false } });
+  const unsupportedError = await unsupportedPending;
+  analytics.captureSearchError(unsupportedError, context);
+  analytics.captureUnhandledError(unsupportedError, 'calculation_web_worker');
+  assert.equal(events.length, unsupportedBefore);
+  assert.equal(completed.at(-1).properties.outcome, 'business_error');
+  assert.equal(completed.at(-1).properties.error_code, 'unsupported_environment');
+  unsupportedClient.terminate();
+
   // 配信版の解決はCloudflareに任せ、ブラウザでは別URLを取得しない。
   const oldUrl = 'https://example.test/engine/' + 'a'.repeat(64) + '/main.wasm';
   for (const status of [403, 404]) {
