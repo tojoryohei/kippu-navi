@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.0...kippu-navi-v5.12.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* WASM未対応環境を業務エラーとして案内する ([#1059](https://github.com/tojoryohei/kippu-navi/issues/1059)) ([292cbfc](https://github.com/tojoryohei/kippu-navi/commit/292cbfcfc86f4dac16d6bdd50eae727af18fb3c4))
+
 ## [5.12.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.11.17...kippu-navi-v5.12.0) (2026-11-12)
 
 
