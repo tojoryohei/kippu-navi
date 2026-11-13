@@ -175,8 +175,8 @@ for (const path of ["/split/auto/ticket", "/fare/ticket", "/split/route/ticket"]
   });
 }
 
-for (const legacy of [true, false]) {
-  test(`WASMの実行拒否を${legacy ? "旧環境の案内" : "現行環境の障害"}として扱う`, async ({ page, context }) => {
+for (const { legacy, late } of [{ legacy: true, late: false }, { legacy: true, late: true }, { legacy: false, late: true }]) {
+  test(`WASMの${late ? "事前確認後の本体" : "事前確認"}の実行拒否を${legacy ? "旧環境の案内" : "現行環境の障害"}として扱う`, async ({ page, context }) => {
     const monitoring: string[] = [];
     let apiRequests = 0, workerLoads = 0;
     await context.route("**/*", async route => {
@@ -186,30 +186,38 @@ for (const legacy of [true, false]) {
         monitoring.push(route.request().postData() || "");
         return route.fulfill({ status: 200, json: {} });
       }
-      if (url.pathname.startsWith("/api/")) apiRequests++;
+      if (url.pathname.startsWith("/api/")) {
+        apiRequests++;
+        return route.fulfill({ json: { normal: ["東京", "品川"], results: [["東京", "品川"]] } });
+      }
       if (/\/split\.worker[^/]*\.js$/.test(url.pathname)) {
         workerLoads++;
         const response = await route.fetch();
         const body = await response.text();
-        return route.fulfill({ response, body: legacy
-          ? 'Object.defineProperty(navigator,"userAgent",{value:"Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 YJApp-IOS"});\n' + body : body,
-          headers: { ...response.headers(), "content-security-policy": "script-src 'self'" } });
+        const userAgent = legacy ? 'Object.defineProperty(navigator,"userAgent",{value:"Mozilla/5.0 (iPad; CPU OS 15_8_8 like Mac OS X) AppleWebKit/605.1.15 Version/15.6.8 Mobile/15E148 Safari/604.1"});\n' : "";
+        // 実際の事前確認は通し、本体のバイト列をinstantiateする段階だけ拒否する。
+        const rejectEngine = late ? `const instantiate = WebAssembly.instantiate.bind(WebAssembly);
+          WebAssembly.instantiate = (source, imports) => source instanceof ArrayBuffer && source.byteLength > 1000
+            ? Promise.reject(new EvalError("Refused to create a WebAssembly object because 'unsafe-eval' is not an allowed source of script in the following Content Security Policy directive: script-src 'self' 'wasm-unsafe-eval'"))
+            : instantiate(source, imports);\n` : "";
+        return route.fulfill({ response, body: userAgent + rejectEngine + body,
+          headers: late ? response.headers() : { ...response.headers(), "content-security-policy": "script-src 'self'" } });
       }
       return route.continue();
     });
     await page.goto("/split/auto/ticket?from=東京&to=品川");
     if (legacy) {
       await expect(page.getByText("この端末で計算するにはiOS 16以降が必要です。iOSを更新してからご利用ください。", { exact: true })).toBeVisible();
-      await page.locator('button[type="submit"]').click();
       await expect(page.locator('button[type="submit"]')).toBeEnabled();
+      const requestsBeforeRetry = apiRequests;
       await page.locator('button[type="submit"]').click();
       await expect(page.locator('button[type="submit"]')).toBeEnabled();
       expect(workerLoads).toBe(1);
-      expect(apiRequests).toBe(0);
+      expect(apiRequests).toBe(requestsBeforeRetry);
+      if (!late) expect(apiRequests).toBe(0);
       expect(monitoring.some(body => body.includes('"error_code":"unsupported_environment"'))).toBe(false);
     } else {
       await expect.poll(() => monitoring.some(body => body.includes('"error_code":"wasm_instantiation_failed"'))).toBe(true);
-      expect(apiRequests).toBe(0);
     }
   });
 }

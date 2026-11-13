@@ -270,8 +270,10 @@ function createEnginePool(isolated = false) {
       },
       ensureEnvironmentSupported() {
         if (!clients.has(client)) return Promise.reject(new DOMException("Disposed", "AbortError"));
-        if (environmentSupported) return Promise.resolve();
         const failure = failures.values().next().value;
+        // 事前確認が成功していても、本体で判明した未対応判定を優先する。
+        if (failure?.code === "unsupported_environment") return Promise.reject(new SearchOperationError(failure));
+        if (environmentSupported) return Promise.resolve();
         if (failure) return Promise.reject(new SearchOperationError(failure));
         return new Promise((resolve, reject) => environmentWaiters.add({ client, resolve, reject }));
       },
