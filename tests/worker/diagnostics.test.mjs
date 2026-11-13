@@ -59,6 +59,7 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   const originalFetch = globalThis.fetch, originalWorker = globalThis.Worker;
   const originalWindow = globalThis.window, originalDocument = globalThis.document, originalSelf = globalThis.self, originalPost = globalThis.postMessage;
   const originalServiceWorker = Object.getOwnPropertyDescriptor(navigator, 'serviceWorker');
+  const originalUserAgent = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
   const notifications = [];
   globalThis.window = { location: new URL('https://example.test/fare/ticket?route=A-B') };
   globalThis.document = testDocument;
@@ -68,6 +69,8 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   globalThis.postMessage = value => notifications.push(structuredClone(value));
   t.after(() => {
     globalThis.fetch = originalFetch; globalThis.Worker = originalWorker; globalThis.window = originalWindow; globalThis.document = originalDocument; globalThis.self = originalSelf; globalThis.postMessage = originalPost; globalThis.onmessage = originalOnMessage;
+    if (originalUserAgent) Object.defineProperty(navigator, 'userAgent', originalUserAgent);
+    else delete navigator.userAgent;
     if (originalServiceWorker) Object.defineProperty(navigator, 'serviceWorker', originalServiceWorker);
     else delete navigator.serviceWorker;
   });
@@ -144,7 +147,14 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   const unsupportedClient = createEngineClient({ isolated: true });
   const unsupportedPending = unsupportedClient.ensureEnvironmentSupported().catch(error => error);
   const unsupportedBefore = events.length;
-  transport.onmessage({ data: { type: 'initialization_error', error: '更新してください', errorCode: 'unsupported_environment', errorStage: 'worker_bootstrap', retryable: false } });
+  const cspError = new EvalError("Refused to create a WebAssembly object because 'unsafe-eval' is not allowed");
+  Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'Mozilla/5.0 (iPad; CPU OS 15_8_8 like Mac OS X) AppleWebKit/605.1.15 Version/15.6.8 Mobile/15E148 Safari/604.1' });
+  const unsupportedFailure = workerModule.initFailure(cspError, 'wasm_instantiate', 0);
+  assert.equal(unsupportedFailure.retryable, false);
+  assert.equal(unsupportedFailure.diagnostics.exception.name, 'EvalError');
+  transport.onmessage({ data: unsupportedFailure });
+  if (originalUserAgent) Object.defineProperty(navigator, 'userAgent', originalUserAgent);
+  else delete navigator.userAgent;
   const unsupportedError = await unsupportedPending;
   analytics.captureSearchError(unsupportedError, context);
   analytics.captureUnhandledError(unsupportedError, 'calculation_web_worker');

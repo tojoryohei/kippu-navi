@@ -1,3 +1,4 @@
+import { normalizeWasmEnvironmentError } from "@/lib/wasm-environment";
 import { readEngineAsset } from "@/lib/read-engine-asset";
 import { createSplitResultStream } from "@/lib/split-result-stream";
 /// <reference lib="webworker" />
@@ -153,12 +154,14 @@ async function fetchAsset(url: string, phase: string) {
 }
 
 function initFailure(error: unknown, stage: InitStage, retryCount: number, capability?: 'ticket' | 'pass'): InitFailure {
-  const exception = error instanceof Error ? error : new Error(String(error));
+  const normalized = stage === 'wasm_instantiate' ? normalizeWasmEnvironmentError(error, navigator.userAgent) : error;
+  const exception = normalized instanceof Error ? normalized : new Error(String(normalized));
+  const unsupported = exception.name === 'UnsupportedEnvironmentError';
   const httpStatus = (error as { httpStatus?: number } | null)?.httpStatus;
   return {
     type: 'initialization_error',
     error: exception.message,
-    errorCode: stage.endsWith('_fetch') ? 'engine_asset_fetch_failed'
+    errorCode: unsupported ? 'unsupported_environment' : stage.endsWith('_fetch') ? 'engine_asset_fetch_failed'
       : stage === 'wasm_instantiate' ? 'wasm_instantiation_failed'
         : stage.endsWith('_initialize') ? 'graph_initialization_failed'
           : 'engine_initialization_failed',
@@ -166,7 +169,7 @@ function initFailure(error: unknown, stage: InitStage, retryCount: number, capab
     exceptionName: exception.name,
     httpStatus,
     capability,
-    retryable: typeof WebAssembly !== 'undefined' && (httpStatus === undefined || isRetryableStatus(httpStatus)),
+    retryable: !unsupported && typeof WebAssembly !== 'undefined' && (httpStatus === undefined || isRetryableStatus(httpStatus)),
     retryCount,
     diagnostics: workerDiagnostics(error),
   };

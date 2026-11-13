@@ -586,9 +586,9 @@ test('旧環境でもWASMを実行できれば許可し、既知の旧環境の�
   const { checkWasmEnvironment } = await import('../../src/lib/wasm-environment.ts');
   const ios = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 YJApp-IOS jp.co.yahoo.ipn.appli/4.114.0';
   await checkWasmEnvironment(ios);
-  const compile = WebAssembly.compile;
-  t.after(() => { WebAssembly.compile = compile; });
-  WebAssembly.compile = async () => { throw new EvalError("Refused WebAssembly because 'unsafe-eval' is not allowed"); };
+  const instantiate = WebAssembly.instantiate;
+  t.after(() => { WebAssembly.instantiate = instantiate; });
+  WebAssembly.instantiate = async () => { throw new EvalError("Refused WebAssembly because 'unsafe-eval' is not allowed"); };
   for (const [ua, expected] of [
     [ios, 'UnsupportedEnvironmentError'], [ios.replace('15_5', '16_0'), 'EvalError'],
     ['AppleWebKit/605.1.15 Version/15.6 Safari/605.1.15', 'UnsupportedEnvironmentError'],
@@ -597,6 +597,6 @@ test('旧環境でもWASMを実行できれば許可し、既知の旧環境の�
     ['Chrome/96.0 SamsungBrowser/15.0', 'UnsupportedEnvironmentError'], ['Chrome/96.0 OPR/82.0', 'UnsupportedEnvironmentError'],
     ['Firefox/101.0', 'UnsupportedEnvironmentError'], ['Firefox/102.0', 'EvalError'], ['unknown', 'EvalError'],
   ]) await assert.rejects(checkWasmEnvironment(ua), { name: expected });
-  WebAssembly.compile = async () => { throw new WebAssembly.CompileError('invalid bytes'); };
+  WebAssembly.instantiate = async () => { throw new WebAssembly.CompileError('invalid bytes'); };
   await assert.rejects(checkWasmEnvironment(ios), { name: 'CompileError' });
 });

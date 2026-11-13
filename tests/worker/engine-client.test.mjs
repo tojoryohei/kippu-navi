@@ -243,7 +243,9 @@ test('環境確認だけで待機を解除し、準備完了とは分離して�
   const disposed = b.ensureEnvironmentSupported();
   b.terminate();
   await assert.rejects(disposed, { name: 'AbortError' });
-  const failed = a.ensureEnvironmentSupported();
+  workers.at(-1).reply({ type: 'environment_supported' });
+  await a.ensureEnvironmentSupported();
+  const failed = a.ensureReady('ticket');
   workers.at(-1).reply(failure({ errorCode: 'unsupported_environment', retryable: false }));
   await assert.rejects(failed, error => error.details.code === 'unsupported_environment');
   const count = workers.length;
