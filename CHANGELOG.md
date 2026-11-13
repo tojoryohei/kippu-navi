@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.2...kippu-navi-v5.12.3) (2026-11-13)
+
+
+### Bug Fixes
+
+* 本体WASMの実行拒否も未対応環境として案内する ([#1063](https://github.com/tojoryohei/kippu-navi/issues/1063)) ([5c8f388](https://github.com/tojoryohei/kippu-navi/commit/5c8f388ac9c1f341a2e3c334604f9f9fbc5713c9))
+
 ## [5.12.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.1...kippu-navi-v5.12.2) (2026-11-12)
 
 
