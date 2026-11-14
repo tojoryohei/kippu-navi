@@ -1,4 +1,5 @@
 import { test, expect } from "../support/fixtures";
+import { selectStation } from "../support/browser-helpers";
 
 const paths = ["/split/auto/ticket", "/split/auto/pass", "/split/auto/ic-pass", "/fare/ticket", "/fare/pass", "/split/route/ticket", "/split/route/pass"];
 
@@ -50,7 +51,7 @@ test("Workerの読込失敗を元の検索に記録し、通常の計算ボタ�
       return route.fulfill({ status: 200, json: {} });
     }
     if (/\/split\.worker[^/]*\.js$/.test(url.pathname)) {
-      if (route.request().resourceType() === "fetch") return route.fulfill({ status: 404, contentType: "text/html", body: "missing" });
+      if (route.request().resourceType() === "fetch") return route.fulfill({ status: 503, contentType: "text/html", body: "unavailable" });
       if (++loads <= 2) return route.abort();
     }
     return route.continue();
@@ -93,13 +94,67 @@ test("Workerの読込失敗を元の検索に記録し、通常の計算ボタ�
   // 直接通知と遅延した検索計測をまとめる。連続する同じ例外はSDKも抑制する。
   await expect.poll(() => workerEvents.length).toBe(1);
   expect(workerEvents.every(event => event.contexts.engine_diagnostics.workerPhase === "before_start")).toBe(true);
-  expect(workerEvents.every(event => event.contexts.engine_diagnostics.workerScriptProbe?.status === 404)).toBe(true);
+  expect(workerEvents.every(event => event.contexts.engine_diagnostics.workerScriptProbe?.status === 503)).toBe(true);
   expect(workerEvents[0].tags.failure_id).toBeTruthy();
   expect(info.urls).toHaveLength(3);
   expect(info.urls[0]).toMatch(/\/_astro\/split\.worker.+\.js$/);
   expect(info.urls[1]).toBe(info.urls[0]);
   expect(info.urls[2]).toBe(info.urls[0]);
   expect(info.locations.some(location => location.endsWith(info.urls[2]))).toBe(true);
+});
+
+for (const auto of [false, true]) test(`旧Workerの404は入力条件を残して自動更新する（経路自動=${auto}）`, async ({ page, context }) => {
+  let missing = true;
+  let loads = 0;
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await context.route("**/*", async route => {
+    const url = new URL(route.request().url());
+    if (!["localhost", "127.0.0.1"].includes(url.hostname)) return route.abort();
+    if (url.pathname.startsWith("/api/")) return route.fulfill({ json: { normal: ["新橋", "品川"], results: [["新橋", "品川"]] } });
+    if (missing && /\/split\.worker[^/]*\.js$/.test(url.pathname)) {
+      // 診断の404が返るまでに変更した入力も、自動更新時に保持する。
+      const attempt = ++loads;
+      await gate;
+      if (attempt === 2) missing = false;
+      return route.fulfill({ status: 404, body: "missing" });
+    }
+    return route.continue();
+  });
+  await page.goto(auto
+    ? "/split/auto/ticket?" + new URLSearchParams({ from: "東京", to: "品川" })
+    : "/fare/ticket?" + new URLSearchParams({ route: "東京[東海道]品川", mode: "normal" }));
+  await selectStation(page, page.getByRole("combobox").first(), "新橋");
+  if (!auto) {
+    await page.locator(".line-select__control").first().click();
+    await page.getByRole("option", { name: "東海道", exact: true }).click();
+    await selectStation(page, page.getByRole("combobox").nth(2), "品川");
+  }
+  // 最初のWorkerと診断だけ404にし、次のページでは資材を取得できる状態にする。
+  release();
+  await expect(page).toHaveURL(auto ? /from=%E6%96%B0%E6%A9%8B/ : /route=%E6%96%B0%E6%A9%8B/);
+  await expect(page.getByRole("combobox").first()).toHaveValue("新橋");
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "ページを再読み込み", exact: true })).toHaveCount(0);
+});
+
+test("自動更新後もWorkerが404なら再更新せず案内文だけを表示する", async ({ page, context }) => {
+  let documents = 0;
+  await context.route("**/*", route => {
+    const url = new URL(route.request().url());
+    if (!["localhost", "127.0.0.1"].includes(url.hostname)) return route.abort();
+    if (route.request().isNavigationRequest()) documents++;
+    if (/\/split\.worker[^/]*\.js$/.test(url.pathname)) return route.fulfill({ status: 404, body: "missing" });
+    return route.continue();
+  });
+  await page.goto("/fare/ticket?" + new URLSearchParams({ route: "東京[東海道]品川" }));
+  await expect.poll(() => documents).toBe(2);
+  await expect(page.getByText("計算に必要なファイルが見つかりません。ページを再読み込みしてからご利用ください。", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "ページを再読み込み", exact: true })).toHaveCount(0);
+  // 再描画されても自動更新回数が増えないことを確認する。
+  await page.getByRole("radio", { name: /最安/ }).check();
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  expect(documents).toBe(2);
 });
 
 test("Reactの初期化途中に記事へ移動してもエラーにならない", async ({ page }) => {

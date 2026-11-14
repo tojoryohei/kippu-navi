@@ -224,6 +224,10 @@ function createEnginePool(isolated = false) {
         const [workerScriptProbe, serviceWorker] = await Promise.all([probeWorkerScript(), probeServiceWorker()]);
         Object.assign(details.diagnostics, { workerScriptProbe, serviceWorker });
         if (currentGeneration !== generation) return;
+        if (workerScriptProbe?.status === 404) {
+          details.recoveryAction = "reload";
+          details.retryable = false;
+        }
       }
       captureUnhandledError(new SearchOperationError(details), "calculation_web_worker");
       for (const request of requests.values()) notify(request.client, { type: "error", requestId: request.requestId, error: details.message, details });
@@ -297,7 +301,7 @@ function createEnginePool(isolated = false) {
         worker.postMessage({ ...message, payload: { ...message.payload, requestId } });
       },
       restart() {
-        if (!clients.has(client) || [...failures.values()].some(failure => failure.code === "unsupported_environment")) return;
+        if (!clients.has(client) || [...failures.values()].some(failure => failure.code === "unsupported_environment" || failure.recoveryAction === "reload")) return;
         initialFailure = failures.values().next().value;
         cancelWaiters("Superseded");
         stopWorker();
