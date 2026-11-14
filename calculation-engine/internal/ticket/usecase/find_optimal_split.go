@@ -84,27 +84,17 @@ func (e *TicketSegmentEvaluator) Execute(path []int, months int) (*CalculationRe
 	return e.calculation.Execute(path, months)
 }
 
-// SetSplitCorrector は分割券の近郊区間内完結時に使う通常モードの補正器を設定します。
+// SetSplitCorrector は分割後の各乗車券に使う通常モードの補正器を設定します。
 func (e *TicketSegmentEvaluator) SetSplitCorrector(corrector PathCorrector) {
 	e.splitCorrector = corrector
 }
 
-// ExecuteForSplit は延長前の乗車券ごとに近郊区間を判定します。
+// ExecuteForSplit は候補全体ではなく、分割後の各乗車券に通常の経路補正を適用します。
 // 候補比較は ExecuteWithMode を直接使い、補正の再帰を避けます。
 func (e *TicketSegmentEvaluator) ExecuteForSplit(path []int, months int) (*CalculationResult, []int, error) {
-	if IsSuburbanAreaComplete(path, e.graph) {
-		corrector := e.splitCorrector
-		if corrector == nil {
-			corrector = NewSuburbanAreaCorrector(func(candidate []int) (int, error) {
-				res, _, err := e.ExecuteWithMode(candidate, months, "normal")
-				if err != nil {
-					return 0, err
-				}
-				return res.TotalAmount(), nil
-			})
-		}
+	if e.splitCorrector != nil {
 		var err error
-		path, err = corrector.Correct(path, e.graph)
+		path, err = CorrectPathForMode(append([]int(nil), path...), e.graph, e.splitCorrector, "normal")
 		if err != nil {
 			return nil, nil, err
 		}
