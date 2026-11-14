@@ -6,6 +6,7 @@ export type SearchErrorCode =
   | "engine_initialization_timeout"
   | "worker_creation_failed"
   | "worker_runtime_failed"
+  | "wasm_runtime_failed"
   | "wasm_instantiation_failed"
   | "graph_initialization_failed"
   | "api_timeout"
@@ -47,6 +48,7 @@ export type SearchErrorStage =
   | "api_response_validate"
   | "worker_create"
   | "worker_bootstrap"
+  | "wasm_runtime"
   | "wasm_fetch"
   | "wasm_instantiate"
   | "pass_graph_fetch"
@@ -80,6 +82,7 @@ export interface ResourceAttempt {
 }
 
 export interface SearchDiagnostics {
+  goRuntime?: { exitCode?: number; stderr: string };
   workerBootstrapStage?: "module_import" | "sentry_initialize" | "engine_initialize" | "module_ready";
   serviceWorker?: { controller: string; version?: string; appVersion?: string; exception?: ExceptionDiagnostics };
   workerScriptProbe?: {
@@ -144,6 +147,7 @@ export class SearchOperationError extends Error {
 }
 
 const ENGINE_RECOVERY_STAGES = new Set<SearchErrorStage>([
+  "wasm_runtime",
   "worker_create",
   "worker_bootstrap",
   "wasm_fetch",
@@ -164,6 +168,7 @@ export function isRetryableEngineError(error: unknown): error is SearchOperation
 export function formatEngineError(error: unknown): string {
   if (!(error instanceof SearchOperationError)) return error instanceof Error ? error.message : String(error);
   const details = error.details;
+  if (details.code === "wasm_runtime_failed") return details.message;
   if (details.recoveryAction === "reload") return "計算に必要なファイルが見つかりません。ページを再読み込みしてからご利用ください。";
   if (details.code === "engine_asset_fetch_failed" || details.code === "worker_runtime_failed"
     || details.diagnostics?.resources?.some(resource => resource.abortReason === "network_idle")) {

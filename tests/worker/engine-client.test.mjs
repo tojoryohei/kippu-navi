@@ -274,3 +274,36 @@ test('起動前のWorkerが404の場合は共有待機を終了し、同じURL�
   assert.equal(workers.length, 1);
   assert.equal(globalThis.workerErrors.length, 1);
 });
+
+test('Go終了時は実行中要求と全待機を終了し、古いWorkerを破棄して手動再開できる', async t => {
+  const { workers, client } = setup(t);
+  const a = client();
+  workers[0].reply({ type: 'environment_supported' });
+  workers[0].reply({ type: 'ready', capability: 'ticket' });
+  const pending = assert.rejects(a.ensureReady('pass'), error => error.details.code === 'wasm_runtime_failed');
+  const events = [];
+  a.onmessage = event => events.push(event.data);
+  a.postMessage({ type: 'calculate', payload: { requestId: '検索1' } });
+  const requestId = workers[0].sent[0].payload.requestId;
+  workers[0].reply({ type: 'runtime_error', error: '計算エンジンが停止しました。', errorCode: 'wasm_runtime_failed', errorStage: 'wasm_runtime', retryable: true, diagnostics: { goRuntime: { exitCode: 2, stderr: 'panic: 元の原因' } } });
+  await pending;
+  assert.equal(workers[0].stopped, true);
+  assert.equal(a.getState('ticket').status, 'failed');
+  await assert.rejects(a.ensureEnvironmentSupported());
+  assert.equal(events.length, 1);
+  assert.equal(events[0].requestId, '検索1');
+  assert.equal(events[0].details.diagnostics.goRuntime.stderr, 'panic: 元の原因');
+  assert.equal(globalThis.workerErrors.length, 1);
+  workers[0].reply({ type: 'success', requestId });
+  assert.equal(events.length, 1);
+  a.postMessage({ type: 'calculate', payload: { requestId: '終了直後の検索' } });
+  assert.equal(events[1].requestId, '終了直後の検索');
+  assert.equal(events[1].details.code, 'wasm_runtime_failed');
+  assert.equal(workers[0].sent.length, 1);
+  a.restart();
+  assert.equal(workers.length, 2);
+  assert.equal(workers[1].sent.length, 0);
+  workers[1].reply({ type: 'environment_supported' });
+  workers[1].reply({ type: 'ready', capability: 'ticket' });
+  assert.equal((await a.ensureReady('ticket')).workerRestartCount, 1);
+});
