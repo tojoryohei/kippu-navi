@@ -115,6 +115,7 @@ export interface SearchErrorDetails {
   exceptionName?: string;
   httpStatus?: number;
   capability?: EngineCapability;
+  recoveryAction?: "reload";
   retryable: boolean;
   retryCount: number;
   workerRestartCount: number;
@@ -163,6 +164,7 @@ export function isRetryableEngineError(error: unknown): error is SearchOperation
 export function formatEngineError(error: unknown): string {
   if (!(error instanceof SearchOperationError)) return error instanceof Error ? error.message : String(error);
   const details = error.details;
+  if (details.recoveryAction === "reload") return "計算に必要なファイルが見つかりません。ページを再読み込みしてからご利用ください。";
   if (details.code === "engine_asset_fetch_failed" || details.code === "worker_runtime_failed"
     || details.diagnostics?.resources?.some(resource => resource.abortReason === "network_idle")) {
     return COMMUNICATION_RETRY_MESSAGE;

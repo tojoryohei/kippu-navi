@@ -1,4 +1,4 @@
-import { useEngineState } from "@/lib/use-engine-state";
+import { useEngineState, useEngineReload } from "@/lib/use-engine-state";
 import { createResourceDiagnostics } from "@/lib/resource-diagnostics";
 import { exceptionDiagnostics } from "@/lib/error-diagnostics";
 import { appendSplitResults } from "@/lib/append-split-results";
@@ -774,6 +774,8 @@ export default function SplitForm({
             replaceCalculatorUrl(newUrl);
         }
     };
+
+    useEngineReload(engineError, () => updateUrlAndState(pathname, getValues("searchType")));
 
     return (
         <main className="max-w-2xl mx-auto w-full">

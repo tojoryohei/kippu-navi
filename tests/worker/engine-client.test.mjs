@@ -253,3 +253,24 @@ test('環境確認だけで待機を解除し、準備完了とは分離して�
   assert.equal(workers.length, count);
   await assert.rejects(a.ensureEnvironmentSupported());
 });
+
+test('起動前のWorkerが404の場合は共有待機を終了し、同じURLを再起動しない', async t => {
+  const originalWindow = globalThis.window, originalFetch = globalThis.fetch;
+  globalThis.window = { location: new URL('https://example.test/fare/ticket') };
+  globalThis.fetch = async () => new Response(null, { status: 404 });
+  t.after(() => { globalThis.window = originalWindow; globalThis.fetch = originalFetch; });
+  const { workers, client } = setup(t);
+  const a = client();
+  const pending = [a.ensureReady('ticket'), a.ensureReady('pass'), a.ensureEnvironmentSupported()]
+    .map(promise => assert.rejects(promise, error => {
+      assert.equal(error.details.recoveryAction, 'reload');
+      assert.equal(error.details.retryable, false);
+      assert.equal(error.details.diagnostics.workerScriptProbe.status, 404);
+      return true;
+    }));
+  await workers[0].fail({});
+  await Promise.all(pending);
+  a.restart();
+  assert.equal(workers.length, 1);
+  assert.equal(globalThis.workerErrors.length, 1);
+});

@@ -1,4 +1,4 @@
-import { useEngineState } from "@/lib/use-engine-state";
+import { useEngineState, useEngineReload } from "@/lib/use-engine-state";
 import TicketPricingOptions from "@/app/fare/components/TicketPricingOptions";
 import RouteDistanceTable from "./RouteDistanceTable";
 import { ticketDiscounts, normalizeTicketPricing, type PassengerType, type DiscountId } from "@/app/fare/lib/ticketPricing";
@@ -258,6 +258,8 @@ export default function Form({
             replaceCalculatorUrl(newUrl);
         }
     }, [setValue, getValues, initialCalculationMode, pathname, refreshValidationForTypeChange, isRouteSplit]);
+
+    useEngineReload(engineError, () => updateUrlAndState(pathname, getValues("searchType")));
 
     const mountedRef = useRef(true);
     useEffect(() => {
