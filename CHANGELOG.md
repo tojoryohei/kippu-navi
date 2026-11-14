@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.4...kippu-navi-v5.12.5) (2026-11-14)
+
+
+### Bug Fixes
+
+* Go終了後のWorker復旧と原因診断を追加する ([#1067](https://github.com/tojoryohei/kippu-navi/issues/1067)) ([45932cb](https://github.com/tojoryohei/kippu-navi/commit/45932cb7df9cb0feed320e2854336c75b8c61158))
+
 ## [5.12.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.3...kippu-navi-v5.12.4) (2026-11-14)
 
 
