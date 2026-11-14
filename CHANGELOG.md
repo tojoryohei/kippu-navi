@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.3...kippu-navi-v5.12.4) (2026-11-14)
+
+
+### Bug Fixes
+
+* Workerの404時に入力を保持して一度だけ自動更新する ([#1065](https://github.com/tojoryohei/kippu-navi/issues/1065)) ([a2746a8](https://github.com/tojoryohei/kippu-navi/commit/a2746a834e8ad04dc79d0034a4f8489a766bba4c))
+
 ## [5.12.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.2...kippu-navi-v5.12.3) (2026-11-13)
 
 
