@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.5...kippu-navi-v5.12.6) (2026-11-14)
+
+
+### Bug Fixes
+
+* 分割後の乗車券に通常の経路補正を適用 ([#1069](https://github.com/tojoryohei/kippu-navi/issues/1069)) ([220f700](https://github.com/tojoryohei/kippu-navi/commit/220f70093aa825ff18382b34bfeddd024caf65b5))
+
 ## [5.12.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.4...kippu-navi-v5.12.5) (2026-11-14)
 
 
