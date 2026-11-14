@@ -184,6 +184,15 @@ function createEnginePool(isolated = false) {
         if (waiters.has(capability)) readyCapabilities.add(capability);
         settleReady(capability, Number(event.data.retryCount || 0), event.data.initialError, event.data.diagnostics);
         clients.forEach(client => notify(client, event.data));
+      } else if (type === "runtime_error") {
+        workerFailed = true;
+        const details = withDiagnostics(structuredFailure(event.data));
+        Object.assign(details.diagnostics, { workerPhase: readyCapabilities.size ? "after_ready" : "initializing", workerReadyCapabilities: [...readyCapabilities] });
+        worker?.terminate();
+        captureUnhandledError(new SearchOperationError(details), "calculation_web_worker");
+        for (const request of requests.values()) notify(request.client, { type: "error", requestId: request.requestId, error: details.message, details });
+        requests.clear();
+        settleFailure(details);
       } else if (type === "initialization_error") {
         const details = withDiagnostics(structuredFailure(event.data));
         Object.assign(details.diagnostics, {
@@ -276,7 +285,7 @@ function createEnginePool(isolated = false) {
         if (!clients.has(client)) return Promise.reject(new DOMException("Disposed", "AbortError"));
         const failure = failures.values().next().value;
         // 事前確認が成功していても、本体で判明した未対応判定を優先する。
-        if (failure?.code === "unsupported_environment") return Promise.reject(new SearchOperationError(failure));
+        if (failure?.code === "unsupported_environment" || failure?.code === "wasm_runtime_failed") return Promise.reject(new SearchOperationError(failure));
         if (environmentSupported) return Promise.resolve();
         if (failure) return Promise.reject(new SearchOperationError(failure));
         return new Promise((resolve, reject) => environmentWaiters.add({ client, resolve, reject }));
@@ -296,6 +305,12 @@ function createEnginePool(isolated = false) {
       },
       postMessage(message) {
         if (!clients.has(client) || !worker) return;
+        // 準備完了を待った直後にGoが終了しても、終了済みWorkerへ要求を送らない。
+        const runtimeFailure = [...failures.values()].find(failure => failure.code === "wasm_runtime_failed");
+        if (runtimeFailure) {
+          notify(client, { type: "error", requestId: message.payload.requestId, error: runtimeFailure.message, details: runtimeFailure });
+          return;
+        }
         const requestId = ++sequence;
         requests.set(requestId, { client, requestId: message.payload.requestId });
         worker.postMessage({ ...message, payload: { ...message.payload, requestId } });

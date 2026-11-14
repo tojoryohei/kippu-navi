@@ -1,3 +1,4 @@
+import { monitorGoRuntime } from "@/lib/go-runtime-lifecycle";
 import { normalizeWasmEnvironmentError } from "@/lib/wasm-environment";
 import { readEngineAsset } from "@/lib/read-engine-asset";
 import { createSplitResultStream } from "@/lib/split-result-stream";
@@ -65,6 +66,7 @@ const wasmVersion = __WASM_VERSION__;
 const engineBaseUrl = `${baseOrigin}/engine${wasmVersion ? `/${wasmVersion}` : ''}`;
 interface GoInstance {
   importObject: WebAssembly.Imports;
+  exit(code: number): void;
   run(instance: WebAssembly.Instance): Promise<void>;
 }
 
@@ -98,6 +100,8 @@ interface WorkerGlobalScope {
 const workerSelf = (typeof self !== 'undefined' ? self : globalThis) as unknown as WorkerGlobalScope;
 
 let go: GoInstance;
+let runtimeMonitor: ReturnType<typeof monitorGoRuntime> | undefined;
+let runtimeFailed = false;
 let wasmInstance: WebAssembly.Instance | null = null;
 let ticketGraphInitialized = false;
 let passGraphInitialized = false;
@@ -176,6 +180,11 @@ function initFailure(error: unknown, stage: InitStage, retryCount: number, capab
 }
 
 function postWorkerError(error: unknown, requestId: unknown, capability: 'ticket' | 'pass', stage: 'calculation' | 'calculation_result_parse' = 'calculation') {
+  if (runtimeFailed) return;
+  if (error instanceof Error && error.message === 'Go program has already exited') {
+    runtimeMonitor?.fail(error);
+    return;
+  }
   const exception = error instanceof Error ? error : new Error(String(error));
   const message = normalizeCalculationError(exception.message);
   const details = {
@@ -227,7 +236,14 @@ async function initWasm() {
     wasmInstance = result.instance;
 
     // Wasmメインの起動 (非同期だが同期的に登録される)
-    go.run(wasmInstance);
+    runtimeMonitor = monitorGoRuntime(go, (globalThis as unknown as { fs: { writeSync(fd: number, buffer: Uint8Array): number } }).fs, (error, goRuntime) => {
+      runtimeFailed = true;
+      postMessage({ type: 'runtime_error', error: '計算エンジンが停止しました。もう一度計算してください。',
+        errorCode: 'wasm_runtime_failed', errorStage: 'wasm_runtime', exceptionName: 'GoRuntimeError', retryable: true,
+        diagnostics: { ...workerDiagnostics(error), goRuntime } });
+    });
+    runtimeMonitor.run(wasmInstance);
+    if (runtimeFailed) return;
 
     await Promise.all([initializeTicketGraph(), initializePassGraph()]);
   } catch (error) {

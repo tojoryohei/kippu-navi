@@ -157,6 +157,51 @@ test("自動更新後もWorkerが404なら再更新せず案内文だけを表�
   expect(documents).toBe(2);
 });
 
+test("Go終了の診断を残し、新しいWorkerで再計算できる", async ({ page, context }) => {
+  let injectExit = true;
+  const errors: Array<{ contexts: { engine_diagnostics: { goRuntime: { exitCode: number; stderr: string } } } }> = [];
+  await context.route("**/*", async route => {
+    const url = new URL(route.request().url());
+    if (!["localhost", "127.0.0.1"].includes(url.hostname)) return route.abort();
+    if (url.pathname === "/monitoring") {
+      const payload = route.request().postData()?.split("\n")[2];
+      if (payload) {
+        const event = JSON.parse(payload);
+        if (event.tags?.error_code === "wasm_runtime_failed") errors.push(event);
+      }
+      return route.fulfill({ status: 200, json: {} });
+    }
+    if (injectExit && url.pathname.endsWith("/wasm_exec.js")) {
+      injectExit = false;
+      const response = await route.fetch();
+      // 実WASMの準備完了後に終了を注入する。元のpanic原因の再現とは区別する。
+      return route.fulfill({ response, body: await response.text() + `
+        const originalRun = Go.prototype.run;
+        Go.prototype.run = function(instance) {
+          const runtime = this;
+          const send = self.postMessage.bind(self);
+          self.postMessage = (message, ...args) => {
+            send(message, ...args);
+            if (message.type === 'ready' && message.capability === 'pass') {
+              globalThis.fs.writeSync(2, new TextEncoder().encode('panic: 検証用の終了\\n'));
+              runtime.exited = true;
+              runtime.exit(2);
+            }
+          };
+          return originalRun.call(this, instance);
+        };` });
+    }
+    return route.continue();
+  });
+  await page.goto("/fare/ticket?" + new URLSearchParams({ route: "東京[東海道]品川" }));
+  await expect(page.getByText("計算エンジンが停止しました。もう一度計算してください。", { exact: true })).toBeVisible();
+  await expect.poll(() => errors.length).toBe(1);
+  expect(errors[0].contexts.engine_diagnostics.goRuntime).toEqual({ exitCode: 2, stderr: 'panic: 検証用の終了\n' });
+  await page.locator('button[type="submit"]').click();
+  await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
+  expect(errors).toHaveLength(1);
+});
+
 test("Reactの初期化途中に記事へ移動してもエラーにならない", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
