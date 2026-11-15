@@ -58,11 +58,11 @@ export function planRelease({ components, target, decision }) {
     expectedApiSha: api ? target : null };
 }
 
-export function verifyRevision(service, revision, { target, image }) {
+export function verifyRevision(service, revision, { target, image, platformImage = image }) {
   const name = servingRevision(service);
   if (!name || revision.metadata?.name !== name || revisionCommit(revision) !== target) throw new Error('配信Revisionまたは比較用SHAが公開対象と一致しません');
-  const digest = image.match(/@sha256:[a-f0-9]{64}$/)?.[0].slice(1);
-  if (!digest || revision.status?.imageDigest !== image && revision.status?.imageDigest !== digest) throw new Error('配信Revisionのimage digestが公開対象と一致しません');
+  const digest = platformImage.match(/@sha256:[a-f0-9]{64}$/)?.[0].slice(1);
+  if (!digest || revision.status?.imageDigest !== platformImage && revision.status?.imageDigest !== digest) throw new Error('配信Revisionのimage digestが公開対象と一致しません');
   return { revision: name, metadataCommit: target, image };
 }
 

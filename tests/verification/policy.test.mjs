@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { createHash } from 'node:crypto';
+import { resolvePlatformImage } from '../../scripts/deploy/image-digest.mjs';
 import assert from 'node:assert/strict';
 import { aggregate, planRelease, assertLease, decideApi, servingRevision, revisionCommit, verifyRevision } from '../../scripts/deploy/policy.mjs';
 import { admit } from '../../scripts/deploy/admission.mjs';
@@ -25,6 +27,33 @@ test('比較用メタデータと公開対象SHA・digestを照合する', () =>
   assert.doesNotThrow(() => verifyRevision(service(), r, { target: sha, image: r.status.imageDigest }));
   assert.throws(() => verifyRevision(service(), r, { target: old, image: r.status.imageDigest }));
   assert.throws(() => verifyRevision(service(), r, { target: sha, image: `image@sha256:${'d'.repeat(64)}` }));
+});
+test('公開indexのLinux/amd64だけを配信digestとして照合する', async () => {
+  const repository = 'asia-northeast1-docker.pkg.dev/bubbly-trail-470023-e4/cloud-run-source-deploy/calculation-engine';
+  const platformDigest = `sha256:${'c'.repeat(64)}`;
+  const manifest = { schemaVersion: 2, mediaType: 'application/vnd.oci.image.index.v1+json', manifests: [
+    { digest: platformDigest, platform: { os: 'linux', architecture: 'amd64' } },
+    { digest: `sha256:${'d'.repeat(64)}`, platform: { os: 'unknown', architecture: 'unknown' } },
+  ] };
+  const resolve = async value => {
+    const bytes = JSON.stringify(value);
+    const image = `${repository}@sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+    const platformImage = await resolvePlatformImage(image, { token: 'test', fetcher: async () => new Response(bytes) });
+    return { image, platformImage };
+  };
+  const { image, platformImage } = await resolve(manifest);
+  assert.equal(platformImage, `${repository}@${platformDigest}`);
+  const r = revision();
+  r.status.imageDigest = platformImage;
+  assert.doesNotThrow(() => verifyRevision(service(), r, { target: sha, image, platformImage }));
+  r.status.imageDigest = `${repository}@sha256:${'d'.repeat(64)}`;
+  assert.throws(() => verifyRevision(service(), r, { target: sha, image, platformImage }));
+  await assert.rejects(resolve({ ...manifest, manifests: [manifest.manifests[1]] }));
+  await assert.rejects(resolve({ ...manifest, manifests: [manifest.manifests[0], manifest.manifests[0]] }));
+  const single = await resolve({ schemaVersion: 2, mediaType: 'application/vnd.oci.image.manifest.v1+json' });
+  assert.equal(single.platformImage, single.image);
+  await assert.rejects(resolvePlatformImage(image, { token: 'test', fetcher: async () => new Response('{}') }));
+  await assert.rejects(resolvePlatformImage('https://example.com/image', { token: 'test', fetcher: () => assert.fail('許可外へ接続しています') }));
 });
 test('履歴や差分を確かめられなければAPI更新を省略しない', () => {
   for (const baseline of [null, '', 'local']) assert.equal(decideApi({ baseline, target: sha }).update, true);

@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync, appendFileSync } from 'node:fs';
 import { checkLeaseEnv } from './admission.mjs';
 import { servingRevision, verifyRevision } from './policy.mjs';
+import { resolvePlatformImage } from './image-digest.mjs';
 import { config } from '../verification/config.mjs';
 checkLeaseEnv();
 const c = config(process.env.DEPLOY_ENVIRONMENT);
@@ -17,7 +18,9 @@ try {
   report.actualRevision = revision;
   report.actualImage = data.status?.imageDigest;
   report.actualCommit = data.spec?.containers?.[0]?.env?.find(e => e.name === 'DEPLOY_COMMIT')?.value;
-  Object.assign(report, verifyRevision(service, data, { target: process.env.TARGET_SHA, image: process.env.PUBLISHED_IMAGE }), { success: true });
+  const token = execFileSync('gcloud', ['auth', 'print-access-token'], { encoding: 'utf8' }).trim();
+  report.expectedPlatformImage = await resolvePlatformImage(process.env.PUBLISHED_IMAGE, { token });
+  Object.assign(report, verifyRevision(service, data, { target: process.env.TARGET_SHA, image: process.env.PUBLISHED_IMAGE, platformImage: report.expectedPlatformImage }), { success: true });
 } catch (error) { report.error = error.message; process.exitCode = 1; }
 finally {
   report.elapsedMs = Date.now() - started;
