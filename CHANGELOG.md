@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.6...kippu-navi-v5.12.7) (2026-11-15)
+
+
+### Bug Fixes
+
+* 乗車券の事前計算で従来の経路補正範囲を維持 ([#1071](https://github.com/tojoryohei/kippu-navi/issues/1071)) ([7954d54](https://github.com/tojoryohei/kippu-navi/commit/7954d543dd34dae95149b15da4d7eef0f2fae835))
+
 ## [5.12.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.5...kippu-navi-v5.12.6) (2026-11-14)
 
 
