@@ -183,14 +183,28 @@ func run(args []string) (runErr error) {
 		}
 		return res.TotalAmount(), nil
 	}
-	ticketSegmentEvaluator.SetSplitCorrector(ticketusecase.NewPipelineCorrector(
+	ticketCorrector := ticketusecase.NewPipelineCorrector(
 		ticketusecase.NewSuburbanAreaCorrector(fareEval),
 		ticketusecase.NewShinkansenOverlapCorrector(),
 		ticketusecase.NewRule43_2Corrector(),
 		ticketusecase.NewRule69Corrector(),
 		ticketusecase.NewRule157Corrector(),
 		ticketusecase.NewArticle70Corrector(article70Routes),
-	))
+	)
+
+	// 事前計算は最安運賃だけを保存し、補正後の経路も候補に含まれるため、
+	// 各候補の通常経路補正は省略する。近郊区間内完結の補正は従来どおり適用する。
+	evaluatePrecomputedFare := func(path []int) (*ticketusecase.CalculationResult, error) {
+		if ticketusecase.IsSuburbanAreaComplete(path, ticketFullGraph) {
+			var err error
+			path, err = ticketCorrector.Correct(path, ticketFullGraph)
+			if err != nil {
+				return nil, err
+			}
+		}
+		res, _, err := ticketSegmentEvaluator.ExecuteWithMode(path, 0, "normal")
+		return res, err
+	}
 
 	log.Println("物理グラフの全点対最短経路を事前計算しています...")
 	basePrevGisei := make([][]int, numStations)
@@ -296,7 +310,7 @@ func run(args []string) (runErr error) {
 
 				minFare := math.MaxInt32
 				if len(pathGisei) > 0 {
-					res, _, err := ticketSegmentEvaluator.ExecuteForSplit(pathGisei, 0)
+					res, err := evaluatePrecomputedFare(pathGisei)
 					if err == nil && res != nil {
 						minFare = res.TotalAmount()
 					}
@@ -314,7 +328,7 @@ func run(args []string) (runErr error) {
 						pathEigyo = append([]int{startID}, pathEigyo...)
 					}
 					if len(pathEigyo) > 0 {
-						resE, _, err := ticketSegmentEvaluator.ExecuteForSplit(pathEigyo, 0)
+						resE, err := evaluatePrecomputedFare(pathEigyo)
 						if err == nil && resE != nil {
 							if resE.TotalAmount() < minFare {
 								minFare = resE.TotalAmount()
