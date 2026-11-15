@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.8...kippu-navi-v5.12.9) (2026-11-15)
+
+
+### Bug Fixes
+
+* 分割前乗車券の最安経路比較と候補探索を改善 ([#1075](https://github.com/tojoryohei/kippu-navi/issues/1075)) ([887a81b](https://github.com/tojoryohei/kippu-navi/commit/887a81bf7f2662a5b9e4432c181d224129ef7352))
+
 ## [5.12.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.7...kippu-navi-v5.12.8) (2026-11-15)
 
 
