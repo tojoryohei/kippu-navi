@@ -7,6 +7,9 @@ import (
 	"math"
 )
 
+// ticketCandidateDetour は分割探索と分割前の運賃比較に共通の迂回許容距離です（5.7km）。
+const ticketCandidateDetour domain.DeciKilo = 57
+
 // TicketSplitSegment は分割された個々の区間とその運賃計算結果を保持します。
 type TicketSplitSegment struct {
 	SourcePath     []int // 延長・補正前の乗車券経路（近郊区間判定用）
@@ -62,7 +65,7 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 	}
 
 	// 乗車券の場合は、運賃の振れ幅がそこまで大きくないため、最短経路＋多少の迂回経路の駅を候補とします。
-	maxGisei := shortest.GiseiKilo + 50
+	maxGisei := shortest.GiseiKilo + ticketCandidateDetour
 	pathsResult, err := u.graph.FindUnboundedKShortestPathsGisei(startID, endID, maxGisei)
 	if err != nil {
 		return nil, err
@@ -352,7 +355,7 @@ func (u *SearchOptimalSplit) GetCheapestTicketSegments(start, end int) ([]Ticket
 	if err != nil {
 		return nil, err
 	}
-	maxGisei := shortest.GiseiKilo + 50
+	maxGisei := shortest.GiseiKilo + ticketCandidateDetour
 
 	pathsResult, err := u.graph.FindUnboundedKShortestPathsGisei(start, end, maxGisei)
 	if err != nil {
