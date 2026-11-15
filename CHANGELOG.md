@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.7...kippu-navi-v5.12.8) (2026-11-15)
+
+
+### Bug Fixes
+
+* Cloud Runのdigestを実行対象manifestと照合 ([#1073](https://github.com/tojoryohei/kippu-navi/issues/1073)) ([e424d28](https://github.com/tojoryohei/kippu-navi/commit/e424d28bdff51d101dd56cd9e019b7153d7e3a88))
+
 ## [5.12.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.6...kippu-navi-v5.12.7) (2026-11-15)
 
 
