@@ -788,7 +788,7 @@ export default function Form({
 
         setValue("startStation", newStart, { shouldValidate: true });
         replace(reversedSegments);
-        trigger();
+        void trigger();
     };
 
 
@@ -951,15 +951,18 @@ export default function Form({
                                         control={control}
                                         rules={{
                                             required: "経由路線を選択してください",
-                                            validate: (value) => {
+                                            validate: (value, values) => {
                                                 if (!value || !value.name || value.name.trim() === "") return "経由路線を選択してください";
                                                 const currentSearchType = getValues("searchType");
                                                 const isPass = currentSearchType !== "ticket";
                                                 const targetBaseName = value.name.split('_')[0];
                                                 if (isPass && isShinkansen(value.name)) return "定期券の計算で新幹線は選択できません";
                                                 if (isPass && isPrivateRailwayLine(value.name)) return "定期券の計算で会社線は選択できません";
-                                                if (previousStation) {
-                                                    const prevLines = previousStation.lines || [];
+                                                const currentPreviousStation = index === 0
+                                                    ? values.startStation
+                                                    : values.segments?.[index - 1]?.destinationStation;
+                                                if (currentPreviousStation) {
+                                                    const prevLines = currentPreviousStation.lines || [];
                                                     const hasLine = prevLines.some(l => l === value.name || l.split('_')[0] === targetBaseName || l === targetBaseName);
                                                     if (!hasLine) return "この路線は選択できません";
                                                 }
@@ -989,13 +992,18 @@ export default function Form({
                                     control={control}
                                     rules={{
                                         required: `${stationLabel}を入力してください`,
-                                        validate: (selected) => {
+                                        validate: (selected, values) => {
                                             if (!selected || !selected.name || selected.name.trim() === "") return `${stationLabel}を入力してください`;
-                                            if (previousStation && previousStation.name === selected.name) {
+                                            // 逆転直後は再描画前にも検証されるため、描画時の路線・駅を参照しない。
+                                            const currentPreviousStation = index === 0
+                                                ? values.startStation
+                                                : values.segments?.[index - 1]?.destinationStation;
+                                            const currentLine = values.segments?.[index]?.viaLine;
+                                            if (currentPreviousStation && currentPreviousStation.name === selected.name) {
                                                 return "路線の前後で同じ駅は選択できません";
                                             }
-                                            if (selectedLine && stationsOnLine.length > 0) {
-                                                const exists = stationsOnLine.some(s => s.name === selected.name);
+                                            if (currentLine && currentLine.stations.length > 0) {
+                                                const exists = currentLine.stations.includes(selected.name);
                                                 if (!exists) {
                                                     return "選択された路線にこの駅は存在しません";
                                                 }
