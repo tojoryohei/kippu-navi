@@ -418,3 +418,22 @@ test("追加パターンの件数と再計算", async ({ page }) => {
     // 展開したまま次の計算へ進み、初期状態への復帰も検証する。
   }
 });
+
+test("複数路線の計算後に逆転しても運賃・分割フォームに入力エラーが残らない", async ({ page }) => {
+  await localCalculationOnly(page);
+  // 秋葉原は逆転前の中央線に含まれない。短い3路線で古い路線を参照する回帰を検出する。
+  for (const path of ["/fare/ticket", "/split/route/ticket"]) {
+    const query = new URLSearchParams({ route: "東京[中央線]御茶ノ水[御茶水支線]秋葉原[東北]上野", maxSplits: "1" });
+    await page.goto(`${path}?${query}`);
+    const result = page.getByRole("heading", { name: "計算結果", exact: true });
+    await expect(result).toBeVisible();
+    await page.getByRole("button", { name: "経路を逆転", exact: true }).click();
+    await expect(page.getByRole("combobox", { name: "乗車駅", exact: true })).toHaveValue("上野");
+    await expect(page.locator("#station-dest-station-0-input")).toHaveValue("秋葉原");
+    // 再計算で検証が上書きされる前に、逆転直後のエラーを確認する。
+    await expect(page.locator("form .text-red-500")).toHaveCount(0);
+    await page.getByRole("button", { name: path === "/fare/ticket" ? "運賃計算をする" : "乗車券を計算", exact: true }).click();
+    await expect(result).toBeVisible();
+    await expect(page.locator("form .text-red-500")).toHaveCount(0);
+  }
+});
