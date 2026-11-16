@@ -3,9 +3,13 @@ import { selectStation } from "../support/browser-helpers";
 
 const paths = ["/split/auto/ticket", "/split/auto/pass", "/split/auto/ic-pass", "/fare/ticket", "/fare/pass", "/split/route/ticket", "/split/route/pass"];
 
-test("Worker本体の評価例外を元の診断に残し、再計算で復旧する", async ({ page, context }) => {
+for (const failure of [
+  { name: "環境確認モジュールの404", resource: /\/wasm-environment[^/]*\.js$/, status: 404, stage: "environment_import", exception: "TypeError" },
+  { name: "Worker本体の評価例外", resource: /\/split-engine[^/]*\.js$/, status: 200, stage: "module_import", exception: "SyntaxError" },
+]) test(`${failure.name}を元の診断に残し、再計算で復旧する`, async ({ page, context, diagnostics }) => {
   let blocked = true;
-  const failures: Array<{ contexts: { engine_diagnostics: { workerPhase: string; workerBootstrapStage: string; exception: { name: string; message: string } } } }> = [];
+  if (failure.status === 404) diagnostics.expectFailure({ kind: "http-error", url: failure.resource, status: 404, reason: "依存モジュールの取得失敗を再現するため" });
+  const failures: Array<{ contexts: { engine_diagnostics: { workerPhase: string; workerBootstrapStage: string; exception: { name: string; message: string }; moduleResources?: Array<{ url: string; status?: number }> } } }> = [];
   await context.route("**/*", route => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return route.abort();
@@ -17,8 +21,8 @@ test("Worker本体の評価例外を元の診断に残し、再計算で復旧�
       }
       return route.fulfill({ status: 200, json: {} });
     }
-    if (blocked && /\/split-engine[^/]*\.js$/.test(url.pathname)) {
-      return route.fulfill({ status: 200, contentType: "application/javascript",
+    if (blocked && failure.resource.test(url.pathname)) {
+      return route.fulfill({ status: failure.status, contentType: "application/javascript",
         body: 'throw new SyntaxError("Worker本体の評価に失敗しました");' });
     }
     return route.continue();
@@ -27,9 +31,11 @@ test("Worker本体の評価例外を元の診断に残し、再計算で復旧�
   await expect.poll(() => failures.length).toBe(1);
   const diagnostic = failures[0].contexts.engine_diagnostics;
   expect(diagnostic.workerPhase).toBe("initializing");
-  expect(diagnostic.workerBootstrapStage).toBe("module_import");
-  expect(diagnostic.exception.name).toBe("SyntaxError");
-  expect(diagnostic.exception.message).toBe("Worker本体の評価に失敗しました");
+  expect(diagnostic.workerBootstrapStage).toBe(failure.stage);
+  expect(diagnostic.exception.name).toBe(failure.exception);
+  if (failure.status === 200) expect(diagnostic.exception.message).toBe("Worker本体の評価に失敗しました");
+  else expect(diagnostic.exception.message).toMatch(/import|module|fetch/i);
+  expect(diagnostic.moduleResources?.some(resource => failure.resource.test(new URL(resource.url).pathname))).toBe(true);
   blocked = false;
   await page.locator('button[type="submit"]').click();
   await expect(page.getByRole("heading", { name: "計算結果", exact: true })).toBeVisible();
