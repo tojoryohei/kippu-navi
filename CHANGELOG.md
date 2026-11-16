@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.13.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.13.1...kippu-navi-v5.13.2) (2026-11-16)
+
+
+### Bug Fixes
+
+* Worker依存モジュールの取得と評価の失敗診断を保持する ([#1084](https://github.com/tojoryohei/kippu-navi/issues/1084)) ([d21fc6a](https://github.com/tojoryohei/kippu-navi/commit/d21fc6ae3e07743eb1eb209b607901822636ffa2))
+
 ## [5.13.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.13.0...kippu-navi-v5.13.1) (2026-11-16)
 
 
