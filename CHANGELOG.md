@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.13.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.13.0...kippu-navi-v5.13.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* 経路逆転直後の駅と路線の検証を修正 ([#1081](https://github.com/tojoryohei/kippu-navi/issues/1081)) ([abd6f23](https://github.com/tojoryohei/kippu-navi/commit/abd6f2324e317db1f4514822942a684d61d492b3))
+
 ## [5.13.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.10...kippu-navi-v5.13.0) (2026-11-16)
 
 
