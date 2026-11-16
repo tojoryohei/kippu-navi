@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.13.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.10...kippu-navi-v5.13.0) (2026-11-16)
+
+
+### Features
+
+* Worker再読み込み後の検索結果を元障害と関連付ける ([#1079](https://github.com/tojoryohei/kippu-navi/issues/1079)) ([9e581ed](https://github.com/tojoryohei/kippu-navi/commit/9e581ed7c148166fc6aec2c6a522cec0ea3a1c96))
+
 ## [5.12.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.9...kippu-navi-v5.12.10) (2026-11-16)
 
 
