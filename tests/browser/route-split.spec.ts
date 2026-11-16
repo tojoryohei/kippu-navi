@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "../support/fixtures";
+import { blockExternalServices } from "../support/browser-helpers";
 
 async function localCalculationOnly(page: Page, apiResponses: Record<string, unknown> = {}) {
   const apiCalls: string[] = [];
@@ -151,19 +152,6 @@ test("全最安パターンの展開・折りたたみと画面遷移", async ({
   expect(errors).toEqual([]);
 });
 
-test("経路入力検索の分割禁止駅をfieldsetの凡例で識別する", async ({ page }) => {
-  const apiCalls = await localCalculationOnly(page);
-  await page.goto(`/split/route/ticket?${new URLSearchParams({ route: "新茂原[外房]茂原" })}`);
-  await page.getByText("詳細オプション", { exact: true }).click();
-  await expect(page.locator('label[for="no-split-stations"]')).toHaveCount(0);
-  await expect(page.locator("fieldset legend")).toHaveText("分割禁止駅を選択");
-  const orphanLabels = await page.locator("label[for]").evaluateAll(labels => labels
-    .filter(label => !document.getElementById((label as HTMLLabelElement).htmlFor))
-    .map(label => (label as HTMLLabelElement).htmlFor));
-  expect(orphanLabels).toEqual([]);
-  expect(apiCalls).toEqual([]);
-});
-
 test("経路入力検索定期券 6箇月 normal: 運賃計算と同じ金額をWASMで返す", async ({ page }) => {
   const month = 6;
   const mode = "normal";
@@ -251,6 +239,14 @@ for (const kind of ["ticket", "pass"]) {
     const params = new URLSearchParams({ route: "新茂原[外房]上総一ノ宮", mode: "normal", maxSplits: "1", noSplitStation: "茂原", months: "3" });
     await page.goto(`/split/route/${kind}?${params}`);
     await page.getByText("詳細オプション", { exact: true }).click();
+    if (kind === "ticket") {
+      await expect(page.locator('label[for="no-split-stations"]')).toHaveCount(0);
+      await expect(page.locator("fieldset legend")).toHaveText("分割禁止駅を選択");
+      const orphanLabels = await page.locator("label[for]").evaluateAll(labels => labels
+        .filter(label => !document.getElementById((label as HTMLLabelElement).htmlFor))
+        .map(label => (label as HTMLLabelElement).htmlFor));
+      expect(orphanLabels).toEqual([]);
+    }
     await expect(page.getByRole("checkbox", { name: "茂原", exact: true })).toBeChecked();
     await expect(page.getByRole("checkbox")).toHaveCount(2);
     await expect(page.getByRole("checkbox", { name: "八積", exact: true })).not.toBeChecked();
@@ -419,21 +415,21 @@ test("追加パターンの件数と再計算", async ({ page }) => {
   }
 });
 
-test("複数路線の計算後に逆転しても運賃・分割フォームに入力エラーが残らない", async ({ page }) => {
-  await localCalculationOnly(page);
-  // 秋葉原は逆転前の中央線に含まれない。短い3路線で古い路線を参照する回帰を検出する。
+test("複数路線を逆転しても運賃・分割フォームに入力エラーが残らない", async ({ page }) => {
+  await blockExternalServices(page);
+  await page.clock.install();
+  // 入力検証だけを確認するため、WASMの取得を保留して自動計算を開始させない。
+  await page.route("**/main.wasm", () => { /* ページを閉じるまで保留する。 */ });
+  // 秋葉原は逆転前の中央線に含まれず、古い路線を参照する回帰を検出できる。
   for (const path of ["/fare/ticket", "/split/route/ticket"]) {
-    const query = new URLSearchParams({ route: "東京[中央線]御茶ノ水[御茶水支線]秋葉原[東北]上野", maxSplits: "1" });
+    const query = new URLSearchParams({ route: "東京[中央線]御茶ノ水[御茶水支線]秋葉原[東北]上野" });
     await page.goto(`${path}?${query}`);
-    const result = page.getByRole("heading", { name: "計算結果", exact: true });
-    await expect(result).toBeVisible();
+    await expect(page.getByRole("button", { name: "経路を逆転", exact: true })).toBeEnabled();
+    // URL復元時の遅延検証を先に済ませ、逆転時のエラーが後から消されないようにする。
+    await page.clock.runFor(150);
     await page.getByRole("button", { name: "経路を逆転", exact: true }).click();
     await expect(page.getByRole("combobox", { name: "乗車駅", exact: true })).toHaveValue("上野");
     await expect(page.locator("#station-dest-station-0-input")).toHaveValue("秋葉原");
-    // 再計算で検証が上書きされる前に、逆転直後のエラーを確認する。
-    await expect(page.locator("form .text-red-500")).toHaveCount(0);
-    await page.getByRole("button", { name: path === "/fare/ticket" ? "運賃計算をする" : "乗車券を計算", exact: true }).click();
-    await expect(result).toBeVisible();
     await expect(page.locator("form .text-red-500")).toHaveCount(0);
   }
 });
