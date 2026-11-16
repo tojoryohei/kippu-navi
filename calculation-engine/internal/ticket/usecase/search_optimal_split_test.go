@@ -167,19 +167,44 @@ func TestStreamingSearchWaitsForCheapestCandidate(t *testing.T) {
 	fares[c*4+d] = 100
 	search := NewSearchOptimalSplit(g, nil)
 	search.SetPrecomputedFares(fares)
-	for _, limit := range []int{0, 2} {
-		for _, locked := range [][]int{nil, {c}} {
-			want, err := search.ExecuteWithOptions(a, d, limit, locked)
-			if err != nil {
-				t.Fatal(err)
-			}
-			var got [][]int
-			remaining, err := search.ExecuteWithOptions(a, d, limit, locked, func(path []int) { got = append(got, path) })
-			if err != nil || len(remaining) != 0 || !reflect.DeepEqual(got, want) {
-				t.Fatalf("limit=%d locked=%v: %v != %v (%v)", limit, locked, got, want, err)
-			}
-			if locked == nil && !reflect.DeepEqual(got, [][]int{{a, c, d}}) {
-				t.Fatalf("高い候補が通知されました: %v", got)
+	for _, equalFare := range []bool{false, true} {
+		fares[a*4+b], fares[b*4+d] = 200, 200
+		if equalFare {
+			fares[a*4+b], fares[b*4+d] = 100, 100
+		}
+		for _, limit := range []int{0, 2} {
+			for _, locked := range [][]int{nil, {c}} {
+				expected := [][]int{{a, c, d}}
+				if locked != nil {
+					expected = [][]int{{a, b, d}}
+				} else if equalFare {
+					expected = [][]int{{a, b, d}, {a, c, d}}
+				}
+				want, err := search.ExecuteWithOptions(a, d, limit, locked)
+				if err != nil || !reflect.DeepEqual(want, expected) {
+					t.Fatalf("equalFare=%v limit=%d locked=%v: 結果=%v 期待値=%v (%v)", equalFare, limit, locked, want, expected, err)
+				}
+				var got [][]int
+				remaining, err := search.ExecuteWithOptions(a, d, limit, locked, func(path []int) { got = append(got, path) })
+				if err != nil || len(remaining) != 0 || !reflect.DeepEqual(got, want) {
+					t.Fatalf("limit=%d locked=%v: %v != %v (%v)", limit, locked, got, want, err)
+				}
+				// 保持した結果の変更が、他の候補や次の探索に伝播しないことを確認する。
+				got[0][0] = -1
+				if len(got) > 1 && !reflect.DeepEqual(got[1:], expected[1:]) {
+					t.Fatalf("他の候補が変更されました: %v", got)
+				}
+				got = nil
+				_, err = search.ExecuteWithOptions(a, d, limit, locked, func(path []int) {
+					got = append(got, append([]int(nil), path...))
+					// 通知中の変更も、後続候補の生成に影響してはいけない。
+					for i := range path {
+						path[i] = -1
+					}
+				})
+				if err != nil || !reflect.DeepEqual(got, expected) {
+					t.Fatalf("visitorによる変更が探索に伝播しました: %v != %v (%v)", got, expected, err)
+				}
 			}
 		}
 	}
