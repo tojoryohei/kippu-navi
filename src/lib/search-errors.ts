@@ -83,7 +83,8 @@ export interface ResourceAttempt {
 
 export interface SearchDiagnostics {
   goRuntime?: { exitCode?: number; stderr: string };
-  workerBootstrapStage?: "module_import" | "sentry_initialize" | "engine_initialize" | "module_ready";
+  workerBootstrapStage?: "environment_import" | "environment_check" | "module_import" | "sentry_initialize" | "engine_initialize" | "module_ready";
+  moduleResources?: Array<{ url: string; initiatorType: string; durationMs: number; transferSize: number; encodedBodySize: number; status?: number }>;
   serviceWorker?: { controller: string; version?: string; appVersion?: string; exception?: ExceptionDiagnostics };
   workerScriptProbe?: {
     status?: number;

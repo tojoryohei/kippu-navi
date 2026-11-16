@@ -33,6 +33,7 @@ export function copyDiagnostics(diagnostics?: SearchDiagnostics): SearchDiagnost
     ...diagnostics,
     exception: diagnostics.exception && exceptionDiagnostics(diagnostics.exception),
     workerScriptProbe: diagnostics.workerScriptProbe && { ...diagnostics.workerScriptProbe, exception: diagnostics.workerScriptProbe.exception && exceptionDiagnostics(diagnostics.workerScriptProbe.exception) },
+    moduleResources: diagnostics.moduleResources?.slice(-16).map(resource => ({ ...resource })),
     serviceWorker: diagnostics.serviceWorker && { ...diagnostics.serviceWorker, exception: diagnostics.serviceWorker.exception && exceptionDiagnostics(diagnostics.serviceWorker.exception) },
     resources: diagnostics.resources?.slice(-32).map(resource => ({ ...resource, exception: resource.exception && exceptionDiagnostics(resource.exception) })),
     // 再起動は1回まで。再帰的な履歴を作らず、各試行の診断を保存する。
