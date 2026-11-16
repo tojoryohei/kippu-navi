@@ -1,6 +1,6 @@
 {
   "name": "kippu-navi",
-  "version": "5.12.10",
+  "version": "5.13.0",
   "private": true,
   "type": "module",
   "engines": {
