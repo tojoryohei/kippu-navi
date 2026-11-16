@@ -1,3 +1,4 @@
+import { readEngineReload, type EngineReloadRecovery } from '@/lib/engine-reload-diagnostics';
 import * as Sentry from "@sentry/browser";
 import posthog from "posthog-js";
 import type { EngineReadiness } from "@/lib/engine-client";
@@ -147,6 +148,7 @@ export interface SearchEventContext {
   search: SearchAnalyticsInput;
   readiness?: EngineReadiness;
   requestId?: string;
+  reloadRecovery?: EngineReloadRecovery;
   apiFailure?: SearchErrorDetails;
   localFallbackOutcome?: "started" | "success" | "failure";
 }
@@ -167,11 +169,25 @@ function attachErrorDiagnostics(scope: Sentry.Scope, details: SearchErrorDetails
   if (diagnostics) scope.setContext("engine_diagnostics", { ...copyDiagnostics(diagnostics) });
   if (diagnostics?.workerPhase) scope.setTag("worker_phase", diagnostics.workerPhase);
   if (diagnostics?.workerBootstrapStage) scope.setTag("worker_bootstrap_stage", diagnostics.workerBootstrapStage);
+  if (diagnostics?.workerPhase === "before_start") {
+    const status = diagnostics.workerScriptProbe?.status;
+    scope.setTag("worker_script_probe", status === undefined ? "network_error" : String(status));
+  }
+  const reload = readEngineReload();
+  if (reload) scope.setContext("engine_reload", { ...reload });
   if (details.failureId) scope.setTag("failure_id", details.failureId);
 }
 
 function completedSearchProperties(context: SearchEventContext, outcome: SearchOutcome, errorCode?: string, result?: SearchResultAnalytics) {
-  return { ...buildSearchCompletedProperties({
+  if (context.search.searchUrl === buildSearchUrl(window.location)) {
+    context.reloadRecovery ??= readEngineReload(true);
+  }
+  const reload = context.reloadRecovery;
+  return { ...(reload ? {
+    engine_reload: true, reload_failure_id: reload.failureId,
+    reload_elapsed_ms: Date.now() - reload.startedAt,
+    reload_outcome: outcome,
+  } : {}), ...buildSearchCompletedProperties({
     searchType: context.searchType,
     calculationMode: context.calculationMode,
     capability: context.capability,
@@ -203,6 +219,7 @@ export function captureSearchError(error: unknown, context: SearchEventContext) 
     if (sentryDsn) {
       Sentry.withScope(scope => {
         attachErrorDiagnostics(scope, details);
+        if (context.reloadRecovery) scope.setContext("engine_reload", { ...context.reloadRecovery });
         if (context.apiFailure) scope.setContext("api_fallback", { failure: { ...context.apiFailure, diagnostics: copyDiagnostics(context.apiFailure.diagnostics) }, outcome: context.localFallbackOutcome });
         if (context.readiness?.initialError) scope.setContext("engine_recovery", { ...context.readiness, diagnostics: copyDiagnostics(context.readiness.diagnostics) });
         scope.setTags({ error_code: details.code, error_stage: details.stage, capability: details.capability || context.capability, http_status: details.httpStatus?.toString() || "none", retry_count: details.retryCount.toString(), worker_restart_count: details.workerRestartCount.toString(), app_version: __APP_VERSION__, engine_version: __WASM_VERSION__, deploy_commit: __DEPLOY_COMMIT__ });
