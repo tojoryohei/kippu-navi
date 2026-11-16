@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.12.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.9...kippu-navi-v5.12.10) (2026-11-16)
+
+
+### Bug Fixes
+
+* 自動分割探索の部分経路コピーによるメモリ増大を抑制 ([#1077](https://github.com/tojoryohei/kippu-navi/issues/1077)) ([a36f2d2](https://github.com/tojoryohei/kippu-navi/commit/a36f2d26e6186f0e488e5db789e95b9ffc125b69))
+
 ## [5.12.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.12.8...kippu-navi-v5.12.9) (2026-11-15)
 
 
