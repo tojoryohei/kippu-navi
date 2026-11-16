@@ -105,11 +105,7 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 		}
 		dp[0][0] = 0
 
-		type evalRes struct {
-			fare  int
-			oPath []int
-		}
-		cache := make([]evalRes, n*n)
+		cache := make([][]int, n*n)
 
 		for j := 1; j < n; j++ {
 			if j < n-1 && isLockedStation(path[j], locked) {
@@ -119,7 +115,7 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 				if i > 0 && isLockedStation(path[i], locked) {
 					continue
 				}
-				subPath := path[i : j+1]
+				subPath := path[i : j+1 : j+1]
 				var cost int
 
 				if u.fares != nil {
@@ -140,10 +136,8 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 					cost = res.TotalAmount()
 				}
 
-				// Make a copy of subPath since it's a slice of path
-				subPathCopy := make([]int, len(subPath))
-				copy(subPathCopy, subPath)
-				cache[i*n+j] = evalRes{fare: cost, oPath: subPathCopy}
+				// 元の経路と共有する読み取り専用スライスを保持し、駅列の複製を避ける。
+				cache[i*n+j] = subPath
 
 				for k := 1; k <= maxK; k++ {
 					if dp[k-1][i] == math.MaxInt {
@@ -191,10 +185,10 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 						return
 					}
 					for _, i := range prev[k][j] {
-						eval := cache[i*n+j]
+						subPath := cache[i*n+j]
 						newPaths := make([][]int, len(currentPaths))
 						copy(newPaths, currentPaths)
-						newPaths = append(newPaths, eval.oPath)
+						newPaths = append(newPaths, subPath)
 						backtrack(i, k-1, newPaths)
 					}
 				}
