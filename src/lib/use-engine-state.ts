@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { isRetryableEngineError, SearchOperationError, type EngineCapability, type SearchErrorDetails } from './search-errors';
+import { saveEngineReload } from './engine-reload-diagnostics';
 import type { EngineClient } from './engine-client';
 const noopSubscribe = () => () => {};
 const preparing = () => 'preparing' as const;
@@ -27,6 +28,7 @@ export function useEngineReload(error: SearchErrorDetails | undefined, saveInput
       if (sessionStorage.getItem(key)) return;
       sessionStorage.setItem(key, '1');
       saveInputs();
+      try { saveEngineReload(error); } catch { /* 診断保存の失敗で回復を妨げない。 */ }
       location.reload();
     } catch { /* 保存できない場合は案内文を表示する。 */ }
   }, [error, saveInputs]);

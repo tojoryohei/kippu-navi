@@ -134,6 +134,7 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   }
   assert.equal(events.at(-1).fingerprint, undefined);
   assert.equal(events.at(-1).tags.component, 'calculation_web_worker');
+  assert.equal(events.at(-1).tags.worker_script_probe, 'network_error');
   assert.ok(events.at(-1).contexts.engine_diagnostics.workerScriptProbe.exception);
   assert.equal(events.at(-1).contexts.engine_diagnostics.serviceWorker.version, 'cached-version');
   bootstrapClient.terminate();
@@ -236,4 +237,38 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   assert.notEqual(sentryOptions.beforeSend(structuredClone(hiddenTransition)), null);
   Object.defineProperty(testDocument, 'visibilityState', { configurable: true, value: 'hidden' });
   assert.notEqual(sentryOptions.beforeSend(structuredClone(event)), null);
+});
+
+test('リロード後の同じ検索だけを元障害に結び付け、成功・失敗を記録する', async t => {
+  const { saveEngineReload } = await import('../../src/lib/engine-reload-diagnostics.ts');
+  const originalLocation = globalThis.location, originalStorage = globalThis.sessionStorage;
+  const originalWindow = globalThis.window;
+  const storage = new Map();
+  globalThis.sessionStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) };
+  globalThis.location = new URL('https://example.test/split/auto/ticket?from=東京&to=熱海');
+  globalThis.window = { location: globalThis.location };
+  t.after(() => { globalThis.location = originalLocation; globalThis.sessionStorage = originalStorage; globalThis.window = originalWindow; });
+  const failure = { failureId: 'before-reload', diagnostics: { workerUrl: '/old-worker.js' } };
+  saveEngineReload(failure);
+  const makeContext = () => ({ capability: 'ticket', searchId: 'after', startedAt: performance.now(), searchType: 'ticket', search: { searchSurface: 'split', searchUrl: location.href, originStation: '東京', destinationStation: '熱海', routeStations: ['東京', '熱海'] } });
+  location.search = '?from=東京&to=横浜';
+  analytics.captureSuccessfulSearch(makeContext(), {});
+  assert.equal(completed.at(-1).properties.engine_reload, undefined);
+  location.search = '?from=東京&to=熱海';
+  analytics.captureSuccessfulSearch({ ...makeContext(), search: { ...makeContext().search, searchUrl: 'https://example.test/split/auto/ticket?from=old&to=search' } }, {});
+  assert.equal(completed.at(-1).properties.engine_reload, undefined);
+  analytics.captureSuccessfulSearch(makeContext(), {});
+  assert.equal(completed.at(-1).properties.reload_failure_id, 'before-reload');
+  assert.equal(completed.at(-1).properties.reload_outcome, 'success');
+  analytics.captureSuccessfulSearch(makeContext(), {});
+  assert.equal(completed.at(-1).properties.engine_reload, undefined);
+  saveEngineReload(failure);
+  analytics.captureSearchError(new Error('unexpected failure'), makeContext());
+  assert.equal(completed.at(-1).properties.reload_outcome, 'system_error');
+  assert.equal(events.at(-1).contexts.engine_reload.failureId, 'before-reload');
+  saveEngineReload(failure);
+  const now = Date.now();
+  t.mock.method(Date, 'now', () => now + 31 * 60_000);
+  analytics.captureSuccessfulSearch(makeContext(), {});
+  assert.equal(completed.at(-1).properties.engine_reload, undefined);
 });
