@@ -108,10 +108,11 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   }
   assert.deepEqual(events.at(-1).fingerprint, ['engine_asset_fetch_failed', 'wasm_fetch', 'ticket', 'none']);
   assert.equal(events.at(-1).tags.failure_id, error.details.failureId);
-  analytics.captureEngineRecovery({ recovered: true, workerRestartCount: 1 }, context);
+  analytics.captureEngineRecovery({ recovered: true, workerRestartCount: 1, initialError: error.details }, context);
   analytics.captureSuccessfulSearch(context, {});
   assert.equal(events.length, before + 1);
   assert.equal(completed[completed.length - 1].properties.worker_restart_count, 1);
+  assert.equal(completed.at(-1).properties.recovery_failure_id, error.details.failureId);
   client.terminate();
 
   const bootstrapClient = createEngineClient({ isolated: true });
@@ -182,10 +183,18 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   globalThis.fetch = async () => {
     bodyCalls++;
     return bodyCalls === 1
-      ? new Response(new ReadableStream({ start(controller) { controller.error(new TypeError('Load failed')); } }))
+      ? new Response(new ReadableStream({ start(controller) { controller.error(new TypeError('Load failed')); } }), { headers: { 'cf-ray': 'ray-test-NRT', 'cf-cache-status': 'HIT', 'content-length': '1234' } })
       : new Response('complete');
   };
-  await assert.rejects(workerModule.fetchAsset(bodyUrl, 'wasm_fetch'));
+  await assert.rejects(workerModule.fetchAsset(bodyUrl, 'wasm_fetch'), error => {
+    const failure = workerModule.initFailure(error, 'wasm_fetch', 0);
+    assert.equal(failure.retryable, true);
+    const resource = failure.diagnostics.resources.find(item => item.url === bodyUrl);
+    assert.equal(resource.status, 200);
+    assert.deepEqual(resource.response, { status: 200, cfRay: 'ray-test-NRT', cacheStatus: 'HIT', contentLength: 1234 });
+    assert.equal(resource.timedOut, false);
+    return true;
+  });
   assert.equal(bodyCalls, 1);
   assert.ok(workerModule.firstAssetError('ticket').diagnostics.resources.some(resource => resource.url === bodyUrl && resource.phase === 'wasm_fetch' && resource.outcome === 'failure'));
 

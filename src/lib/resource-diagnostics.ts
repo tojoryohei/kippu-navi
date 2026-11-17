@@ -1,5 +1,5 @@
 import { appendResource, exceptionDiagnostics } from "@/lib/error-diagnostics";
-import type { ResourceAttempt, SearchDiagnostics } from "./search-errors";
+import type { EngineAssetResponse, ResourceAttempt, SearchDiagnostics } from "./search-errors";
 
 export function createResourceDiagnostics(onChange?: (diagnostics: SearchDiagnostics) => void) {
   const resources: ResourceAttempt[] = [];
@@ -22,7 +22,8 @@ export function createResourceDiagnostics(onChange?: (diagnostics: SearchDiagnos
       phase(url, operation, "completed");
       return value;
     } catch (error) {
-      appendResource(resources, { url, phase: operation, attempt, outcome: "failure", elapsedMs: Math.round(performance.now() - start), status: options.status?.() ?? (error as { httpStatus?: number })?.httpStatus, timedOut: options.timedOut?.() ?? (error as { timedOut?: boolean })?.timedOut, receivedBytes: (error as { receivedBytes?: number })?.receivedBytes, abortReason: (error as { abortReason?: "network_idle" })?.abortReason, exception: exceptionDiagnostics(error), fallbackFrom: options.fallbackFrom });
+      const response = (error as { assetResponse?: EngineAssetResponse } | null)?.assetResponse;
+      appendResource(resources, { url, phase: operation, attempt, outcome: "failure", response, elapsedMs: Math.round(performance.now() - start), status: options.status?.() ?? (error as { httpStatus?: number })?.httpStatus ?? response?.status, timedOut: options.timedOut?.() ?? (error as { timedOut?: boolean })?.timedOut, receivedBytes: (error as { receivedBytes?: number })?.receivedBytes, abortReason: (error as { abortReason?: "network_idle" })?.abortReason, exception: exceptionDiagnostics(error), fallbackFrom: options.fallbackFrom });
       onChange?.(snapshot());
       throw error;
     }

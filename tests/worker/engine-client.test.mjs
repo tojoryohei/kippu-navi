@@ -88,6 +88,7 @@ test('失敗を共有し、自動再起動せず通常の計算操作から再�
   await assert.rejects(a.ensureReady('ticket'));
   assert.equal(workers.length, 1);
   assert.equal(a.getState('ticket').status, 'failed');
+  const originalFailureId = a.getState('ticket').error.failureId;
   a.restart();
   const pending = a.ensureReady('ticket');
   workers[1].reply({ type: 'ready', capability: 'ticket' });
@@ -95,6 +96,11 @@ test('失敗を共有し、自動再起動せず通常の計算操作から再�
   assert.equal(readiness.recovered, true);
   assert.equal(readiness.workerRestartCount, 1);
   assert.equal(readiness.initialError.diagnostics.exception.stack, 'original-stack');
+  assert.equal(readiness.initialError.failureId, originalFailureId);
+  workers[1].reply(failure());
+  const retriedFailure = a.getState('ticket').error;
+  assert.equal(retriedFailure.diagnostics.recoveryFailureId, originalFailureId);
+  assert.notEqual(retriedFailure.failureId, originalFailureId);
 });
 
 test('進捗のない初期化は各試行60秒で打ち切り、最後の段階を保持する', async t => {

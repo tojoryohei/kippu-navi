@@ -116,7 +116,7 @@ function createEnginePool(isolated = false) {
     waiters.get(capability)!.clear();
   }
   function withDiagnostics(details: SearchErrorDetails) {
-    const current = { ...details, failureId: details.failureId || `${failureSession}:${poolId}:${generation}:${++failureSequence}`, workerRestartCount, diagnostics: diagnostics(details.diagnostics) };
+    const current = { ...details, failureId: details.failureId || `${failureSession}:${poolId}:${generation}:${++failureSequence}`, workerRestartCount, diagnostics: diagnostics({ ...details.diagnostics, recoveryFailureId: initialFailure?.failureId }) };
     return current;
   }
   function rejectFailures() {

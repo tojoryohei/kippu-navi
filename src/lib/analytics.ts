@@ -175,6 +175,7 @@ function attachErrorDiagnostics(scope: Sentry.Scope, details: SearchErrorDetails
   }
   const reload = readEngineReload();
   if (reload) scope.setContext("engine_reload", { ...reload });
+  if (diagnostics?.recoveryFailureId) scope.setTag("recovery_failure_id", diagnostics.recoveryFailureId);
   if (details.failureId) scope.setTag("failure_id", details.failureId);
 }
 
@@ -187,6 +188,8 @@ function completedSearchProperties(context: SearchEventContext, outcome: SearchO
     engine_reload: true, reload_failure_id: reload.failureId,
     reload_elapsed_ms: Date.now() - reload.startedAt,
     reload_outcome: outcome,
+  } : {}), ...(context.readiness?.initialError?.failureId ? {
+    recovery_failure_id: context.readiness.initialError.failureId,
   } : {}), ...buildSearchCompletedProperties({
     searchType: context.searchType,
     calculationMode: context.calculationMode,
@@ -211,6 +214,7 @@ export function captureSearchError(error: unknown, context: SearchEventContext) 
     ...completedSearchProperties(context, businessError ? "business_error" : "system_error", details.code),
     retry_count: Math.max(details.retryCount, context.readiness?.retryCount || 0),
     worker_restart_count: Math.max(details.workerRestartCount, context.readiness?.workerRestartCount || 0),
+    ...(details.diagnostics?.recoveryFailureId ? { recovery_failure_id: details.diagnostics.recoveryFailureId } : {}),
     ...(details.failureId ? { failure_id: details.failureId } : {}),
   });
 

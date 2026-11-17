@@ -1,3 +1,5 @@
+import type { EngineAssetResponse } from "./search-errors";
+
 /** ヘッダー待機・本文の無通信だけを制限し、受信中の取得は継続する。 */
 export async function readEngineAsset(
   url: string,
@@ -8,6 +10,7 @@ export async function readEngineAsset(
   let timer: ReturnType<typeof setTimeout>;
   let receivedBytes = 0;
   let timedOut = false;
+  let assetResponse: EngineAssetResponse | undefined;
   const refresh = () => {
     clearTimeout(timer);
     timer = setTimeout(() => { timedOut = true; controller.abort(); }, idleMs);
@@ -16,6 +19,13 @@ export async function readEngineAsset(
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   try {
     const response = await fetch(url, { signal: controller.signal });
+    const length = response.headers.get('content-length');
+    assetResponse = {
+      status: response.status,
+      cfRay: response.headers.get('cf-ray')?.slice(0, 100) || undefined,
+      cacheStatus: response.headers.get('cf-cache-status')?.slice(0, 100) || undefined,
+      contentLength: length !== null && /^\d+$/.test(length) && Number.isSafeInteger(Number(length)) ? Number(length) : undefined,
+    };
     if (!response.ok) throw Object.assign(new Error(`${url}: ${response.status} ${response.statusText}`), { httpStatus: response.status });
     refresh();
     reader = response.body?.getReader();
@@ -40,7 +50,7 @@ export async function readEngineAsset(
     return { buffer: buffer.buffer, status: response.status };
   } catch (error) {
     throw Object.assign(error instanceof Error ? error : new Error(String(error)), {
-      receivedBytes, timedOut, abortReason: timedOut ? 'network_idle' : undefined,
+      assetResponse, receivedBytes, timedOut, abortReason: timedOut ? 'network_idle' : undefined,
     });
   } finally {
     clearTimeout(timer!);
