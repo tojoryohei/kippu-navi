@@ -68,6 +68,9 @@ export interface ExceptionDiagnostics {
 }
 
 export interface EngineAssetResponse {
+  serviceWorkerSource?: string;
+  contentEncoding?: string;
+  url?: string;
   status: number;
   cfRay?: string;
   cacheStatus?: string;
@@ -84,6 +87,7 @@ export interface ResourceAttempt {
   receivedBytes?: number;
   abortReason?: "network_idle";
   response?: EngineAssetResponse;
+  lastReceivedAgoMs?: number;
   outcome: "success" | "failure";
   exception?: ExceptionDiagnostics;
   fallbackFrom?: string;

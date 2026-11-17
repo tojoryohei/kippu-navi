@@ -90,6 +90,8 @@ function initialize() {
       beforeSend(event) {
         const browser = browserDiagnostics();
         event.contexts = { ...event.contexts, browser_diagnostics: browser };
+        event.tags = { ...event.tags, display_mode: browser.displayMode,
+          service_worker_controlled: String(browser.serviceWorkerControlled ?? "unknown") };
         const exception = event.exception?.values?.[0];
         const navigation = browser.navigation as { completed?: boolean } | undefined;
         if (exception?.value === "InvalidStateError: Transition was aborted because of invalid state. Document hidden"
@@ -130,7 +132,8 @@ function initialize() {
 export const analytics = {
   capture(event: string, properties?: Record<string, unknown>) {
     initialize();
-    if (posthogKey) posthog.capture(event, { ...releaseProperties(), ...properties, $current_url: buildSearchUrl(window.location) });
+    const browser = browserDiagnostics();
+    if (posthogKey) posthog.capture(event, { ...releaseProperties(), display_mode: browser.displayMode, service_worker_controlled: browser.serviceWorkerControlled, ...properties, $current_url: buildSearchUrl(window.location) });
   },
 };
 

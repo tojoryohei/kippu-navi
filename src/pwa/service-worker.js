@@ -75,6 +75,13 @@ self.addEventListener('activate', event => {
     // 初回もclaimしない。保存した版と異なる、開いたままのページを取り込まない。
   })());
 });
+// キャッシュされたRay IDを今回のネットワーク応答と取り違えないため、配信経路を示す。
+function assetResponse(response, source) {
+  const headers = new Headers(response.headers);
+  headers.set('X-Kippu-Asset-Source', source);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
@@ -83,20 +90,21 @@ self.addEventListener('fetch', event => {
   const asset = assets.get(key);
   if (!asset) {
     // ハッシュの違うエンジンをサーバーの最新版フォールバックで混在させない。
-    if (url.pathname.startsWith('/engine/')) event.respondWith(new Response(null, { status: 404 }));
+    if (url.pathname.startsWith('/engine/')) event.respondWith(assetResponse(new Response(null, { status: 404 }), 'version-mismatch'));
     return;
   }
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(asset.url);
-    if (cached) return cached;
+    if (cached) return url.pathname.startsWith('/engine/') ? assetResponse(cached, 'service-worker-cache') : cached;
     try {
       const response = await checkedFetch(asset);
       await cache.put(asset.url, response.clone());
-      return response;
+      return url.pathname.startsWith('/engine/') ? assetResponse(response, 'service-worker-network') : response;
     } catch {
       // 取得できない旧版を別の版で補わない。次のオンライン起動で再準備する。
-      return new Response(null, { status: 503, statusText: 'Offline asset unavailable' });
+      const response = new Response(null, { status: 503, statusText: 'Offline asset unavailable' });
+      return url.pathname.startsWith('/engine/') ? assetResponse(response, 'service-worker-unavailable') : response;
     }
   })());
 });

@@ -16,8 +16,21 @@ export function initializeBrowserDiagnostics() {
   }
 }
 
+/** インストール有無ではなく、現在の表示モードを記録する。 */
+function displayMode(): string {
+  if (typeof window === "undefined") return "unknown";
+  try {
+    if (typeof navigator !== "undefined" && (navigator as Navigator & { standalone?: boolean }).standalone === true) return "standalone";
+    if (typeof window.matchMedia !== "function") return "unknown";
+    return ["window-controls-overlay", "standalone", "minimal-ui", "fullscreen", "browser"]
+      .find(mode => window.matchMedia(`(display-mode: ${mode})`).matches) || "unknown";
+  } catch { return "unknown"; }
+}
+
 export function browserDiagnostics() {
   return {
+    displayMode: displayMode(),
+    serviceWorkerControlled: typeof navigator === "undefined" ? undefined : Boolean(navigator.serviceWorker?.controller),
     visibility: typeof document === "undefined" ? undefined : document.visibilityState,
     online: typeof navigator === "undefined" ? undefined : navigator.onLine,
     workerSupported: typeof Worker !== "undefined",
