@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.14.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.14.0...kippu-navi-v5.14.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* エンジン障害の表示環境と資材配信経路を診断する ([#1088](https://github.com/tojoryohei/kippu-navi/issues/1088)) ([42c68ee](https://github.com/tojoryohei/kippu-navi/commit/42c68ee72be6049c24cac5b2e35b1e4af88732a6))
+
 ## [5.14.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.13.2...kippu-navi-v5.14.0) (2026-11-17)
 
 
