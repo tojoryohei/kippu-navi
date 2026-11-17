@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.14.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.13.2...kippu-navi-v5.14.0) (2026-11-17)
+
+
+### Features
+
+* エンジン通信失敗と回復結果を関連付けて配信診断を残す ([#1086](https://github.com/tojoryohei/kippu-navi/issues/1086)) ([660d753](https://github.com/tojoryohei/kippu-navi/commit/660d753b04aca5ec2b5f66112cb3eb59b05f1ad4))
+
 ## [5.13.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.13.1...kippu-navi-v5.13.2) (2026-11-16)
 
 
