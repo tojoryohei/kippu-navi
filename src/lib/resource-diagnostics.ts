@@ -23,7 +23,7 @@ export function createResourceDiagnostics(onChange?: (diagnostics: SearchDiagnos
       return value;
     } catch (error) {
       const response = (error as { assetResponse?: EngineAssetResponse } | null)?.assetResponse;
-      appendResource(resources, { url, phase: operation, attempt, outcome: "failure", response, elapsedMs: Math.round(performance.now() - start), status: options.status?.() ?? (error as { httpStatus?: number })?.httpStatus ?? response?.status, timedOut: options.timedOut?.() ?? (error as { timedOut?: boolean })?.timedOut, receivedBytes: (error as { receivedBytes?: number })?.receivedBytes, abortReason: (error as { abortReason?: "network_idle" })?.abortReason, exception: exceptionDiagnostics(error), fallbackFrom: options.fallbackFrom });
+      appendResource(resources, { url, phase: operation, attempt, outcome: "failure", response, lastReceivedAgoMs: (error as { lastReceivedAgoMs?: number })?.lastReceivedAgoMs, elapsedMs: Math.round(performance.now() - start), status: options.status?.() ?? (error as { httpStatus?: number })?.httpStatus ?? response?.status, timedOut: options.timedOut?.() ?? (error as { timedOut?: boolean })?.timedOut, receivedBytes: (error as { receivedBytes?: number })?.receivedBytes, abortReason: (error as { abortReason?: "network_idle" })?.abortReason, exception: exceptionDiagnostics(error), fallbackFrom: options.fallbackFrom });
       onChange?.(snapshot());
       throw error;
     }

@@ -64,7 +64,7 @@ function worker({ fail = '', mismatch = '', quota = false, readFail = '', window
   const context = vm.createContext({
     RELEASE: { version: 'v1', assets: [...bodies].map(([url, body]) => ({ url, sha256: sha(body), size: body.length })) },
     self: { location: { origin }, registration: { waiting: { state: 'installed' } }, clients: { matchAll: async () => windows.map(client => ({ ...client, postMessage: message => notifications.push(message) })) }, skipWaiting: async () => { applied++; }, addEventListener: (name, handler) => { events.set(name, handler); } },
-    crypto: webcrypto, caches, Response, URL, console: { debug() {} },
+    crypto: webcrypto, caches, Response, Headers, URL, console: { debug() {} },
     fetch: async url => {
       requests.push(url);
       if (offline || url === fail) throw new Error('Network failure');
@@ -91,11 +91,24 @@ test('保存済みの一式はフォントとクエリに依存しないペー�
   await sw.run('activate');
   assert.ok(!sw.stores.has('kippu-pwa-old'));
   assert.ok(sw.stores.has('unrelated'));
+  const cachedEngine = await sw.fetch('/engine/v1/main.wasm');
+  assert.equal(cachedEngine.headers.get('X-Kippu-Asset-Source'), 'service-worker-cache');
+  assert.equal(await cachedEngine.text(), 'wasm-v1');
+  sw.stores.get('kippu-pwa-v1').delete('/engine/v1/main.wasm');
+  const fetchedEngine = await sw.fetch('/engine/v1/main.wasm');
+  assert.equal(fetchedEngine.headers.get('X-Kippu-Asset-Source'), 'service-worker-network');
+  assert.equal(await fetchedEngine.text(), 'wasm-v1');
   sw.setOffline();
+  sw.stores.get('kippu-pwa-v1').delete('/engine/v1/main.wasm');
+  const missingEngine = await sw.fetch('/engine/v1/main.wasm');
+  assert.equal(missingEngine.status, 503);
+  assert.equal(missingEngine.headers.get('X-Kippu-Asset-Source'), 'service-worker-unavailable');
   assert.equal(await (await sw.fetch('/?from=東京')).text(), 'html-v1');
   assert.equal(await (await sw.fetch('/_astro/font.woff2')).text(), 'font-v1');
   for (const path of ['/api/split/auto/ticket', '/ingest/a', '/monitoring', '/manifest.webmanifest', '/sw.js', 'https://external.test/font']) assert.equal(sw.fetch(path), undefined);
-  assert.equal((await sw.fetch('/engine/v2/main.wasm')).status, 404);
+  const mismatched = await sw.fetch('/engine/v2/main.wasm');
+  assert.equal(mismatched.status, 404);
+  assert.equal(mismatched.headers.get('X-Kippu-Asset-Source'), 'version-mismatch');
   sw.stores.get('kippu-pwa-v1').delete('/_astro/font.woff2');
   assert.equal((await sw.fetch('/_astro/font.woff2')).status, 503);
 });

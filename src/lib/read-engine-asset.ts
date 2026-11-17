@@ -10,6 +10,7 @@ export async function readEngineAsset(
   let timer: ReturnType<typeof setTimeout>;
   let receivedBytes = 0;
   let timedOut = false;
+  let lastReceivedAt: number | undefined;
   let assetResponse: EngineAssetResponse | undefined;
   const refresh = () => {
     clearTimeout(timer);
@@ -22,6 +23,9 @@ export async function readEngineAsset(
     const length = response.headers.get('content-length');
     assetResponse = {
       status: response.status,
+      serviceWorkerSource: response.headers.get('X-Kippu-Asset-Source')?.slice(0, 100) || undefined,
+      contentEncoding: response.headers.get('content-encoding')?.slice(0, 100) || undefined,
+      url: response.url || undefined,
       cfRay: response.headers.get('cf-ray')?.slice(0, 100) || undefined,
       cacheStatus: response.headers.get('cf-cache-status')?.slice(0, 100) || undefined,
       contentLength: length !== null && /^\d+$/.test(length) && Number.isSafeInteger(Number(length)) ? Number(length) : undefined,
@@ -38,6 +42,7 @@ export async function readEngineAsset(
       if (!value.byteLength) continue;
       chunks.push(value);
       receivedBytes += value.byteLength;
+      lastReceivedAt = performance.now();
       refresh();
       if (performance.now() - lastNotification >= 1000) {
         lastNotification = performance.now();
@@ -50,6 +55,7 @@ export async function readEngineAsset(
     return { buffer: buffer.buffer, status: response.status };
   } catch (error) {
     throw Object.assign(error instanceof Error ? error : new Error(String(error)), {
+      lastReceivedAgoMs: lastReceivedAt === undefined ? undefined : Math.round(performance.now() - lastReceivedAt),
       assetResponse, receivedBytes, timedOut, abortReason: timedOut ? 'network_idle' : undefined,
     });
   } finally {

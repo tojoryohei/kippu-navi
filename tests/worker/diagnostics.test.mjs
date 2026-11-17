@@ -183,7 +183,7 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   globalThis.fetch = async () => {
     bodyCalls++;
     return bodyCalls === 1
-      ? new Response(new ReadableStream({ start(controller) { controller.error(new TypeError('Load failed')); } }), { headers: { 'cf-ray': 'ray-test-NRT', 'cf-cache-status': 'HIT', 'content-length': '1234' } })
+      ? new Response(new ReadableStream({ start(controller) { controller.error(new TypeError('Load failed')); } }), { headers: { 'cf-ray': 'ray-test-NRT', 'cf-cache-status': 'HIT', 'content-length': '1234', 'X-Kippu-Asset-Source': 'service-worker-cache', 'content-encoding': 'br' } })
       : new Response('complete');
   };
   await assert.rejects(workerModule.fetchAsset(bodyUrl, 'wasm_fetch'), error => {
@@ -191,7 +191,7 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
     assert.equal(failure.retryable, true);
     const resource = failure.diagnostics.resources.find(item => item.url === bodyUrl);
     assert.equal(resource.status, 200);
-    assert.deepEqual(resource.response, { status: 200, cfRay: 'ray-test-NRT', cacheStatus: 'HIT', contentLength: 1234 });
+    assert.deepEqual(resource.response, { status: 200, cfRay: 'ray-test-NRT', cacheStatus: 'HIT', contentLength: 1234, serviceWorkerSource: 'service-worker-cache', contentEncoding: 'br', url: undefined });
     assert.equal(resource.timedOut, false);
     return true;
   });
@@ -234,6 +234,17 @@ test('元例外を保持して同一障害のSentry送信をまとめ、検索�
   const event = { exception: { values: [{ type: 'RangeError', value: 'Maximum call stack size exceeded.' }] } };
   const result = sentryOptions.beforeSend(event);
   assert.equal(result.contexts.browser_diagnostics.webAssemblySupported, true);
+  for (const mode of ['browser', 'standalone', 'fullscreen']) {
+    window.matchMedia = query => ({ matches: query === `(display-mode: ${mode})` });
+    const diagnostic = sentryOptions.beforeSend(structuredClone(event));
+    assert.equal(diagnostic.tags.display_mode, mode);
+    assert.equal(diagnostic.tags.service_worker_controlled, 'true');
+    analytics.captureSuccessfulSearch(context, {});
+    assert.equal(completed.at(-1).properties.display_mode, mode);
+    assert.equal(completed.at(-1).properties.service_worker_controlled, true);
+  }
+  delete window.matchMedia;
+  assert.equal(browserDiagnostics().displayMode, 'unknown');
   assert.equal(events.length, before + 2);
 
   const hiddenTransition = { exception: { values: [{ type: 'Error', value: 'InvalidStateError: Transition was aborted because of invalid state. Document hidden' }] } };
