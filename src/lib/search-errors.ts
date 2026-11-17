@@ -67,6 +67,13 @@ export interface ExceptionDiagnostics {
   column?: number;
 }
 
+export interface EngineAssetResponse {
+  status: number;
+  cfRay?: string;
+  cacheStatus?: string;
+  contentLength?: number;
+}
+
 export interface ResourceAttempt {
   url: string;
   phase: string;
@@ -76,12 +83,14 @@ export interface ResourceAttempt {
   timedOut?: boolean;
   receivedBytes?: number;
   abortReason?: "network_idle";
+  response?: EngineAssetResponse;
   outcome: "success" | "failure";
   exception?: ExceptionDiagnostics;
   fallbackFrom?: string;
 }
 
 export interface SearchDiagnostics {
+  recoveryFailureId?: string;
   goRuntime?: { exitCode?: number; stderr: string };
   workerBootstrapStage?: "environment_import" | "environment_check" | "module_import" | "sentry_initialize" | "engine_initialize" | "module_ready";
   moduleResources?: Array<{ url: string; initiatorType: string; durationMs: number; transferSize: number; encodedBodySize: number; status?: number }>;
