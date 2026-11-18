@@ -7,8 +7,8 @@ import (
 	"math"
 )
 
-// ticketCandidateDetour は分割探索と分割前の運賃比較に共通の迂回許容距離です（5.7km）。
-const ticketCandidateDetour domain.DeciKilo = 57
+// ticketCandidateDetour は分割探索と分割前の運賃比較に共通の迂回許容距離です（6.6km）。
+const ticketCandidateDetour domain.DeciKilo = 66
 
 // TicketSplitSegment は分割された個々の区間とその運賃計算結果を保持します。
 type TicketSplitSegment struct {
