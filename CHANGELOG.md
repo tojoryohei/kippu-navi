@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.14.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.14.1...kippu-navi-v5.14.2) (2026-11-18)
+
+
+### Bug Fixes
+
+* 分割候補の迂回許容距離を変更 ([#1090](https://github.com/tojoryohei/kippu-navi/issues/1090)) ([3a6fcfd](https://github.com/tojoryohei/kippu-navi/commit/3a6fcfdd7671140c76f7f3abe4747a4cdb179320))
+
 ## [5.14.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.14.0...kippu-navi-v5.14.1) (2026-11-17)
 
 
