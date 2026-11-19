@@ -42,6 +42,7 @@ test('PWAのHTMLだけ変換を禁止し、ハッシュ付き資材には圧縮�
       ['fare/ticket.html', '<html>運賃計算</html>'],
       ['articles/new-post.html', '<html>追加記事</html>'],
       ['data/lines/品鶴線.html', '<html>品川 6.8km</html>'],
+      ['data/lines/山手線.html', '<html>山手線</html>'],
       ['data/downloads/distances.csv', '\uFEFFstation,eigyoDeciKm\r\n東京,0\r\n'],
       ['data/downloads/distances.json', '{"records":[]}'],
       ['data/downloads/special-fares.csv', '\uFEFFfrom,to,fare\r\n東京,西船橋,350\r\n'],
@@ -63,6 +64,7 @@ test('PWAのHTMLだけ変換を禁止し、ハッシュ付き資材には圧縮�
     const japanesePath = `/data/lines/${encodeURIComponent('品鶴線')}`;
     assert.ok(manifest.assets.some(asset => asset.url === japanesePath));
     assert.equal(cacheControl(headers, japanesePath), 'no-cache, no-transform');
+    assert.deepEqual(headers.split('\n').filter(line => line.startsWith('/data/lines/')), ['/data/lines/*']);
     for (const asset of manifest.assets) {
       const decodedUrl = decodeURIComponent(asset.url);
       const name = decodedUrl === '/' ? 'index.html' : /\.(css|js|csv|json)$/.test(decodedUrl) ? decodedUrl.slice(1) : `${decodedUrl.slice(1)}.html`;
@@ -71,6 +73,9 @@ test('PWAのHTMLだけ変換を禁止し、ハッシュ付き資材には圧縮�
     // 再生成してもHTMLルールが重複しない。
     run();
     assert.equal(readFileSync(join(directory, 'dist/_headers'), 'utf8'), headers);
+
+    for (let i = 0; i < 100; i++) writeFileSync(join(directory, 'dist/articles', `post-${i}.html`), '<html>記事</html>');
+    assert.throws(run, /Cloudflare _headersのルール数が上限の100件を超えています/);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
