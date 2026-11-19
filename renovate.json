@@ -9,7 +9,9 @@
     "nodenv",
     "custom.regex"
   ],
-  "dependencyDashboard": true,
+  "dependencyDashboard": {
+    "enabled": true
+  },
   "labels": [
     "dependencies"
   ],
