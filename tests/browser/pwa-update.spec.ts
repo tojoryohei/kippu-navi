@@ -15,7 +15,7 @@ test('新版はすべての旧画面を閉じるまで待機し、次に開い�
   const staticAssets = new Map<string, { body: Buffer; contentType: string }>();
   const mime: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.wasm': 'application/wasm', '.woff2': 'font/woff2', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
   for (const asset of release.assets as { url: string }[]) {
-    const base = `dist/${asset.url === '/' ? 'index.html' : asset.url.slice(1)}`;
+    const base = `dist/${asset.url === '/' ? 'index.html' : decodeURIComponent(asset.url.slice(1))}`;
     const file = existsSync(`${base}.html`) ? `${base}.html` : base;
     staticAssets.set(asset.url, { body: readFileSync(file), contentType: mime[extname(file)] || 'application/octet-stream' });
   }

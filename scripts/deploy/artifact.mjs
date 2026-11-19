@@ -9,7 +9,7 @@ const MAX_FILES = 30000;
 const MAX_BYTES = 8 * 1024 ** 3;
 const MAX_MANIFEST_BYTES = 8 * 1024 ** 2;
 const PUBLIC_EXTENSIONS = new Set([
-  '.html', '.js', '.mjs', '.css', '.json', '.webmanifest', '.txt', '.xml',
+  '.csv', '.html', '.js', '.mjs', '.css', '.json', '.webmanifest', '.txt', '.xml',
   '.wasm', '.bin', '.woff', '.woff2', '.ttf', '.png', '.ico', '.svg', '.webp',
   '.jpg', '.jpeg', '.avif', '.gif', '.md',
 ]);

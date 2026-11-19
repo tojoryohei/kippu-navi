@@ -31,6 +31,8 @@ test('PWAのHTMLだけ変換を禁止し、ハッシュ付き資材には圧縮�
     mkdirSync(join(directory, 'dist/_astro'), { recursive: true });
     mkdirSync(join(directory, 'dist/fare'), { recursive: true });
     mkdirSync(join(directory, 'dist/articles'), { recursive: true });
+    mkdirSync(join(directory, 'dist/data/lines'), { recursive: true });
+    mkdirSync(join(directory, 'dist/data/downloads'), { recursive: true });
     cpSync('scripts/build-pwa.mjs', join(directory, 'scripts/build-pwa.mjs'));
     cpSync('src/pwa/service-worker.js', join(directory, 'src/pwa/service-worker.js'));
     writeFileSync(join(directory, 'package.json'), JSON.stringify({ version: 'test' }));
@@ -39,6 +41,11 @@ test('PWAのHTMLだけ変換を禁止し、ハッシュ付き資材には圧縮�
       ['index.html', '<html>ホーム</html>'],
       ['fare/ticket.html', '<html>運賃計算</html>'],
       ['articles/new-post.html', '<html>追加記事</html>'],
+      ['data/lines/品鶴線.html', '<html>品川 6.8km</html>'],
+      ['data/downloads/distances.csv', '\uFEFFstation,eigyoDeciKm\r\n東京,0\r\n'],
+      ['data/downloads/distances.json', '{"records":[]}'],
+      ['data/downloads/special-fares.csv', '\uFEFFfrom,to,fare\r\n東京,西船橋,350\r\n'],
+      ['data/downloads/special-fares.json', '{"records":[]}'],
       ['_astro/app.css', 'body { color: black; }'],
       ['_astro/app.js', 'console.log("test");'],
     ]);
@@ -53,8 +60,12 @@ test('PWAのHTMLだけ変換を禁止し、ハッシュ付き資材には圧縮�
     assert.match(cacheControl(headers, '/sw.js'), /no-transform/);
     const manifest = JSON.parse(readFileSync(join(directory, 'dist/pwa-assets.json'), 'utf8'));
     assert.equal(manifest.assets.length, fixtures.size);
+    const japanesePath = `/data/lines/${encodeURIComponent('品鶴線')}`;
+    assert.ok(manifest.assets.some(asset => asset.url === japanesePath));
+    assert.equal(cacheControl(headers, japanesePath), 'no-cache, no-transform');
     for (const asset of manifest.assets) {
-      const name = asset.url === '/' ? 'index.html' : /\.(css|js)$/.test(asset.url) ? asset.url.slice(1) : `${asset.url.slice(1)}.html`;
+      const decodedUrl = decodeURIComponent(asset.url);
+      const name = decodedUrl === '/' ? 'index.html' : /\.(css|js|csv|json)$/.test(decodedUrl) ? decodedUrl.slice(1) : `${decodedUrl.slice(1)}.html`;
       assert.equal(asset.sha256, createHash('sha256').update(fixtures.get(name)).digest('hex'));
     }
     // 再生成してもHTMLルールが重複しない。

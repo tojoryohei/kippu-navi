@@ -20,6 +20,7 @@ async function fixture(t, kind = 'api') {
   };
   const files = kind === 'frontend' ? {
     'static/index.html': '<html></html>',
+    'static/data/downloads/distances.csv': '\uFEFFstation,eigyoDeciKm\r\n東京,0\r\n',
     'static/deployment.json': JSON.stringify({ commit: env.TARGET_SHA, environment: 'staging' }),
     'static/pwa-assets.json': '{}', 'static/sw.js': '', 'worker/main.mjs': 'export default {}',
     'static/optional.css': 'body {}', 'static/.well-known/api-catalog': '{}', 'static/_headers': '/*\n  X-Content-Type-Options: nosniff',
