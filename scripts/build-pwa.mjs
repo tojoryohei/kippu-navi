@@ -5,7 +5,7 @@ import { join } from 'node:path';
 const root = new URL('../', import.meta.url);
 const dist = new URL('../dist/', import.meta.url);
 const assets = [];
-const htmlUrls = [];
+const htmlHeaderPatterns = new Set();
 function scan(directory, prefix = '') {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const relative = `${prefix}${entry.name}`;
@@ -15,7 +15,9 @@ function scan(directory, prefix = '') {
     const bytes = readFileSync(join(directory, entry.name));
     const pathname = relative === 'index.html' ? '/' : relative.endsWith('.html') ? '/' + relative.slice(0, -5) : '/' + relative;
     const url = new URL(pathname, 'https://kippu-navi.com').pathname;
-    if (relative.endsWith('.html')) htmlUrls.push(url);
+    if (relative.endsWith('.html')) {
+      htmlHeaderPatterns.add(url.startsWith('/data/lines/') ? '/data/lines/*' : url);
+    }
     assets.push({ url, size: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') });
   }
 }
@@ -25,12 +27,17 @@ const template = readFileSync(new URL('src/pwa/service-worker.js', root), 'utf8'
 const version = createHash('sha256').update(JSON.stringify(assets)).update(template).digest('hex');
 const appVersion = JSON.parse(readFileSync(new URL('package.json', root), 'utf8')).version;
 const config = { version, appVersion, assets, bytes: assets.reduce((n, asset) => n + asset.size, 0) };
-writeFileSync(new URL('sw.js', dist), `const RELEASE = ${JSON.stringify(config)};\n${template}`);
-writeFileSync(new URL('pwa-assets.json', dist), JSON.stringify(config, null, 2));
 const headersPath = new URL('_headers', dist);
 const headers = readFileSync(headersPath, 'utf8').split('\n# Generated PWA headers')[0];
 // HTMLへのチャレンジスクリプト挿入は保存ハッシュを変えるため、変換禁止をHTMLだけに適用する。
 // CSS・JavaScript・WASMには継承させず、Cloudflareの圧縮を利用する。
-const htmlHeaders = htmlUrls.sort().map(url => `\n${url}\n  Cache-Control: no-transform\n`).join('');
-writeFileSync(headersPath, headers + '\n# Generated PWA headers' + htmlHeaders + '\n/sw.js\n  Cache-Control: no-cache, no-transform\n  Service-Worker-Allowed: /\n\n/pwa-assets.json\n  Cache-Control: no-store\n');
+const htmlHeaders = [...htmlHeaderPatterns].sort().map(pattern => `\n${pattern}\n  Cache-Control: no-transform\n`).join('');
+const finalHeaders = headers + '\n# Generated PWA headers' + htmlHeaders + '\n/sw.js\n  Cache-Control: no-cache, no-transform\n  Service-Worker-Allowed: /\n\n/pwa-assets.json\n  Cache-Control: no-store\n';
+const headerRuleCount = finalHeaders.split(/\r?\n/).filter(line => /^(?:\/|https:\/\/)/.test(line.trim())).length;
+if (headerRuleCount > 100) {
+  throw new Error(`Cloudflare _headersのルール数が上限の100件を超えています (${headerRuleCount}件)`);
+}
+writeFileSync(new URL('sw.js', dist), `const RELEASE = ${JSON.stringify(config)};\n${template}`);
+writeFileSync(new URL('pwa-assets.json', dist), JSON.stringify(config, null, 2));
+writeFileSync(headersPath, finalHeaders);
 console.log(`PWA: ${assets.length} files, ${(config.bytes / 1024 / 1024).toFixed(2)} MiB, ${version.slice(0, 12)}`);
