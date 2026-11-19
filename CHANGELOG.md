@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.14.2...kippu-navi-v6.0.0) (2026-11-19)
+
+
+### Features
+
+* 路線別距離と特例運賃のデータ一覧を公開 ([#1102](https://github.com/tojoryohei/kippu-navi/issues/1102)) ([2fb461d](https://github.com/tojoryohei/kippu-navi/commit/2fb461d44aacc12d19426f581df3cb9f46801f45))
+
 ## [5.14.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.14.1...kippu-navi-v5.14.2) (2026-11-18)
 
 
