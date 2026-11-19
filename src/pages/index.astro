@@ -2,6 +2,7 @@
 import Layout from "@/layouts/Layout.astro";
 import {
   RiBook2Fill,
+  RiDatabase2Line,
   RiGuideLine,
   RiMenu3Line,
   RiShuffleFill,
@@ -166,6 +167,45 @@ const recentChangelogs = await getChangelogs(3);
             class="text-slate-700 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300"
           >
             {"運賃計算をする"}
+            <svg
+              class="w-5 h-5 ml-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              ><path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width={2}
+                d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg
+            >
+          </div>
+        </a>
+
+        {/* データ一覧 */}
+        <a
+          href="/data"
+          class="group bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-slate-400 transition-all duration-300 flex flex-col h-full"
+        >
+          <div class="flex items-center space-x-4 mb-4">
+            <div
+              class="bg-slate-100 p-3 rounded-xl group-hover:bg-slate-700 transition-colors duration-300"
+            >
+              <RiDatabase2Line
+                className="w-7 h-7 text-slate-600 group-hover:text-white transition-colors duration-300"
+              />
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">
+              {"データ一覧"}
+            </h2>
+          </div>
+          <p class="text-slate-600 mb-6 grow">
+            {"各路線の営業キロ・換算キロと、乗車券・定期券の特例運賃を調べられます。"}
+            {"駅ごとの距離や対象経路を確認し、CSV・JSONでダウンロードできます。"}
+          </p>
+          <div
+            class="text-slate-700 font-bold flex items-center group-hover:translate-x-2 transition-transform duration-300"
+          >
+            {"データをみる"}
             <svg
               class="w-5 h-5 ml-2"
               fill="none"

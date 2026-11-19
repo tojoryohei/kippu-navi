@@ -14,6 +14,8 @@
       "/changelog",
       "/contact",
       "/developers/api",
+      "/data",
+      "/data/*",
       "/fare/*",
       "/guide",
       "/logic",

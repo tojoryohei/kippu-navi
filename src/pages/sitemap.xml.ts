@@ -1,7 +1,9 @@
+import { catalogLines, lineHref } from "@/lib/data-catalog";
 export function GET() {
     const baseUrl = 'https://kippu-navi.com';
 
     const entries = [
+        ...["/data", "/data/lines", "/data/fares", "/data/guide", ...catalogLines.map(lineHref)].map(path => ({ url: `${baseUrl}${path}`, changeFrequency: "monthly", priority: 0.7 })),
         {
             url: `${baseUrl}/articles/split-ticket-case-study`,
             changeFrequency: 'monthly', priority: 0.7
