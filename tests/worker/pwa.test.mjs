@@ -42,7 +42,7 @@ const sha = body => createHash('sha256').update(body).digest('hex');
 function worker({ fail = '', mismatch = '', quota = false, readFail = '', windows = [{ id: 'current' }] } = {}) {
   const events = new Map();
   const stores = new Map([['kippu-pwa-old', new Map()], ['unrelated', new Map()]]);
-  const bodies = new Map([['/', 'html-v1'], ['/engine/v1/main.wasm', 'wasm-v1'], ['/_astro/font.woff2', 'font-v1'], ['/deployment.json', '{"enginePath":"/engine/v1"}']]);
+  const bodies = new Map([['/', 'html-v1'], ['/data/downloads/distances.csv', 'station,eigyoDeciKm\r\n東京,0'], ['/data/downloads/distances.json', '{"records":[]}'], ['/engine/v1/main.wasm', 'wasm-v1'], ['/_astro/font.woff2', 'font-v1'], ['/deployment.json', '{"enginePath":"/engine/v1"}']]);
   const requests = [];
   const notifications = [];
   let offline = false;
@@ -103,6 +103,7 @@ test('保存済みの一式はフォントとクエリに依存しないペー�
   const missingEngine = await sw.fetch('/engine/v1/main.wasm');
   assert.equal(missingEngine.status, 503);
   assert.equal(missingEngine.headers.get('X-Kippu-Asset-Source'), 'service-worker-unavailable');
+  for (const path of ['/data/downloads/distances.csv', '/data/downloads/distances.json']) assert.equal(await (await sw.fetch(path)).text(), sw.bodies.get(path));
   assert.equal(await (await sw.fetch('/?from=東京')).text(), 'html-v1');
   assert.equal(await (await sw.fetch('/_astro/font.woff2')).text(), 'font-v1');
   for (const path of ['/api/split/auto/ticket', '/ingest/a', '/monitoring', '/manifest.webmanifest', '/sw.js', 'https://external.test/font']) assert.equal(sw.fetch(path), undefined);

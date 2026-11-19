@@ -11,9 +11,10 @@ function scan(directory, prefix = '') {
     const relative = `${prefix}${entry.name}`;
     if (relative === '404.html' || relative === 'sw.js') continue;
     if (entry.isDirectory()) { scan(join(directory, entry.name), `${relative}/`); continue; }
-    if (!/\.(html|js|css|woff2|png|ico|svg|webp|jpg|jpeg|wasm|bin)$/.test(relative) && relative !== 'deployment.json' && !relative.startsWith('fonts/')) continue;
+    if (!/\.(html|js|css|woff2|png|ico|svg|webp|jpg|jpeg|wasm|bin)$/.test(relative) && !/^data\/downloads\/[^/]+\.(csv|json)$/.test(relative) && relative !== 'deployment.json' && !relative.startsWith('fonts/')) continue;
     const bytes = readFileSync(join(directory, entry.name));
-    const url = relative === 'index.html' ? '/' : relative.endsWith('.html') ? '/' + relative.slice(0, -5) : '/' + relative;
+    const pathname = relative === 'index.html' ? '/' : relative.endsWith('.html') ? '/' + relative.slice(0, -5) : '/' + relative;
+    const url = new URL(pathname, 'https://kippu-navi.com').pathname;
     if (relative.endsWith('.html')) htmlUrls.push(url);
     assets.push({ url, size: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') });
   }
