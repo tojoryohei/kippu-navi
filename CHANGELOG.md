@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.0...kippu-navi-v6.0.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* 折り返し控除前に経路重複を判定 ([#1110](https://github.com/tojoryohei/kippu-navi/issues/1110)) ([2c494f0](https://github.com/tojoryohei/kippu-navi/commit/2c494f0a9a93aa5cd5688ea4b27301000ccf26b9))
+
 ## [6.0.0](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v5.14.2...kippu-navi-v6.0.0) (2026-11-19)
 
 
