@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestValidateTicketInputAfterOverlapDeduction(t *testing.T) {
+func TestValidateTicketInputBeforeOverlapDeduction(t *testing.T) {
 	g := graph.NewGraph(10)
 	c := NewRouteTicketCalculator(g, nil, nil, nil, nil)
 	for _, tc := range []struct {
@@ -16,7 +16,7 @@ func TestValidateTicketInputAfterOverlapDeduction(t *testing.T) {
 		stations  []string
 		duplicate bool
 	}{
-		{"deductible", []string{"御茶ノ水", "神田", "東京", "神田", "秋葉原"}, false},
+		{"turnaround between branches", []string{"御茶ノ水", "神田", "東京", "神田", "秋葉原"}, true},
 		{"destination at branch", []string{"御茶ノ水", "神田", "東京", "神田"}, true},
 		{"same outside stations", []string{"御茶ノ水", "神田", "東京", "神田", "御茶ノ水"}, true},
 		{"ring", []string{"A", "B", "C", "A"}, false},

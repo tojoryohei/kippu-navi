@@ -178,7 +178,7 @@ func TestPricingContinuesAfterCorrectedDistanceFallsBelowThreshold(t *testing.T)
 	}
 }
 
-func TestPricingExtensionCompletesOverlapDeduction(t *testing.T) {
+func TestPricingExtensionRejectsTurnaroundOverlap(t *testing.T) {
 	g := graph.NewGraph(5)
 	for _, edge := range [][2]string{{"御茶ノ水", "神田"}, {"神田", "東京"}, {"神田", "秋葉原"}, {"秋葉原", "御徒町"}} {
 		addFareExtensionEdge(g, edge[0], edge[1], 450, domain.JREast)
@@ -188,9 +188,9 @@ func TestPricingExtensionCompletesOverlapDeduction(t *testing.T) {
 	path := []int{g.GetOrAddID("御茶ノ水"), g.GetOrAddID("神田"), g.GetOrAddID("東京")}
 	steps := []ViaStep{{StationName: "御茶ノ水"}, {StationName: "神田"}, {StationName: "東京"}}
 	got, err := calc.CalculateWithPricing(path, steps, "cheapest", TicketPricingOptions{DiscountID: "student"})
-	// 東京→神田の時点は重複するが、秋葉原まで進むと折り返しを控除できる。
-	if err != nil || got.ArrivalStation != "御徒町" || got.TotalEigyoKilo != 1350 || got.Fare != 880 || !got.DiscountApplied {
-		t.Fatalf("折り返し控除を伴う延長を採用できない: %+v、%v", got, err)
+	// 学割で安くなる場合でも、神田を再通過する延長は採用しない。
+	if err != nil || got.ArrivalStation != "東京" || got.TotalEigyoKilo != 900 || got.Fare != 1000 || got.DiscountApplied {
+		t.Fatalf("元の経路の運賃を期待しました: %+v、%v", got, err)
 	}
 }
 
