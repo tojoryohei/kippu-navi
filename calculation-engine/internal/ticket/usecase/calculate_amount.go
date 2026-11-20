@@ -177,6 +177,9 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 	if len(path) < 2 {
 		return nil, fmt.Errorf("CalculateAmount.Execute: %w", domain.ErrInvalidPath)
 	}
+	if domain.IsKitaSenjuAyasePath(path, u.graph.GetName) {
+		return nil, domain.ErrRequestedSection
+	}
 
 	// 特例運賃計算用の仮想経路を構築する。
 	// 北新地の置換は運賃計算だけに使い、営業キロは置換前の物理経路から求める。

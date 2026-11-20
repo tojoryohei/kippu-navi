@@ -130,6 +130,9 @@ func (u *CalculateAmount) Execute(path []int, months int) (*CalculationResult, e
 	if len(path) < 2 {
 		return nil, fmt.Errorf("CalculateAmount.Execute: %w", domain.ErrInvalidPath)
 	}
+	if domain.IsKitaSenjuAyasePath(path, u.graph.GetName) {
+		return nil, domain.ErrRequestedSection
+	}
 
 	// 経路情報の集計
 	summary, err := u.analyzePath(path)

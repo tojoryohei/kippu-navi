@@ -61,6 +61,13 @@ func OptimizeFixedRouteWithProgress(n int, evaluate func(int, int) (RouteSplitSe
 	return optimizeFixedRouteWithClock(n, evaluate, callback, time.Now, limits...)
 }
 
+func isUnavailableSegment(err error) bool {
+	return errors.Is(err, domain.ErrInvalidPath) ||
+		errors.Is(err, domain.ErrNoPathExists) ||
+		errors.Is(err, domain.ErrDuplicateRoute) ||
+		errors.Is(err, domain.ErrRequestedSection)
+}
+
 func optimizeFixedRouteWithClock(n int, evaluate func(int, int) (RouteSplitSegment, error), callback ProgressCallback, now func() time.Time, limits ...int) ([]RouteSplitPlan, error) {
 	if n < 2 {
 		return nil, domain.ErrInvalidPath
@@ -91,7 +98,7 @@ func optimizeFixedRouteWithClock(n int, evaluate func(int, int) (RouteSplitSegme
 			}
 			segment, err := evaluate(i, j)
 			if err != nil {
-				if errors.Is(err, domain.ErrInvalidPath) || errors.Is(err, domain.ErrNoPathExists) || errors.Is(err, domain.ErrDuplicateRoute) {
+				if isUnavailableSegment(err) {
 					continue
 				}
 				return nil, err
@@ -191,7 +198,7 @@ func optimizeLimitedRoute(n, maxSplits int, evaluate func(int, int) (RouteSplitS
 					var err error
 					segment, err = evaluate(i, j)
 					if err != nil {
-						if errors.Is(err, domain.ErrInvalidPath) || errors.Is(err, domain.ErrNoPathExists) || errors.Is(err, domain.ErrDuplicateRoute) {
+						if isUnavailableSegment(err) {
 							invalid[key] = true
 							continue
 						}
