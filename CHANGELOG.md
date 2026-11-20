@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.1...kippu-navi-v6.0.2) (2026-11-20)
+
+
+### Bug Fixes
+
+* 都区市内の運賃計算区間を経路重複判定から除外 ([#1112](https://github.com/tojoryohei/kippu-navi/issues/1112)) ([443f160](https://github.com/tojoryohei/kippu-navi/commit/443f1605d5665a049e21dbee4aff79cf001d36e5))
+
 ## [6.0.1](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.0...kippu-navi-v6.0.1) (2026-11-20)
 
 
