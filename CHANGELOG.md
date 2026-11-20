@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.3...kippu-navi-v6.0.4) (2026-11-20)
+
+
+### Bug Fixes
+
+* 北千住・綾瀬間の乗車券と定期券を発売不可にする ([#1116](https://github.com/tojoryohei/kippu-navi/issues/1116)) ([642fabe](https://github.com/tojoryohei/kippu-navi/commit/642fabe446094263c81e3abcd77862223ae7de33))
+
 ## [6.0.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.2...kippu-navi-v6.0.3) (2026-11-20)
 
 
