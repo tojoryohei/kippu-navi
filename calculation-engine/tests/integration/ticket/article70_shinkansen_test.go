@@ -1,10 +1,12 @@
 package ticket_test
 
 import (
+	"calculation-engine/internal/domain"
 	"calculation-engine/internal/graphdata"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/infra/graphio"
 	"calculation-engine/internal/ticket/usecase"
+	"errors"
 	"io"
 	"reflect"
 	"slices"
@@ -63,7 +65,8 @@ func TestArticle70Shinkansen(t *testing.T) {
 		{"東京上野を残す新橋発は有効", append(leg("トウカ", "新橋", "有楽町"), append(leg("トホシ", "東京"), toOmiya...)...), 0, 0, nil, false},
 		{"高輪ゲートウェイから東京上野だけ北陸新幹線", append(leg("トウカ", "高輪ゲートウェイ", "田町", "浜松町", "新橋", "有楽町"), append(leg("ホクシ", "東京"), toOmiya[:len(toOmiya)-1]...)...), 346, 620, []string{"東海道", "東京", "新幹線", "上野", "東北", "山手", "東北"}, false},
 		{"太線区間内完結には追加判定しない", leg("トホシ", "東京", "上野"), 0, 0, nil, false},
-		{"太線区間の通過には追加判定しない", append(leg("トウカ", "川崎", "蒲田", "大森", "大井町", "品川", "高輪ゲートウェイ", "田町", "浜松町", "新橋", "有楽町"), append(leg("トホシ", "東京"), toOmiya...)...), 0, 0, nil, false},
+		{"太線区間を通過して東京上野を残す川崎発は有効", append(leg("トウカ", "川崎", "蒲田", "大森", "大井町", "品川", "高輪ゲートウェイ", "田町", "浜松町", "新橋", "有楽町"), append(leg("トホシ", "東京"), toOmiya...)...), 0, 0, nil, false},
+		{"大久保から東京上野だけ新幹線で三河島", append(append(append(leg("チユト", "（中）大久保"), central...), leg("トホシ", "東京")...), append(leg("トウホ", "上野", "鶯谷"), leg("シヨハ", "日暮里", "三河島")...)...), 0, 0, nil, true},
 	} {
 		for _, reverse := range []bool{false, true} {
 			steps := slices.Clone(tc.steps)
@@ -84,14 +87,14 @@ func TestArticle70Shinkansen(t *testing.T) {
 			}
 			if tc.invalid {
 				// 通常のCorrectと、入れ子の補正でも展開前の要求を保持する。
-				if _, err := corrector.Correct(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
+				if _, err := corrector.Correct(path, g); !errors.Is(err, domain.ErrRequestedSection) {
 					t.Fatalf("補正時のエラー = %v", err)
 				}
 				nested := usecase.NewPipelineCorrector(usecase.NewShinkansenOverlapCorrector(), usecase.NewPipelineCorrector(usecase.NewArticle70Corrector(routes)))
-				if _, err := nested.Correct(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
+				if _, err := nested.Correct(path, g); !errors.Is(err, domain.ErrRequestedSection) {
 					t.Fatalf("入れ子の補正時のエラー = %v", err)
 				}
-				if _, _, err := nested.CorrectWithPreShinkansenPath(path, g); err == nil || err.Error() != "再考：要求区間誤り" {
+				if _, _, err := nested.CorrectWithPreShinkansenPath(path, g); !errors.Is(err, domain.ErrRequestedSection) {
 					t.Fatalf("入れ子の追跡付き補正時のエラー = %v", err)
 				}
 			}
@@ -99,7 +102,7 @@ func TestArticle70Shinkansen(t *testing.T) {
 				t.Run(tc.name+"/"+steps[0].StationName+"/"+mode, func(t *testing.T) {
 					fare, _, err := calculator.Calculate(path, steps, mode)
 					if tc.invalid && mode != "uncorrect" {
-						if err == nil || err.Error() != "再考：要求区間誤り" {
+						if !errors.Is(err, domain.ErrRequestedSection) {
 							t.Fatalf("エラー = %v, 期待値 再考：要求区間誤り", err)
 						}
 

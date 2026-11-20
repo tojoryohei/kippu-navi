@@ -33,7 +33,6 @@ func (u *Article70Corrector) correctWithSource(path, source []int, g graph.Graph
 	}
 
 	var edits []pathEdit
-	correctedEndpoint := false
 
 	for i := len(segments) - 1; i >= 0; i-- {
 		seg := segments[i]
@@ -73,7 +72,6 @@ func (u *Article70Corrector) correctWithSource(path, source []int, g graph.Graph
 					routeIDs = append(routeIDs, path[seg.end])
 				}
 				edits = append(edits, pathEdit{seg.start, seg.end, routeIDs})
-				correctedEndpoint = correctedEndpoint || mode != "passing"
 			}
 		}
 	}
@@ -82,7 +80,7 @@ func (u *Article70Corrector) correctWithSource(path, source []int, g graph.Graph
 	// 第160条のう回乗車と要求区間の整合を確認する。東京〜上野だけを
 	// 新幹線で利用する場合に限定し、上野〜大宮も新幹線なら対象外とする。
 	// 判定は第70条補正直後に行い、最安モードの経路延長より前に返す。
-	if correctedEndpoint && requiresTokyoUenoShinkansen(source, g) &&
+	if len(edits) > 0 && requiresTokyoUenoShinkansen(source, g) &&
 		!containsStationSequence(newPath, g, "東京", "上野") &&
 		!containsStationSequence(newPath, g, "東京", "神田", "秋葉原", "御徒町", "上野") {
 		return nil, domain.ErrRequestedSection
@@ -125,8 +123,8 @@ func requiresTokyoUenoShinkansen(source []int, g graph.Graph) bool {
 		return false
 	}
 	for _, segment := range article70Segments(source, g) {
-		// エリア内完結と通過は今回の要求区間判定の対象外。
-		if (segment.start == 0) == (segment.end == len(source)-1) {
+		// エリア内完結は第70条の補正対象外。
+		if segment.start == 0 && segment.end == len(source)-1 {
 			continue
 		}
 		if containsStationSequence(source[segment.start:segment.end+1], g, "東京", "上野") {
