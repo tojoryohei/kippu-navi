@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.3](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.2...kippu-navi-v6.0.3) (2026-11-20)
+
+
+### Bug Fixes
+
+* 第70条の通過補正でも東京〜上野の要求区間を検証 ([#1114](https://github.com/tojoryohei/kippu-navi/issues/1114)) ([a2f4d94](https://github.com/tojoryohei/kippu-navi/commit/a2f4d94b17384de4a4f1d2463d426189e22fa910))
+
 ## [6.0.2](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.1...kippu-navi-v6.0.2) (2026-11-20)
 
 
