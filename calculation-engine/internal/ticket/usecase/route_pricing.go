@@ -59,10 +59,10 @@ func (c *RouteTicketCalculator) CalculateWithPricing(path []int, steps []ViaStep
 			failures[key] = err
 			return nil, err
 		}
-		// 市内駅などを展開した後にも、新幹線と在来線の重複を検査する。
+		// 補正後も新幹線と在来線の重複を検査する。
+		// 都区市内の中心駅に接続する運賃計算上の区間は、乗車経路に含めない。
 		if mode == "cheapest" {
-			physical, _ := local.evaluator.calculation.calc.buildFarePaths(base.FinalPath)
-			if err := local.validateInputPath(physical); err != nil {
+			if err := local.validateInputPath(base.FinalPath); err != nil {
 				failures[key] = err
 				return nil, err
 			}

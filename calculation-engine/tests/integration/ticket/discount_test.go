@@ -6,6 +6,7 @@ import (
 	"calculation-engine/internal/ticket/usecase"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -148,5 +149,32 @@ func TestShinkansenDiscountCompanies(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestPricedSameZoneDoesNotCountFareOnlyOverlap(t *testing.T) {
+	calculator, _ := setupPricedRoute(t)
+	var steps []usecase.ViaStep
+	for _, leg := range []struct{ line, stations string }{
+		{"シヨハ", "綾瀬 亀有 金町 松戸 北松戸 馬橋 新松戸 北小金 南柏 柏 北柏 我孫子 天王台 取手 藤代 龍ケ崎市 牛久 ひたち野うしく 荒川沖 土浦 神立 高浜 石岡 羽鳥 岩間 友部 内原 赤塚 偕楽園 水戸 勝田 佐和 東海 大甕 常陸多賀 日立 小木津 十王 高萩 南中郷 磯原 大津港 勿来 植田 泉 湯本 内郷 いわき （常）草野 四ツ倉 久ノ浜 末続 （常）広野 Ｊヴィレッジ 木戸 竜田 富岡 夜ノ森 大野 双葉 浪江 桃内 小高 磐城太田 原ノ町 鹿島 日立木 相馬 駒ケ嶺 新地 坂元 山下 浜吉田 亘理 逢隈"},
+		{"トウホ", "岩沼 館腰 名取 南仙台 太子堂 長町"},
+		{"トホシ", "仙台 白石蔵王 （北）福島 （北）郡山 新白河 那須塩原 宇都宮 小山"},
+		{"トウホ", "大宮 さいたま新都心 与野 北浦和 浦和 南浦和 蕨 西川口 川口"},
+		{"", "赤羽"},
+	} {
+		for _, name := range strings.Fields(leg.stations) {
+			steps = append(steps, usecase.ViaStep{StationName: name, LineName: leg.line})
+		}
+	}
+	path, err := calculator.ResolvePath(steps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fare, err := calculator.CalculateWithPricing(path, steps, "cheapest", usecase.TicketPricingOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fare.DepartureStation != "東京都区内" || fare.ArrivalStation != "東京都区内" || fare.Fare <= 0 {
+		t.Fatalf("東京都区内相互発着の運賃を期待しました: %+v", fare)
 	}
 }
