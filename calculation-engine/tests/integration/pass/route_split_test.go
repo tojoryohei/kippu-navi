@@ -1,8 +1,10 @@
 package pass_test
 
 import (
+	"calculation-engine/internal/domain"
 	passdomain "calculation-engine/internal/pass/domain"
 	"calculation-engine/internal/pass/usecase"
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -17,6 +19,11 @@ func TestRoutePassSplitAgainstEnumeration(t *testing.T) {
 		t.Fatal(err)
 	}
 	calculator := usecase.NewRoutePassCalculator(g, calc, rules)
+	t.Run("北千住・綾瀬間の発売制限", func(t *testing.T) {
+		if _, err := calculator.Split([]string{"綾瀬", "北千住"}, 1, "normal"); !errors.Is(err, domain.ErrRequestedSection) {
+			t.Fatalf("綾瀬・北千住間の通し運賃のエラー = %v", err)
+		}
+	})
 	for _, tc := range []struct {
 		names  []string
 		months int

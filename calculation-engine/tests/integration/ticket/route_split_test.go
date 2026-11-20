@@ -1,8 +1,11 @@
 package ticket_test
 
 import (
+	"calculation-engine/internal/domain"
+	"calculation-engine/internal/split"
 	"calculation-engine/internal/ticket/infra/graphio"
 	"calculation-engine/internal/ticket/usecase"
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -25,6 +28,26 @@ func TestRouteSplitRealRoutesAndModes(t *testing.T) {
 		usecase.NewShinkansenOverlapCorrector(), usecase.NewRule43_2Corrector(), usecase.NewRule69Corrector(), usecase.NewRule157Corrector(),
 	)
 	calculator := usecase.NewRouteTicketCalculator(g, corrector, evaluator, nil, zones)
+	t.Run("北千住・綾瀬間の発売制限", func(t *testing.T) {
+		direct := []usecase.ViaStep{{StationName: "北千住", LineName: "シヨハ"}, {StationName: "綾瀬"}}
+		if _, err := calculator.Split(direct, "uncorrect"); !errors.Is(err, domain.ErrRequestedSection) {
+			t.Fatalf("補正なしの通し運賃のエラー = %v", err)
+		}
+		through := []usecase.ViaStep{
+			direct[0],
+			{StationName: "綾瀬", LineName: "シヨハ"},
+			{StationName: "亀有"},
+		}
+		for _, maxSplits := range []int{0, 1} {
+			got, err := calculator.Split(through, "normal", split.RouteSplitOptions{MaxSplits: maxSplits})
+			if err != nil {
+				t.Fatalf("分割回数上限 %d: %v", maxSplits, err)
+			}
+			if len(got.Results) != 1 || len(got.Results[0].Segments) != 1 {
+				t.Fatalf("分割回数上限 %d: 通しの1枚が必要です: %+v", maxSplits, got)
+			}
+		}
+	})
 	// 第88条の運賃比較が近郊区間の候補経路を上書きしていた区間。
 	from, _ := g.GetID("相生")
 	to, _ := g.GetID("新大阪")
