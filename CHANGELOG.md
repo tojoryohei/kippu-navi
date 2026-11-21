@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.4...kippu-navi-v6.0.5) (2026-11-21)
+
+
+### Bug Fixes
+
+* 同じ都区市内を出て戻る経路に運賃特例を適用 ([#1118](https://github.com/tojoryohei/kippu-navi/issues/1118)) ([6ff5c9d](https://github.com/tojoryohei/kippu-navi/commit/6ff5c9d9b678c5efac5a05f064a1e77eef26762a))
+
 ## [6.0.4](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.3...kippu-navi-v6.0.4) (2026-11-20)
 
 
