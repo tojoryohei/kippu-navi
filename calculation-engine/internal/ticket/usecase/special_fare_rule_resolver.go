@@ -70,14 +70,12 @@ func (r *SpecialFareRuleResolver) Resolve(path []int, mode string, options ...Si
 func (r *SpecialFareRuleResolver) resolveNormal(path []int, opts SingleStationOptions) ([]FarePathCandidate, error) {
 	// 1. 特定都区市内・東京山手線内（第86条・第87条）を適用します。
 	var resolved []FarePathCandidate
-	if areaID, ok := pureJRSuburbanArea(path, r.graph); ok {
-		// 純粋なJR近郊区間内完結経路は、キャッシュ生成と同じく中心駅までの
-		// 最短擬制キロ経路を使った片側適用だけを候補にします。
+	areaID, suburban := pureJRSuburbanArea(path, r.graph)
+	if suburban {
+		// 近郊区間では、中心駅までの最短擬制キロ経路を使う片側適用を優先します。
 		resolved = r.applySuburbanZoneCandidate(path, areaID, opts)
-	} else {
-		// 私鉄を含む経路などは、従来の経路全体に対する特例判定を維持します。
-		resolved = r.applyNormalZoneCandidates(path, opts)
 	}
+	resolved = append(resolved, r.applyNormalZoneCandidates(path, opts, suburban)...)
 
 	// 第88条特例の候補と、不適用時の経路を追加します。
 	osakaCandidates, err := r.applyArticle88Candidates(path, opts)
@@ -120,11 +118,24 @@ func (r *SpecialFareRuleResolver) resolveUncorrect(path []int, opts SingleStatio
 	return append(resolved, applyArticle88UncorrectCandidates(path, r.graph, opts)...)
 }
 
-func (r *SpecialFareRuleResolver) zoneCandidates(path []int, opts SingleStationOptions) []zoneCandidate {
+func (r *SpecialFareRuleResolver) zoneCandidates(path []int, opts SingleStationOptions, reentryOnly bool) []zoneCandidate {
 	startName := r.graph.GetName(path[0])
 	endName := r.graph.GetName(path[len(path)-1])
 	originZones := r.zoneRegistry.FindZonesByStation(startName)
-	destZones := r.zoneRegistry.FindZonesByStation(endName)
+	var destZones []ticketdomain.SpecialZone
+	if reentryOnly {
+		// 単駅指定にかかわらず、実際の発着駅が同じ都区市内に属するかを調べます。
+		for i := range originZones {
+			zone := &originZones[i]
+			if zone.Name != "東京山手線内" && isStationInSet(endName, zone.Stations) &&
+				len(r.applier.osakaZoneChanges(path, zone)) == 2 {
+				destZones = append(destZones, *zone)
+			}
+		}
+		originZones = destZones
+	} else {
+		destZones = r.zoneRegistry.FindZonesByStation(endName)
+	}
 	if opts.DepartureSingleStation {
 		originZones = nil
 	}
@@ -168,13 +179,14 @@ func (r *SpecialFareRuleResolver) zoneCandidates(path []int, opts SingleStationO
 
 // applyNormalZoneCandidates は第86条・第87条の候補を平坦な配列で返します。
 // 特例が不成立、または候補経路の事後補正に失敗した場合は、その候補だけを返しません。
-func (r *SpecialFareRuleResolver) applyNormalZoneCandidates(path []int, opts SingleStationOptions) []FarePathCandidate {
+// 近郊区間では、同じ都区市内を出て戻る経路の候補だけを追加します。
+func (r *SpecialFareRuleResolver) applyNormalZoneCandidates(path []int, opts SingleStationOptions, reentryOnly bool) []FarePathCandidate {
 	if r.applier == nil || r.zoneRegistry == nil {
 		return nil
 	}
 
 	resolved := make([]FarePathCandidate, 0, 2)
-	for _, candidate := range r.zoneCandidates(path, opts) {
+	for _, candidate := range r.zoneCandidates(path, opts, reentryOnly) {
 		info, ok := r.applier.Apply(path, candidate.origin, candidate.dest)
 		if !ok {
 			continue
@@ -200,7 +212,7 @@ func (r *SpecialFareRuleResolver) applyUncorrectZoneCandidates(path []int, opts 
 	}
 
 	resolved := make([]FarePathCandidate, 0, 2)
-	for _, candidate := range r.zoneCandidates(path, opts) {
+	for _, candidate := range r.zoneCandidates(path, opts, false) {
 		info, ok := r.applier.ApplyUncorrect(path, candidate.origin, candidate.dest)
 		if !ok {
 			continue
