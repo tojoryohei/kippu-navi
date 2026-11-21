@@ -10,6 +10,7 @@ import (
 	"io"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -47,6 +48,37 @@ func TestArticle70Shinkansen(t *testing.T) {
 		}
 		return steps
 	}
+	t.Run("東京都区内を出て亀有に戻る", func(t *testing.T) {
+		steps := leg("", strings.Fields(`金町 松戸 北松戸 馬橋 新松戸 南流山 （武蔵）三郷 新三郷 吉川美南 吉川 越谷レイクタウン 南越谷 東川口 東浦和 南浦和
+   武蔵浦和 西浦和 北朝霞 新座 東所沢 新秋津 新小平 西国分寺 国立 立川 日野 豊田 八王子 片倉 八王子みなみ野 相原 （横）橋本
+   南橋本 上溝 番田 原当麻 下溝 相武台下 入谷 海老名 厚木 社家 門沢橋 倉見 宮山 寒川 香川 北茅ケ崎 茅ケ崎 辻堂 藤沢 大船
+   本郷台 港南台 洋光台 新杉田 磯子 （岸）根岸 山手 石川町 関内 桜木町 横浜 東神奈川 新子安 鶴見 川崎 蒲田 大森 大井町 品川
+   高輪ゲートウェイ 田町 浜松町 新橋 有楽町 東京 上野 鶯谷 日暮里 三河島 南千住 北千住 綾瀬 亀有`)...)
+		for i := range steps {
+			if steps[i].StationName == "東京" {
+				steps[i].LineName = "トホシ"
+			}
+		}
+		path, err := calculator.ResolvePath(steps)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fare, err := calculator.CalculateWithPricing(path, steps, "normal", usecase.TicketPricingOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if fare.DepartureStation != "東京都区内" || fare.ArrivalStation != "亀有" || fare.TotalEigyoKilo != 2155 || fare.Fare != 3850 {
+			t.Errorf("通常モードの計算結果 = %+v", fare)
+		}
+		single, err := calculator.CalculateWithPricing(path, steps, "normal", usecase.TicketPricingOptions{}, usecase.SingleStationOptions{DepartureSingleStation: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if single.DepartureStation != "金町" || single.ArrivalStation != "亀有" || single.TotalEigyoKilo != 1979 || single.Fare != 3520 {
+			t.Errorf("乗車駅単駅指定の計算結果 = %+v", single)
+		}
+	})
+
 	central := leg("チユト", "新宿", "代々木", "千駄ケ谷", "信濃町", "四ツ谷", "市ケ谷", "飯田橋", "水道橋", "御茶ノ水", "神田")
 	meguro := leg("ヤマテ", "目黒", "五反田", "大崎", "品川", "高輪ゲートウェイ", "田町", "浜松町", "新橋", "有楽町")
 	toOmiya := leg("トウホ", "上野", "鶯谷", "日暮里", "尾久", "赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮")
