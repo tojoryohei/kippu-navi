@@ -3,12 +3,15 @@ package usecase
 import (
 	"calculation-engine/internal/domain"
 	"calculation-engine/internal/ticket/graph"
+	"calculation-engine/internal/ticket/infra/graphio"
 	"fmt"
 	"math"
+	"slices"
 )
 
-// ticketCandidateDetour は分割探索と分割前の運賃比較に共通の迂回許容距離です（6.6km）。
-const ticketCandidateDetour domain.DeciKilo = 66
+// ticketCandidateDetour は分割探索と分割前の運賃比較に共通の最小迂回許容距離です。
+// 穂積→高蔵寺では、美濃太田・多治見経由が最短の名古屋経由より擬制キロで7.5 km長く、通し運賃が安くなります。
+const ticketCandidateDetour domain.DeciKilo = 75
 
 // TicketSplitSegment は分割された個々の区間とその運賃計算結果を保持します。
 type TicketSplitSegment struct {
@@ -23,6 +26,7 @@ type TicketSplitSegment struct {
 type SearchOptimalSplit struct {
 	graph     graph.Graph
 	evaluator *TicketSegmentEvaluator
+	zones     *graphio.SpecialZoneRegistry
 	fares     []int32
 }
 
@@ -30,9 +34,11 @@ type SearchOptimalSplit struct {
 func NewSearchOptimalSplit(
 	g graph.Graph,
 	evaluator *TicketSegmentEvaluator,
+	zones *graphio.SpecialZoneRegistry,
 ) *SearchOptimalSplit {
 	return &SearchOptimalSplit{
 		graph:     g,
+		zones:     zones,
 		evaluator: evaluator,
 	}
 }
@@ -57,16 +63,7 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 	}
 	locked := makeLockedStationSet(lockedStations)
 
-	// 1. 候補駅（candStations）の抽出
-	// 最短経路から駅を抽出します。
-	shortest, err := u.graph.FindShortestPathGisei(startID, endID)
-	if err != nil {
-		return nil, err
-	}
-
-	// 乗車券の場合は、運賃の振れ幅がそこまで大きくないため、最短経路＋多少の迂回経路の駅を候補とします。
-	maxGisei := shortest.GiseiKilo + ticketCandidateDetour
-	pathsResult, err := u.graph.FindUnboundedKShortestPathsGisei(startID, endID, maxGisei)
+	pathsResult, err := u.candidatePaths(startID, endID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,11 +71,32 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 	minTotalFare := math.MaxInt
 	var enumerators []func(func([]int))
 
+	segmentFare := u.segmentFare
+	if u.fares == nil && len(pathsResult) > 1 {
+		// 複数の候補に共通する部分経路は一度だけ評価する。発着駅が同じ別経路は駅列全体で区別する。
+		type fareEntry struct {
+			path  []int
+			cost  int
+			valid bool
+		}
+		costs := make(map[[2]int][]fareEntry)
+		segmentFare = func(path []int) (int, bool) {
+			key := [2]int{path[0], path[len(path)-1]}
+			for _, entry := range costs[key] {
+				if slices.Equal(entry.path, path) {
+					return entry.cost, entry.valid
+				}
+			}
+			cost, ok := u.segmentFare(path)
+			costs[key] = append(costs[key], fareEntry{path, cost, ok})
+			return cost, ok
+		}
+	}
 	for _, pr := range pathsResult {
 		path := pr.StationIDs
 		n := len(path)
 		if maxSections <= 0 {
-			minCostToEnd, enumerate := u.prepareUnlimitedSplit(path, locked)
+			minCostToEnd, enumerate := u.prepareUnlimitedSplit(path, locked, segmentFare)
 			if minCostToEnd < minTotalFare {
 				minTotalFare = minCostToEnd
 				enumerators = nil
@@ -116,24 +134,9 @@ func (u *SearchOptimalSplit) ExecuteWithOptions(startID, endID, maxSections int,
 					continue
 				}
 				subPath := path[i : j+1 : j+1]
-				var cost int
-
-				if u.fares != nil {
-					startSt := subPath[0]
-					endSt := subPath[len(subPath)-1]
-					numSt := u.graph.NumStations()
-					idx := int32(startSt)*int32(numSt) + int32(endSt)
-					if idx >= 0 && int(idx) < len(u.fares) && u.fares[idx] != math.MaxInt32 {
-						cost = int(u.fares[idx])
-					} else {
-						continue
-					}
-				} else {
-					res, _, err := u.evaluator.ExecuteForSplit(subPath, 0)
-					if err != nil {
-						continue
-					}
-					cost = res.TotalAmount()
+				cost, ok := segmentFare(subPath)
+				if !ok {
+					continue
 				}
 
 				// 元の経路と共有する読み取り専用スライスを保持し、駅列の複製を避ける。
@@ -233,7 +236,7 @@ func (u *SearchOptimalSplit) searchUnlimitedSplit(path []int) (int, [][]int) {
 }
 
 func (u *SearchOptimalSplit) searchUnlimitedSplitWithLocks(path []int, locked map[int]struct{}) (int, [][]int) {
-	cost, enumerate := u.prepareUnlimitedSplit(path, locked)
+	cost, enumerate := u.prepareUnlimitedSplit(path, locked, u.segmentFare)
 	var results [][]int
 	if enumerate != nil {
 		enumerate(func(path []int) { results = append(results, path) })
@@ -241,7 +244,7 @@ func (u *SearchOptimalSplit) searchUnlimitedSplitWithLocks(path []int, locked ma
 	return cost, results
 }
 
-func (u *SearchOptimalSplit) prepareUnlimitedSplit(path []int, locked map[int]struct{}) (int, func(func([]int))) {
+func (u *SearchOptimalSplit) prepareUnlimitedSplit(path []int, locked map[int]struct{}, segmentFare func([]int) (int, bool)) (int, func(func([]int))) {
 	n := len(path)
 	dp := make([]int, n)
 	prev := make([][]int, n)
@@ -262,7 +265,7 @@ func (u *SearchOptimalSplit) prepareUnlimitedSplit(path []int, locked map[int]st
 				continue
 			}
 
-			cost, ok := u.segmentFare(path[i : j+1])
+			cost, ok := segmentFare(path[i : j+1 : j+1])
 			if !ok {
 				continue
 			}
@@ -343,15 +346,33 @@ func (u *SearchOptimalSplit) segmentFare(path []int) (int, bool) {
 	return res.TotalAmount(), true
 }
 
-// GetCheapestTicketSegments は2駅間の最も安い乗車券経路（分割なし）を取得します。
-func (u *SearchOptimalSplit) GetCheapestTicketSegments(start, end int) ([]TicketSplitSegment, error) {
+// candidatePaths は発着駅それぞれの市内中心駅までの距離を迂回許容距離に反映します。
+func (u *SearchOptimalSplit) candidatePaths(start, end int) ([]*graph.PathResult, error) {
 	shortest, err := u.graph.FindShortestPathGisei(start, end)
 	if err != nil {
 		return nil, err
 	}
-	maxGisei := shortest.GiseiKilo + ticketCandidateDetour
+	detour := ticketCandidateDetour
+	if u.zones != nil {
+		for _, id := range []int{start, end} {
+			for _, zone := range u.zones.StationToZones[u.graph.GetName(id)] {
+				center, ok := u.graph.GetID(graphio.ZoneCenterStations[zone.Name])
+				if !ok || center == id {
+					continue
+				}
+				path, err := u.graph.FindShortestPathGisei(id, center)
+				if err == nil {
+					detour = max(detour, path.GiseiKilo)
+				}
+			}
+		}
+	}
+	return u.graph.FindUnboundedKShortestPathsGisei(start, end, shortest.GiseiKilo+detour)
+}
 
-	pathsResult, err := u.graph.FindUnboundedKShortestPathsGisei(start, end, maxGisei)
+// GetCheapestTicketSegments は2駅間の最も安い乗車券経路（分割なし）を取得します。
+func (u *SearchOptimalSplit) GetCheapestTicketSegments(start, end int) ([]TicketSplitSegment, error) {
+	pathsResult, err := u.candidatePaths(start, end)
 	if err != nil {
 		return nil, err
 	}

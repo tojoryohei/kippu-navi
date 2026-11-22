@@ -355,7 +355,7 @@ func run() error {
 
 	ticketSegmentEvaluator.SetSplitCorrector(ticketCorrector)
 
-	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
+	ticketSearchUseCase := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator, ticketZoneReg)
 
 	ticketFares, ticketDistGisei, numTicketStations, err := ticketdata.LoadPrecomputedTicketFares(filepath.Join(precomputedDataDir, "ticket.bin"))
 	if err != nil {

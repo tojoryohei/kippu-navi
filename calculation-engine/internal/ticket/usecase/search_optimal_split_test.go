@@ -4,6 +4,7 @@ import (
 	"calculation-engine/internal/domain"
 	ticketdomain "calculation-engine/internal/ticket/domain"
 	"calculation-engine/internal/ticket/graph"
+	"calculation-engine/internal/ticket/infra/graphio"
 	"errors"
 	"math"
 	"reflect"
@@ -25,7 +26,7 @@ func TestSearchUnlimitedSplit(t *testing.T) {
 		fares[0*4+1] = 40
 		fares[1*4+3] = 60
 
-		search := NewSearchOptimalSplit(g, nil)
+		search := NewSearchOptimalSplit(g, nil, nil)
 		search.SetPrecomputedFares(fares)
 		cost, results := search.searchUnlimitedSplit(path)
 
@@ -46,7 +47,7 @@ func TestSearchUnlimitedSplit(t *testing.T) {
 		fares[0*4+2] = 50
 		fares[2*4+3] = 40
 
-		search := NewSearchOptimalSplit(g, nil)
+		search := NewSearchOptimalSplit(g, nil, nil)
 		search.SetPrecomputedFares(fares)
 		cost, results := search.searchUnlimitedSplit(path)
 
@@ -75,7 +76,7 @@ func TestSearchUnlimitedSplitLockedStation(t *testing.T) {
 	fares[0*4+2] = 60
 	fares[2*4+3] = 40
 
-	search := NewSearchOptimalSplit(g, nil)
+	search := NewSearchOptimalSplit(g, nil, nil)
 	search.SetPrecomputedFares(fares)
 	cost, results := search.searchUnlimitedSplitWithLocks(path, makeLockedStationSet([]int{path[1]}))
 	if cost != 100 {
@@ -120,7 +121,7 @@ func TestSearchOptimalSplit_ShibuyaMito_KairakuenLocked(t *testing.T) {
 	fares[shibuya*4+ryugasakishi] = 3000
 	fares[ryugasakishi*4+mito] = 1000
 
-	search := NewSearchOptimalSplit(g, nil)
+	search := NewSearchOptimalSplit(g, nil, nil)
 	search.SetPrecomputedFares(fares)
 
 	got, err := search.ExecuteWithOptions(shibuya, mito, 0, nil)
@@ -165,7 +166,7 @@ func TestStreamingSearchWaitsForCheapestCandidate(t *testing.T) {
 	fares[b*4+d] = 200
 	fares[a*4+c] = 100
 	fares[c*4+d] = 100
-	search := NewSearchOptimalSplit(g, nil)
+	search := NewSearchOptimalSplit(g, nil, nil)
 	search.SetPrecomputedFares(fares)
 	for _, equalFare := range []bool{false, true} {
 		fares[a*4+b], fares[b*4+d] = 200, 200
@@ -217,7 +218,7 @@ func TestDisconnectedSearchPreservesNoPathError(t *testing.T) {
 		g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{FromID: pair[0], ToID: pair[1], EigyoKilo: 10, GiseiKilo: 10}})
 	}
 	// WASMの探索用ビューと同じく、連結成分の事前計算なしでも原因を保持する。
-	search := NewSearchOptimalSplit(g, nil)
+	search := NewSearchOptimalSplit(g, nil, nil)
 	notified := false
 	_, err := search.ExecuteWithOptions(a, d, 0, nil, func([]int) { notified = true })
 	if !errors.Is(err, domain.ErrNoPathExists) || notified {
@@ -226,5 +227,34 @@ func TestDisconnectedSearchPreservesNoPathError(t *testing.T) {
 	_, err = search.GetCheapestTicketSegments(a, d)
 	if !errors.Is(err, domain.ErrNoPathExists) {
 		t.Fatalf("分割前のエラー=%v", err)
+	}
+}
+
+func TestCityCenterDetourFindsCheaperSplitInBothDirections(t *testing.T) {
+	g := graph.NewGraph(3)
+	city := g.GetOrAddID("井原市")
+	center := g.GetOrAddID("広島")
+	outside := g.GetOrAddID("児島")
+	fares := unavailableFares(3)
+	connect := func(a, b int, distance domain.DeciKilo, fare int) {
+		for _, pair := range [][2]int{{a, b}, {b, a}} {
+			from, to := pair[0], pair[1]
+			g.AddEdge(ticketdomain.TicketEdge{Edge: domain.Edge{FromID: from, ToID: to, EigyoKilo: distance, GiseiKilo: distance}})
+			fares[from*3+to] = int32(fare)
+		}
+	}
+	// 中心駅経由は直通より10 km長く、下限の7.5 kmでは候補から外れる。
+	connect(city, outside, 300, 500)
+	connect(city, center, 150, 200)
+	connect(center, outside, 250, 200)
+	zones := &graphio.SpecialZoneRegistry{StationToZones: map[string][]ticketdomain.SpecialZone{"井原市": {{Name: "広島市内"}}}}
+	search := NewSearchOptimalSplit(g, nil, zones)
+	search.SetPrecomputedFares(fares)
+	for _, pair := range [][2]int{{city, outside}, {outside, city}} {
+		got, err := search.Execute(pair[0], pair[1], 0)
+		want := [][]int{{pair[0], center, pair[1]}}
+		if err != nil || !reflect.DeepEqual(got, want) {
+			t.Fatalf("Execute(%v) の結果=%v、エラー=%v、期待値=%v", pair, got, err, want)
+		}
 	}
 }
