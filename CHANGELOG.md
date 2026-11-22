@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.5...kippu-navi-v6.0.6) (2026-11-22)
+
+
+### Bug Fixes
+
+* 分割乗車券の迂回許容距離に7.5 kmと市内中心駅までの距離を使用 ([#1125](https://github.com/tojoryohei/kippu-navi/issues/1125)) ([502d0ca](https://github.com/tojoryohei/kippu-navi/commit/502d0ca52c1d706741974b234405d1a9f0ed8516))
+
 ## [6.0.5](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.4...kippu-navi-v6.0.5) (2026-11-21)
 
 
