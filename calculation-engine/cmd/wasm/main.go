@@ -887,7 +887,7 @@ func reconstructTicket(this js.Value, args []js.Value, corrected bool) interface
 		splitIDs[i] = id
 	}
 
-	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
+	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator, ticketZoneRegistry)
 
 	type SegmentResponse struct {
 		Path           []string                         `json:"path"`
@@ -1351,7 +1351,7 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 		lockedStations = append(lockedStations, id)
 	}
 
-	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator)
+	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator, ticketZoneRegistry)
 	normalSegs, err := search.GetCheapestTicketSegments(startID, endID)
 	if err != nil {
 		return automaticSplitError(err)
