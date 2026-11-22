@@ -1,24 +1,70 @@
 ---
-import DataLayout from '@/components/data/DataLayout.astro';
-import { fareRecords } from '@/lib/data-catalog';
-import { fareCalculationHref } from '@/lib/fare-route-link';
-const yen = (n: number | null) => n === null || n === 0 ? '—' : `${n.toLocaleString('ja-JP')}円`;
+import DataLayout from "@/components/data/DataLayout.astro";
+import { fareRecords } from "@/lib/data-catalog";
+import { fareCalculationHref } from "@/lib/fare-route-link";
+const yen = (n: number | null) =>
+  n === null || n === 0 ? "—" : `${n.toLocaleString("ja-JP")}円`;
 ---
-<DataLayout title="特例運賃一覧" description="きっぷナビに収録された特定運賃・調整運賃を、乗車券と定期券に分けて公開しています。発着駅だけでなく対象経路も確認できます。">
-  <section class="data-panel space-y-3"><h2 class="text-xl font-bold">金額と対象経路の読み方</h2><p>乗車券の金額は大人片道の収録運賃、定期券は1・3・6箇月の収録運賃です。バリアフリー料金を含む最終的な発売額を示すものではありません。</p><p>特定運賃・調整運賃は計算エンジン内の区分です。発着駅が同じでも経由駅・券種・区分が異なれば別のレコードです。区間名をクリックすると、対象経路を入力した運賃計算ページを開きます。</p></section>
-  {['特定運賃', '調整運賃'].map(category => {
-    const records = fareRecords.filter(record => record.category === category);
-    return <div class="data-scroll" role="region" aria-label={`${category}一覧`} tabindex="0">
-      <table class="data-table data-fare-table">
-        <caption class="p-3 text-left font-bold">{category}：全{records.length}件</caption>
-        <thead><tr><th scope="col">区間</th><th scope="col">金額</th></tr></thead>
-        <tbody>{records.map(r => <tr id={r.id}>
-          <th scope="row"><a href={fareCalculationHref(r.path, r.ticketType)}>{r.from} → {r.to}</a></th>
-          <td><p class="data-ticket-type">{r.ticketType}</p>{r.ticketType === '定期券'
-            ? <ul><li>1箇月：{yen(r.oneMonth)}</li><li>3箇月：{yen(r.threeMonth)}</li><li>6箇月：{yen(r.sixMonth)}</li></ul>
-            : <p>{yen(r.fare)}</p>}</td>
-        </tr>)}</tbody>
-      </table>
-    </div>;
+
+<DataLayout
+  title="特例運賃一覧"
+  description="きっぷナビに収録された特定運賃・調整運賃を、乗車券と定期券に分けて公開しています。発着駅だけでなく対象経路も確認できます。"
+>
+  <section class="data-panel space-y-3">
+    <h2 class="text-xl font-bold">金額と対象経路の読み方</h2>
+    <p>
+      乗車券の金額は大人片道の収録運賃、定期券は1・3・6箇月の収録運賃です。バリアフリー料金を含む最終的な発売額を示すものではありません。
+    </p>
+    <p>
+      特定運賃・調整運賃は計算エンジン内の区分です。発着駅が同じでも経由駅・券種・区分が異なれば別のレコードです。区間名をクリックすると、対象経路を入力した運賃計算ページを開きます。
+    </p>
+  </section>
+  {["特定運賃", "調整運賃"].map((category) => {
+    const records = fareRecords.filter(
+      (record) => record.category === category,
+    );
+    return (
+      <div
+        class="data-scroll"
+        role="region"
+        aria-label={`${category}一覧`}
+        tabindex="0"
+      >
+        <table class="data-table data-fare-table">
+          <caption class="p-3 text-left font-bold">
+            {category}：全{records.length}件
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">区間</th>
+              <th scope="col">金額</th>
+            </tr>
+          </thead>
+          <tbody>
+            {records.map((r) => (
+              <tr id={r.id}>
+                <th scope="row">
+                  <a href={fareCalculationHref(r.path, r.ticketType)}>
+                    {r.from}・{r.to}
+                  </a>
+                </th>
+                <td>
+                  <p class="data-ticket-type">{r.ticketType}</p>
+                  {r.ticketType === "定期券" ? (
+                    <ul>
+                      <li>1箇月：{yen(r.oneMonth)}</li>
+                      <li>3箇月：{yen(r.threeMonth)}</li>
+                      <li>6箇月：{yen(r.sixMonth)}</li>
+                    </ul>
+                  ) : (
+                    <p>{yen(r.fare)}</p>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   })}
 </DataLayout>

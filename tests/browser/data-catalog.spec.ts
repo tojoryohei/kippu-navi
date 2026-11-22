@@ -32,8 +32,8 @@ test('データ一覧は絞り込みなしで全件表示し、駅別距離と�
     await expect(table.locator('tbody tr')).toHaveCount(fareRecords.filter(record => record.category === category).length);
     await expect(table.getByRole('columnheader')).toHaveText(['区間', '金額']);
   }
-  await expect(page.getByRole('row').filter({ has: page.getByRole('link', { name: '豊橋 → 愛知御津', exact: true }) }).filter({ hasText: '定期券' }).getByRole('link')).toHaveAttribute('href', /^\/fare\/pass\?route=/);
-  await expect(page.getByRole('link', { name: '東京 → 西船橋', exact: true }).first()).toHaveAttribute('href', `/fare/ticket?${new URLSearchParams({ route: '東京[総武]西船橋' })}`);
+  await expect(page.getByRole('row').filter({ has: page.getByRole('link', { name: '豊橋・愛知御津', exact: true }) }).filter({ hasText: '定期券' }).getByRole('link')).toHaveAttribute('href', /^\/fare\/pass\?route=/);
+  await expect(page.getByRole('link', { name: '東京・西船橋', exact: true }).first()).toHaveAttribute('href', `/fare/ticket?${new URLSearchParams({ route: '東京[総武]西船橋' })}`);
 });
 
 test('JavaScriptなしのモバイルでも全件・出典・配布ファイルを読める', async ({ browser, diagnostics }) => {
@@ -89,11 +89,11 @@ test('駅情報は表内で横スクロールでき、運賃は320px幅でも収
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
     await page.goto('/data/fares');
-    const toyohashi = page.getByRole('row').filter({ has: page.getByRole('link', { name: '豊橋 → 愛知御津', exact: true }) }).filter({ hasText: '定期券' });
+    const toyohashi = page.getByRole('row').filter({ has: page.getByRole('link', { name: '豊橋・愛知御津', exact: true }) }).filter({ hasText: '定期券' });
     await expect(toyohashi).toContainText('1箇月：—');
     await expect(toyohashi).toContainText('3箇月：—');
     await expect(toyohashi).toContainText('6箇月：28,300円');
-    await expect(page.getByRole('row').filter({ has: page.getByRole('link', { name: '東京 → 西船橋', exact: true }) }).first()).toContainText('350円');
+    await expect(page.getByRole('row').filter({ has: page.getByRole('link', { name: '東京・西船橋', exact: true }) }).first()).toContainText('350円');
     for (const table of await page.locator('.data-scroll').all()) expect(await table.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
