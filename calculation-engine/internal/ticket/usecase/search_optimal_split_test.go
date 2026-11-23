@@ -258,3 +258,39 @@ func TestCityCenterDetourFindsCheaperSplitInBothDirections(t *testing.T) {
 		}
 	}
 }
+
+func TestCalculateUnsplitTicketComparesCandidatesInCheapestMode(t *testing.T) {
+	g := graph.NewGraph(5)
+	addFareExtensionEdge(g, "A", "新茂原", 1000, domain.JREast)
+	addFareExtensionEdge(g, "A", "X", 500, domain.JREast)
+	addFareExtensionEdge(g, "X", "新茂原", 505, domain.JREast)
+	b, _ := g.GetID("新茂原")
+	c := g.GetOrAddID("茂原")
+	g.AddEdge(ticketdomain.TicketEdge{
+		Line: "ソトボ",
+		Edge: domain.Edge{FromID: b, ToID: c, Company: domain.JREast, EigyoKilo: 100, GiseiKilo: 100},
+	})
+	calculator := pricingTestCalculator(t, g, map[string]int{"A 新茂原": 500, "A X 新茂原": 700, "A X 新茂原 茂原": 400})
+	extensions, err := NewRouteExtensionMatcher([]ticketdomain.RouteExtension{
+		{InputPath: []string{"A", "X", "新茂原"}, OutputPath: []string{"A", "X", "新茂原", "茂原"}},
+	}, g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calculator.extensions = extensions
+	search := NewSearchOptimalSplit(g, calculator.evaluator, calculator.zones)
+	a, _ := g.GetID("A")
+
+	fare, result, err := search.CalculateUnsplitTicket(a, b, calculator)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fare.Fare != 400 || result.TotalAmount() != 400 || fare.ArrivalStation != "茂原" || !reflect.DeepEqual(fare.PrintedViaLines, []string{"外房"}) {
+		t.Fatalf("分割前の券面 = %+v", fare)
+	}
+
+	segments, err := search.GetCheapestTicketSegments(a, b)
+	if err != nil || len(segments) != 1 || segments[0].Result.TotalAmount() != 500 {
+		t.Fatalf("分割区間の評価 = %+v, %v", segments, err)
+	}
+}
