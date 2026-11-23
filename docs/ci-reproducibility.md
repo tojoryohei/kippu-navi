@@ -32,8 +32,7 @@ actionlintは全workflowの構文・式・Action入力・再利用workflowの整
 Renovate validatorのインストール先を`RENOVATE_PACKAGE_ROOT`に設定すると、既存の設定検証も再現できます。validatorのバージョンはworkflowの`RENOVATE_VALIDATOR_VERSION`に合わせてください。
 
 ```bash
-node "$RENOVATE_PACKAGE_ROOT/dist/config-validator.js" --strict --no-global renovate.json
-RENOVATE_X_IGNORE_RE2=true node scripts/test-renovate-schedule.mjs
+RENOVATE_X_IGNORE_RE2=true node "$RENOVATE_PACKAGE_ROOT/dist/config-validator.js" --strict --no-global renovate.json
 node --test tests/automation/*.test.mjs
 node scripts/check-runtime-versions.mjs
 ```
