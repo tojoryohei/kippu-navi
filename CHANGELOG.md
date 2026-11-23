@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.6...kippu-navi-v6.0.7) (2026-11-23)
+
+
+### Bug Fixes
+
+* 私鉄に接続するJR区間に特定区間運賃を適用 ([#1135](https://github.com/tojoryohei/kippu-navi/issues/1135)) ([4a61037](https://github.com/tojoryohei/kippu-navi/commit/4a61037ae95c55b5516c09883f1850a8f6ce30c9))
+
 ## [6.0.6](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.5...kippu-navi-v6.0.6) (2026-11-22)
 
 
