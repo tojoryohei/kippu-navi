@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.8...kippu-navi-v6.0.9) (2026-11-23)
+
+
+### Bug Fixes
+
+* 経路自動探索の分割前評価に最安モードを使う ([#1140](https://github.com/tojoryohei/kippu-navi/issues/1140)) ([fbd8846](https://github.com/tojoryohei/kippu-navi/commit/fbd88462f0bc6ac23c9ff8a3eb1ca57ce7aa5291))
+
 ## [6.0.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.7...kippu-navi-v6.0.8) (2026-11-23)
 
 
