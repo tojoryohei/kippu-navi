@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"calculation-engine/internal/domain"
+	"calculation-engine/internal/ticket/graph"
 )
 
 // newInputPathCorrector は、重複判定だけに使う補正を構成します。
@@ -27,15 +28,39 @@ func newInputPathCorrector() PathCorrector {
 // validateInputPath は、入力に含まれる駅の重複を折り返し控除前に判定します。
 // 新幹線と在来線の重複は、特例を反映した展開後の駅列でも検証します。
 func (c *RouteTicketCalculator) validateInputPath(path []int) error {
-	if domain.HasDuplicateStation(path) {
+	if hasDuplicateTicketStation(path, c.graph) {
 		return domain.ErrDuplicateRoute
 	}
 	expanded, err := c.inputPathCorrector.Correct(append([]int(nil), path...), c.graph)
 	if err != nil {
 		return err
 	}
-	if domain.HasDuplicateStation(expanded) {
+	if hasDuplicateTicketStation(expanded, c.graph) {
 		return domain.ErrDuplicateRoute
 	}
 	return nil
+}
+
+func hasDuplicateTicketStation(path []int, g graph.Graph) bool {
+	if g == nil {
+		return domain.HasDuplicateStation(path)
+	}
+	return domain.HasDuplicateStationOnMixedRoute(path, func(from, to int) bool {
+		return isPrivateTicketEdge(from, to, g)
+	})
+}
+
+func isPrivateTicketInterior(path []int, i int, g graph.Graph) bool {
+	return g != nil && domain.PrivateInteriorStation(path, i, func(from, to int) bool {
+		return isPrivateTicketEdge(from, to, g)
+	})
+}
+
+func isPrivateTicketEdge(from, to int, g graph.Graph) bool {
+	for _, edge := range g.GetEdges(from) {
+		if edge.ToID == to {
+			return edge.Company == domain.Other
+		}
+	}
+	return false
 }

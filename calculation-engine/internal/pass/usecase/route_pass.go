@@ -48,7 +48,7 @@ func (c *RoutePassCalculator) ResolvePath(names []string) ([]int, error) {
 		}
 		path[i] = id
 	}
-	if domain.HasDuplicateStation(path) {
+	if c.hasDuplicateStation(path) {
 		return nil, domain.ErrDuplicateRoute
 	}
 	return path, nil
@@ -71,7 +71,7 @@ func (c *RoutePassCalculator) Calculate(path []int, months int, mode string) (Ro
 	if mode == "cheapest" {
 		minimum := math.MaxInt
 		for _, candidate := range c.cheapestCandidates(path) {
-			if !validRoutePassCandidate(candidate) {
+			if len(candidate) < 2 || c.hasDuplicateStation(candidate) {
 				continue
 			}
 			res, err := c.evaluator.Execute(candidate, months)
@@ -175,4 +175,15 @@ func (c *RoutePassCalculator) SplitCandidates(names []string, mode string) ([]st
 		}
 	}
 	return namesOut, nil
+}
+
+func (c *RoutePassCalculator) hasDuplicateStation(path []int) bool {
+	return domain.HasDuplicateStationOnMixedRoute(path, func(from, to int) bool {
+		for _, edge := range c.graph.GetEdges(from) {
+			if edge.ToID == to {
+				return edge.Company == domain.Other
+			}
+		}
+		return false
+	})
 }

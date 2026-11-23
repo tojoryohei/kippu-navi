@@ -254,7 +254,7 @@ func SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(
 	candidates := make([][]int, 0, 8)
 	seen := make(map[string]struct{})
 	addCandidate := func(candidate []int) {
-		if len(candidate) < 2 || domain.HasDuplicateStation(candidate) {
+		if len(candidate) < 2 || hasDuplicateTicketStation(candidate, g) {
 			return
 		}
 		key := extensionPathKey(candidate)
@@ -394,7 +394,7 @@ func searchRouteExtension(path []int, g graph.Graph, spec extensionSearchSpec) [
 			} else {
 				next = append(append([]int(nil), state.path...), edge.ToID)
 			}
-			if domain.HasDuplicateStation(next) {
+			if hasDuplicateTicketStation(next, g) {
 				continue
 			}
 			queue = append(queue, extensionSearchState{path: next, addedEigyoKilo: addedEigyoKilo})

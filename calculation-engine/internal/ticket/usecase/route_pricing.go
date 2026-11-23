@@ -185,7 +185,7 @@ func firstPricingExtension(input []int, g graph.Graph, direction extensionDirect
 				next = append(next, path...)
 				next = append(next, nextID)
 			}
-			if domain.HasDuplicateStation(next) && (canRepair == nil || !canRepair(next)) {
+			if hasDuplicateTicketStation(next, g) && (canRepair == nil || !canRepair(next)) {
 				continue
 			}
 			queue = append(queue, next)
@@ -195,10 +195,13 @@ func firstPricingExtension(input []int, g graph.Graph, direction extensionDirect
 }
 
 // 重複控除は経路端では成立せず、その先の1駅で成立する場合がある。
-// その中間状態だけは探索を継続する。同じ物理駅を3回通る延長は生成しない。
+// その中間状態だけは探索を継続する。重複判定対象の駅を3回通る延長は生成しない。
 func (c *RouteTicketCalculator) canRepairExtensionDuplicate(path []int) bool {
 	counts := map[int]int{}
-	for _, station := range path {
+	for i, station := range path {
+		if isPrivateTicketInterior(path, i, c.graph) {
+			continue
+		}
 		counts[station]++
 		if counts[station] > 2 {
 			return false
