@@ -22,6 +22,14 @@ test('新版はすべての旧画面を閉じるまで待機し、次に開い�
   const newHtml = originalHtml.replace('<html', '<html data-test-release="new"');
   const nextRelease = { ...release, version: `${release.version}-test-update`, assets: release.assets.map((asset: { url: string }) => asset.url === '/changelog'
     ? { ...asset, size: Buffer.byteLength(newHtml), sha256: createHash('sha256').update(newHtml).digest('hex') } : asset) };
+  // 失敗版の取得先は、正常な新版の公開後も旧HTMLを返す。
+  const brokenAssetUrl = '/changelog?test-broken-update';
+  const brokenRelease = {
+    ...nextRelease,
+    version: `${nextRelease.version}-broken`,
+    assets: nextRelease.assets.map((asset: { url: string }) => asset.url === '/changelog'
+      ? { ...asset, url: brokenAssetUrl } : asset),
+  };
   // 最終配信データと両版の一覧で、フォント・WASMのURLと内容が同一であることを確認する。
   const unchanged = release.assets.filter((asset: { url: string }) => /\.(woff2|wasm)$/.test(asset.url));
   expect(unchanged.some((asset: { url: string }) => asset.url.endsWith('.woff2'))).toBe(true);
@@ -30,7 +38,6 @@ test('新版はすべての旧画面を閉じるまで待機し、次に開い�
   for (const asset of unchanged) {
     expect(createHash('sha256').update(staticAssets.get(asset.url)!.body).digest('hex')).toBe(asset.sha256);
   }
-  let scriptRequests = 0;
   const assetRequests: string[] = [];
   let publish = false;
   let broken = false;
@@ -41,12 +48,16 @@ test('新版はすべての旧画面を閉じるまで待機し、次に開い�
       }
       const path = new URL(req.url, 'http://localhost').pathname;
       if (path === '/sw.js') {
-        scriptRequests++;
         res.writeHead(200, { 'Content-Type': 'text/javascript', 'Cache-Control': 'no-store', 'Service-Worker-Allowed': '/' });
-        res.end(publish || broken ? `const RELEASE = ${JSON.stringify(broken ? { ...nextRelease, version: `${nextRelease.version}-broken` } : nextRelease)};\n${script.slice(script.indexOf('\n') + 1)}` : script);
+        res.end(publish || broken ? `const RELEASE = ${JSON.stringify(broken ? brokenRelease : nextRelease)};\n${script.slice(script.indexOf('\n') + 1)}` : script);
         return;
       }
-      if (staticAssets.has(path)) assetRequests.push(path);
+      if (req.url === brokenAssetUrl) {
+        res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
+        res.end(originalHtml);
+        return;
+      }
+      if (publish && req.headers['x-kippu-exact-asset'] === '1') assetRequests.push(path);
       if (path === '/changelog' && publish) {
         res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
         res.end(newHtml);
@@ -73,6 +84,12 @@ test('新版はすべての旧画面を閉じるまで待機し、次に開い�
     await expect(page.locator('[data-pwa-storage]')).toHaveText('保存済み');
     const other = await context.newPage();
     await other.goto(`${origin}/fare/ticket`);
+    // 新版の取得を始める前に、両方の画面が旧版の制御下にあることを確認する。
+    for (const client of [page, other]) {
+      await expect.poll(() => client.evaluate(() => navigator.serviceWorker.controller?.state), {
+        message: `${client.url()} が旧版のService Workerに制御される`,
+      }).toBe('activated');
+    }
     broken = true;
     await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); });
     await expect(page.locator('[data-pwa-state]')).toHaveText('新版の保存に失敗しました', { timeout: 60000 });
@@ -81,26 +98,38 @@ test('新版はすべての旧画面を閉じるまで待機し、次に開い�
     await expect(page.locator('[data-pwa-error]')).toContainText('SHA-256が一致しません');
     await expect(page.getByRole('button', { name: '今すぐ更新' })).toBeHidden();
     expect(await page.locator('html').getAttribute('data-test-release')).toBeNull();
+    await expect.poll(() => page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.getRegistration();
+      return registration?.installing === null && registration.waiting === null;
+    }), { message: '失敗版のインストールが終了する' }).toBe(true);
     broken = false;
     publish = true;
-    scriptRequests = 0;
-    assetRequests.length = 0;
     await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); });
     await expect(page.locator('[data-pwa-state]')).toHaveText('次回起動で反映予定', { timeout: 60000 });
-    expect(scriptRequests).toBeGreaterThan(0);
-    expect(assetRequests).toEqual(['/changelog']);
     await expect(page.locator('[data-pwa-error]')).toBeEmpty();
     expect(await page.locator('html').getAttribute('data-test-release')).toBeNull();
     await expect(page.getByRole('button', { name: '今すぐ更新' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'アップデートを確認' })).toHaveCount(0);
     const waitingVersion = await page.evaluate(async () => {
       const registration = await navigator.serviceWorker.getRegistration();
-      return new Promise<string>(resolve => {
+      const worker = registration?.waiting;
+      if (!worker) throw new Error('待機中のService Workerがありません');
+      return new Promise<string>((resolve, reject) => {
         const channel = new MessageChannel();
-        channel.port1.onmessage = event => { channel.port1.close(); resolve(event.data.version); };
-        registration!.waiting!.postMessage({ type: 'PWA_STATUS' }, [channel.port2]);
+        const timeout = setTimeout(() => {
+          channel.port1.close();
+          reject(new Error('待機中のService WorkerからPWA_STATUSの応答がありません'));
+        }, 10000);
+        channel.port1.onmessage = event => {
+          clearTimeout(timeout);
+          channel.port1.close();
+          resolve(event.data.version);
+        };
+        worker.postMessage({ type: 'PWA_STATUS' }, [channel.port2]);
       });
     });
+    expect(waitingVersion).toBe(nextRelease.version);
+    expect(assetRequests).toEqual(['/changelog']);
     const workers = context.serviceWorkers();
     const versions = await Promise.all(workers.map(worker => worker.evaluate<string>('RELEASE.version')));
     const waitingWorker = workers[versions.indexOf(waitingVersion)];
