@@ -54,15 +54,31 @@ func (c *RoutePassCalculator) ResolvePath(names []string) ([]int, error) {
 	return path, nil
 }
 func (c *RoutePassCalculator) Calculate(path []int, months int, mode string) (RoutePassFare, error) {
-	var fare RoutePassFare
+	finalPath, res, err := c.CalculatePath(path, months, mode)
+	if err != nil {
+		return RoutePassFare{}, err
+	}
+	names := make([]string, len(finalPath))
+	for i, id := range finalPath {
+		names[i] = c.graph.GetName(id)
+	}
+	via := GetVia(c.graph, finalPath)
+	if via == nil {
+		via = []string{}
+	}
+	return RoutePassFare{res.Fare, res.BarrierFreeFee, res.Charge, int(res.TotalEigyoKilo), via, names}, nil
+}
+
+// CalculatePath は指定モードで採用した駅列と、その運賃計算結果を返します。
+func (c *RoutePassCalculator) CalculatePath(path []int, months int, mode string) ([]int, *CalculationResult, error) {
 	if len(path) < 2 {
-		return fare, domain.ErrInvalidPath
+		return nil, nil, domain.ErrInvalidPath
 	}
 	if months != 1 && months != 3 && months != 6 {
-		return fare, domain.ErrInvalidMonths
+		return nil, nil, domain.ErrInvalidMonths
 	}
 	if c.evaluator == nil {
-		return fare, fmt.Errorf("定期券運賃評価器が未設定です")
+		return nil, nil, fmt.Errorf("定期券運賃評価器が未設定です")
 	}
 	finalPath := path
 	if mode != "uncorrect" {
@@ -88,25 +104,18 @@ func (c *RoutePassCalculator) Calculate(path []int, months int, mode string) (Ro
 		}
 	}
 	if len(finalPath) < 2 {
-		return fare, domain.ErrInvalidPath
+		return nil, nil, domain.ErrInvalidPath
 	}
 	res, err := c.evaluator.Execute(finalPath, months)
 	if err != nil {
-		return fare, err
+		return nil, nil, err
 	}
 	if res == nil {
-		return fare, fmt.Errorf("定期券運賃計算結果が空です")
+		return nil, nil, fmt.Errorf("定期券運賃計算結果が空です")
 	}
-	names := make([]string, len(finalPath))
-	for i, id := range finalPath {
-		names[i] = c.graph.GetName(id)
-	}
-	via := GetVia(c.graph, finalPath)
-	if via == nil {
-		via = []string{}
-	}
-	return RoutePassFare{res.Fare, res.BarrierFreeFee, res.Charge, int(res.TotalEigyoKilo), via, names}, nil
+	return finalPath, res, nil
 }
+
 func (c *RoutePassCalculator) Split(names []string, months int, mode string, options ...split.RouteSplitOptions) (*split.RouteSplitResult, error) {
 	path, err := c.ResolvePath(names)
 	if err != nil {

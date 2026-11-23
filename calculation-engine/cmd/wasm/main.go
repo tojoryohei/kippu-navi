@@ -519,8 +519,15 @@ func getCheapestNoSplitSegmentsWasm(start, end, months int, allowOvershoot bool)
 	var bestPaths [][]int
 	var bestResults []*usecase.CalculationResult
 
+	calculator := usecase.NewRoutePassCalculator(activeGraph, passActiveAmountCalc, bypassRules)
 	for _, path := range validPaths {
-		res, err := passActiveAmountCalc.Execute(path, months)
+		var res *usecase.CalculationResult
+		var err error
+		if allowOvershoot {
+			res, err = passActiveAmountCalc.Execute(path, months)
+		} else {
+			path, res, err = calculator.CalculatePath(path, months, "cheapest")
+		}
 		if err != nil {
 			continue
 		}
@@ -862,6 +869,48 @@ func ticketSplitPresentation(seg ticketusecase.TicketSplitSegment) ([]int, *tick
 	return path, result, ticketusecase.GetSplitViaForResult(ticketFullGraph, seg.Path, path)
 }
 
+type ticketSplitSegmentResponse struct {
+	Path           []string                         `json:"path"`
+	Via            []string                         `json:"via"`
+	Result         *ticketusecase.CalculationResult `json:"result"`
+	TotalEigyoKilo domain.DeciKilo                  `json:"totalEigyoKilo"`
+	Start          string                           `json:"start"`
+	End            string                           `json:"end"`
+}
+
+type ticketSplitResultResponse struct {
+	TotalAmount int                          `json:"totalAmount"`
+	Segments    []ticketSplitSegmentResponse `json:"segments"`
+}
+
+type ticketSplitClientResponse struct {
+	Normal  ticketSplitResultResponse   `json:"normal"`
+	Results []ticketSplitResultResponse `json:"results"`
+}
+
+func unsplitTicketResponse(fare ticketusecase.RouteTicketFare, result *ticketusecase.CalculationResult, start, end int) ticketSplitResultResponse {
+	pathNames := make([]string, len(result.FinalPath))
+	for i, id := range result.FinalPath {
+		pathNames[i] = ticketFullGraph.GetName(id)
+	}
+	return ticketSplitResultResponse{
+		TotalAmount: fare.Fare,
+		Segments: []ticketSplitSegmentResponse{{
+			Path:           pathNames,
+			Via:            fare.PrintedViaLines,
+			Result:         result,
+			TotalEigyoKilo: result.TotalEigyoKilo,
+			Start:          ticketFullGraph.GetName(start),
+			End:            ticketFullGraph.GetName(end),
+		}},
+	}
+}
+
+func calculateUnsplitTicket(search *ticketusecase.SearchOptimalSplit, start, end int) (ticketusecase.RouteTicketFare, *ticketusecase.CalculationResult, error) {
+	calculator := ticketusecase.NewRouteTicketCalculator(ticketFullGraph, ticketCorrector, ticketSegmentEvaluator, ticketRouteExtensions, ticketZoneRegistry)
+	return search.CalculateUnsplitTicket(start, end, calculator)
+}
+
 func reconstructAndCalculateTicket(this js.Value, args []js.Value) interface{} {
 	return reconstructTicket(this, args, false)
 }
@@ -889,61 +938,11 @@ func reconstructTicket(this js.Value, args []js.Value, corrected bool) interface
 
 	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator, ticketZoneRegistry)
 
-	type SegmentResponse struct {
-		Path           []string                         `json:"path"`
-		Via            []string                         `json:"via"`
-		Result         *ticketusecase.CalculationResult `json:"result"`
-		TotalEigyoKilo domain.DeciKilo                  `json:"totalEigyoKilo"`
-		Start          string                           `json:"start"`
-		End            string                           `json:"end"`
-	}
-
-	type ResultResponse struct {
-		TotalAmount int               `json:"totalAmount"`
-		Segments    []SegmentResponse `json:"segments"`
-	}
-
-	type ClientResponse struct {
-		Normal  ResultResponse   `json:"normal"`
-		Results []ResultResponse `json:"results"`
-	}
-
-	// 通常経路（分割なし）の算出
-	normalSegs, err := search.GetCheapestTicketSegments(splitIDs[0], splitIDs[len(splitIDs)-1])
+	normalFare, normalFareResult, err := calculateUnsplitTicket(search, splitIDs[0], splitIDs[len(splitIDs)-1])
 	if err != nil {
 		return automaticSplitError(err)
 	}
-	if len(normalSegs) == 0 {
-		return automaticSplitError(domain.ErrNoValidPattern)
-	}
-	var normalResult ResultResponse
-	{
-		seg := normalSegs[0]
-		correctedPath, correctedResult, viaNames := ticketSplitPresentation(seg)
-
-		pathNames := make([]string, len(correctedPath))
-		for k, id := range correctedPath {
-			pathNames[k] = ticketFullGraph.GetName(id)
-		}
-		var eigyo domain.DeciKilo
-		if correctedResult != nil {
-			eigyo = correctedResult.TotalEigyoKilo
-		}
-
-		normalResult = ResultResponse{
-			TotalAmount: correctedResult.TotalAmount(),
-			Segments: []SegmentResponse{
-				{
-					Path:           pathNames,
-					Via:            viaNames,
-					Result:         correctedResult,
-					TotalEigyoKilo: eigyo,
-					Start:          ticketFullGraph.GetName(seg.StartStationID),
-					End:            ticketFullGraph.GetName(seg.EndStationID),
-				},
-			},
-		}
-	}
+	normalResult := unsplitTicketResponse(normalFare, normalFareResult, splitIDs[0], splitIDs[len(splitIDs)-1])
 
 	var allSegCandidates [][]ticketusecase.TicketSplitSegment
 	for i := 0; i < len(splitIDs)-1; i++ {
@@ -955,9 +954,9 @@ func reconstructTicket(this js.Value, args []js.Value, corrected bool) interface
 	}
 
 	emit := resultCallback(args, 1)
-	var clientResults []ResultResponse
+	var clientResults []ticketSplitResultResponse
 	visitCombinations(allSegCandidates, func(combo []ticketusecase.TicketSplitSegment) {
-		var apiSegments []SegmentResponse
+		var apiSegments []ticketSplitSegmentResponse
 		totalAmount := 0
 		for _, seg := range combo {
 			correctedPath, correctedResult, viaNames := ticketSplitPresentation(seg)
@@ -977,7 +976,7 @@ func reconstructTicket(this js.Value, args []js.Value, corrected bool) interface
 			}
 			totalAmount += fare
 
-			apiSegments = append(apiSegments, SegmentResponse{
+			apiSegments = append(apiSegments, ticketSplitSegmentResponse{
 				Path:           pathNames,
 				Via:            viaNames,
 				Result:         presentedResult,
@@ -986,9 +985,9 @@ func reconstructTicket(this js.Value, args []js.Value, corrected bool) interface
 				End:            ticketFullGraph.GetName(seg.EndStationID),
 			})
 		}
-		plan := ResultResponse{TotalAmount: totalAmount, Segments: apiSegments}
+		plan := ticketSplitResultResponse{TotalAmount: totalAmount, Segments: apiSegments}
 		if emit != nil {
-			emit(ClientResponse{Normal: normalResult, Results: []ResultResponse{plan}})
+			emit(ticketSplitClientResponse{Normal: normalResult, Results: []ticketSplitResultResponse{plan}})
 		} else {
 			clientResults = append(clientResults, plan)
 		}
@@ -997,7 +996,7 @@ func reconstructTicket(this js.Value, args []js.Value, corrected bool) interface
 		return js.ValueOf(`{"streamed":true}`)
 	}
 
-	resp := ClientResponse{
+	resp := ticketSplitClientResponse{
 		Normal:  normalResult,
 		Results: clientResults,
 	}
@@ -1352,13 +1351,6 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 	}
 
 	search := ticketusecase.NewSearchOptimalSplit(ticketSearchGraph, ticketSegmentEvaluator, ticketZoneRegistry)
-	normalSegs, err := search.GetCheapestTicketSegments(startID, endID)
-	if err != nil {
-		return automaticSplitError(err)
-	}
-	if len(normalSegs) == 0 {
-		return automaticSplitError(domain.ErrNoValidPattern)
-	}
 
 	if len(args) > 4 && args[4].Type() == js.TypeFunction {
 		var failure string
@@ -1386,31 +1378,16 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 		}
 		return js.ValueOf(`{"streamed":true}`)
 	}
+	normalFare, normalFareResult, err := calculateUnsplitTicket(search, startID, endID)
+	if err != nil {
+		return automaticSplitError(err)
+	}
 	bestResultPaths, err := search.ExecuteWithOptions(startID, endID, maxSections, lockedStations)
 	if err != nil {
 		return automaticSplitError(err)
 	}
 
-	type SegmentResponse struct {
-		Path           []string                         `json:"path"`
-		Via            []string                         `json:"via"`
-		Result         *ticketusecase.CalculationResult `json:"result"`
-		TotalEigyoKilo domain.DeciKilo                  `json:"totalEigyoKilo"`
-		Start          string                           `json:"start"`
-		End            string                           `json:"end"`
-	}
-
-	type ResultResponse struct {
-		TotalAmount int               `json:"totalAmount"`
-		Segments    []SegmentResponse `json:"segments"`
-	}
-
-	type ClientResponse struct {
-		Normal  ResultResponse   `json:"normal"`
-		Results []ResultResponse `json:"results"`
-	}
-
-	var clientResults []ResultResponse
+	var clientResults []ticketSplitResultResponse
 
 	for _, splitIDs := range bestResultPaths {
 		var allSegCandidates [][]ticketusecase.TicketSplitSegment
@@ -1446,7 +1423,7 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 		}
 
 		for _, combo := range combinations {
-			var apiSegments []SegmentResponse
+			var apiSegments []ticketSplitSegmentResponse
 			totalAmount := 0
 			for _, seg := range combo {
 				correctedPath, correctedResult, viaNames := ticketSplitPresentation(seg)
@@ -1462,7 +1439,7 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 				fare := correctedResult.TotalAmount()
 				totalAmount += fare
 
-				apiSegments = append(apiSegments, SegmentResponse{
+				apiSegments = append(apiSegments, ticketSplitSegmentResponse{
 					Path:           pathNames,
 					Via:            viaNames,
 					Result:         correctedResult,
@@ -1471,44 +1448,16 @@ func calculateOptimalSplitTicket(this js.Value, args []js.Value) interface{} {
 					End:            ticketFullGraph.GetName(seg.EndStationID),
 				})
 			}
-			clientResults = append(clientResults, ResultResponse{
+			clientResults = append(clientResults, ticketSplitResultResponse{
 				TotalAmount: totalAmount,
 				Segments:    apiSegments,
 			})
 		}
 	}
 
-	// 分割前の計算結果は分割探索前に検証済み。
-	var normalResult ResultResponse
-	{
-		seg := normalSegs[0]
-		correctedPath, correctedResult, viaNames := ticketSplitPresentation(seg)
+	normalResult := unsplitTicketResponse(normalFare, normalFareResult, startID, endID)
 
-		pathNames := make([]string, len(correctedPath))
-		for k, id := range correctedPath {
-			pathNames[k] = ticketFullGraph.GetName(id)
-		}
-		var eigyo domain.DeciKilo
-		if correctedResult != nil {
-			eigyo = correctedResult.TotalEigyoKilo
-		}
-
-		normalResult = ResultResponse{
-			TotalAmount: correctedResult.TotalAmount(),
-			Segments: []SegmentResponse{
-				{
-					Path:           pathNames,
-					Via:            viaNames,
-					Result:         correctedResult,
-					TotalEigyoKilo: eigyo,
-					Start:          ticketFullGraph.GetName(seg.StartStationID),
-					End:            ticketFullGraph.GetName(seg.EndStationID),
-				},
-			},
-		}
-	}
-
-	resp := ClientResponse{
+	resp := ticketSplitClientResponse{
 		Normal:  normalResult,
 		Results: clientResults,
 	}

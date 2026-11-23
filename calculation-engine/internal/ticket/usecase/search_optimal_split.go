@@ -370,6 +370,30 @@ func (u *SearchOptimalSplit) candidatePaths(start, end int) ([]*graph.PathResult
 	return u.graph.FindUnboundedKShortestPathsGisei(start, end, shortest.GiseiKilo+detour)
 }
 
+// CalculateUnsplitTicket は分割前の候補経路を最安モードで評価し、最も安い券面と運賃を返します。
+func (u *SearchOptimalSplit) CalculateUnsplitTicket(start, end int, calculator *RouteTicketCalculator) (RouteTicketFare, *CalculationResult, error) {
+	paths, err := u.candidatePaths(start, end)
+	if err != nil {
+		return RouteTicketFare{}, nil, err
+	}
+
+	var bestFare RouteTicketFare
+	var bestResult *CalculationResult
+	for _, path := range paths {
+		fare, result, err := calculator.calculate(path.StationIDs, nil, "cheapest", false)
+		if err != nil {
+			continue
+		}
+		if bestResult == nil || fare.Fare < bestFare.Fare {
+			bestFare, bestResult = fare, result
+		}
+	}
+	if bestResult == nil {
+		return RouteTicketFare{}, nil, domain.ErrInvalidPath
+	}
+	return bestFare, bestResult, nil
+}
+
 // GetCheapestTicketSegments は2駅間の最も安い乗車券経路（分割なし）を取得します。
 func (u *SearchOptimalSplit) GetCheapestTicketSegments(start, end int) ([]TicketSplitSegment, error) {
 	pathsResult, err := u.candidatePaths(start, end)
