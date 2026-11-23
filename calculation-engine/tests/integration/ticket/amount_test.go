@@ -9,6 +9,7 @@ import (
 	"calculation-engine/internal/ticket/infra/graphio"
 	"calculation-engine/internal/ticket/usecase"
 	"io"
+	"slices"
 	"testing"
 )
 
@@ -137,6 +138,11 @@ func TestTicketAmountCalculation_Integration(t *testing.T) {
 		return ids
 	}
 
+	tokyoNishifunabashi := getIDs("東京", "新日本橋", "馬喰町", "錦糸町", "亀戸", "平井", "新小岩", "小岩", "市川", "本八幡", "下総中山", "西船橋")
+	tokyoNakano := append(slices.Clone(tokyoNishifunabashi), getIDs("中野")...)
+	nakanoTokyo := slices.Clone(tokyoNakano)
+	slices.Reverse(nakanoTokyo)
+
 	tests := []struct {
 		name    string
 		path    []int
@@ -163,12 +169,27 @@ func TestTicketAmountCalculation_Integration(t *testing.T) {
 		},
 		{
 			name: "東京〜西船橋（特定区間運賃の適用検証）",
-			path: getIDs("東京", "新日本橋", "馬喰町", "錦糸町", "亀戸", "平井", "新小岩", "小岩", "市川", "本八幡", "下総中山", "西船橋"),
+			path: tokyoNishifunabashi,
 			want: usecase.CalculationResult{
 				Fare:           350,
 				BarrierFreeFee: 0,
 				TotalEigyoKilo: 206,
 			},
+		},
+		{
+			name: "東京〜中野（西船橋からメトロ東西線・JR特定区間運賃を適用）",
+			path: tokyoNakano,
+			want: usecase.CalculationResult{Fare: 680, TotalEigyoKilo: 206},
+		},
+		{
+			name: "中野〜東京（西船橋までメトロ東西線・JR特定区間運賃を適用）",
+			path: nakanoTokyo,
+			want: usecase.CalculationResult{Fare: 680, TotalEigyoKilo: 206},
+		},
+		{
+			name: "東京〜高円寺（メトロ東西線を挟むJR区間を通算）",
+			path: append(slices.Clone(tokyoNakano), getIDs("高円寺")...),
+			want: usecase.CalculationResult{Fare: 770, TotalEigyoKilo: 220},
 		},
 		{
 			name: "東京〜宇都宮",
