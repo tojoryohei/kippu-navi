@@ -16,13 +16,10 @@
     "dependencies"
   ],
   "timezone": "Asia/Tokyo",
-  "schedule": [
-    "* 3-5 * * *"
-  ],
   "updateNotScheduled": true,
   "minimumReleaseAge": "3 days",
   "minimumReleaseAgeBehaviour": "timestamp-optional",
-  "prConcurrentLimit": 3,
+  "prConcurrentLimit": 1,
   "prHourlyLimit": 2,
   "automerge": true,
   "automergeType": "pr",
@@ -40,7 +37,7 @@
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": [
-      "* 3-5 * * 1"
+      "at any time"
     ],
     "commitMessageAction": "update",
     "commitMessageTopic": "lockfile"

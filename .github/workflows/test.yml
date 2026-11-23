@@ -192,10 +192,8 @@ jobs:
         env:
           RENOVATE_VALIDATOR_VERSION: 44.244.2
         run: npm install --prefix "$RUNNER_TEMP/renovate-validator" --ignore-scripts --no-audit --no-fund "renovate@$RENOVATE_VALIDATOR_VERSION"
-      - name: Validate Renovate config and schedule
+      - name: Validate Renovate config
         env:
           RENOVATE_PACKAGE_ROOT: ${{ runner.temp }}/renovate-validator/node_modules/renovate
           RENOVATE_X_IGNORE_RE2: 'true'
-        run: |
-          node "$RENOVATE_PACKAGE_ROOT/dist/config-validator.js" --strict --no-global renovate.json
-          node scripts/test-renovate-schedule.mjs
+        run: node "$RENOVATE_PACKAGE_ROOT/dist/config-validator.js" --strict --no-global renovate.json
