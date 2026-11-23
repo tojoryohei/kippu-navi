@@ -1,7 +1,5 @@
 package usecase
 
-import "calculation-engine/internal/domain"
-
 func (c *RoutePassCalculator) CorrectPath(path []int) []int {
 	for _, rule := range c.rules {
 		if index, ok := findSubslice(path, rule.DetourPath); ok {
@@ -168,8 +166,4 @@ func getSubpathOnRule(rulePath []int, from, to int) []int {
 		}
 		return res
 	}
-}
-
-func validRoutePassCandidate(path []int) bool {
-	return len(path) >= 2 && !domain.HasDuplicateStation(path)
 }

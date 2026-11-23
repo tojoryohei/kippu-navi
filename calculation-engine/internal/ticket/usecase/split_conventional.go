@@ -286,15 +286,18 @@ func resolveConventionalReplacements(original []int, blocks []*splitReplacement,
 				return nil, err
 			}
 		}
-		if !domain.HasDuplicateStation(target) {
+		if !hasDuplicateTicketStation(target, g) {
 			return target, nil
 		}
 		seen := map[int]int{}
 		disabled := false
 		for position, id := range target {
+			if isPrivateTicketInterior(target, position, g) {
+				continue
+			}
 			if previous, exists := seen[id]; exists {
 				// 終点で閉じる環状・6の字は既存の重複判定と同様に許容します。
-				if position == len(target)-1 && (len(target) < 3 || id != target[len(target)-3]) {
+				if position == len(target)-1 && (len(target) < 3 || id != target[len(target)-3] || isPrivateTicketInterior(target, len(target)-3, g)) {
 					continue
 				}
 				for _, occurrence := range []int{previous, position} {
