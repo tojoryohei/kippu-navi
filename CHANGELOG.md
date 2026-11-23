@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.8](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.7...kippu-navi-v6.0.8) (2026-11-23)
+
+
+### Bug Fixes
+
+* 私鉄区間とJR区間の経路重複判定を分離 ([#1138](https://github.com/tojoryohei/kippu-navi/issues/1138)) ([528446e](https://github.com/tojoryohei/kippu-navi/commit/528446e67a273a681ba693542bfe6afea1ceb1ed))
+
 ## [6.0.7](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.6...kippu-navi-v6.0.7) (2026-11-23)
 
 
