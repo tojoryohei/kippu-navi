@@ -24,6 +24,11 @@ export function normalizeWasmEnvironmentError(error: unknown, userAgent: string)
 }
 
 export async function checkWasmEnvironment(userAgent: string): Promise<void> {
+  if (typeof WebAssembly === "undefined") {
+    throw Object.assign(new Error(
+      "このブラウザでは WebAssembly が使えないため、計算できません。",
+    ), { name: "UnsupportedEnvironmentError" });
+  }
   try {
     // (func (export "probe") (result i32) i32.const 1) を実体化し、関数本体まで実行する。
     // 本体と同じバイト列のinstantiate経路を使い、空モジュールのcompileだけで判定しない。

@@ -22,8 +22,10 @@ for (const failure of [
       return route.fulfill({ status: 200, json: {} });
     }
     if (blocked && failure.resource.test(url.pathname)) {
-      return route.fulfill({ status: failure.status, contentType: "application/javascript",
-        body: 'throw new SyntaxError("Worker本体の評価に失敗しました");' });
+      return route.fulfill({
+        status: failure.status, contentType: "application/javascript",
+        body: 'throw new SyntaxError("Worker本体の評価に失敗しました");'
+      });
     }
     return route.continue();
   });
@@ -72,7 +74,7 @@ test("Workerの読込失敗を元の検索に記録し、通常の計算ボタ�
     };
     const NativeWorker = window.Worker;
     window.Worker = class extends NativeWorker {
-      constructor(url: string | URL, options?: WorkerOptions) {
+      constructor (url: string | URL, options?: WorkerOptions) {
         super(url, options);
         state.engineDiagnostics.urls.push(String(url));
         this.addEventListener("message", event => {
@@ -181,7 +183,8 @@ test("Go終了の診断を残し、新しいWorkerで再計算できる", async 
       injectExit = false;
       const response = await route.fetch();
       // 実WASMの準備完了後に終了を注入する。元のpanic原因の再現とは区別する。
-      return route.fulfill({ response, body: await response.text() + `
+      return route.fulfill({
+        response, body: await response.text() + `
         const originalRun = Go.prototype.run;
         Go.prototype.run = function(instance) {
           const runtime = this;
@@ -221,9 +224,9 @@ test("Reactの初期化途中に記事へ移動してもエラーにならない
     // React Schedulerを止め、Astroの通知後も初回commitが未完了の状態を再現する。
     const NativeMessageChannel = window.MessageChannel;
     window.MessageChannel = class extends NativeMessageChannel {
-      constructor() {
+      constructor () {
         super();
-        this.port2.postMessage = () => {};
+        this.port2.postMessage = () => { };
       }
     };
   });
@@ -281,6 +284,37 @@ for (const path of ["/split/auto/ticket", "/fare/ticket", "/split/route/ticket"]
   });
 }
 
+for (const { api, missingWorker, message } of [
+  { api: "Worker", missingWorker: true, message: "このブラウザでは Web Worker が使えないため、計算できません。" },
+  { api: "WebAssembly", missingWorker: false, message: "このブラウザでは WebAssembly が使えないため、計算できません。" },
+]) {
+  test(`${api} が使えない環境では理由に応じた案内を表示する`, async ({ page, context }) => {
+    let workerLoads = 0;
+    if (missingWorker) {
+      await page.addInitScript(() => Object.defineProperty(window, "Worker", { value: undefined }));
+    }
+    await context.route("**/*", async route => {
+      const url = new URL(route.request().url());
+      if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return route.abort();
+      if (!/\/split\.worker[^/]*\.js$/.test(url.pathname)) return route.continue();
+      workerLoads++;
+      const response = await route.fetch();
+      return route.fulfill({
+        response,
+        body: 'Object.defineProperty(self, "WebAssembly", { value: undefined });\n' + await response.text(),
+      });
+    });
+    await page.goto("/split/auto/ticket?from=東京&to=品川");
+    await expect(page.getByText(message, { exact: true })).toBeVisible();
+    const submit = page.locator('button[type="submit"]');
+    await expect(submit).toBeEnabled();
+    await submit.click();
+    await expect(submit).toBeEnabled();
+    await expect(page.getByText(message, { exact: true })).toBeVisible();
+    expect(workerLoads).toBe(missingWorker ? 0 : 1);
+  });
+}
+
 for (const { legacy, late } of [{ legacy: true, late: false }, { legacy: true, late: true }, { legacy: false, late: true }]) {
   test(`WASMの${late ? "事前確認後の本体" : "事前確認"}の実行拒否を${legacy ? "旧環境の案内" : "現行環境の障害"}として扱う`, async ({ page, context }) => {
     const monitoring: string[] = [];
@@ -306,8 +340,10 @@ for (const { legacy, late } of [{ legacy: true, late: false }, { legacy: true, l
           WebAssembly.instantiate = (source, imports) => source instanceof ArrayBuffer && source.byteLength > 1000
             ? Promise.reject(new EvalError("Refused to create a WebAssembly object because 'unsafe-eval' is not an allowed source of script in the following Content Security Policy directive: script-src 'self' 'wasm-unsafe-eval'"))
             : instantiate(source, imports);\n` : "";
-        return route.fulfill({ response, body: userAgent + rejectEngine + body,
-          headers: late ? response.headers() : { ...response.headers(), "content-security-policy": "script-src 'self'" } });
+        return route.fulfill({
+          response, body: userAgent + rejectEngine + body,
+          headers: late ? response.headers() : { ...response.headers(), "content-security-policy": "script-src 'self'" }
+        });
       }
       return route.continue();
     });

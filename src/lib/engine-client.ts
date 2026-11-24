@@ -51,10 +51,12 @@ async function probeWorkerScript(): Promise<SearchDiagnostics["workerScriptProbe
     const response = await fetch(url, { cache: "no-store", signal: controller.signal, redirect: "follow" });
     const length = response.headers.get("content-length");
     // ヘッダーだけで判定し、ストリームは読み込まず停止する。
-    void response.body?.cancel().catch(() => {});
-    return { status: response.status, contentType: response.headers.get("content-type") || undefined,
+    void response.body?.cancel().catch(() => { });
+    return {
+      status: response.status, contentType: response.headers.get("content-type") || undefined,
       contentLength: length !== null && Number.isFinite(Number(length)) ? Number(length) : undefined,
-      redirected: response.redirected, elapsedMs: Math.round(performance.now() - startedAt) };
+      redirected: response.redirected, elapsedMs: Math.round(performance.now() - startedAt)
+    };
   } catch (error) {
     return { elapsedMs: Math.round(performance.now() - startedAt), exception: exceptionDiagnostics(error) };
   } finally { clearTimeout(timer); }
@@ -159,12 +161,25 @@ function createEnginePool(isolated = false) {
     lastProgressAt = performance.now();
     if (!cycleStartedAt) cycleStartedAt = lastProgressAt;
     publish();
+    if (typeof Worker === "undefined") {
+      settleFailure({
+        message: "このブラウザでは Web Worker が使えないため、計算できません。",
+        code: "unsupported_environment",
+        source: "client",
+        stage: "worker_create",
+        exceptionName: "UnsupportedEnvironmentError",
+        retryable: false,
+        retryCount: 0,
+        workerRestartCount,
+      });
+      return;
+    }
     try {
       // Viteが生成したURLを起動と診断の両方に使う。
       worker = new Worker(engineWorkerUrl, { type: "module" });
     } catch (error) {
       const original = exceptionDiagnostics(error);
-      settleFailure({ message: original.message || "計算エンジンを起動できませんでした。", code: "worker_creation_failed", source: "client", stage: "worker_create", exceptionName: original.name, retryable: typeof Worker !== "undefined", retryCount: 0, workerRestartCount, diagnostics: { exception: original } });
+      settleFailure({ message: original.message || "計算エンジンを起動できませんでした。", code: "worker_creation_failed", source: "client", stage: "worker_create", exceptionName: original.name, retryable: true, retryCount: 0, workerRestartCount, diagnostics: { exception: original } });
       return;
     }
     worker.onmessage = event => {
@@ -276,7 +291,7 @@ function createEnginePool(isolated = false) {
         return failure ? { status: "failed", error: failure } : { status: ready.has(capability) ? "ready" : "preparing", environmentSupported };
       },
       subscribe(listener) {
-        if (!clients.has(client)) return () => {};
+        if (!clients.has(client)) return () => { };
         const group = listeners.get(client)!;
         group.add(listener);
         return () => { group.delete(listener); };
