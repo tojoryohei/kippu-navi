@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.9...kippu-navi-v6.0.10) (2026-11-24)
+
+
+### Bug Fixes
+
+* 計算に必要なブラウザ機能の欠如を業務エラーにする ([#1145](https://github.com/tojoryohei/kippu-navi/issues/1145)) ([649d6d9](https://github.com/tojoryohei/kippu-navi/commit/649d6d91b42aac19d224e2d27f32f401831338d8))
+
 ## [6.0.9](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.8...kippu-navi-v6.0.9) (2026-11-23)
 
 
