@@ -38,12 +38,12 @@ func isStationInSet(stationName string, stations []string) bool {
 
 // Apply は指定された経路に出発地・到着地の特例ゾーンを適用し、成功した場合は仮想経路を返します。
 func (s *SpecialZoneApplier) Apply(path []int, originZone, destZone *ticketdomain.SpecialZone) (*AppliedZoneInfo, bool) {
-	return s.apply(path, originZone, destZone, s.osakaZoneChanges)
+	return s.apply(path, originZone, destZone, s.zoneChangesWithOsakaPassage)
 }
 
-// ApplyUncorrect は一般的なゾーン境界を使い、大阪市内の市外通過特例を適用しません。
+// ApplyUncorrect は補正禁止モードの発着ゾーンを適用します。
 func (s *SpecialZoneApplier) ApplyUncorrect(path []int, originZone, destZone *ticketdomain.SpecialZone) (*AppliedZoneInfo, bool) {
-	return s.apply(path, originZone, destZone, s.zoneChanges)
+	return s.apply(path, originZone, destZone, s.zoneChangesWithoutOsakaPassage)
 }
 
 // applySuburban は、純粋なJR近郊区間内完結経路に対して、中心駅までの
@@ -66,7 +66,7 @@ func (s *SpecialZoneApplier) applySuburban(path []int, areaID domain.SuburbanAre
 		if !opts.ArrivalSingleStation && centerOK && !stationsInYamanote(startName) && stationsInYamanote(endName) {
 			if shortest, ok := s.findShortestGiseiSuburban(path[0], centerID, areaID); ok &&
 				shortest.EigyoKilo > yamanote.MinDistanceDeciKilo && shortest.EigyoKilo <= yamanote.MaxDistanceDeciKilo {
-				if info, applied := s.applyDestinationZone(shortest.StationIDs, yamanote, s.osakaZoneChanges); applied {
+				if info, applied := s.applyDestinationZone(shortest.StationIDs, yamanote, s.zoneChangesWithOsakaPassage); applied {
 					return info, true
 				}
 			}
@@ -74,7 +74,7 @@ func (s *SpecialZoneApplier) applySuburban(path []int, areaID domain.SuburbanAre
 		if !opts.DepartureSingleStation && centerOK && stationsInYamanote(startName) && !stationsInYamanote(endName) {
 			if shortest, ok := s.findShortestGiseiSuburban(centerID, path[len(path)-1], areaID); ok &&
 				shortest.EigyoKilo > yamanote.MinDistanceDeciKilo && shortest.EigyoKilo <= yamanote.MaxDistanceDeciKilo {
-				if info, applied := s.applyOriginZone(shortest.StationIDs, yamanote, s.osakaZoneChanges); applied {
+				if info, applied := s.applyOriginZone(shortest.StationIDs, yamanote, s.zoneChangesWithOsakaPassage); applied {
 					return info, true
 				}
 			}
@@ -98,14 +98,14 @@ func (s *SpecialZoneApplier) applySuburban(path []int, areaID domain.SuburbanAre
 		stationsInZone := func(name string) bool { return isStationInSet(name, zone.Stations) }
 		if !opts.ArrivalSingleStation && !stationsInZone(startName) && stationsInZone(endName) {
 			if shortest, found := s.findShortestGiseiSuburban(path[0], centerID, areaID); found && shortest.EigyoKilo > zone.MinDistanceDeciKilo {
-				if info, applied := s.applyDestinationZone(shortest.StationIDs, zone, s.osakaZoneChanges); applied {
+				if info, applied := s.applyDestinationZone(shortest.StationIDs, zone, s.zoneChangesWithOsakaPassage); applied {
 					return info, true
 				}
 			}
 		}
 		if !opts.DepartureSingleStation && stationsInZone(startName) && !stationsInZone(endName) {
 			if shortest, found := s.findShortestGiseiSuburban(centerID, path[len(path)-1], areaID); found && shortest.EigyoKilo > zone.MinDistanceDeciKilo {
-				if info, applied := s.applyOriginZone(shortest.StationIDs, zone, s.osakaZoneChanges); applied {
+				if info, applied := s.applyOriginZone(shortest.StationIDs, zone, s.zoneChangesWithOsakaPassage); applied {
 					return info, true
 				}
 			}
@@ -162,22 +162,33 @@ func (s *SpecialZoneApplier) pathEigyoKilo(path []int, areaID domain.SuburbanAre
 	return total, true
 }
 
-// osakaZoneChanges は通常モードの境界を判定し、大阪市内の市外通過特例を適用します。
-func (s *SpecialZoneApplier) osakaZoneChanges(path []int, zone *ticketdomain.SpecialZone) []int {
-	contains := func(name string) bool { return isStationInSet(name, zone.Stations) }
+// zoneBoundaryContains は運賃計算と経由印字に共通するゾーン境界を判定します。
+func zoneBoundaryContains(zone *ticketdomain.SpecialZone, name string) bool {
 	if zone.Name == "東京山手線内" {
-		contains = ticketdomain.IsArticle70Station
+		return ticketdomain.IsArticle70Station(name)
 	}
+	return isStationInSet(name, zone.Stations)
+}
+
+func (s *SpecialZoneApplier) zoneChangesWithOsakaPassage(path []int, zone *ticketdomain.SpecialZone) []int {
+	return s.zoneChanges(path, zone, true)
+}
+
+func (s *SpecialZoneApplier) zoneChangesWithoutOsakaPassage(path []int, zone *ticketdomain.SpecialZone) []int {
+	return s.zoneChanges(path, zone, false)
+}
+
+func (s *SpecialZoneApplier) zoneChanges(path []int, zone *ticketdomain.SpecialZone, allowOsakaPassage bool) []int {
 	var changes []int
 	for i := 0; i < len(path)-1; i++ {
 		curr, next := s.graph.GetName(path[i]), s.graph.GetName(path[i+1])
-		if i > 0 && zone.Name == "大阪市内" && isOsakaCityPassage(s.graph.GetName(path[i-1]), curr, next) {
+		if allowOsakaPassage && i > 0 && zone.Name == "大阪市内" && isOsakaCityPassage(s.graph.GetName(path[i-1]), curr, next) {
 			if len(changes) > 0 {
 				changes = changes[:len(changes)-1]
 			}
 			continue
 		}
-		if contains(curr) != contains(next) {
+		if zoneBoundaryContains(zone, curr) != zoneBoundaryContains(zone, next) {
 			changes = append(changes, i)
 		}
 	}
@@ -187,18 +198,6 @@ func (s *SpecialZoneApplier) osakaZoneChanges(path []int, zone *ticketdomain.Spe
 func isOsakaCityPassage(prev, curr, next string) bool {
 	return (curr == "尼崎" && ((prev == "加島" && next == "塚本") || (prev == "塚本" && next == "加島"))) ||
 		(curr == "久宝寺" && ((prev == "加美" && next == "新加美") || (prev == "新加美" && next == "加美")))
-}
-
-// zoneChanges は各ゾーンの駅一覧だけを使い、市外通過も境界として数えます。
-func (s *SpecialZoneApplier) zoneChanges(path []int, zone *ticketdomain.SpecialZone) []int {
-	var changes []int
-	for i := 0; i < len(path)-1; i++ {
-		curr, next := s.graph.GetName(path[i]), s.graph.GetName(path[i+1])
-		if isStationInSet(curr, zone.Stations) != isStationInSet(next, zone.Stations) {
-			changes = append(changes, i)
-		}
-	}
-	return changes
 }
 
 type zoneApplicationSide uint8
