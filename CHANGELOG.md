@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.12](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.11...kippu-navi-v6.0.12) (2026-11-25)
+
+
+### Bug Fixes
+
+* 補正禁止の東京山手線内特例を第70条の境界に統一 ([#1151](https://github.com/tojoryohei/kippu-navi/issues/1151)) ([8f326e7](https://github.com/tojoryohei/kippu-navi/commit/8f326e74597f4ea08e08236abace925e18590b72))
+
 ## [6.0.11](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.10...kippu-navi-v6.0.11) (2026-11-25)
 
 
