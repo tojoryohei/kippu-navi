@@ -128,7 +128,7 @@ func (r *SpecialFareRuleResolver) zoneCandidates(path []int, opts SingleStationO
 		for i := range originZones {
 			zone := &originZones[i]
 			if zone.Name != "東京山手線内" && isStationInSet(endName, zone.Stations) &&
-				len(r.applier.osakaZoneChanges(path, zone)) == 2 {
+				len(r.applier.zoneChangesWithOsakaPassage(path, zone)) == 2 {
 				destZones = append(destZones, *zone)
 			}
 		}
