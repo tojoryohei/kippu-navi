@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.11](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.10...kippu-navi-v6.0.11) (2026-11-25)
+
+
+### Bug Fixes
+
+* 自動分割検索で通し運賃の計算エラーを返す ([#1147](https://github.com/tojoryohei/kippu-navi/issues/1147)) ([aee7909](https://github.com/tojoryohei/kippu-navi/commit/aee79098f3361293bab95af6ddd79d13bf616e79))
+
 ## [6.0.10](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.9...kippu-navi-v6.0.10) (2026-11-24)
 
 
