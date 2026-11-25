@@ -33,6 +33,14 @@ func TestRouteSplitRealRoutesAndModes(t *testing.T) {
 		if _, err := calculator.Split(direct, "uncorrect"); !errors.Is(err, domain.ErrRequestedSection) {
 			t.Fatalf("補正なしの通し運賃のエラー = %v", err)
 		}
+		path, err := calculator.ResolvePath(direct)
+		if err != nil {
+			t.Fatal(err)
+		}
+		search := usecase.NewSearchOptimalSplit(g, evaluator, zones)
+		if _, _, err := search.CalculateUnsplitTicket(path[1], path[0], calculator); !errors.Is(err, domain.ErrRequestedSection) {
+			t.Fatalf("自動分割の通し運賃のエラー = %v", err)
+		}
 		through := []usecase.ViaStep{
 			direct[0],
 			{StationName: "綾瀬", LineName: "シヨハ"},
