@@ -379,9 +379,13 @@ func (u *SearchOptimalSplit) CalculateUnsplitTicket(start, end int, calculator *
 
 	var bestFare RouteTicketFare
 	var bestResult *CalculationResult
+	var firstErr error
 	for _, path := range paths {
 		fare, result, err := calculator.calculate(path.StationIDs, nil, "cheapest", false)
 		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
 			continue
 		}
 		if bestResult == nil || fare.Fare < bestFare.Fare {
@@ -389,6 +393,9 @@ func (u *SearchOptimalSplit) CalculateUnsplitTicket(start, end int, calculator *
 		}
 	}
 	if bestResult == nil {
+		if firstErr != nil {
+			return RouteTicketFare{}, nil, firstErr
+		}
 		return RouteTicketFare{}, nil, domain.ErrInvalidPath
 	}
 	return bestFare, bestResult, nil
