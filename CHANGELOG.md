@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.13](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.12...kippu-navi-v6.0.13) (2026-11-26)
+
+
+### Bug Fixes
+
+* npmのロックファイル更新PRに更新先バージョンを表示 ([#1157](https://github.com/tojoryohei/kippu-navi/issues/1157)) ([b794534](https://github.com/tojoryohei/kippu-navi/commit/b79453437fb433beac840b359b3b1c932fcd9824))
+
 ## [6.0.12](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.11...kippu-navi-v6.0.12) (2026-11-25)
 
 
