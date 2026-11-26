@@ -67,6 +67,7 @@
       "matchDatasources": [
         "npm"
       ],
+      "commitMessageExtra": "{{#if isPinDigest}}pin digest{{else if isLockfileUpdate}}{{newVersion}}{{else}}{{newValue}}{{/if}}",
       "registryUrls": [
         "https://npm.flatt.tech"
       ]
