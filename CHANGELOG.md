@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.14](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.13...kippu-navi-v6.0.14) (2026-11-27)
+
+
+### Bug Fixes
+
+* 連絡乗車券のJR区間に都区市内運賃と経由印字を適用 ([#1162](https://github.com/tojoryohei/kippu-navi/issues/1162)) ([14a09f2](https://github.com/tojoryohei/kippu-navi/commit/14a09f22c483164b61e609790f0cc9131e643edb))
+
 ## [6.0.13](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.12...kippu-navi-v6.0.13) (2026-11-26)
 
 
