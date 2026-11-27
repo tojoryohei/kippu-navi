@@ -175,3 +175,42 @@ func TestConnectingTicketZoneAndVia(t *testing.T) {
 	}
 	t.Fatalf("西船橋での分割結果=%+v", plans)
 }
+
+func TestShinkansenConnectionAtZoneCenter(t *testing.T) {
+	calculator, _ := setupPricedRoute(t)
+	stations := []string{"広島", "新岩国", "徳山", "新山口", "厚狭", "新下関", "小倉", "博多", "姪浜"}
+	reverse := slices.Clone(stations)
+	slices.Reverse(reverse)
+	for _, tc := range []struct {
+		stations []string
+		want     []string
+	}{
+		{stations, []string{"広島", "新幹線", "博多", "博多", "福岡市高速鉄"}},
+		{reverse, []string{"福岡市高速鉄", "博多", "博多", "新幹線", "広島"}},
+		{stations[6:], []string{"小倉", "新幹線", "博多", "福岡市高速鉄"}},
+	} {
+		t.Run(tc.stations[0]+"発"+tc.stations[len(tc.stations)-1]+"着", func(t *testing.T) {
+			steps := make([]usecase.ViaStep, len(tc.stations))
+			for i, station := range tc.stations {
+				steps[i].StationName = station
+				if i+1 < len(steps) {
+					steps[i].LineName = "シンカ"
+					if station == "姪浜" || tc.stations[i+1] == "姪浜" {
+						steps[i].LineName = "地下鉄空港"
+					}
+				}
+			}
+			path, err := calculator.ResolvePath(steps)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, _, err := calculator.Calculate(path, steps, "normal")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(got.PrintedViaLines, tc.want) {
+				t.Fatalf("経由=%v、期待値=%v", got.PrintedViaLines, tc.want)
+			}
+		})
+	}
+}
