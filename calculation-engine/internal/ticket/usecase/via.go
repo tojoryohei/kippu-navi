@@ -826,7 +826,27 @@ func getFareViaForResult(path []ViaStep, finalPath []int, g graph.StationProvide
 		sections.specialVia = selected
 	}
 	printPath, suppressedStations := removeOverlapViaWithSections(trimmed, sections)
-	return getFareViaWithSections(printPath, !isTokyoZone(startZoneName), !isTokyoZone(endZoneName), suppressedStations, sections)
+	return getZoneFareVia(printPath, !isTokyoZone(startZoneName), !isTokyoZone(endZoneName), suppressedStations, sections, start > 0, end < len(path)-1)
+}
+
+// 市内のJR区間を省いた結果、私鉄辺が端に来た場合も乗換駅を印字する。
+func getZoneFareVia(path []ViaStep, printStart, printEnd bool, suppressed map[string]bool, sections viaSections, trimmedStart, trimmedEnd bool) []string {
+	via := getFareViaWithSections(path, printStart, printEnd, suppressed, sections)
+	if len(path) < 2 {
+		return via
+	}
+	if trimmedStart && isPrivateLine(path[0].LineName) {
+		p := viaPrinter{}
+		p.appendPrivateStation(path[0].LineName, path[0].StationName)
+		via = append(p.render(), via...)
+	}
+	last := len(path) - 1
+	if trimmedEnd && isPrivateLine(path[last-1].LineName) {
+		p := viaPrinter{}
+		p.appendPrivateStation(path[last-1].LineName, path[last].StationName)
+		via = append(via, p.render()...)
+	}
+	return via
 }
 
 func viaStepNames(path []ViaStep) []string {
@@ -1092,7 +1112,9 @@ func GetAutomaticFareViaForResult(g graph.Graph, printPath, finalPath []int) []s
 		printStart = !isTokyoZone(g.GetName(finalPath[0]))
 		printEnd = !isTokyoZone(g.GetName(finalPath[len(finalPath)-1]))
 	}
-	return getFareViaWithSections(steps, printStart, printEnd, nil, sections)
+	hasStartZone := len(finalPath) > 0 && len(viaData.zoneRoutes[g.GetName(finalPath[0])]) > 0
+	hasEndZone := len(finalPath) > 0 && len(viaData.zoneRoutes[g.GetName(finalPath[len(finalPath)-1])]) > 0
+	return getZoneFareVia(steps, printStart, printEnd, nil, sections, hasStartZone, hasEndZone)
 }
 
 func getSplitViaForResult(g graph.Graph, sourcePath, printPath []int) []string {
