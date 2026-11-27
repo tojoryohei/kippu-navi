@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.15](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.14...kippu-navi-v6.0.15) (2026-11-27)
+
+
+### Bug Fixes
+
+* 通過連絡乗車券に特定都区市内制度を適用 ([#1170](https://github.com/tojoryohei/kippu-navi/issues/1170)) ([290cbc3](https://github.com/tojoryohei/kippu-navi/commit/290cbc33ceee885b694e6f09fcdd19a838e142b2))
+
 ## [6.0.14](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.13...kippu-navi-v6.0.14) (2026-11-27)
 
 
