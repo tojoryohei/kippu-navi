@@ -4,7 +4,6 @@ import (
 	"calculation-engine/internal/domain"
 	"calculation-engine/internal/ticket/graph"
 	"calculation-engine/internal/ticket/infra/graphio"
-	"slices"
 )
 
 type transportKind uint8
@@ -110,16 +109,33 @@ func (r *CalculationResult) printedVia(mode string, steps []ViaStep, source, pri
 	loadViaData()
 	if section.start > 0 {
 		via = GetFareVia(steps[:section.start+1])
-		printer := viaPrinter{}
-		printer.appendPrivateStation(steps[section.start-1].LineName, steps[section.start].StationName)
-		via = append(via, printer.render()...)
+		via = append(via, connectionStationVia(steps[section.start].StationName, steps[section.start-1].LineName, steps[section.start].LineName, g.GetName(c.jrFarePath[0]), jrVia, true)...)
 	}
 	via = append(via, jrVia...)
 	if section.end < len(steps)-1 {
-		printer := viaPrinter{}
-		printer.appendPrivateStation(steps[section.end].LineName, steps[section.end].StationName)
-		via = append(via, printer.render()...)
+		via = append(via, connectionStationVia(steps[section.end].StationName, steps[section.end].LineName, steps[section.end-1].LineName, g.GetName(c.jrFarePath[len(c.jrFarePath)-1]), jrVia, false)...)
 		via = append(via, GetFareVia(steps[section.end:])...)
 	}
-	return slices.Compact(via)
+	return via
+}
+
+// JR側に同じ駅名がある場合、適用された都区市内の中心駅で新幹線に接続するときだけ、私鉄の接続駅も印字する。
+func connectionStationVia(station, privateLine, jrLine, jrEndpoint string, jrVia []string, atStart bool) []string {
+	p := viaPrinter{}
+	p.appendPrivateStation(privateLine, station)
+	label := p.render()
+	if len(label) == 0 || len(jrVia) == 0 {
+		return label
+	}
+	if shinkansenLines[jrLine] && graphio.ZoneCenterStations[jrEndpoint] == station {
+		return label
+	}
+	boundary := jrVia[len(jrVia)-1]
+	if atStart {
+		boundary = jrVia[0]
+	}
+	if boundary == label[0] {
+		return nil
+	}
+	return label
 }
