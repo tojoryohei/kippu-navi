@@ -39,6 +39,7 @@ func (s *routeSummary) distances() (result RouteDistances) {
 }
 
 type CalculationResult struct {
+	connection         *connectingTicket
 	Distances          RouteDistances      `json:"-"`
 	JRFare             int                 `json:"-"`
 	PrivateFareAmounts []PrivateFareAmount `json:"-"`
@@ -170,15 +171,12 @@ func (u *CalculateAmount) analyzePath(path []int) (*routeSummary, error) {
 
 // Execute は距離控除を許可しない従来の直接計算入口です。
 func (u *CalculateAmount) Execute(path []int) (*CalculationResult, error) {
-	return u.execute(path, false)
+	return u.evaluateConnection(path, func(jr []int) (*CalculationResult, error) { return u.execute(jr, false) })
 }
 
 func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment bool) (*CalculationResult, error) {
 	if len(path) < 2 {
 		return nil, fmt.Errorf("CalculateAmount.Execute: %w", domain.ErrInvalidPath)
-	}
-	if domain.IsKitaSenjuAyasePath(path, u.graph.GetName) {
-		return nil, domain.ErrRequestedSection
 	}
 
 	// 特例運賃計算用の仮想経路を構築する。
@@ -218,13 +216,8 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 
 	// JRの区間のみを抽出 (他会社線と連絡する場合はJRのみで判定)
 	var jrEdges []*domain.Edge
-	var jrStart, jrEnd int
-	for i, edge := range summary.edges {
+	for _, edge := range summary.edges {
 		if edge.Company != domain.Other {
-			if len(jrEdges) == 0 {
-				jrStart = i
-			}
-			jrEnd = i + 1
 			jrEdges = append(jrEdges, &edge.Edge)
 		}
 	}
@@ -243,13 +236,7 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 
 	// 特定運賃チェック
 	if totalFare == 0 && u.specificFarePathMatcher != nil {
-		specificPath := path
-		if len(jrEdges) > 0 && jrEnd-jrStart == len(jrEdges) {
-			// ゾーン展開と北新地置換はJR区間に対して行うため、元の経路から両端の私鉄辺だけを除ける。
-			trailingPrivateEdges := len(summary.edges) - jrEnd
-			specificPath = path[jrStart : len(path)-trailingPrivateEdges]
-		}
-		if f, ok := u.specificFarePathMatcher.Search(specificPath); ok {
+		if f, ok := u.specificFarePathMatcher.Search(path); ok {
 			totalFare = f
 		}
 	}

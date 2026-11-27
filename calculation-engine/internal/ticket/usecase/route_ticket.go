@@ -107,17 +107,18 @@ func (c *RouteTicketCalculator) calculatePresented(path []int, steps []ViaStep, 
 	if res == nil || len(res.FinalPath) < 2 {
 		return fare, nil, fmt.Errorf("乗車券運賃計算結果の経路が不正です")
 	}
-	via := GetCalculatedFareVia(presentationMode, steps, path, transformed, res.FinalPath, c.graph, c.zones)
+	via := res.printedVia(presentationMode, steps, path, transformed, c.graph, c.zones)
 	if logKanaCodes {
 		logCalculatedFareViaKanas(presentationMode, steps, path, transformed, c.graph)
 	}
 	if via == nil {
 		via = []string{}
 	}
+	departure, arrival := res.ticketEndpoints()
 	fare = RouteTicketFare{
 		TotalEigyoKilo:   int(res.TotalPathEigyoKilo),
-		DepartureStation: c.graph.GetName(res.FinalPath[0]),
-		ArrivalStation:   c.graph.GetName(res.FinalPath[len(res.FinalPath)-1]),
+		DepartureStation: c.graph.GetName(departure),
+		ArrivalStation:   c.graph.GetName(arrival),
 		PrintedViaLines:  via,
 		Fare:             res.TotalAmount(),
 		ValidDays:        CalculateTicketValidDays(res.TotalPathEigyoKilo, suburban, c.graph),

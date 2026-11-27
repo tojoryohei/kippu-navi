@@ -33,6 +33,16 @@ func (u *TicketCalculationUseCase) Execute(path []int, months int) (*Calculation
 }
 
 func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode string, options ...SingleStationOptions) (*CalculationResult, []int, error) {
+	result, err := u.calc.evaluateConnection(path, func(jr []int) (*CalculationResult, error) {
+		return u.evaluateCandidates(jr, mode, options...)
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return result, result.FinalPath, nil
+}
+
+func (u *TicketCalculationUseCase) evaluateCandidates(path []int, mode string, options ...SingleStationOptions) (*CalculationResult, error) {
 	// cheapest は物理経路補正側だけで使い、運賃評価は通常モードで行います。
 	// 既存の呼び出し元との互換性のため、ここでも防御的に正規化します。
 	mode = NormalizeFareEvaluationMode(mode)
@@ -41,7 +51,7 @@ func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode 
 	farePath := append([]int(nil), path...)
 	candidates, err := u.resolver.Resolve(farePath, mode, options...)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	var lastErr error
 	for _, candidate := range candidates {
@@ -53,12 +63,12 @@ func (u *TicketCalculationUseCase) ExecuteWithMode(path []int, months int, mode 
 		if candidate.CheckThreshold && res.TotalEigyoKilo <= candidate.ThresholdKilo {
 			continue
 		}
-		return res, candidate.Path, nil
+		return res, nil
 	}
 	if lastErr != nil {
-		return nil, nil, lastErr
+		return nil, lastErr
 	}
-	return nil, nil, domain.ErrInvalidPath
+	return nil, domain.ErrInvalidPath
 }
 
 // TicketSegmentEvaluator は分割探索から利用される乗車券評価器です。
