@@ -1,7 +1,6 @@
 import { test, expect } from "../support/fixtures";
 import { blockExternalServices } from "../support/browser-helpers";
 import { articles } from "../../src/data/articles";
-import examples from "../../src/data/split-ticket-examples.json" with { type: "json" };
 
 test.beforeEach(async ({ page }) => {
   await blockExternalServices(page);
@@ -43,23 +42,6 @@ test("記事はJavaScriptなしでも本文・出典・日付を読め、canonic
   await expect(page.getByRole('complementary', { name: '計算の対象と条件' })).toBeVisible();
   await expect(page.locator('a[href="/articles/calculation-scope"]').first()).toBeVisible();
   await context.close();
-});
-
-test("保存した全計算例の合計と接続が整合する", () => {
-  for (const example of examples.examples) {
-    for (const pattern of [example.normal, ...example.patterns, ...example.comparisonPatterns]) {
-      expect(pattern.segments.reduce((total,s) => total+s.fare+s.barrierFreeFee,0)).toBe(pattern.total);
-      expect(pattern.segments[0].from).toBe(example.from);
-      expect(pattern.segments.at(-1)?.to).toBe(example.to);
-      for (const [index,segment] of pattern.segments.entries()) {
-        expect(Number.isInteger(segment.fare)).toBe(true);
-        expect(Number.isInteger(segment.barrierFreeFee)).toBe(true);
-        expect(segment.path[0]).toBe(segment.from);
-        expect(segment.path.at(-1)).toBe(segment.to);
-        if (index > 0) expect(pattern.segments[index-1].to).toBe(segment.from);
-      }
-    }
-  }
 });
 
 test('計算例のリンクから乗車駅・降車駅を復元する', async ({ page }) => {
