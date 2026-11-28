@@ -5,7 +5,7 @@ export function getStaticPaths() { return catalogLines.map(line => ({ params: { 
 interface Props { line: CatalogLine }
 const { line } = Astro.props;
 ---
-<DataLayout title={`${line.name}の営業キロ・換算キロ`} description={`${line.name}の駅ごとの営業キロ・換算キロ一覧。駅順と距離程を確認できます。`}>
+<DataLayout title={`${line.name}の営業キロ・換算キロ`} breadcrumbLabel={line.name} description={`${line.name}の駅ごとの営業キロ・換算キロ。駅順と距離程を確認できます。`}>
   <p>{kinds[line.kind]} / {line.classification} / {line.rows.length}駅</p>
   <div class="data-scroll" role="region" aria-label={`${line.name}の駅別距離表`} tabindex="0">
     <table class="data-table data-distance-table">

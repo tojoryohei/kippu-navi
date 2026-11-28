@@ -2,12 +2,12 @@
 import DataLayout from '@/components/data/DataLayout.astro';
 import { catalogLines, fareRecords } from '@/lib/data-catalog';
 const sections = [
-  { href: '/data/lines', title: '路線と駅の情報', description: `JRの${catalogLines.length}路線の駅名・読み仮名・営業キロ・換算キロを掲載しています。乗換路線へのリンクやCSV・JSONも利用できます。` },
+  { href: '/data/lines', title: '営業キロ・換算キロ', description: `JRの${catalogLines.length}路線の駅名・読み仮名・営業キロ・換算キロを掲載しています。乗換路線へのリンクやCSV・JSONも利用できます。` },
   { href: '/data/fares', title: '特例運賃', description: `乗車券・定期券の特定運賃・調整運賃${fareRecords.length}件を掲載しています。区間名から対象経路の運賃計算ページを開けます。` },
   { href: '/data/guide', title: 'データの見方・出典', description: '距離と運賃の読み方、収録範囲、出典、ダウンロードファイルの項目を説明しています。' },
 ];
 ---
-<DataLayout title="データ一覧" description="きっぷナビの路線と駅の情報と特例運賃のデータを公開しています。調べたい種類を選んでください。">
+<DataLayout title="データ一覧" description="きっぷナビの営業キロ・換算キロと特例運賃のデータを公開しています。調べたい種類を選んでください。">
   <div class="grid gap-5 sm:grid-cols-2">
     {sections.map(section => <a href={section.href} class="data-panel block space-y-3 transition-colors hover:border-blue-500">
       <h2 class="text-xl font-bold text-blue-700">{section.title}</h2>

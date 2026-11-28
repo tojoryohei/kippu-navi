@@ -1,12 +1,12 @@
 ---
 import Layout from '@/layouts/Layout.astro';
-interface Props { title: string; description: string }
-const { title, description } = Astro.props;
+interface Props { title: string; description: string; breadcrumbLabel?: string }
+const { title, description, breadcrumbLabel = title } = Astro.props;
 const isLineDetail = /^\/data\/lines\/[^/]+/.test(Astro.url.pathname);
 ---
 <Layout metadata={{ title, description }}>
   <div class="mx-auto max-w-6xl space-y-7 px-4 py-10 sm:px-6">
-    <nav aria-label="パンくず" class="text-sm text-blue-700"><a href="/">ホーム</a> / <a href="/data">データ一覧</a>{isLineDetail && <> / <a href="/data/lines">路線と駅の情報</a></>}{title !== 'データ一覧' && <> / <span class="text-slate-600">{title}</span></>}</nav>
+    <nav aria-label="パンくず" class="text-sm text-blue-700"><a href="/">ホーム</a> / <a href="/data">データ一覧</a>{isLineDetail && <> / <a href="/data/lines">営業キロ・換算キロ</a></>}{title !== 'データ一覧' && <> / <span class="text-slate-600">{breadcrumbLabel}</span></>}</nav>
     <h1 class="text-3xl font-bold text-slate-900">{title}</h1>
     <p class="leading-relaxed text-slate-600">{description}</p>
     <slot />
