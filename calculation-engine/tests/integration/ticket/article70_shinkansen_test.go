@@ -48,6 +48,31 @@ func TestArticle70Shinkansen(t *testing.T) {
 		}
 		return steps
 	}
+	t.Run("第70条補正で東京駅が重複する越中島発着", func(t *testing.T) {
+		approach := leg("ケイヨ", strings.Fields("越中島 潮見 新木場 葛西臨海公園 舞浜 新浦安 市川塩浜 二俣新町 南船橋 新習志野 幕張豊砂 海浜幕張 検見川浜 稲毛海岸 千葉みなと")...)
+		approach = append(approach, leg("ソトホ", "蘇我", "本千葉")...)
+		approach = append(approach, leg("ソウフ", strings.Fields("千葉 西千葉 稲毛 新検見川 幕張 幕張本郷 津田沼 東船橋 船橋 西船橋 下総中山 本八幡 市川 小岩 新小岩 平井 亀戸")...)...)
+		approach = append(approach, leg("ソウフ２", "錦糸町", "両国", "浅草橋")...)
+		steps := append(approach, leg("トウホ２", strings.Fields("秋葉原 御徒町 上野 鶯谷 日暮里 西日暮里 田端 上中里 王子 東十条")...)...)
+		steps = append(steps, leg("アカハ", "赤羽", "十条", "板橋")...)
+		steps = append(steps, leg("ヤマテ２", strings.Fields("池袋 目白 高田馬場 新大久保 新宿 代々木 原宿 渋谷 恵比寿 目黒 五反田 大崎")...)...)
+		steps = append(steps, usecase.ViaStep{StationName: "品川", LineName: "シンカ"})
+		steps = append(steps, leg("ケイヨ", "東京", "八丁堀")...)
+		steps = append(steps, usecase.ViaStep{StationName: "越中島"})
+		path, err := calculator.ResolvePath(steps)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, mode := range []string{"normal", "cheapest"} {
+			if _, err := calculator.CalculateWithPricing(path, steps, mode, usecase.TicketPricingOptions{}); !errors.Is(err, domain.ErrDuplicateRoute) {
+				t.Errorf("%s: 経路重複エラーを期待しましたが、実際は%vでした", mode, err)
+			}
+		}
+		fare, err := calculator.CalculateWithPricing(path, steps, "uncorrect", usecase.TicketPricingOptions{})
+		if err != nil || fare.Fare != 2420 {
+			t.Fatalf("補正禁止モードで2,420円を期待しましたが、実際は%d円、エラー=%vでした", fare.Fare, err)
+		}
+	})
 	t.Run("東京都区内を出て亀有に戻る", func(t *testing.T) {
 		steps := leg("", strings.Fields(`金町 松戸 北松戸 馬橋 新松戸 南流山 （武蔵）三郷 新三郷 吉川美南 吉川 越谷レイクタウン 南越谷 東川口 東浦和 南浦和
    武蔵浦和 西浦和 北朝霞 新座 東所沢 新秋津 新小平 西国分寺 国立 立川 日野 豊田 八王子 片倉 八王子みなみ野 相原 （横）橋本

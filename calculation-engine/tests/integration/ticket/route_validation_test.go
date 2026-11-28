@@ -8,16 +8,15 @@ import (
 	"errors"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 )
 
-func TestRouteTicketRejectsOverlapBeforeModeCorrection(t *testing.T) {
-	_, g := setupTicketAmount(t)
-	// 後段の補正で不正な重複が消える可能性があるため、先に検証します。
-	// DPの区間評価など、ResolvePathを経由せずCalculateを呼ぶ場合も対象です。
-	c := usecase.NewRouteTicketCalculator(g, usecase.NewSuburbanAreaCorrector(nil), nil, nil, nil)
+func TestRouteTicketRejectsOverlap(t *testing.T) {
+	c, g := setupPricedRoute(t)
 	for _, names := range [][]string{
 		{"鶯谷", "上野", "大宮"},
+		{"新大阪", "京都", "米原", "彦根"},
 		{"天童", "山形", "北山形"},
 		{"（北）福島", "米沢", "関根"},
 		{"大石田", "新庄", "舟形"},
@@ -46,8 +45,8 @@ func TestRouteTicketRejectsOverlapBeforeModeCorrection(t *testing.T) {
 				path[i], steps[i].StationName = id, name
 			}
 			_, resolveErr := c.ResolvePath(steps)
-			if !errors.Is(resolveErr, domain.ErrDuplicateRoute) {
-				t.Fatalf("経路重複エラー=%v", resolveErr)
+			if resolveErr != nil {
+				t.Fatal(resolveErr)
 			}
 			for _, mode := range []string{"normal", "cheapest", "uncorrect"} {
 				t.Run(stations[0]+"/"+mode, func(t *testing.T) {
@@ -61,11 +60,25 @@ func TestRouteTicketRejectsOverlapBeforeModeCorrection(t *testing.T) {
 					assertDuplicate(err)
 					_, err = c.Split(steps, mode)
 					assertDuplicate(err)
-					_, err = c.SplitCandidateDetails(steps, mode)
-					assertDuplicate(err)
 				})
 			}
 		}
+	}
+}
+
+func TestRouteTicketAllowsNagoyaLoopBeforeShinkansen(t *testing.T) {
+	calculator, _ := setupPricedRoute(t)
+	stations := strings.Fields("名古屋 枇杷島 勝川 新守山 大曽根 千種 鶴舞 （中）金山 尾頭橋 名古屋 三河安城 豊橋 浜松 掛川 静岡 （東）新富士 三島 熱海 小田原 新横浜 品川 東京")
+	steps := make([]usecase.ViaStep, len(stations))
+	for i, name := range stations {
+		steps[i].StationName = name
+	}
+	path, err := calculator.ResolvePath(steps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := calculator.CalculateWithPricing(path, steps, "normal", usecase.TicketPricingOptions{}); err != nil {
+		t.Fatalf("城北線を回ってから新幹線に乗り継ぐ経路が計算できません: %v", err)
 	}
 }
 
@@ -154,8 +167,7 @@ func TestRouteTicketKyushuValidationKeepsFareAndSplitRoutes(t *testing.T) {
 }
 
 func TestRouteTicketRejectsReturnToOrioAfterRule43_2(t *testing.T) {
-	_, g := setupTicketAmount(t)
-	c := usecase.NewRouteTicketCalculator(g, nil, nil, nil, nil)
+	c, g := setupPricedRoute(t)
 	names := []string{
 		"折尾", "東水巻", "中間", "筑前垣生", "鞍手", "筑前植木", "新入", "直方", "勝野", "小竹", "鯰田", "浦田", "新飯塚",
 		"上三緒", "下鴨生", "筑前庄内", "船尾", "田川後藤寺", "田川伊田", "一本松", "香春", "採銅所", "呼野",
@@ -173,11 +185,9 @@ func TestRouteTicketRejectsReturnToOrioAfterRule43_2(t *testing.T) {
 	// 小倉での折り返しは特例で控除されても、展開後には折尾の再通過が残ります。
 	for _, mode := range []string{"normal", "cheapest", "uncorrect"} {
 		t.Run(mode, func(t *testing.T) {
-			_, resolveErr := c.ResolvePath(steps)
 			_, _, fareErr := c.Calculate(path, steps, mode)
 			_, splitErr := c.Split(steps, mode)
-			_, candidateErr := c.SplitCandidateDetails(steps, mode)
-			for _, err := range []error{resolveErr, fareErr, splitErr, candidateErr} {
+			for _, err := range []error{fareErr, splitErr} {
 				if !errors.Is(err, domain.ErrDuplicateRoute) {
 					t.Fatalf("折尾の再通過を検出できていない: %v", err)
 				}

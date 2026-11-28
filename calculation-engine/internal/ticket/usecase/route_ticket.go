@@ -11,16 +11,15 @@ import (
 // RouteTicketCalculator は、運賃計算ページと経路指定分割で乗車券の計算を共用します。
 // 分割候補の準備時には、最安モードの経路延長を行いません。
 type RouteTicketCalculator struct {
-	graph              graph.Graph
-	corrector          PathCorrector
-	evaluator          *TicketSegmentEvaluator
-	extensions         *RouteExtensionMatcher
-	zones              *graphio.SpecialZoneRegistry
-	inputPathCorrector PathCorrector
+	graph      graph.Graph
+	corrector  PathCorrector
+	evaluator  *TicketSegmentEvaluator
+	extensions *RouteExtensionMatcher
+	zones      *graphio.SpecialZoneRegistry
 }
 
 func NewRouteTicketCalculator(g graph.Graph, c PathCorrector, e *TicketSegmentEvaluator, extensions *RouteExtensionMatcher, zones *graphio.SpecialZoneRegistry) *RouteTicketCalculator {
-	return &RouteTicketCalculator{g, c, e, extensions, zones, newInputPathCorrector()}
+	return &RouteTicketCalculator{g, c, e, extensions, zones}
 }
 
 // RouteCorrectionError は、経路補正のエラーを呼び出し元で識別できるよう保持します。
@@ -43,9 +42,6 @@ func (c *RouteTicketCalculator) ResolvePath(steps []ViaStep) ([]int, error) {
 		}
 		path[i] = id
 	}
-	if err := c.validateInputPath(path); err != nil {
-		return nil, err
-	}
 	return path, nil
 }
 
@@ -64,9 +60,6 @@ func (c *RouteTicketCalculator) calculatePresented(path []int, steps []ViaStep, 
 	if len(path) < 2 {
 		return fare, nil, domain.ErrInvalidPath
 	}
-	if err := c.validateInputPath(path); err != nil {
-		return fare, nil, err
-	}
 	if c.evaluator == nil {
 		return fare, nil, fmt.Errorf("乗車券運賃評価器が未設定です")
 	}
@@ -77,6 +70,9 @@ func (c *RouteTicketCalculator) calculatePresented(path []int, steps []ViaStep, 
 	var err error
 	if mode == "cheapest" {
 		corrected, suburban, err = SelectCheapestPathWithRouteExtensionsAndPreShinkansenPath(farePath, c.graph, cheapestPathCorrector(c.corrector), c.extensions, c.zones, func(candidate []int) (int, error) {
+			if err := c.validateInputPath(candidate); err != nil {
+				return 0, err
+			}
 			res, _, err := c.evaluator.ExecuteWithOptions(candidate, 0, "normal", singleStationOptions(options))
 			if err != nil {
 				return 0, err
@@ -95,6 +91,10 @@ func (c *RouteTicketCalculator) calculatePresented(path []int, steps []ViaStep, 
 	}
 	if err != nil {
 		return fare, nil, &RouteCorrectionError{Err: err}
+	}
+	// 都区市内の中心駅への接続など、運賃計算上の経路を作る前に検証する。
+	if err := c.validateInputPath(corrected); err != nil {
+		return fare, nil, err
 	}
 	if presentationMode == "cheapest" {
 		// 最安の券面で在来線へ置換する区間は、入力時の新幹線ではなく採用経路で判定する。
