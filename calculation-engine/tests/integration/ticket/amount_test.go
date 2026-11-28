@@ -192,6 +192,11 @@ func TestTicketAmountCalculation_Integration(t *testing.T) {
 			want: usecase.CalculationResult{Fare: 770, TotalEigyoKilo: 220},
 		},
 		{
+			name: "名古屋〜名古屋（城北線を挟む通過連絡）",
+			path: getIDs("名古屋", "尾頭橋", "（中）金山", "鶴舞", "千種", "大曽根", "新守山", "勝川", "枇杷島", "名古屋"),
+			want: usecase.CalculationResult{Fare: 780, BarrierFreeFee: 0, TotalEigyoKilo: 190},
+		},
+		{
 			name: "東京〜宇都宮",
 			path: getIDs("東京山手線内", "田端", "上中里", "王子", "東十条", "赤羽", "川口", "西川口", "蕨", "南浦和", "浦和", "北浦和", "与野", "さいたま新都心", "大宮", "土呂", "東大宮", "蓮田", "白岡", "新白岡", "久喜", "東鷲宮", "栗橋", "古河", "野木", "間々田", "小山", "小金井", "自治医大", "石橋", "雀宮", "宇都宮"),
 			want: usecase.CalculationResult{

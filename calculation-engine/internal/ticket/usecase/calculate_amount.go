@@ -214,7 +214,7 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 	var totalFare int
 	var barrierFreeFee int
 
-	// JRの区間のみを抽出 (他会社線と連絡する場合はJRのみで判定)
+	// JR運賃の計算に使う区間を抽出する。
 	var jrEdges []*domain.Edge
 	for _, edge := range summary.edges {
 		if edge.Company != domain.Other {
@@ -222,8 +222,9 @@ func (u *CalculateAmount) execute(path []int, allowOsakaZoneDistanceAdjustment b
 		}
 	}
 
-	// バリアフリー加算
-	if len(jrEdges) > 0 && fare.IsAllBarrierFreeFeeApplicable(jrEdges) {
+	// 通過連絡で他社線を挟む場合は、JRの対象区間内で完結しない。
+	// JR区間が片側だけの連絡券は evaluateConnection が切り出して計算する。
+	if len(jrEdges) == len(summary.edges) && fare.IsAllBarrierFreeFeeApplicable(jrEdges) {
 		barrierFreeFee = fare.CalculateBarrierFreeFee()
 	}
 
