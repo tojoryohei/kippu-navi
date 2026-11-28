@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.18](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.17...kippu-navi-v6.0.18) (2026-11-28)
+
+
+### Bug Fixes
+
+* 路線データの見出しとパンくずを分かりやすくする ([#1181](https://github.com/tojoryohei/kippu-navi/issues/1181)) ([9175c92](https://github.com/tojoryohei/kippu-navi/commit/9175c924060623bfad3e1d4e98703de1eeabd711))
+
 ## [6.0.17](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.16...kippu-navi-v6.0.17) (2026-11-28)
 
 
