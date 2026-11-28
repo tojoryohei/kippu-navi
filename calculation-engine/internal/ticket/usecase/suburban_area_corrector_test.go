@@ -21,6 +21,10 @@ func (m *mockSuburbanGraph) GetEdges(id int) []ticketdomain.TicketEdge {
 	return m.edges[id]
 }
 
+func (m *mockSuburbanGraph) GetName(id int) string {
+	return fmt.Sprint(id)
+}
+
 func (m *mockSuburbanGraph) FindShortestPathGisei(startID, endID int) (*graph.PathResult, error) {
 	key := string(rune(startID)) + "-" + string(rune(endID))
 	if p, ok := m.shortestPaths[key]; ok {

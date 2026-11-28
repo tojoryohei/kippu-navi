@@ -39,10 +39,10 @@ func TestValidateTicketInputBeforeOverlapDeduction(t *testing.T) {
 				t.Fatal("検証処理が入力を変更しています")
 			}
 			resolved, err := c.ResolvePath(steps)
-			if errors.Is(err, domain.ErrDuplicateRoute) != tc.duplicate {
-				t.Fatalf("ResolvePathのエラー = %v", err)
+			if err != nil {
+				t.Fatal(err)
 			}
-			if !tc.duplicate && !slices.Equal(resolved, before) {
+			if !slices.Equal(resolved, before) {
 				t.Fatal("ResolvePathが計算用の経路を変更しています")
 			}
 		})
@@ -77,8 +77,12 @@ func TestPrivateInteriorInTicketRoute(t *testing.T) {
 				steps[i].StationName = name
 			}
 			path, err := c.ResolvePath(steps)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = c.validateInputPath(path)
 			if !errors.Is(err, tc.want) {
-				t.Fatalf("ResolvePath(%v) = %v、期待値 = %v", tc.stations, err, tc.want)
+				t.Fatalf("重複判定: 経路=%v、エラー=%v、期待値=%v", tc.stations, err, tc.want)
 			}
 			if err == nil {
 				got, _, err := c.prepareConventionalSplit(steps, path)

@@ -31,6 +31,10 @@ func (s *SuburbanAreaCorrector) Correct(path []int, g graph.Graph) ([]int, error
 	if !ok || jrArea == domain.SuburbanAreaNone || len(segments) == 0 {
 		return path, nil
 	}
+	// 最安経路への置換で、入力経路の折り返しが消える前に検査する。
+	if err := validateTicketOverlap(path, g); err != nil {
+		return nil, err
+	}
 	if path[0] == path[len(path)-1] {
 		return nil, domain.ErrRequestedSection
 	}

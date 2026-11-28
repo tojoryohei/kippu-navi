@@ -25,17 +25,22 @@ func newInputPathCorrector() PathCorrector {
 	return NewPipelineCorrector(NewRule43_2Corrector(), &conventionalPathCorrector{overlap})
 }
 
-// validateInputPath は、入力に含まれる駅の重複を折り返し控除前に判定します。
-// 新幹線と在来線の重複は、特例を反映した展開後の駅列でも検証します。
+var ticketOverlapCorrector = newInputPathCorrector()
+
 func (c *RouteTicketCalculator) validateInputPath(path []int) error {
-	if hasDuplicateTicketStation(path, c.graph) {
+	return validateTicketOverlap(path, c.graph)
+}
+
+// 新幹線と在来線の重複は、特例を反映した展開後の駅列でも検証する。
+func validateTicketOverlap(path []int, g graph.Graph) error {
+	if hasDuplicateTicketStation(path, g) {
 		return domain.ErrDuplicateRoute
 	}
-	expanded, err := c.inputPathCorrector.Correct(append([]int(nil), path...), c.graph)
+	expanded, err := ticketOverlapCorrector.Correct(append([]int(nil), path...), g)
 	if err != nil {
 		return err
 	}
-	if hasDuplicateTicketStation(expanded, c.graph) {
+	if hasDuplicateTicketStation(expanded, g) {
 		return domain.ErrDuplicateRoute
 	}
 	return nil
