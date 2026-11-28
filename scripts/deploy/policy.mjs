@@ -27,21 +27,22 @@ export function revisionCommit(revision) {
 }
 
 export function affectsApi(path) {
-  return /^(calculation-engine\/|\.github\/workflows\/|scripts\/)/.test(path)
-    || ['.dockerignore', '.node-version', '.npmrc', 'package.json', 'package-lock.json', 'wrangler.jsonc', 'astro.config.mjs', 'tsconfig.json'].includes(path);
+  // DockerのビルドコンテキストとCloud Runの設定を適用するワークフロー。
+  return path.startsWith('calculation-engine/') || path === '.github/workflows/deploy-api.yml';
 }
 
 export function decideApi({ baseline, target, diff = (base, head) => {
   // 履歴が浅い、または取得できない場合は公開を省略しない。
   if (execFileSync('git', ['rev-parse', '--is-shallow-repository'], { encoding: 'utf8' }).trim() !== 'false') throw new Error('Git履歴が浅いため更新を省略できません');
   for (const sha of [base, head]) execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], { stdio: 'ignore' });
-  return execFileSync('git', ['diff', '--name-only', '-z', base, head, '--'], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }).split('\0').filter(Boolean);
+  return execFileSync('git', ['diff', '--no-renames', '--name-only', '-z', base, head, '--'], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }).split('\0').filter(Boolean);
 } }) {
   if (!SHA.test(baseline ?? '')) return { update: true, reason: 'serving_revision_sha_unknown' };
   try {
     const paths = diff(baseline, target);
     if (!Array.isArray(paths)) throw new Error('差分の形式が不正です');
-    return { update: paths.some(affectsApi), reason: paths.some(affectsApi) ? 'api_or_shared_files_changed' : 'api_files_unchanged', baseline };
+    const update = paths.some(affectsApi);
+    return { update, reason: update ? 'api_files_changed' : 'api_files_unchanged', baseline };
   } catch {
     return { update: true, reason: 'history_or_diff_unavailable', baseline };
   }

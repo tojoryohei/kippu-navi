@@ -58,12 +58,19 @@ test('公開indexのLinux/amd64だけを配信digestとして照合する', asyn
 test('履歴や差分を確かめられなければAPI更新を省略しない', () => {
   for (const baseline of [null, '', 'local']) assert.equal(decideApi({ baseline, target: sha }).update, true);
   assert.equal(decideApi({ baseline: old, target: sha, diff: () => { throw new Error('shallow/missing/diff failed'); } }).update, true);
-  assert.equal(decideApi({ baseline: old, target: sha, diff: () => ['src/pages/index.astro'] }).update, false);
-  for (const path of ['calculation-engine/Dockerfile', '.github/workflows/test.yml', 'scripts/deploy/tools.json', 'scripts/shared.mjs', '.dockerignore', '.node-version', 'package.json', 'package-lock.json', 'wrangler.jsonc', 'astro.config.mjs']) {
-    assert.equal(decideApi({ baseline: old, target: sha, diff: () => [path] }).update, true, path);
-  }
   // ロールバック後もコミット順に依存せず、両SHAのツリー間を比較する。
   assert.equal(decideApi({ baseline: sha, target: old, diff: (base, head) => { assert.equal(base, sha); assert.equal(head, old); return ['calculation-engine/cmd/api/main.go']; } }).update, true);
+});
+test('autoはCloud Runに関係する変更がある場合にAPIを公開する', () => {
+  const frontendPaths = ['package-lock.json', 'scripts/build-frontend.mjs', '.github/workflows/deploy-frontend.yml'];
+  const plan = paths => planRelease({ components: 'auto', target: sha,
+    decision: decideApi({ baseline: old, target: sha, diff: () => paths }) });
+  const frontendOnly = plan(frontendPaths);
+  assert.equal(frontendOnly.frontend, true);
+  assert.equal(frontendOnly.api, false);
+  for (const path of ['calculation-engine/Dockerfile', '.github/workflows/deploy-api.yml']) {
+    assert.equal(plan([...frontendPaths, path]).api, true, path);
+  }
 });
 const identity = { runId: '123', attempt: '1', target: sha, environment: 'production' };
 test('古いrun・attempt・SHA・環境を拒否し、同じ実行中のmain更新を照合条件にしない', () => {

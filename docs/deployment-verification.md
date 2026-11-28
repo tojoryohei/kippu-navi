@@ -22,7 +22,7 @@
 
 Cloud Runの実配信状態がReady・観測済みで、正の割合のRevisionが1つ、合計100%の場合だけ実行時DEPLOY_COMMITを比較元にする。latestCreated/latestReadyや0%タグは基準にしない。分割配信・未確定・SHA不明・履歴不足・差分失敗ではAPI更新を省略しない。frontendを明示してもAPI変更・基準不明ならallでの再実行を求める。
 
-比較は基準SHAと対象SHAのツリー間。`calculation-engine/**`、`.github/workflows/**`、`scripts/**`と`.dockerignore`、`.node-version`、`.npmrc`、`package.json`、`package-lock.json`、`wrangler.jsonc`、`astro.config.mjs`、`tsconfig.json`をAPI更新対象とする。
+比較は基準SHAと対象SHAのツリー間。Dockerのビルドコンテキストである`calculation-engine/**`と、Cloud Runの設定を適用する`.github/workflows/deploy-api.yml`をAPI更新対象とする。
 
 DEPLOY_COMMITは次回判定用、バイナリ内SHAのX-Deployment-Commitは直接検証用の証拠。API公開後、新Revisionへの100%配信・Ready・メタデータSHA・digestを照合し、直接応答のSHAも照合する。本番キャッシュとstagingのno-storeを維持する。
 
