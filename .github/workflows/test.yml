@@ -16,54 +16,24 @@ jobs:
   # ===================================================
   # [Frontend] Node.js 環境のジョブ
   # ===================================================
-  lint:
-    name: Run ESLint
+  frontend-checks:
+    name: Run ESLint, Knip and Worker tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .node-version
-          cache: 'npm'
-
-      - name: Setup Takumi Guard
-        uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd # v1
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint
-
-      - name: Test Cloudflare Worker
-        run: npm run test:worker
-
-  knip:
-    name: Run Knip
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
-        with:
-          node-version-file: .node-version
-          cache: 'npm'
-
-      - name: Setup Takumi Guard
-        uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd # v1
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Knip
-        run: npx knip
+          cache: npm
+      - uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd # v1
+      - run: npm ci
+        id: dependencies
+      - run: npm run lint
+      - run: npm run knip
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+      - run: npm run test:worker
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
 
   frontend-regression:
     name: Build Astro and test browser navigation
@@ -158,49 +128,58 @@ jobs:
         run: go test -v -race ./...
 
   automation:
-    name: Validate dependency automation
+    name: Validate workflows and deployment scripts
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      ACTIONLINT_VERSION: v1.7.12
+      SHELLCHECK_VERSION: v0.11.0
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .node-version
           cache: npm
-      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
-        with:
-          go-version-file: calculation-engine/go.mod
-          cache: false
-      - uses: flatt-security/setup-takumi-guard-golang@02545d3425218766aac4dca114dcc3f6eaa0df4a # v1
       - uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd # v1
       - name: Install actionlint and ShellCheck
-        env:
-          # renovate: datasource=github-releases depName=rhysd/actionlint
-          ACTIONLINT_VERSION: v1.7.12
-          # renovate: datasource=github-releases depName=koalaman/shellcheck
-          SHELLCHECK_VERSION: v0.11.0
         run: |
           set -euo pipefail
           tool_dir="$RUNNER_TEMP/ci-tools"
           mkdir -p "$tool_dir"
-          GOBIN="$tool_dir" go install "github.com/rhysd/actionlint/cmd/actionlint@$ACTIONLINT_VERSION"
+          curl --fail --location --retry 3 \
+            "https://github.com/rhysd/actionlint/releases/download/$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION#v}_linux_amd64.tar.gz" \
+            --output "$tool_dir/actionlint.tar.gz"
+          tar -xzf "$tool_dir/actionlint.tar.gz" -C "$tool_dir" actionlint
           curl --fail --location --retry 3 \
             "https://github.com/koalaman/shellcheck/releases/download/$SHELLCHECK_VERSION/shellcheck-$SHELLCHECK_VERSION.linux.x86_64.tar.xz" \
             --output "$tool_dir/shellcheck.tar.xz"
           tar -xJf "$tool_dir/shellcheck.tar.xz" -C "$tool_dir"
           install "$tool_dir/shellcheck-$SHELLCHECK_VERSION/shellcheck" "$tool_dir/shellcheck"
-      - name: Check workflows and shell scripts
+      - name: Lint GitHub Actions workflows
         run: '"$RUNNER_TEMP/ci-tools/actionlint" -shellcheck "$RUNNER_TEMP/ci-tools/shellcheck"'
       - run: npm ci
       - run: node scripts/check-runtime-versions.mjs
       - run: node --test tests/automation/*.test.mjs tests/verification/*.test.mjs
       - run: node --test tests/deploy/*.test.mjs
+      - name: Check for Renovate changes
+        id: renovate
+        run: |
+          # PRのマージ結果とベース側の親を比較する。
+          if git diff --quiet HEAD^1 HEAD -- renovate.json .github/workflows/test.yml .node-version .npmrc; then
+            echo "validate=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "validate=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install Renovate validator
+        if: steps.renovate.outputs.validate == 'true'
         # renovate: datasource=npm depName=renovate
         env:
           RENOVATE_VALIDATOR_VERSION: 44.262.2
         run: npm install --prefix "$RUNNER_TEMP/renovate-validator" --ignore-scripts --no-audit --no-fund "renovate@$RENOVATE_VALIDATOR_VERSION"
       - name: Validate Renovate config
+        if: steps.renovate.outputs.validate == 'true'
         env:
           RENOVATE_PACKAGE_ROOT: ${{ runner.temp }}/renovate-validator/node_modules/renovate
           RENOVATE_X_IGNORE_RE2: 'true'
