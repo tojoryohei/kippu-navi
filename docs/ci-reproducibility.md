@@ -41,4 +41,4 @@ node scripts/check-runtime-versions.mjs
 
 同じPRのCIとCodeQLは新しい実行で古い実行をキャンセルします。別PR同士は独立し、CodeQLのmain・定期実行にはrun IDで別グループを割り当てます。本番・stagingデプロイの既存の排他制御とキャンセル無効設定は維持します。
 
-タイムアウトはESLint・Worker、Knip、Go lint、Go testが各15分、ブラウザ回帰が30分、依存自動化検証が20分、CodeQLが30分、release-pleaseが10分、stagingの対象解決が5分です。frontend/APIデプロイは既存の30分／40分を使用します。
+タイムアウトはESLint・Worker、Knip、Go lint、Go testが各15分、ブラウザテスト用ビルドが30分、テストは各ランナー20分、結果集約は5分、依存自動化検証が20分、CodeQLが30分、release-pleaseが10分、stagingの対象解決が5分です。frontend/APIデプロイは既存の30分／40分を使用します。

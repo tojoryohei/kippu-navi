@@ -65,14 +65,13 @@ jobs:
       - name: Run Knip
         run: npx knip
 
-  frontend-regression:
-    name: Build Astro and test browser navigation
+  frontend-build:
+    name: Build Astro test assets
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       ASTRO_TELEMETRY_DISABLED: '1'
       DEPLOY_ENVIRONMENT: staging
-      PLAYWRIGHT_PREBUILT: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -91,22 +90,80 @@ jobs:
         env:
           PUBLIC_SENTRY_DSN: https://playwright@sentry.invalid/1
       - run: npm run dev:engine -- --copy-only
-        id: engine-assets
+      - run: tar -cf "$RUNNER_TEMP/frontend-test-assets.tar" dist public/engine
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: frontend-test-assets
+          path: ${{ runner.temp }}/frontend-test-assets.tar
+          if-no-files-found: error
+          retention-days: 7
+          overwrite: true
+
+  frontend-tests:
+    name: Run ${{ matrix.suite }}
+    needs: frontend-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [browser-1, browser-2, dev]
+    env:
+      ASTRO_TELEMETRY_DISABLED: '1'
+      DEPLOY_ENVIRONMENT: staging
+      PLAYWRIGHT_PREBUILT: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
+        if: matrix.suite == 'dev'
+        with:
+          go-version-file: calculation-engine/go.mod
+          cache: false
+      - uses: flatt-security/setup-takumi-guard-golang@02545d3425218766aac4dca114dcc3f6eaa0df4a # v1
+        if: matrix.suite == 'dev'
+      - uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd # v1
+      - run: npm ci
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: frontend-test-assets
+          path: ${{ runner.temp }}
+      - run: tar -xf "$RUNNER_TEMP/frontend-test-assets.tar"
+        id: assets
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
-        id: browser-tests
+      - run: npm run test:e2e -- --shard=1/2
+        if: matrix.suite == 'browser-1'
+      - run: npm run test:e2e -- --shard=2/2
+        if: matrix.suite == 'browser-2'
       - run: npm run test:dev
-        if: ${{ !cancelled() && steps.browser-tests.outcome != 'skipped' }}
+        if: matrix.suite == 'dev'
       - run: npm run test:wasm
-        if: ${{ !cancelled() && steps.engine-assets.outcome == 'success' }}
+        if: ${{ !cancelled() && matrix.suite == 'dev' && steps.assets.outcome == 'success' }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
-          name: browser-test-results
+          name: browser-test-results-${{ matrix.suite }}
+          overwrite: true
           path: |
             test-results/
             playwright-report/
           retention-days: 7
+
+  frontend-regression:
+    # mainの必須チェックでビルドと全テスト分割の成否を確認する。
+    name: Build Astro and test browser navigation
+    needs: [frontend-build, frontend-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: test "$BUILD" = success && test "$TESTS" = success
+        env:
+          BUILD: ${{ needs.frontend-build.result }}
+          TESTS: ${{ needs.frontend-tests.result }}
 
   # ===================================================
   # [Backend] Go 環境のジョブ
