@@ -41,6 +41,13 @@ test("PCの順番・分割メニュー・リンク・キーボード操作", asy
 
 test("スマホは子項目を常時表示し、遷移とサイズ変更でスクロールを戻す", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 750 });
+  // viewportによる先読みは、モバイルメニューを開いた時点でも発生する。
+  let farePrefetched = false;
+  page.on("request", request => {
+    if (!request.isNavigationRequest() && new URL(request.url()).pathname === "/fare/ticket") {
+      farePrefetched = true;
+    }
+  });
   await page.goto("/articles/jr-fare-system");
   await expect(page.locator("astro-island")).toHaveCount(0);
   await expect(page.locator("footer a").first()).toHaveAttribute("data-astro-prefetch", "false");
@@ -68,9 +75,8 @@ test("スマホは子項目を常時表示し、遷移とサイズ変更でス�
   await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
   await open();
   await page.setViewportSize({ width: 1280, height: 800 });
-  const prefetch = page.waitForRequest(request => new URL(request.url()).pathname === "/fare/ticket");
   await page.locator('header a[href="/fare/ticket"]').hover();
-  await prefetch;
+  await expect.poll(() => farePrefetched).toBe(true);
   await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
   await page.setViewportSize({ width: 320, height: 750 });
   await expect(page.locator("#site-menu")).toBeHidden();
