@@ -1,5 +1,10 @@
 import { defineConfig } from "@playwright/test";
 
+// CIでは同じビルドの資材を配置済みなので、predevでの再生成を省く。
+const devCommand = process.env.PLAYWRIGHT_PREBUILT === "1"
+  ? "npm --ignore-scripts run dev"
+  : "npm run dev";
+
 export default defineConfig({
   testDir: "./tests/dev",
   outputDir: "test-results/dev",
@@ -25,7 +30,7 @@ export default defineConfig({
       gracefulShutdown: { signal: "SIGTERM", timeout: 15_000 },
     },
     {
-      command: "npm run dev -- --host 127.0.0.1 --port 3018 --strictPort --ignore-lock",
+      command: `${devCommand} -- --host 127.0.0.1 --port 3018 --strictPort --ignore-lock`,
       url: "http://127.0.0.1:3018",
       reuseExistingServer: false,
       timeout: 180_000,

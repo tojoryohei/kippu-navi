@@ -17,6 +17,7 @@
     "typecheck": "astro check",
     "knip": "knip",
     "test:worker": "node --test tests/worker/*.test.mjs",
+    "test:wasm": "node --test tests/wasm/*.test.mjs",
     "test:e2e": "playwright test",
     "test:dev": "playwright test --config playwright.dev.config.ts",
     "predev": "node scripts/prepare-local-engine.mjs",

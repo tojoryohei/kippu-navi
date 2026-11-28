@@ -4,10 +4,12 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-execFileSync(process.execPath, ["scripts/build-cloudflare-engine.mjs"], {
-  cwd: root,
-  stdio: "inherit",
-});
+if (!process.argv.includes("--copy-only")) {
+  execFileSync(process.execPath, ["scripts/build-cloudflare-engine.mjs"], {
+    cwd: root,
+    stdio: "inherit",
+  });
+}
 const version = readFileSync(
   join(root, ".cloudflare-engine/version.txt"),
   "utf8",
