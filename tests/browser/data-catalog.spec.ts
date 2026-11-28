@@ -8,9 +8,9 @@ test('データ一覧は絞り込みなしで全件表示し、駅別距離と�
   await page.goto('/');
   await page.getByRole('link', { name: /データ一覧.*各路線/ }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('データ一覧');
-  await page.getByRole('link', { name: /^路線と駅の情報 JRの/ }).click();
+  await page.getByRole('link', { name: /^営業キロ・換算キロ JRの/ }).click();
   await expect(page).toHaveURL('/data/lines');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('路線と駅の情報');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('営業キロ・換算キロ');
   const lines = page.getByRole('region', { name: '路線一覧', exact: true }).locator('tbody tr');
   await expect(lines.locator('th a')).toHaveText(catalogLines.map(line => line.name));
   await page.getByRole('link', { name: '吾妻線', exact: true }).click();

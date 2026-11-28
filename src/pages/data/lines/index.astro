@@ -1,9 +1,54 @@
 ---
-import DataLayout from '@/components/data/DataLayout.astro';
-import { catalogLines, distances, kinds, lineHref } from '@/lib/data-catalog';
-const stationNameCount = new Set(distances.map(row => row.station)).size;
+import DataLayout from "@/components/data/DataLayout.astro";
+import { catalogLines, distances, kinds, lineHref } from "@/lib/data-catalog";
+const stationNameCount = new Set(distances.map((row) => row.station)).size;
 ---
-<DataLayout title="路線と駅の情報" description="JR各路線の駅ごとの営業キロ・換算キロ、乗車券・定期券の特例運賃を公開しています。路線名から駅別の距離表を開けます。">
-  <section class="data-panel space-y-3"><h2 class="text-xl font-bold">路線と駅の情報を調べる</h2><p>{catalogLines.length}路線・{stationNameCount.toLocaleString('ja-JP')}種類の駅名を掲載しています。路線名を選ぶと、駅名・営業キロ・換算キロの一覧を開きます。路線の順番は専用データの掲載順に従っています。</p><p>JRの在来線と新幹線を対象としています。営業キロ・換算キロの意味は<a class="text-blue-700 underline" href="/data/guide">データの見方</a>で説明しています。</p></section>
-  <div class="data-scroll" role="region" aria-label="路線一覧" tabindex="0"><table class="data-table"><caption class="p-3 text-left font-bold">収録路線一覧</caption><thead><tr><th scope="col">路線</th><th scope="col">種類</th><th scope="col">区分</th><th scope="col">駅数</th><th scope="col">掲載範囲</th></tr></thead><tbody>{catalogLines.map(line => <tr><th scope="row"><a href={lineHref(line)}>{line.name}</a></th><td>{kinds[line.kind]}</td><td>{line.classification}</td><td>{line.rows.length}</td><td>{line.rows[0].station} ～ {line.rows.at(-1)!.station}</td></tr>)}</tbody></table></div>
+
+<DataLayout
+  title="営業キロ・換算キロ"
+  description="JR各路線の駅ごとの営業キロ・換算キロを公開しています。路線名から駅別の距離表を開けます。"
+>
+  <section class="data-panel space-y-3">
+    <h2 class="text-xl font-bold">路線を選ぶ</h2>
+    <p>
+      {catalogLines.length}路線・{stationNameCount.toLocaleString("ja-JP")}
+      種類の駅名を掲載しています。路線名を選ぶと、駅名・営業キロ・換算キロの一覧を開きます。路線の順番は専用データの掲載順に従っています。
+    </p>
+    <p>
+      JRの在来線と新幹線を対象としています。営業キロ・換算キロの意味は
+      <a class="text-blue-700 underline" href="/data/guide">
+        データの見方
+      </a>
+      で説明しています。
+    </p>
+  </section>
+  <div class="data-scroll" role="region" aria-label="路線一覧" tabindex="0">
+    <table class="data-table">
+      <caption class="p-3 text-left font-bold">収録路線一覧</caption>
+      <thead>
+        <tr>
+          <th scope="col">路線</th>
+          <th scope="col">種類</th>
+          <th scope="col">区分</th>
+          <th scope="col">駅数</th>
+          <th scope="col">掲載範囲</th>
+        </tr>
+      </thead>
+      <tbody>
+        {catalogLines.map((line) => (
+          <tr>
+            <th scope="row">
+              <a href={lineHref(line)}>{line.name}</a>
+            </th>
+            <td>{kinds[line.kind]}</td>
+            <td>{line.classification}</td>
+            <td>{line.rows.length}</td>
+            <td>
+              {line.rows[0].station} ～ {line.rows.at(-1)!.station}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
 </DataLayout>
