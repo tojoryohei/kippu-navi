@@ -72,6 +72,7 @@ jobs:
     env:
       ASTRO_TELEMETRY_DISABLED: '1'
       DEPLOY_ENVIRONMENT: staging
+      PLAYWRIGHT_PREBUILT: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -86,11 +87,18 @@ jobs:
       - uses: flatt-security/setup-takumi-guard-npm@14f07d0cbc739b42a1b7c70a04c2b84cd1318ddd # v1
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run build
+        env:
+          PUBLIC_SENTRY_DSN: https://playwright@sentry.invalid/1
+      - run: npm run dev:engine -- --copy-only
+        id: engine-assets
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
         id: browser-tests
       - run: npm run test:dev
         if: ${{ !cancelled() && steps.browser-tests.outcome != 'skipped' }}
+      - run: npm run test:wasm
+        if: ${{ !cancelled() && steps.engine-assets.outcome == 'success' }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:

@@ -60,11 +60,6 @@ for (const scenario of scenarios) {
   });
 }
 
-test('実WASMの逐次結果と従来の全件応答が一致する', async () => {
-  const { execFileSync } = await import('node:child_process');
-  execFileSync(process.execPath, ['--test', 'tests/wasm/split-streaming.test.mjs'], { stdio: 'inherit', timeout: 55_000 });
-});
-
 for (const offline of [false, true]) {
   test(`稚内→青森は分割前で終了し在来線の接続案内を表示する: ${offline ? 'offline' : 'online'}`, async ({ page }) => {
     await page.route('**/*', route => {
