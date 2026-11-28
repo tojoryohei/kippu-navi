@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.17](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.16...kippu-navi-v6.0.17) (2026-11-28)
+
+
+### Bug Fixes
+
+* 乗車券の経路重複を判定するタイミングを見直す ([#1178](https://github.com/tojoryohei/kippu-navi/issues/1178)) ([d858375](https://github.com/tojoryohei/kippu-navi/commit/d858375f4af45d781ba17f90a964978fa06cf465))
+
 ## [6.0.16](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.15...kippu-navi-v6.0.16) (2026-11-28)
 
 
