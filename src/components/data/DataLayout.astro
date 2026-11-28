@@ -1,36 +1,118 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-interface Props { title: string; description: string; breadcrumbLabel?: string }
+import Layout from "@/layouts/Layout.astro";
+interface Props {
+  title: string;
+  description: string;
+  breadcrumbLabel?: string;
+}
 const { title, description, breadcrumbLabel = title } = Astro.props;
 const isLineDetail = /^\/data\/lines\/[^/]+/.test(Astro.url.pathname);
 ---
+
 <Layout metadata={{ title, description }}>
   <div class="mx-auto max-w-6xl space-y-7 px-4 py-10 sm:px-6">
-    <nav aria-label="パンくず" class="text-sm text-blue-700"><a href="/">ホーム</a> / <a href="/data">データ一覧</a>{isLineDetail && <> / <a href="/data/lines">営業キロ・換算キロ</a></>}{title !== 'データ一覧' && <> / <span class="text-slate-600">{breadcrumbLabel}</span></>}</nav>
+    <nav aria-label="パンくず" class="text-sm text-blue-700">
+      <a href="/">ホーム</a> / <a href="/data">データ一覧</a>
+      {isLineDetail && (
+        <>
+          {" "}
+          / <a href="/data/lines">営業キロ・換算キロ</a>
+        </>
+      )}
+      {title !== "データ一覧" && (
+        <>
+          {" "}
+          / <span class="text-slate-600">{breadcrumbLabel}</span>
+        </>
+      )}
+    </nav>
     <h1 class="text-3xl font-bold text-slate-900">{title}</h1>
     <p class="leading-relaxed text-slate-600">{description}</p>
     <slot />
   </div>
 </Layout>
 <style is:global>
-  .data-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-  .data-table th, .data-table td { padding: .75rem; border-bottom: 1px solid #e2e8f0; text-align: center; }
-  .data-table th { background: #f1f5f9; white-space: nowrap; }
-  .data-table td { font-variant-numeric: tabular-nums; }
-  .data-table a { color: #1d4ed8; text-decoration: underline; }
-  .data-scroll { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: .75rem; }
-  .data-panel { padding: 1.25rem; border: 1px solid #e2e8f0; border-radius: .75rem; background: white; }
-  .data-fare-table { table-layout: fixed; }
-  .data-fare-table th, .data-fare-table td { padding: .75rem .5rem; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
-  .data-station-kana { display: block; margin-bottom: .25rem; color: inherit; font-size: .625rem; font-weight: 400; }
-  .data-distance-table td:nth-child(2), .data-distance-table td:nth-child(3) { text-align: right; }
-  .data-distance-table th:not(:last-child), .data-distance-table td:not(:last-child) { width: 1%; white-space: nowrap; }
-  .data-distance-table th:last-child, .data-distance-table td:last-child { min-width: 11rem; }
-  .data-distance-table td:last-child { overflow-wrap: anywhere; }
-  .data-fare-table th, .data-fare-table td { text-align: left; }
-  .data-fare-table th:first-child { width: 48%; }
-  .data-ticket-type { margin-bottom: .375rem; color: #475569; }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  .data-table th,
+  .data-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: center;
+  }
+  .data-table th {
+    background: #f1f5f9;
+    white-space: nowrap;
+  }
+  .data-table td {
+    font-variant-numeric: tabular-nums;
+  }
+  .data-table a {
+    color: #1d4ed8;
+    text-decoration: underline;
+  }
+  .data-scroll {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+  }
+  .data-panel {
+    padding: 1.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    background: white;
+  }
+  .data-fare-table {
+    table-layout: fixed;
+  }
+  .data-fare-table th,
+  .data-fare-table td {
+    padding: 0.75rem 0.5rem;
+    vertical-align: top;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .data-station-kana {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: inherit;
+    font-size: 0.625rem;
+    font-weight: 400;
+  }
+  .data-distance-table td:nth-child(2),
+  .data-distance-table td:nth-child(3) {
+    text-align: right;
+  }
+  .data-distance-table th:not(:last-child),
+  .data-distance-table td:not(:last-child) {
+    width: 1%;
+    white-space: nowrap;
+  }
+  .data-distance-table th:last-child,
+  .data-distance-table td:last-child {
+    min-width: 11rem;
+  }
+  .data-distance-table td:last-child {
+    overflow-wrap: anywhere;
+  }
+  .data-fare-table th,
+  .data-fare-table td {
+    text-align: left;
+  }
+  .data-fare-table th:first-child {
+    width: 48%;
+  }
+  .data-ticket-type {
+    margin-bottom: 0.375rem;
+    color: #475569;
+  }
   @media (min-width: 640px) {
-      .data-fare-table th, .data-fare-table td { padding: .75rem; }
+    .data-fare-table th,
+    .data-fare-table td {
+      padding: 0.75rem;
+    }
   }
 </style>

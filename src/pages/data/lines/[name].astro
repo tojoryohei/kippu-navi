@@ -1,23 +1,90 @@
 ---
-import DataLayout from '@/components/data/DataLayout.astro';
-import { catalogLines, kinds, km, publicationSources, type CatalogLine } from '@/lib/data-catalog';
-export function getStaticPaths() { return catalogLines.map(line => ({ params: { name: line.name }, props: { line } })); }
-interface Props { line: CatalogLine }
+import DataLayout from "@/components/data/DataLayout.astro";
+import {
+  catalogLines,
+  kinds,
+  km,
+  publicationSources,
+  type CatalogLine,
+} from "@/lib/data-catalog";
+export function getStaticPaths() {
+  return catalogLines.map((line) => ({
+    params: { name: line.name },
+    props: { line },
+  }));
+}
+interface Props {
+  line: CatalogLine;
+}
 const { line } = Astro.props;
 ---
-<DataLayout title={`${line.name}の営業キロ・換算キロ`} breadcrumbLabel={line.name} description={`${line.name}の駅ごとの営業キロ・換算キロ。駅順と距離程を確認できます。`}>
-  <p>{kinds[line.kind]} / {line.classification} / {line.rows.length}駅</p>
-  <div class="data-scroll" role="region" aria-label={`${line.name}の駅別距離表`} tabindex="0">
+
+<DataLayout
+  title={`${line.name}の営業キロ・換算キロ`}
+  breadcrumbLabel={line.name}
+  description={`${line.name}の駅ごとの営業キロ・換算キロ。駅順と距離程を確認できます。`}
+>
+  <p>
+    {kinds[line.kind]} / {line.classification} / {line.rows.length}駅
+  </p>
+  <div
+    class="data-scroll"
+    role="region"
+    aria-label={`${line.name}の駅別距離表`}
+    tabindex="0"
+  >
     <table class="data-table data-distance-table">
       <caption class="p-3 text-left font-bold">{line.name}の駅別距離表</caption>
-      <thead><tr><th scope="col">駅名</th><th scope="col">営業キロ</th><th scope="col">換算キロ</th><th scope="col">乗換路線</th></tr></thead>
-      <tbody>{line.rows.map((row, index) => <tr id={`station-${index + 1}`} class="scroll-mt-20">
-        <th scope="row" aria-labelledby={`station-name-${index + 1}`}><span class="data-station-kana">{row.kana ?? '—'}</span><span id={`station-name-${index + 1}`} class="data-station-name">{row.station}</span></th>
-        <td>{km(row.eigyoDeciKm)}</td><td>{km(row.giseiDeciKm)}</td>
-        <td>{row.transfers.length ? <ul class="flex flex-wrap justify-center gap-x-3 gap-y-1">{row.transfers.map(t => <li><a href={t.href}>{t.name}</a></li>)}</ul> : '—'}</td>
-      </tr>)}</tbody>
+      <thead>
+        <tr>
+          <th scope="col">駅名</th>
+          <th scope="col">営業キロ</th>
+          <th scope="col">換算キロ</th>
+          <th scope="col">乗換路線</th>
+        </tr>
+      </thead>
+      <tbody>
+        {line.rows.map((row, index) => (
+          <tr id={`station-${index + 1}`} class="scroll-mt-20">
+            <th scope="row" aria-labelledby={`station-name-${index + 1}`}>
+              <span class="data-station-kana">{row.kana ?? "—"}</span>
+              <span id={`station-name-${index + 1}`} class="data-station-name">
+                {row.station}
+              </span>
+            </th>
+            <td>{km(row.eigyoDeciKm)}</td>
+            <td>{km(row.giseiDeciKm)}</td>
+            <td>
+              {row.transfers.length ? (
+                <ul class="flex flex-wrap justify-center gap-x-3 gap-y-1">
+                  {row.transfers.map((t) => (
+                    <li>
+                      <a href={t.href}>{t.name}</a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                "—"
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
     </table>
   </div>
   {line.note && <p class="text-sm text-slate-600">{line.note}</p>}
-  <section class="data-panel space-y-2"><h2 class="text-xl font-bold">データの出典</h2><ul class="list-inside list-disc space-y-2">{publicationSources.map(source => <li>{source}</li>)}</ul><p>駅順・距離程は、データ一覧専用のデータを直接編集して管理しています。読み仮名も専用データ内に記載しています。乗換リンクは、同じ駅名を掲載するJR路線の距離表へ移動します。</p><a class="text-blue-700 underline" href="/data/guide">資料の扱い・項目定義</a></section>
+  <section class="data-panel space-y-2">
+    <h2 class="text-xl font-bold">データの出典</h2>
+    <ul class="list-inside list-disc space-y-2">
+      {publicationSources.map((source) => (
+        <li>{source}</li>
+      ))}
+    </ul>
+    <p>
+      駅順・距離程は、データ一覧専用のデータを直接編集して管理しています。読み仮名も専用データ内に記載しています。乗換リンクは、同じ駅名を掲載するJR路線の距離表へ移動します。
+    </p>
+    <a class="text-blue-700 underline" href="/data/guide">
+      資料の扱い・項目定義
+    </a>
+  </section>
 </DataLayout>
