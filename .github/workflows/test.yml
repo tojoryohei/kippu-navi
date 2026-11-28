@@ -152,19 +152,6 @@ jobs:
             playwright-report/
           retention-days: 7
 
-  frontend-regression:
-    # mainの必須チェックでビルドと全テスト分割の成否を確認する。
-    name: Build Astro and test browser navigation
-    needs: [frontend-build, frontend-tests]
-    if: always()
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - run: test "$BUILD" = success && test "$TESTS" = success
-        env:
-          BUILD: ${{ needs.frontend-build.result }}
-          TESTS: ${{ needs.frontend-tests.result }}
-
   # ===================================================
   # [Backend] Go 環境のジョブ
   # ===================================================
