@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.16](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.15...kippu-navi-v6.0.16) (2026-11-28)
+
+
+### Bug Fixes
+
+* 通過連絡乗車券のバリアフリー料金判定を修正 ([#1174](https://github.com/tojoryohei/kippu-navi/issues/1174)) ([20cc80d](https://github.com/tojoryohei/kippu-navi/commit/20cc80d9278f13e9dc62752ca89103d5325bd660))
+
 ## [6.0.15](https://github.com/tojoryohei/kippu-navi/compare/kippu-navi-v6.0.14...kippu-navi-v6.0.15) (2026-11-27)
 
 
