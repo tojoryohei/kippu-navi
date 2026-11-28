@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       components:
-        description: 更新対象（通常はall）
+        description: 更新対象（通常はauto）
         type: choice
         options: [all, frontend, api, auto]
-        default: all
+        default: auto
       mode:
         description: 通常公開／過去の検証済みSHAへの復旧
         type: choice

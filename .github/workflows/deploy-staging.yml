@@ -8,10 +8,10 @@ on:
         required: true
         type: string
       components:
-        description: 更新対象（通常はall）
+        description: 更新対象（通常はauto）
         type: choice
         options: [all, frontend, api, auto]
-        default: all
+        default: auto
 permissions: {}
 
 jobs:

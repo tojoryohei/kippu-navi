@@ -37,7 +37,7 @@ Reactのmajor移行時にも`@astrojs/react`やUIライブラリの対応が必�
 通常ブランチ・Renovateブランチとも、stagingは手動で公開します。pushやPRの作成・再オープンでは自動公開しません。
 Actionsの`Deploy staging`をmainから起動し、同一リポジトリの非mainブランチを指定します。PRのないブランチも手動公開できます。
 mainの制御コードで対象SHAを固定し、排他待機後にも現在のブランチ先端と照合します。
-更新対象は`components`で選択し、通常は`all`でフロントエンドとAPIを順番に公開します。
+更新対象は`components`で選択します。既定の`auto`では、フロントエンドを公開し、差分判定で必要な場合にAPIも公開します。
 公開は共通concurrencyで排他制御します。共有環境は最後に公開したブランチの内容になります。待機実行が置き換えられた場合は必要に応じて手動で再実行します。
 stagingデプロイの成功・失敗はPRのマージ条件にしません。Cloud Run直接検証は維持し、Cloudflare経由の公開疎通確認は復活させません。
 本番は既存どおりmainへのマージ後に公開します。frontend/API個別workflowの手動実行もmainの本番用です。
